@@ -162,67 +162,67 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| IDMT-01 | — | Pending |
-| IDMT-02 | — | Pending |
-| IDMT-03 | — | Pending |
-| IDMT-04 | — | Pending |
-| IDMT-05 | — | Pending |
-| IDMT-06 | — | Pending |
-| IDMT-07 | — | Pending |
-| IDMT-08 | — | Pending |
-| IDMT-09 | — | Pending |
-| IDMT-10 | — | Pending |
-| COMP-01 | — | Pending |
-| COMP-02 | — | Pending |
-| COMP-03 | — | Pending |
-| COMP-04 | — | Pending |
-| COMP-05 | — | Pending |
-| PROJ-01 | — | Pending |
-| PROJ-02 | — | Pending |
-| PROJ-03 | — | Pending |
-| PROJ-04 | — | Pending |
-| PROJ-05 | — | Pending |
-| PROJ-06 | — | Pending |
-| BUDG-01 | — | Pending |
-| BUDG-02 | — | Pending |
-| BUDG-03 | — | Pending |
-| BUDG-04 | — | Pending |
-| BUDG-05 | — | Pending |
-| BUDG-06 | — | Pending |
-| CHNG-01 | — | Pending |
-| CHNG-02 | — | Pending |
-| CHNG-03 | — | Pending |
-| CHNG-04 | — | Pending |
-| CHNG-05 | — | Pending |
-| PYMT-01 | — | Pending |
-| PYMT-02 | — | Pending |
-| PYMT-03 | — | Pending |
-| PYMT-04 | — | Pending |
-| PYMT-05 | — | Pending |
-| PYMT-06 | — | Pending |
-| BIDS-01 | — | Pending |
-| BIDS-02 | — | Pending |
-| BIDS-03 | — | Pending |
-| BIDS-04 | — | Pending |
-| BIDS-05 | — | Pending |
-| BIDS-06 | — | Pending |
-| BIDS-07 | — | Pending |
-| QBKS-01 | — | Pending |
-| QBKS-02 | — | Pending |
-| QBKS-03 | — | Pending |
-| QBKS-04 | — | Pending |
-| QBKS-05 | — | Pending |
-| CALR-01 | — | Pending |
-| CALR-02 | — | Pending |
-| CALR-03 | — | Pending |
-| RWEB-01 | — | Pending |
-| RWEB-02 | — | Pending |
+| IDMT-01 | Phase 1 | Pending |
+| IDMT-02 | Phase 1 | Pending |
+| IDMT-03 | Phase 1 | Pending |
+| IDMT-04 | Phase 1 | Pending |
+| IDMT-05 | Phase 1 | Pending |
+| IDMT-06 | Phase 1 | Pending |
+| IDMT-07 | Phase 1 | Pending |
+| IDMT-08 | Phase 1 | Pending |
+| IDMT-09 | Phase 1 | Pending |
+| IDMT-10 | Phase 1 | Pending |
+| COMP-01 | Phase 2 | Pending |
+| COMP-02 | Phase 2 | Pending |
+| COMP-03 | Phase 2 | Pending |
+| COMP-04 | Phase 2 | Pending |
+| COMP-05 | Phase 2 | Pending |
+| PROJ-01 | Phase 3 | Pending |
+| PROJ-02 | Phase 3 | Pending |
+| PROJ-03 | Phase 3 | Pending |
+| PROJ-04 | Phase 3 | Pending |
+| PROJ-05 | Phase 3 | Pending |
+| PROJ-06 | Phase 3 | Pending |
+| BUDG-01 | Phase 4 | Pending |
+| BUDG-02 | Phase 4 | Pending |
+| BUDG-03 | Phase 4 | Pending |
+| BUDG-04 | Phase 4 | Pending |
+| BUDG-05 | Phase 4 | Pending |
+| BUDG-06 | Phase 4 | Pending |
+| CHNG-01 | Phase 5 | Pending |
+| CHNG-02 | Phase 5 | Pending |
+| CHNG-03 | Phase 5 | Pending |
+| CHNG-04 | Phase 5 | Pending |
+| CHNG-05 | Phase 5 | Pending |
+| PYMT-01 | Phase 6 | Pending |
+| PYMT-02 | Phase 6 | Pending |
+| PYMT-03 | Phase 6 | Pending |
+| PYMT-04 | Phase 6 | Pending |
+| PYMT-05 | Phase 6 | Pending |
+| PYMT-06 | Phase 6 | Pending |
+| BIDS-01 | Phase 7 | Pending |
+| BIDS-02 | Phase 7 | Pending |
+| BIDS-03 | Phase 7 | Pending |
+| BIDS-04 | Phase 7 | Pending |
+| BIDS-05 | Phase 7 | Pending |
+| BIDS-06 | Phase 7 | Pending |
+| BIDS-07 | Phase 7 | Pending |
+| QBKS-01 | Phase 8 | Pending |
+| QBKS-02 | Phase 8 | Pending |
+| QBKS-03 | Phase 8 | Pending |
+| QBKS-04 | Phase 8 | Pending |
+| QBKS-05 | Phase 8 | Pending |
+| CALR-01 | Phase 9 | Pending |
+| CALR-02 | Phase 9 | Pending |
+| CALR-03 | Phase 9 | Pending |
+| RWEB-01 | Phase 1 | Pending |
+| RWEB-02 | Phase 1 | Pending |
 
 **Coverage:**
 - v1 requirements: 53 total
-- Mapped to phases: 0
-- Unmapped: 53 ⚠️
+- Mapped to phases: 53
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-02-10*
-*Last updated: 2026-02-10 after initial definition*
+*Last updated: 2026-02-10 after roadmap creation*
