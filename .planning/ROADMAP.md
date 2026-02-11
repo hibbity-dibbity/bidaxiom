@@ -35,12 +35,17 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. All data requests are scoped to correct company schema with no cross-company data leakage
   5. Sensitive actions (financial changes, bid submissions, schedule updates) are immutably audit-logged
   6. Application is fully functional on desktop, tablet, and mobile browsers
-**Plans**: TBD
+**Plans**: 8 plans across 7 waves
 
 Plans:
-- [ ] 01-01: TBD during planning
-- [ ] 01-02: TBD during planning
-- [ ] 01-03: TBD during planning
+- [ ] 01-01: Monorepo scaffolding, Next.js + Fastify + Tailwind + shadcn/ui (wave 1)
+- [ ] 01-02: Clerk auth, sign-in/sign-up pages, MFA enforcement, DB schemas (wave 2)
+- [ ] 01-03: Tenant schema provisioning via Clerk webhooks (wave 3)
+- [ ] 01-04: tRPC setup with tenant context propagation (wave 4)
+- [ ] 01-05: CASL authorization — roles, abilities, middleware (wave 5)
+- [ ] 01-06: App shell — collapsible sidebar, company switcher, responsive layout (wave 5)
+- [ ] 01-07: Immutable audit logging with triggers (wave 6)
+- [ ] 01-08: End-to-end integration smoke test (wave 7)
 
 ### Phase 2: Company Setup & Configuration
 **Goal**: Companies can self-identify type and configure trades with CSI standards plus custom specialties
@@ -178,7 +183,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & Multi-Tenant Infrastructure | 0/TBD | Not started | - |
+| 1. Foundation & Multi-Tenant Infrastructure | 0/8 | Planned | - |
 | 2. Company Setup & Configuration | 0/TBD | Not started | - |
 | 3. Project Management Core | 0/TBD | Not started | - |
 | 4. Budget & Cost Tracking | 0/TBD | Not started | - |
