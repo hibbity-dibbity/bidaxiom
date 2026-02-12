@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-02-10)
 Phase: 3 of 9 (Project Management Core)
 Plan: 1 of 5 in current phase
 Status: In Progress
-Last activity: 2026-02-12 — Completed 03-02-PLAN.md (MinIO Storage Setup)
+Last activity: 2026-02-12 — Completed 03-01-PLAN.md (Project Management Schema)
 
 Progress: [██░░░░░░░░] 22% (2 of 9 phases, 1 of 5 plans in phase 3)
 
@@ -53,6 +53,9 @@ Recent decisions affecting current work:
 - **Clerk v5 compact JWT claims**: Org data is under `o` key (o.id, o.rol) not top-level org_id/org_role. Role needs `org:` prefix normalization for CASL.
 - **Lazy DB pool initialization**: Required due to ESM import hoisting — pool must be created after dotenv loads env vars.
 - **Per-app .env.local in monorepo**: Next.js only reads .env.local from its own directory, not monorepo root.
+- **Self-referential folder hierarchy without FK constraint**: Application-level validation enforces folder hierarchy integrity to avoid circular reference complexity (03-01)
+- **Project team membership scoping in CASL**: Abilities accept optional projectTeamMemberships array, extract project IDs, use $in operator for conditions. Empty array when undefined prevents unintended access (03-01)
+- **Denormalized document metadata for performance**: fileSize and contentType stored on documents table (in addition to document_versions) for fast list queries (03-01)
 - **MinIO for local S3-compatible storage**: Cloud-agnostic; same API works with AWS S3 or other S3-compatible providers in production (03-02)
 - **Tenant-prefixed storage keys**: Prevents cross-tenant document access via storage key format tenants/{tenantId}/projects/{projectId}/{uuid}/{fileName} (03-02)
 - **Pre-signed URLs with different expiry times**: Uploads expire in 15 minutes (short-lived), downloads expire in 1 hour (user convenience) (03-02)
@@ -68,7 +71,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-12 (Phase 3 in progress)
-Stopped at: Completed 03-02-PLAN.md. Ready for 03-03-PLAN.md (if exists) or next plan.
+Stopped at: Completed 03-01-PLAN.md. Ready for 03-02-PLAN.md or next plan.
 Resume file: None
 
 ---
