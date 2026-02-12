@@ -68,3 +68,11 @@ export const authProcedure = publicProcedure.use(requireAuth);
  * This is the primary procedure type for business logic.
  */
 export const protectedProcedure = authProcedure.use(requireTenant);
+
+/**
+ * Authorized procedure: requires auth + MFA + tenant + CASL abilities.
+ * Use for routes that need role-based permission checks.
+ * Procedure hierarchy: public -> auth -> protected -> authorized
+ */
+import { withAbilities } from "./middleware/authorize.js";
+export const authorizedProcedure = protectedProcedure.use(withAbilities);

@@ -1,16 +1,17 @@
 /**
  * User roles within an organization.
- * Derived from Clerk organization membership roles.
+ * Maps to Clerk organization membership roles.
+ * Custom roles (beyond admin/member) are configured in Clerk Dashboard.
  */
 export enum UserRole {
-  OWNER = "owner",
-  ADMIN = "admin",
-  PROJECT_MANAGER = "project_manager",
-  SUPERINTENDENT = "superintendent",
-  FOREMAN = "foreman",
-  ESTIMATOR = "estimator",
-  ACCOUNTANT = "accountant",
-  MEMBER = "member",
+  OWNER = "org:admin",
+  ADMIN = "org:admin",
+  PROJECT_MANAGER = "org:project_manager",
+  SUPERINTENDENT = "org:superintendent",
+  FOREMAN = "org:foreman",
+  ESTIMATOR = "org:estimator",
+  ACCOUNTANT = "org:accountant",
+  MEMBER = "org:member",
 }
 
 /**
@@ -34,3 +35,31 @@ export interface SessionContext {
   role: UserRole;
   hasMfa: boolean;
 }
+
+/**
+ * CASL action types for the application.
+ */
+export type AppActions =
+  | "create"
+  | "read"
+  | "update"
+  | "delete"
+  | "manage"
+  | "approve"
+  | "submit";
+
+/**
+ * CASL subject types for the application.
+ * Maps to domain entities.
+ */
+export type AppSubjects =
+  | "Project"
+  | "Budget"
+  | "ChangeOrder"
+  | "PayApplication"
+  | "Bid"
+  | "RFQ"
+  | "AuditLog"
+  | "User"
+  | "CompanySettings"
+  | "all";

@@ -13,6 +13,7 @@
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
+    "@casl/ability": "^6.8.0",
     "@clerk/backend": "^2.30.1",
     "@construction/shared": "*",
     "@fastify/cors": "^10.0.0",

@@ -2,6 +2,8 @@ export {
   UserRole,
   type OrgMembership,
   type SessionContext,
+  type AppActions,
+  type AppSubjects,
   type TenantContext,
   TenantStatus,
   AuditAction,
