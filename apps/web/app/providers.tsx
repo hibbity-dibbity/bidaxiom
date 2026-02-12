@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink } from "@trpc/react-query";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, useOrganization } from "@clerk/nextjs";
 import { trpc } from "@/lib/trpc";
 import { Toaster } from "@/components/ui/sonner";
+import { AbilityContext, defineAbilitiesFor } from "@/lib/abilities";
 
 /**
  * App-wide providers: tRPC + React Query + auth token forwarding.
@@ -16,7 +17,14 @@ import { Toaster } from "@/components/ui/sonner";
  * 3. Clerk auth token forwarding (Bearer token in tRPC requests)
  */
 export function Providers({ children }: { children: React.ReactNode }) {
-  const { getToken } = useAuth();
+  const { getToken, userId } = useAuth();
+  const { membership } = useOrganization();
+
+  // Build CASL abilities from Clerk org role
+  const abilities = useMemo(() => {
+    const role = membership?.role ?? "org:member";
+    return defineAbilitiesFor(role, userId ?? "");
+  }, [membership?.role, userId]);
 
   const [queryClient] = useState(
     () =>
@@ -51,8 +59,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>
-        {children}
-        <Toaster />
+        <AbilityContext.Provider value={abilities}>
+          {children}
+          <Toaster />
+        </AbilityContext.Provider>
       </QueryClientProvider>
     </trpc.Provider>
   );
