@@ -5,33 +5,34 @@
 See: .planning/PROJECT.md (updated 2026-02-10)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** Phase 2 - Company Setup & Configuration
+**Current focus:** Phase 3 - Project Management Core
 
 ## Current Position
 
-Phase: 2 of 9 (Company Setup & Configuration)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-02-12 — Completed 02-01-PLAN.md (company configuration backend)
+Phase: 3 of 9 (Project Management Core)
+Plan: 1 of 5 in current phase
+Status: In Progress
+Last activity: 2026-02-12 — Completed 03-02-PLAN.md (MinIO Storage Setup)
 
-Progress: [█░░░░░░░░░] 11% (1 of 9 phases)
+Progress: [██░░░░░░░░] 22% (2 of 9 phases, 1 of 5 plans in phase 3)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 5 min
-- Total execution time: 0.08 hours
+- Total plans completed: 3
+- Average duration: 4 min
+- Total execution time: 0.20 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 02 | 1 | 5 min | 5 min |
+| 02 | 2 | 10 min | 5 min |
+| 03 | 1 | 2 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-01 (5 min)
-- Trend: Just starting
+- Last 5 plans: 02-01 (5 min), 02-02 (5 min), 03-02 (2 min)
+- Trend: Improving
 
 *Updated after each plan completion*
 
@@ -49,6 +50,12 @@ Recent decisions affecting current work:
 - **Effective dating for company profile versioning**: Using validFrom/validTo pattern ensures all company configuration changes are preserved for historical context (02-01)
 - **TEXT column + Zod validation for companyType**: Avoids PostgreSQL ENUM migration complexity while maintaining type safety via shared Zod schema (02-01)
 - **Atomic transaction for version updates**: Close old version and insert new version in a single transaction to prevent race conditions (02-01)
+- **Clerk v5 compact JWT claims**: Org data is under `o` key (o.id, o.rol) not top-level org_id/org_role. Role needs `org:` prefix normalization for CASL.
+- **Lazy DB pool initialization**: Required due to ESM import hoisting — pool must be created after dotenv loads env vars.
+- **Per-app .env.local in monorepo**: Next.js only reads .env.local from its own directory, not monorepo root.
+- **MinIO for local S3-compatible storage**: Cloud-agnostic; same API works with AWS S3 or other S3-compatible providers in production (03-02)
+- **Tenant-prefixed storage keys**: Prevents cross-tenant document access via storage key format tenants/{tenantId}/projects/{projectId}/{uuid}/{fileName} (03-02)
+- **Pre-signed URLs with different expiry times**: Uploads expire in 15 minutes (short-lived), downloads expire in 1 hour (user convenience) (03-02)
 
 ### Pending Todos
 
@@ -56,12 +63,12 @@ None yet.
 
 ### Blockers/Concerns
 
-None yet.
+- Clerk webhook secret is still placeholder (`whsec_xxx`). Tenant auto-provisioning via webhooks won't work until configured with real secret from Clerk dashboard.
 
 ## Session Continuity
 
-Last session: 2026-02-12 (plan execution)
-Stopped at: 02-02-PLAN.md Task 1 complete (UI built and committed), awaiting Task 2 human verification of company configuration flow
+Last session: 2026-02-12 (Phase 3 in progress)
+Stopped at: Completed 03-02-PLAN.md. Ready for 03-03-PLAN.md (if exists) or next plan.
 Resume file: None
 
 ---
