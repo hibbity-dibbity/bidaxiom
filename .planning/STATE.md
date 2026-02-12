@@ -10,29 +10,29 @@ See: .planning/PROJECT.md (updated 2026-02-10)
 ## Current Position
 
 Phase: 3 of 9 (Project Management Core)
-Plan: 1 of 5 in current phase
+Plan: 3 of 5 in current phase
 Status: In Progress
-Last activity: 2026-02-12 — Completed 03-01-PLAN.md (Project Management Schema)
+Last activity: 2026-02-12 — Completed 03-03-PLAN.md (Project CRUD Operations)
 
-Progress: [██░░░░░░░░] 22% (2 of 9 phases, 1 of 5 plans in phase 3)
+Progress: [██░░░░░░░░] 25% (2 of 9 phases, 3 of 5 plans in phase 3)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
-- Average duration: 4 min
-- Total execution time: 0.20 hours
+- Total plans completed: 4
+- Average duration: 3 min
+- Total execution time: 0.25 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 02 | 2 | 10 min | 5 min |
-| 03 | 1 | 2 min | 2 min |
+| 03 | 2 | 5 min | 2.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-01 (5 min), 02-02 (5 min), 03-02 (2 min)
-- Trend: Improving
+- Last 5 plans: 02-01 (5 min), 02-02 (5 min), 03-02 (2 min), 03-03 (3 min)
+- Trend: Steady
 
 *Updated after each plan completion*
 
@@ -59,6 +59,8 @@ Recent decisions affecting current work:
 - **MinIO for local S3-compatible storage**: Cloud-agnostic; same API works with AWS S3 or other S3-compatible providers in production (03-02)
 - **Tenant-prefixed storage keys**: Prevents cross-tenant document access via storage key format tenants/{tenantId}/projects/{projectId}/{uuid}/{fileName} (03-02)
 - **Pre-signed URLs with different expiry times**: Uploads expire in 15 minutes (short-lived), downloads expire in 1 hour (user convenience) (03-02)
+- **Creating user auto-added as project_manager**: Ensures the person creating a project has immediate management permissions without separate assignment (03-03)
+- **Manual ability loading pattern for project-level permissions**: protectedProcedure with loadProjectAbilities() used instead of authorizedProcedure because abilities need project team membership context (03-03)
 
 ### Pending Todos
 
@@ -71,7 +73,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-12 (Phase 3 in progress)
-Stopped at: Completed 03-01-PLAN.md. Ready for 03-02-PLAN.md or next plan.
+Stopped at: Completed 03-03-PLAN.md. Ready for 03-04-PLAN.md or next plan.
 Resume file: None
 
 ---
