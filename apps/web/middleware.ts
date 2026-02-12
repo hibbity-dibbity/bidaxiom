@@ -16,14 +16,23 @@ const isPublicRoute = createRouteMatcher([
 const isMfaSetupRoute = createRouteMatcher(["/mfa-setup(.*)"]);
 
 /**
- * Clerk middleware with MFA enforcement.
+ * Whether to enforce MFA for all users.
+ *
+ * Requires Clerk Pro plan + custom session token with:
+ *   claim "isMfa" → value "{{user.two_factor_enabled}}"
+ *
+ * Set NEXT_PUBLIC_ENFORCE_MFA=true in .env.local when ready.
+ */
+const ENFORCE_MFA = process.env.NEXT_PUBLIC_ENFORCE_MFA === "true";
+
+/**
+ * Clerk middleware with optional MFA enforcement.
  *
  * Flow:
  * 1. Public routes pass through
  * 2. No userId → redirect to sign-in
- * 3. Check sessionClaims for MFA status
- * 4. No MFA + not on mfa-setup → redirect to /mfa-setup
- * 5. Otherwise, allow through
+ * 3. If MFA enforcement enabled: no MFA + not on mfa-setup → redirect to /mfa-setup
+ * 4. Otherwise, allow through
  *
  * IMPORTANT (CVE-2025-29927): This middleware is first-line defense only.
  * Auth MUST also be verified at the data access layer (tRPC context).
@@ -44,14 +53,13 @@ export default clerkMiddleware(async (auth, req) => {
     return NextResponse.redirect(signInUrl);
   }
 
-  // Check MFA status from custom session claim
-  // This requires configuring a custom session token in Clerk Dashboard:
-  // Add claim "isMfa" with value "{{user.two_factor_enabled}}"
-  const hasMfa = (sessionClaims as Record<string, unknown>)?.isMfa === true;
+  // MFA enforcement (requires Clerk Pro plan)
+  if (ENFORCE_MFA) {
+    const hasMfa = (sessionClaims as Record<string, unknown>)?.isMfa === true;
 
-  // If user hasn't enabled MFA and isn't on the MFA setup page
-  if (!hasMfa && !isMfaSetupRoute(req)) {
-    return NextResponse.redirect(new URL("/mfa-setup", req.url));
+    if (!hasMfa && !isMfaSetupRoute(req)) {
+      return NextResponse.redirect(new URL("/mfa-setup", req.url));
+    }
   }
 
   return NextResponse.next();
