@@ -71,12 +71,14 @@ Plans:
   2. User can view project dashboard showing budget status, schedule, and recent activity
   3. User can upload documents (contracts, invoices, specs) with folder structure and version control
   4. Project has explicit, audited access control (who can see/edit what) enforced on every request
-**Plans**: TBD
+**Plans**: 5 plans across 3 waves
 
 Plans:
-- [ ] 03-01: TBD during planning
-- [ ] 03-02: TBD during planning
-- [ ] 03-03: TBD during planning
+- [ ] 03-01-PLAN.md — DB schema, shared types, CASL abilities for projects (wave 1)
+- [ ] 03-02-PLAN.md — MinIO Docker service and S3 storage client (wave 1)
+- [ ] 03-03-PLAN.md — Project tRPC router with CRUD and team management (wave 2)
+- [ ] 03-04-PLAN.md — Document tRPC router with upload, versioning, folders (wave 2)
+- [ ] 03-05-PLAN.md — Frontend: project list, creation, dashboard, document browser (wave 3)
 
 ### Phase 4: Budget & Cost Tracking
 **Goal**: Users can track project budgets against actuals and committed costs with real-time forecasting
@@ -206,7 +208,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 |-------|----------------|--------|-----------|
 | 1. Foundation & Multi-Tenant Infrastructure | 8/8 | Complete | 2026-02-12 |
 | 2. Company Setup & Configuration | 0/2 | Planning complete | - |
-| 3. Project Management Core | 0/TBD | Not started | - |
+| 3. Project Management Core | 0/5 | Planning complete | - |
 | 4. Budget & Cost Tracking | 0/TBD | Not started | - |
 | 5. Change Order Management | 0/TBD | Not started | - |
 | 6. Payment Applications | 0/TBD | Not started | - |
