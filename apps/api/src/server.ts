@@ -1,7 +1,12 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
-import type { UserRole } from "@construction/shared";
+import {
+  fastifyTRPCPlugin,
+  type FastifyTRPCPluginOptions,
+} from "@trpc/server/adapters/fastify";
+import { appRouter, type AppRouter } from "./trpc/router.js";
+import { createContext } from "./trpc/context.js";
 
 const fastify = Fastify({
   logger: {
@@ -11,6 +16,7 @@ const fastify = Fastify({
         ? { target: "pino-pretty" }
         : undefined,
   },
+  maxParamLength: 5000,
 });
 
 // Register plugins
@@ -20,10 +26,23 @@ await fastify.register(cors, {
 });
 
 await fastify.register(helmet, {
-  contentSecurityPolicy: false, // Managed by Next.js in production
+  contentSecurityPolicy: false,
 });
 
-// Health check endpoint
+// Register tRPC
+await fastify.register(fastifyTRPCPlugin, {
+  prefix: "/trpc",
+  trpcOptions: {
+    router: appRouter,
+    createContext: ({ req }) =>
+      createContext({ req: req as unknown as Request }),
+    onError({ error, path }) {
+      console.error(`tRPC error on "${path}":`, error.message);
+    },
+  } satisfies FastifyTRPCPluginOptions<AppRouter>["trpcOptions"],
+});
+
+// Health check (non-tRPC, for load balancers)
 fastify.get("/health", async () => {
   return {
     status: "ok" as const,
@@ -53,7 +72,3 @@ for (const signal of signals) {
     process.exit(0);
   });
 }
-
-// Type check: ensure shared types are importable
-const _typeCheck: UserRole | undefined = undefined;
-void _typeCheck;
