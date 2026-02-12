@@ -12,7 +12,7 @@ A cloud-first construction management SaaS that enables GCs and subs to collabor
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation & Multi-Tenant Infrastructure** - Authentication, tenant isolation, audit logging, authorization
+- [x] **Phase 1: Foundation & Multi-Tenant Infrastructure** - Authentication, tenant isolation, audit logging, authorization
 - [ ] **Phase 2: Company Setup & Configuration** - Company types, trade configuration, CSI-based standards
 - [ ] **Phase 3: Project Management Core** - Project creation, access control, document management
 - [ ] **Phase 4: Budget & Cost Tracking** - Cost codes, budget vs actuals, committed costs, forecasting
@@ -21,6 +21,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 7: Bidding & Procurement** - RFQ issuance, bid collection, comparison, directory, versioning
 - [ ] **Phase 8: QuickBooks Integration** - OAuth connection, bi-directional sync, error handling
 - [ ] **Phase 9: Calendar Integration** - Google/Outlook sync, project milestones on calendars
+- [ ] **Phase 10: Custom Authentication Migration** - Replace Clerk with custom auth (JWT, sessions, MFA, org management)
 
 ## Phase Details
 
@@ -38,14 +39,14 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 8 plans across 7 waves
 
 Plans:
-- [ ] 01-01: Monorepo scaffolding, Next.js + Fastify + Tailwind + shadcn/ui (wave 1)
-- [ ] 01-02: Clerk auth, sign-in/sign-up pages, MFA enforcement, DB schemas (wave 2)
-- [ ] 01-03: Tenant schema provisioning via Clerk webhooks (wave 3)
-- [ ] 01-04: tRPC setup with tenant context propagation (wave 4)
-- [ ] 01-05: CASL authorization — roles, abilities, middleware (wave 5)
-- [ ] 01-06: App shell — collapsible sidebar, company switcher, responsive layout (wave 5)
-- [ ] 01-07: Immutable audit logging with triggers (wave 6)
-- [ ] 01-08: End-to-end integration smoke test (wave 7)
+- [x] 01-01: Monorepo scaffolding, Next.js + Fastify + Tailwind + shadcn/ui (wave 1)
+- [x] 01-02: Clerk auth, sign-in/sign-up pages, MFA enforcement, DB schemas (wave 2)
+- [x] 01-03: Tenant schema provisioning via Clerk webhooks (wave 3)
+- [x] 01-04: tRPC setup with tenant context propagation (wave 4)
+- [x] 01-05: CASL authorization — roles, abilities, middleware (wave 5)
+- [x] 01-06: App shell — collapsible sidebar, company switcher, responsive layout (wave 5)
+- [x] 01-07: Immutable audit logging with triggers (wave 6)
+- [x] 01-08: End-to-end integration smoke test (wave 7)
 
 ### Phase 2: Company Setup & Configuration
 **Goal**: Companies can self-identify type and configure trades with CSI standards plus custom specialties
@@ -176,14 +177,34 @@ Plans:
 - [ ] 09-01: TBD during planning
 - [ ] 09-02: TBD during planning
 
+### Phase 10: Custom Authentication Migration
+**Goal**: Replace Clerk with a custom-built authentication system to eliminate third-party dependency, reduce costs, and gain full control over auth flows
+**Depends on**: Phase 9 (all features complete before migration)
+**Requirements**: TBD during planning
+**Success Criteria** (what must be TRUE):
+  1. Custom JWT-based authentication replaces all Clerk auth flows (sign-in, sign-up, password reset)
+  2. Custom MFA implementation (TOTP authenticator app) replaces Clerk MFA
+  3. Custom organization/company management replaces Clerk Organizations
+  4. Custom invitation system replaces Clerk invitation flow
+  5. All existing user sessions are migrated without requiring re-registration
+  6. Role-based access control continues to work identically (CASL integration preserved)
+  7. Webhook-based tenant provisioning replaced with direct provisioning on org creation
+  8. Zero Clerk dependencies remain in codebase
+**Plans**: TBD
+
+Plans:
+- [ ] 10-01: TBD during planning
+- [ ] 10-02: TBD during planning
+- [ ] 10-03: TBD during planning
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & Multi-Tenant Infrastructure | 0/8 | Planned | - |
+| 1. Foundation & Multi-Tenant Infrastructure | 8/8 | Complete | 2026-02-12 |
 | 2. Company Setup & Configuration | 0/TBD | Not started | - |
 | 3. Project Management Core | 0/TBD | Not started | - |
 | 4. Budget & Cost Tracking | 0/TBD | Not started | - |
@@ -192,7 +213,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 7. Bidding & Procurement | 0/TBD | Not started | - |
 | 8. QuickBooks Integration | 0/TBD | Not started | - |
 | 9. Calendar Integration | 0/TBD | Not started | - |
+| 10. Custom Authentication Migration | 0/TBD | Not started | - |
 
 ---
 *Roadmap created: 2026-02-10*
-*Last updated: 2026-02-10*
+*Last updated: 2026-02-12*
