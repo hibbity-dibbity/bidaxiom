@@ -1,0 +1,60 @@
+import { resolveTenant } from "./resolve.js";
+import { createTenantDb } from "../db/client.js";
+import type { TenantSchema } from "../db/schema/tenant.js";
+
+/**
+ * Full tenant context for a request.
+ * Contains everything needed to scope queries to the correct tenant.
+ *
+ * IMPORTANT: Never store this in global/module scope.
+ * Always create fresh per request via buildTenantContext().
+ */
+export interface RequestTenantContext {
+  tenantId: string;
+  schemaName: string;
+  companyName: string;
+  userId: string;
+  db: ReturnType<typeof createTenantDb>["db"];
+  schema: TenantSchema;
+}
+
+/**
+ * Build a request-scoped tenant context from Clerk session data.
+ *
+ * SECURITY: Tenant ID is NEVER derived from frontend request.
+ * It is always resolved from the authenticated Clerk session's org ID.
+ *
+ * @param clerkOrgId - From authenticated Clerk session (not from request params)
+ * @param clerkUserId - From authenticated Clerk session
+ * @returns Full tenant context with scoped DB client
+ * @throws Error with code TENANT_NOT_FOUND if org has no provisioned schema
+ */
+export async function buildTenantContext(
+  clerkOrgId: string,
+  clerkUserId: string
+): Promise<RequestTenantContext> {
+  const tenant = await resolveTenant(clerkOrgId);
+
+  if (!tenant) {
+    const error = new Error(
+      `Tenant not found for org ${clerkOrgId}. Schema may not be provisioned yet.`
+    );
+    (error as Error & { code: string }).code = "TENANT_NOT_FOUND";
+    throw error;
+  }
+
+  const tenantDb = createTenantDb(tenant.schemaName);
+
+  return {
+    tenantId: tenant.id,
+    schemaName: tenant.schemaName,
+    companyName: tenant.name,
+    userId: clerkUserId,
+    db: tenantDb.db,
+    schema: {
+      schema: tenantDb.schema,
+      auditLogs: tenantDb.auditLogs,
+      userProfiles: tenantDb.userProfiles,
+    },
+  };
+}
