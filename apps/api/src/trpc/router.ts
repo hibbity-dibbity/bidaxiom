@@ -2,6 +2,7 @@ import { router } from "./trpc.js";
 import { healthRouter } from "./routers/health.js";
 import { tenantRouter } from "./routers/tenant.js";
 import { auditRouter } from "./routers/audit.js";
+import { companyRouter } from "./routers/company.js";
 
 /**
  * Root application router.
@@ -14,6 +15,7 @@ export const appRouter = router({
   health: healthRouter,
   tenant: tenantRouter,
   audit: auditRouter,
+  company: companyRouter,
 });
 
 /**
