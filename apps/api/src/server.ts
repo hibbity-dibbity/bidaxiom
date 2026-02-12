@@ -1,3 +1,10 @@
+import { config } from "dotenv";
+import { resolve } from "path";
+
+// Load .env.local from project root (two levels up from apps/api)
+config({ path: resolve(process.cwd(), "../../.env.local") });
+config({ path: resolve(process.cwd(), "../../.env") });
+
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
@@ -34,8 +41,7 @@ await fastify.register(fastifyTRPCPlugin, {
   prefix: "/trpc",
   trpcOptions: {
     router: appRouter,
-    createContext: ({ req }) =>
-      createContext({ req: req as unknown as Request }),
+    createContext: ({ req }) => createContext({ req }),
     onError({ error, path }) {
       console.error(`tRPC error on "${path}":`, error.message);
     },

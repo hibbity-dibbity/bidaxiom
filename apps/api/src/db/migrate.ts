@@ -1,4 +1,10 @@
+import { config } from "dotenv";
+import { resolve } from "path";
 import pg from "pg";
+
+// Load .env.local from project root
+config({ path: resolve(process.cwd(), "../../.env.local") });
+config({ path: resolve(process.cwd(), "../../.env") });
 
 const { Pool } = pg;
 

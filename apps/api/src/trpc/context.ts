@@ -14,7 +14,7 @@ export interface Context {
 }
 
 interface CreateContextOpts {
-  req: Request;
+  req: { headers: Record<string, string | string[] | undefined> };
 }
 
 /**
@@ -28,7 +28,9 @@ interface CreateContextOpts {
 export async function createContext(
   opts: CreateContextOpts
 ): Promise<Context> {
-  const authHeader = opts.req.headers.get("authorization");
+  // Support both Fastify (plain object headers) and Web API (Headers.get())
+  const rawAuth = opts.req.headers["authorization"] ?? opts.req.headers["Authorization"];
+  const authHeader = Array.isArray(rawAuth) ? rawAuth[0] : rawAuth;
   const token = authHeader?.replace("Bearer ", "");
 
   // No token = unauthenticated
