@@ -56,6 +56,12 @@ export async function buildTenantContext(
       auditLogs: tenantDb.auditLogs,
       userProfiles: tenantDb.userProfiles,
       companyProfiles: tenantDb.companyProfiles,
+      projects: tenantDb.projects,
+      projectTeamMembers: tenantDb.projectTeamMembers,
+      projectPhases: tenantDb.projectPhases,
+      folders: tenantDb.folders,
+      documents: tenantDb.documents,
+      documentVersions: tenantDb.documentVersions,
     },
   };
 }

@@ -136,6 +136,117 @@ export async function provisionTenantSchema(
         WHERE valid_to IS NULL
       `);
 
+      // Create projects table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".projects (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          name TEXT NOT NULL,
+          description TEXT,
+          location TEXT,
+          project_type TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'active',
+          start_date TIMESTAMPTZ,
+          end_date TIMESTAMPTZ,
+          budget NUMERIC(15, 2),
+          cost_codes JSONB NOT NULL DEFAULT '[]'::jsonb,
+          metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+          created_by TEXT NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      // Index for fast active projects lookups
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_projects_status
+        ON "${schemaName}".projects(status)
+        WHERE status = 'active'
+      `);
+
+      // Create project_team_members table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".project_team_members (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          project_id UUID NOT NULL REFERENCES "${schemaName}".projects(id) ON DELETE CASCADE,
+          user_id TEXT NOT NULL,
+          role TEXT NOT NULL,
+          assigned_by TEXT NOT NULL,
+          assigned_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          UNIQUE(project_id, user_id)
+        )
+      `);
+
+      // Index for fast team membership lookups
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_project_team_userId
+        ON "${schemaName}".project_team_members(user_id)
+      `);
+
+      // Create project_phases table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".project_phases (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          project_id UUID NOT NULL REFERENCES "${schemaName}".projects(id) ON DELETE CASCADE,
+          name TEXT NOT NULL,
+          order_index INTEGER NOT NULL,
+          status TEXT NOT NULL DEFAULT 'pending',
+          start_date TIMESTAMPTZ,
+          end_date TIMESTAMPTZ,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      // Create folders table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".folders (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          project_id UUID NOT NULL REFERENCES "${schemaName}".projects(id) ON DELETE CASCADE,
+          parent_id UUID,
+          name TEXT NOT NULL,
+          description TEXT,
+          order_index INTEGER NOT NULL DEFAULT 0,
+          created_by TEXT NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      // Create documents table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".documents (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          project_id UUID NOT NULL REFERENCES "${schemaName}".projects(id) ON DELETE CASCADE,
+          folder_id UUID REFERENCES "${schemaName}".folders(id) ON DELETE SET NULL,
+          name TEXT NOT NULL,
+          current_version_id UUID,
+          file_size INTEGER,
+          content_type TEXT,
+          created_by TEXT NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      // Index for fast document listing by project and folder
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_documents_project_folder
+        ON "${schemaName}".documents(project_id, folder_id)
+      `);
+
+      // Create document_versions table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".document_versions (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          document_id UUID NOT NULL REFERENCES "${schemaName}".documents(id) ON DELETE CASCADE,
+          version_number INTEGER NOT NULL,
+          storage_key TEXT NOT NULL,
+          file_size INTEGER NOT NULL,
+          content_type TEXT NOT NULL,
+          uploaded_by TEXT NOT NULL,
+          uploaded_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          change_notes TEXT
+        )
+      `);
+
       // Register tenant in public schema
       const insertResult = await client.query(
         `INSERT INTO tenants (schema_name, clerk_org_id, name, status)
