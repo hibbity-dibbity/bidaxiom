@@ -31,15 +31,18 @@ export default function SettingsPage() {
           </p>
         </Link>
 
-        <div className="rounded-lg border bg-card p-6 opacity-50 cursor-not-allowed">
+        <Link
+          href="/settings/company"
+          className="rounded-lg border bg-card p-6 hover:shadow-sm transition-shadow"
+        >
           <div className="flex items-center gap-3 mb-2">
-            <Building2 className="h-5 w-5 text-muted-foreground" />
+            <Building2 className="h-5 w-5 text-primary" />
             <h2 className="text-lg font-semibold">Company Profile</h2>
           </div>
           <p className="text-sm text-muted-foreground">
-            Company information and branding (Coming Soon)
+            Configure company type and trade specialties
           </p>
-        </div>
+        </Link>
       </div>
     </div>
   );

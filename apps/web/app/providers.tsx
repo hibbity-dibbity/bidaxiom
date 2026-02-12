@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink } from "@trpc/react-query";
 import { useAuth } from "@clerk/nextjs";
 import { trpc } from "@/lib/trpc";
+import { Toaster } from "@/components/ui/sonner";
 
 /**
  * App-wide providers: tRPC + React Query + auth token forwarding.
@@ -51,6 +52,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>
         {children}
+        <Toaster />
       </QueryClientProvider>
     </trpc.Provider>
   );
