@@ -14,10 +14,18 @@ export type AppAbility = PureAbility<[AppActions, AppSubjects]>;
  *
  * @param role - Clerk organization role (e.g., "org:admin", "org:member")
  * @param userId - Clerk user ID (for ownership-based rules)
+ * @param projectTeamMemberships - Optional array of project team memberships for project-level scoping
  * @returns CASL Ability instance
  */
-export function defineAbilitiesFor(role: string, userId: string): AppAbility {
+export function defineAbilitiesFor(
+  role: string,
+  userId: string,
+  projectTeamMemberships?: Array<{ projectId: string; role: string }>
+): AppAbility {
   const { can, cannot, build } = new AbilityBuilder<AppAbility>(PureAbility);
+
+  // Extract project IDs from team memberships for scoping
+  const userProjectIds = projectTeamMemberships?.map(t => t.projectId) ?? [];
 
   switch (role) {
     case "org:admin":
@@ -26,10 +34,13 @@ export function defineAbilitiesFor(role: string, userId: string): AppAbility {
       break;
 
     case "org:project_manager":
-      can("manage", "Project");
+      can("read", "Project"); // Can list all projects
+      can("manage", "Project", { id: { $in: userProjectIds } }); // Can manage assigned projects
       can("manage", "Budget");
       can("manage", "ChangeOrder");
       can("manage", "PayApplication");
+      can("manage", "Document", { projectId: { $in: userProjectIds } });
+      can("manage", "Folder", { projectId: { $in: userProjectIds } });
       can("read", "Bid");
       can("read", "RFQ");
       can("read", "AuditLog");
@@ -38,27 +49,33 @@ export function defineAbilitiesFor(role: string, userId: string): AppAbility {
       break;
 
     case "org:accountant":
+      can("read", "Project", { id: { $in: userProjectIds } });
       can("manage", "Budget");
       can("manage", "PayApplication");
+      can("manage", "Document", { projectId: { $in: userProjectIds } });
+      can("manage", "Folder", { projectId: { $in: userProjectIds } });
       can("read", "ChangeOrder");
-      can("read", "Project");
       can("read", "AuditLog");
       can("read", "User");
       cannot("manage", "CompanySettings");
       break;
 
     case "org:estimator":
+      can("read", "Project", { id: { $in: userProjectIds } });
       can("manage", "Bid");
       can("manage", "RFQ");
-      can("read", "Project");
       can("read", "Budget");
+      can("read", "Document", { projectId: { $in: userProjectIds } });
+      can("read", "Folder", { projectId: { $in: userProjectIds } });
       can("read", "User");
       cannot("manage", "CompanySettings");
       break;
 
     case "org:superintendent":
-      can("read", "Project");
-      can("update", "Project"); // Will refine with conditions when we have project entity
+      can("read", "Project", { id: { $in: userProjectIds } });
+      can("update", "Project", { id: { $in: userProjectIds } });
+      can("manage", "Document", { projectId: { $in: userProjectIds } });
+      can("manage", "Folder", { projectId: { $in: userProjectIds } });
       can("read", "Budget");
       can("read", "ChangeOrder");
       can("read", "User");
@@ -67,7 +84,9 @@ export function defineAbilitiesFor(role: string, userId: string): AppAbility {
       break;
 
     case "org:foreman":
-      can("read", "Project");
+      can("read", "Project", { id: { $in: userProjectIds } });
+      can("read", "Document", { projectId: { $in: userProjectIds } });
+      can("read", "Folder", { projectId: { $in: userProjectIds } });
       can("read", "User");
       cannot("manage", "CompanySettings");
       cannot("delete", "all");
@@ -75,8 +94,10 @@ export function defineAbilitiesFor(role: string, userId: string): AppAbility {
 
     case "org:member":
     default:
-      // Member: read-only access to basic resources
-      can("read", "Project");
+      // Member: read-only access to basic resources they're assigned to
+      can("read", "Project", { id: { $in: userProjectIds } });
+      can("read", "Document", { projectId: { $in: userProjectIds } });
+      can("read", "Folder", { projectId: { $in: userProjectIds } });
       can("read", "Budget");
       can("read", "Bid");
       break;

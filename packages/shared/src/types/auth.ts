@@ -62,4 +62,7 @@ export type AppSubjects =
   | "AuditLog"
   | "User"
   | "CompanySettings"
+  | "Document"
+  | "Folder"
+  | "ProjectTeam"
   | "all";
