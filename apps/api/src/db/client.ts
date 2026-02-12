@@ -6,26 +6,54 @@ import { createTenantSchema, type TenantSchema } from "./schema/tenant.js";
 const { Pool } = pg;
 
 /**
- * Connection pool for the public schema.
- * Max 20 connections shared across all requests.
+ * Lazy-initialized connection pool for the public schema.
+ * Deferred to avoid ESM import hoisting reading process.env.DATABASE_URL
+ * before dotenv has loaded environment variables.
  */
-export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
-});
+let _pool: InstanceType<typeof Pool> | null = null;
 
-// Log connection errors (don't crash the process)
-pool.on("error", (err) => {
-  console.error("Unexpected database pool error:", err);
+export function getPool(): InstanceType<typeof Pool> {
+  if (!_pool) {
+    _pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 5000,
+    });
+    _pool.on("error", (err) => {
+      console.error("Unexpected database pool error:", err);
+    });
+  }
+  return _pool;
+}
+
+/** @deprecated Use getPool() for new code. Kept for backwards compat. */
+export const pool = new Proxy({} as InstanceType<typeof Pool>, {
+  get(_target, prop, receiver) {
+    return Reflect.get(getPool(), prop, receiver);
+  },
 });
 
 /**
  * Drizzle instance for public schema queries.
  * Use this for tenant registry, user mappings, and cross-tenant queries.
+ * Lazy-initialized via proxy to defer pool creation until first query.
  */
-export const db = drizzle(pool, { schema: publicSchema });
+let _db: ReturnType<typeof drizzle<typeof publicSchema>> | null = null;
+
+export function getDb() {
+  if (!_db) {
+    _db = drizzle(getPool(), { schema: publicSchema });
+  }
+  return _db;
+}
+
+/** @deprecated Use getDb() for new code. Kept for backwards compat. */
+export const db = new Proxy({} as ReturnType<typeof drizzle<typeof publicSchema>>, {
+  get(_target, prop, receiver) {
+    return Reflect.get(getDb(), prop, receiver);
+  },
+});
 
 /**
  * Cache of tenant schema instances to avoid re-creating on every request.
@@ -56,7 +84,7 @@ export function createTenantDb(schemaName: string) {
   const tenantSchema = getTenantSchema(schemaName);
 
   // Use same pool but queries will reference tenant-specific schema tables
-  const tenantDb = drizzle(pool);
+  const tenantDb = drizzle(getPool());
 
   return {
     db: tenantDb,
@@ -68,5 +96,7 @@ export function createTenantDb(schemaName: string) {
  * Graceful pool shutdown for clean exits.
  */
 export async function closePool(): Promise<void> {
-  await pool.end();
+  if (_pool) {
+    await _pool.end();
+  }
 }

@@ -25,9 +25,11 @@ export default function CompanySettingsPage() {
   const abilities = useAbilities();
   const canManage = abilities.can("manage", "CompanySettings");
 
+  const utils = trpc.useUtils();
   const { data, isLoading } = trpc.company.getCurrent.useQuery();
   const updateMutation = trpc.company.update.useMutation({
     onSuccess: () => {
+      utils.company.getCurrent.invalidate();
       toast.success("Company configuration saved");
     },
     onError: (error) => {

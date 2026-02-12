@@ -22,12 +22,20 @@ const requireAuth = middleware(async ({ ctx, next }) => {
 });
 
 /**
- * Middleware: require MFA + active tenant.
+ * Whether to enforce MFA for all API requests.
+ * Mirrors NEXT_PUBLIC_ENFORCE_MFA on the frontend.
+ * Requires Clerk Pro plan + custom session token claim "isMfa".
+ */
+const ENFORCE_MFA = process.env.ENFORCE_MFA === "true";
+
+/**
+ * Middleware: require active tenant (+ optional MFA).
  * Must be chained after requireAuth.
- * Throws FORBIDDEN if MFA not enabled or no active organization.
+ * Throws FORBIDDEN if MFA enforcement is on and MFA not enabled,
+ * or if no active organization.
  */
 const requireTenant = middleware(async ({ ctx, next }) => {
-  if (!ctx.hasMfa) {
+  if (ENFORCE_MFA && !ctx.hasMfa) {
     throw new TRPCError({
       code: "FORBIDDEN",
       message: "Multi-factor authentication is required",

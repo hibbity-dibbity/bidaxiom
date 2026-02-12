@@ -56,12 +56,15 @@ export async function createContext(
     });
 
     const userId = verified.sub;
-    const orgId = (verified as Record<string, unknown>).org_id as
-      | string
-      | undefined;
-    const orgRole = (verified as Record<string, unknown>).org_role as
-      | string
-      | undefined;
+    const claims = verified as Record<string, unknown>;
+
+    // Clerk v5+ uses compact JWT claims: org data under `o` key
+    // Clerk v4 used top-level `org_id` / `org_role`
+    const orgClaims = claims.o as { id?: string; rol?: string } | undefined;
+    const orgId = orgClaims?.id ?? (claims.org_id as string | undefined);
+    // Compact JWT uses short role names ("admin"), normalize to "org:admin" format
+    const rawRole = orgClaims?.rol ?? (claims.org_role as string | undefined);
+    const orgRole = rawRole && !rawRole.startsWith("org:") ? `org:${rawRole}` : rawRole;
     const hasMfa =
       ((verified as Record<string, unknown>).isMfa as boolean) ?? false;
 
