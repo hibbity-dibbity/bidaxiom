@@ -3,31 +3,24 @@ import pg from "pg";
 import { handleClerkWebhook } from "./clerk.js";
 
 /**
- * Register webhook routes on the Fastify instance.
+ * Webhook routes Fastify plugin.
  *
- * IMPORTANT: Webhook routes need raw body access for signature verification.
- * Svix requires the exact raw body string to verify the HMAC signature.
+ * Registered via fastify.register() so the custom content-type parser
+ * is scoped to this plugin and doesn't interfere with tRPC.
  */
-export async function registerWebhookRoutes(
+async function webhookRoutes(
   fastify: FastifyInstance,
-  pool: pg.Pool
+  opts: { pool: pg.Pool }
 ): Promise<void> {
-  // Add raw body content type parser for webhook routes
+  const { pool } = opts;
+
+  // Custom parser: keep raw string body for svix signature verification.
+  // Scoped to this plugin — does NOT affect tRPC or other routes.
   fastify.addContentTypeParser(
     "application/json",
     { parseAs: "string" },
-    (req, body, done) => {
-      // For webhook routes, keep the raw string body
-      if (typeof req.url === "string" && req.url.includes("/webhooks/")) {
-        done(null, body);
-      } else {
-        // For other routes, parse normally
-        try {
-          done(null, JSON.parse(body as string));
-        } catch (err) {
-          done(err as Error);
-        }
-      }
+    (_req, body, done) => {
+      done(null, body);
     }
   );
 
@@ -35,7 +28,7 @@ export async function registerWebhookRoutes(
    * POST /api/webhooks/clerk
    *
    * Receives Clerk webhook events for organization lifecycle.
-   * Body must be raw string for svix signature verification.
+   * Body is raw string for svix signature verification.
    */
   fastify.post("/api/webhooks/clerk", async (request, reply) => {
     try {
@@ -68,3 +61,9 @@ export async function registerWebhookRoutes(
     }
   });
 }
+
+/**
+ * Export as Fastify plugin. NOT using fp() so the content-type parser
+ * stays encapsulated within this plugin scope.
+ */
+export { webhookRoutes };

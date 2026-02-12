@@ -14,6 +14,8 @@ import {
 } from "@trpc/server/adapters/fastify";
 import { appRouter, type AppRouter } from "./trpc/router.js";
 import { createContext } from "./trpc/context.js";
+import { webhookRoutes } from "./webhooks/routes.js";
+import { pool } from "./db/client.js";
 
 const fastify = Fastify({
   logger: {
@@ -47,6 +49,9 @@ await fastify.register(fastifyTRPCPlugin, {
     },
   } satisfies FastifyTRPCPluginOptions<AppRouter>["trpcOptions"],
 });
+
+// Register webhook routes (scoped plugin — custom parser won't affect tRPC)
+await fastify.register(webhookRoutes, { pool });
 
 // Health check (non-tRPC, for load balancers)
 fastify.get("/health", async () => {
