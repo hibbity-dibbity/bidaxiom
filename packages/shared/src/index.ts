@@ -8,7 +8,7 @@ export {
   TenantStatus,
   AuditAction,
   type AuditLogEntry,
-} from "./types/index.js";
+} from "./types/index";
 
 export {
   CompanyType,
@@ -18,4 +18,4 @@ export {
   companyConfigSchema,
   tradesConfigSchema,
   customTradeSchema,
-} from "./types/company.js";
+} from "./types/company";

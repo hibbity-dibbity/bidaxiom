@@ -4,11 +4,11 @@ export {
   type SessionContext,
   type AppActions,
   type AppSubjects,
-} from "./auth.js";
+} from "./auth";
 
 export {
   type TenantContext,
   TenantStatus,
   AuditAction,
   type AuditLogEntry,
-} from "./tenant.js";
+} from "./tenant";
