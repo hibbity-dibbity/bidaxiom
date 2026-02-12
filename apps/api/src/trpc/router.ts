@@ -3,12 +3,13 @@ import { healthRouter } from "./routers/health.js";
 import { tenantRouter } from "./routers/tenant.js";
 import { auditRouter } from "./routers/audit.js";
 import { companyRouter } from "./routers/company.js";
+import { projectRouter } from "./routers/project.js";
 
 /**
  * Root application router.
  * All sub-routers are merged here.
  *
- * Future routers (projects, budgets, bids) will use withAuditLog
+ * Future routers (budgets, bids) will use withAuditLog
  * middleware for sensitive actions (financial changes, bid submissions, etc.)
  */
 export const appRouter = router({
@@ -16,6 +17,7 @@ export const appRouter = router({
   tenant: tenantRouter,
   audit: auditRouter,
   company: companyRouter,
+  project: projectRouter,
 });
 
 /**
