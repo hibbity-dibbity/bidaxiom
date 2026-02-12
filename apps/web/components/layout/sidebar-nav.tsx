@@ -27,7 +27,7 @@ const navItems = [
     label: "Projects",
     href: "/projects",
     icon: FolderKanban,
-    active: false,
+    active: true,
   },
   {
     label: "Bidding",
