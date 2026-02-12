@@ -107,6 +107,26 @@ export async function migrateTenantSchema(
     );
   `);
 
+  // Create company_profiles table with effective dating
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS "${schemaName}".company_profiles (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      company_type TEXT NOT NULL,
+      trades_config JSONB NOT NULL DEFAULT '{"csiDivisions":[],"customTrades":[]}'::jsonb,
+      valid_from TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      valid_to TIMESTAMPTZ,
+      created_by TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
+  // Index for fast current-version lookups
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_company_profiles_current
+    ON "${schemaName}".company_profiles(valid_to)
+    WHERE valid_to IS NULL;
+  `);
+
   console.log(`Tenant schema ${schemaName} migration complete.`);
 }
 

@@ -5,6 +5,7 @@ import {
   timestamp,
   jsonb,
 } from "drizzle-orm/pg-core";
+import type { TradesConfig } from "@construction/shared";
 
 /**
  * Creates a tenant-scoped schema with all tenant-specific tables.
@@ -50,10 +51,34 @@ export function createTenantSchema(schemaName: string) {
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   });
 
+  /**
+   * Company configuration profiles with effective dating.
+   * Tracks company type (GC/sub/both) and trade capabilities over time.
+   *
+   * Effective dating pattern:
+   * - validFrom/validTo define the time range this version is active
+   * - Current version has validTo = NULL
+   * - Historical versions have validTo set when a new version is created
+   * - Supports point-in-time queries for historical context (e.g., company config at bid date)
+   */
+  const companyProfiles = schema.table("company_profiles", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyType: text("company_type").notNull(), // gc_only, sub_only, both
+    tradesConfig: jsonb("trades_config")
+      .notNull()
+      .$type<TradesConfig>()
+      .default({ csiDivisions: [], customTrades: [] }),
+    validFrom: timestamp("valid_from", { withTimezone: true }).defaultNow().notNull(),
+    validTo: timestamp("valid_to", { withTimezone: true }), // NULL = current active version
+    createdBy: text("created_by").notNull(), // Clerk user ID
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
   return {
     schema,
     auditLogs,
     userProfiles,
+    companyProfiles,
   };
 }
 

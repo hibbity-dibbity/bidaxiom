@@ -55,6 +55,7 @@ export async function buildTenantContext(
       schema: tenantDb.schema,
       auditLogs: tenantDb.auditLogs,
       userProfiles: tenantDb.userProfiles,
+      companyProfiles: tenantDb.companyProfiles,
     },
   };
 }

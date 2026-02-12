@@ -9,3 +9,13 @@ export {
   AuditAction,
   type AuditLogEntry,
 } from "./types/index.js";
+
+export {
+  CompanyType,
+  type CompanyTypeValue,
+  type TradesConfig,
+  type CompanyConfig,
+  companyConfigSchema,
+  tradesConfigSchema,
+  customTradeSchema,
+} from "./types/company.js";
