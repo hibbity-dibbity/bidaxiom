@@ -56,11 +56,11 @@ Plans:
   1. Company can self-identify as GC-only, Sub-only, or Both (hybrid)
   2. Company can configure trades from CSI-based standard list plus add custom specialty trades
   3. Trade configuration affects RFQ filtering and bid categorization but never mutates historical data
-**Plans**: TBD
+**Plans**: 2 plans across 2 waves
 
 Plans:
-- [ ] 02-01: TBD during planning
-- [ ] 02-02: TBD during planning
+- [ ] 02-01-PLAN.md — Backend: DB schema with effective dating, CSI seed data, company tRPC router (wave 1)
+- [ ] 02-02-PLAN.md — Frontend: Company setup UI with type selection, trade combobox, custom trades (wave 2)
 
 ### Phase 3: Project Management Core
 **Goal**: Users can create projects with team access controls and manage versioned documents
@@ -205,7 +205,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Multi-Tenant Infrastructure | 8/8 | Complete | 2026-02-12 |
-| 2. Company Setup & Configuration | 0/TBD | Not started | - |
+| 2. Company Setup & Configuration | 0/2 | Planning complete | - |
 | 3. Project Management Core | 0/TBD | Not started | - |
 | 4. Budget & Cost Tracking | 0/TBD | Not started | - |
 | 5. Change Order Management | 0/TBD | Not started | - |
