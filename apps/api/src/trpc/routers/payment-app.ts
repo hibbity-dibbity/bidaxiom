@@ -183,10 +183,17 @@ export const paymentAppRouter = router({
       }
 
       // Get retainage config from company profile
-      // TODO: Add retainageConfig to companyProfiles JSONB schema
-      // For now, use default retainage configuration
-      const retainageConfig = {
+      const [companyProfile] = await db
+        .select({
+          retainageConfig: schema.companyProfiles.retainageConfig,
+        })
+        .from(schema.companyProfiles)
+        .where(isNull(schema.companyProfiles.validTo))
+        .limit(1);
+
+      const retainageConfig = companyProfile?.retainageConfig ?? {
         defaultRate: 10,
+        progressiveRates: [],
         releaseConditions: {
           substantialCompletion: true,
           punchListComplete: false,
@@ -677,6 +684,7 @@ export const paymentAppRouter = router({
               id: schema.paymentAppLineItems.id,
               sovItemId: schema.paymentAppLineItems.sovItemId,
               workCompletedThisPeriod: schema.paymentAppLineItems.workCompletedThisPeriod,
+              materialsStoredThisPeriod: schema.paymentAppLineItems.materialsStoredThisPeriod,
               budgetLineItemId: schema.sovItems.budgetLineItemId,
             })
             .from(schema.paymentAppLineItems)
@@ -686,15 +694,20 @@ export const paymentAppRouter = router({
             )
             .where(eq(schema.paymentAppLineItems.paymentAppId, input.paymentAppId));
 
-          // TODO(PYMT-06): Update budget actuals for each line item with budget reference
-          // This requires adding actualCost column to budget_line_items table
-          // For now, only lock the budget line items
+          // Update budget actuals and lock line items
+          // This implements PYMT-06: approved payment apps update budget actualCost
           for (const lineItem of lineItems) {
             if (lineItem.budgetLineItemId) {
-              // Lock budget line item to enforce change order workflow
+              // Calculate actual cost for this payment period (work this period + materials stored)
+              const actualCostThisPeriod =
+                Number(lineItem.workCompletedThisPeriod) +
+                Number(lineItem.materialsStoredThisPeriod);
+
+              // Increment actualCost atomically using SQL expression (prevents race conditions)
               await tx
                 .update(schema.budgetLineItems)
                 .set({
+                  actualCost: sql`${schema.budgetLineItems.actualCost} + ${actualCostThisPeriod}`,
                   isLocked: true,
                   lockedAt: new Date(),
                   lockedBy: userId,
