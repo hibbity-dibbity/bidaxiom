@@ -28,3 +28,5 @@ export {
   type QboEntityMapping,
   type QboSyncNotification,
 } from "./quickbooks";
+
+export * from "./document.js";
