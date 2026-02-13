@@ -163,11 +163,14 @@ Plans:
   3. Invoices and bills sync bi-directionally with QuickBooks
   4. User can view sync status and last successful sync timestamp
   5. Sync failures are queued for retry with user notification
-**Plans**: TBD
+**Plans**: 5 plans across 3 waves
 
 Plans:
-- [ ] 08-01: TBD during planning
-- [ ] 08-02: TBD during planning
+- [ ] 08-01-PLAN.md -- DB schema (3 QBO tables), shared types, CASL abilities (wave 1)
+- [ ] 08-02-PLAN.md -- OAuth module, token encryption, BullMQ queue, QBO client factory (wave 1)
+- [ ] 08-03-PLAN.md -- Sync workers, entity mappers (project/invoice/bill), CDC fallback (wave 2)
+- [ ] 08-04-PLAN.md -- tRPC quickbooks router, webhook handler, server registration (wave 2)
+- [ ] 08-05-PLAN.md -- Frontend: integrations settings page, sync status, OAuth callback (wave 3)
 
 ### Phase 9: Calendar Integration
 **Goal**: Users can connect calendars with bi-directional sync of project milestones
