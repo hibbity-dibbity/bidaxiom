@@ -16,6 +16,8 @@ import { appRouter, type AppRouter } from "./trpc/router.js";
 import { createContext } from "./trpc/context.js";
 import { webhookRoutes } from "./webhooks/routes.js";
 import { pool } from "./db/client.js";
+import { ensureBucket } from "./storage/client.js";
+import { startQboSyncWorker } from "./integrations/quickbooks/sync/workers.js";
 
 const fastify = Fastify({
   logger: {
@@ -52,6 +54,21 @@ await fastify.register(fastifyTRPCPlugin, {
 
 // Register webhook routes (scoped plugin — custom parser won't affect tRPC)
 await fastify.register(webhookRoutes, { pool });
+
+// Ensure S3 bucket exists (auto-create in local dev)
+try {
+  await ensureBucket();
+} catch (err) {
+  console.warn("S3 bucket initialization failed (MinIO may not be running):", err);
+}
+
+// Start QBO sync worker (processes background sync jobs)
+try {
+  startQboSyncWorker();
+  console.log("QBO sync worker started");
+} catch (err) {
+  console.warn("QBO sync worker failed to start (Redis may not be running):", err);
+}
 
 // Health check (non-tRPC, for load balancers)
 fastify.get("/health", async () => {
