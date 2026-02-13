@@ -78,6 +78,13 @@ export async function buildTenantContext(
       retainageHeld: tenantDb.retainageHeld,
       lienWaivers: tenantDb.lienWaivers,
       paymentAppApprovalSteps: tenantDb.paymentAppApprovalSteps,
+      subcontractorDirectory: tenantDb.subcontractorDirectory,
+      rfqs: tenantDb.rfqs,
+      rfqAmendments: tenantDb.rfqAmendments,
+      rfqInvitations: tenantDb.rfqInvitations,
+      bids: tenantDb.bids,
+      bidVersions: tenantDb.bidVersions,
+      bidLevelingNotes: tenantDb.bidLevelingNotes,
     },
   };
 }

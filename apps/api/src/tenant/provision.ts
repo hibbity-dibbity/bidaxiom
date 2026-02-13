@@ -664,6 +664,176 @@ export async function provisionTenantSchema(
         ON "${schemaName}".payment_app_approval_steps(payment_app_id)
       `);
 
+      // Create subcontractor_directory table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".subcontractor_directory (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          company_name TEXT NOT NULL,
+          contact_name TEXT,
+          contact_email TEXT,
+          contact_phone TEXT,
+          address TEXT,
+          trades JSONB NOT NULL DEFAULT '[]'::jsonb,
+          notes TEXT,
+          status TEXT NOT NULL DEFAULT 'active',
+          created_by TEXT NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      // Index for fast subcontractor directory lookup by status
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_subcontractor_directory_status
+        ON "${schemaName}".subcontractor_directory(status)
+      `);
+
+      // Create rfqs table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".rfqs (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          project_id UUID NOT NULL REFERENCES "${schemaName}".projects(id) ON DELETE CASCADE,
+          rfq_number TEXT NOT NULL,
+          title TEXT NOT NULL,
+          description TEXT,
+          scope_of_work TEXT NOT NULL,
+          trades JSONB NOT NULL DEFAULT '[]'::jsonb,
+          due_date TIMESTAMPTZ NOT NULL,
+          status TEXT NOT NULL DEFAULT 'draft',
+          issued_at TIMESTAMPTZ,
+          issued_by TEXT,
+          closed_at TIMESTAMPTZ,
+          attachment_ids JSONB DEFAULT '[]'::jsonb,
+          created_by TEXT NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      // Index for fast RFQ lookup by project
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_rfqs_project
+        ON "${schemaName}".rfqs(project_id)
+      `);
+
+      // Index for fast RFQ lookup by status
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_rfqs_status
+        ON "${schemaName}".rfqs(status)
+      `);
+
+      // Create rfq_amendments table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".rfq_amendments (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          rfq_id UUID NOT NULL REFERENCES "${schemaName}".rfqs(id) ON DELETE CASCADE,
+          amendment_number INTEGER NOT NULL,
+          description TEXT NOT NULL,
+          scope_changes TEXT,
+          due_date_change TIMESTAMPTZ,
+          created_by TEXT NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      // Index for fast RFQ amendments lookup
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_rfq_amendments_rfq
+        ON "${schemaName}".rfq_amendments(rfq_id)
+      `);
+
+      // Create rfq_invitations table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".rfq_invitations (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          rfq_id UUID NOT NULL REFERENCES "${schemaName}".rfqs(id) ON DELETE CASCADE,
+          subcontractor_id UUID REFERENCES "${schemaName}".subcontractor_directory(id) ON DELETE SET NULL,
+          external_email TEXT,
+          external_company_name TEXT,
+          status TEXT NOT NULL DEFAULT 'pending',
+          sent_at TIMESTAMPTZ,
+          viewed_at TIMESTAMPTZ,
+          responded_at TIMESTAMPTZ,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      // Index for fast RFQ invitations lookup
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_rfq_invitations_rfq
+        ON "${schemaName}".rfq_invitations(rfq_id)
+      `);
+
+      // Create bids table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".bids (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          rfq_id UUID NOT NULL REFERENCES "${schemaName}".rfqs(id) ON DELETE CASCADE,
+          invitation_id UUID REFERENCES "${schemaName}".rfq_invitations(id) ON DELETE SET NULL,
+          subcontractor_id UUID REFERENCES "${schemaName}".subcontractor_directory(id) ON DELETE SET NULL,
+          bidder_company_name TEXT NOT NULL,
+          bidder_contact_email TEXT,
+          current_version_id UUID,
+          status TEXT NOT NULL DEFAULT 'submitted',
+          submitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          awarded_at TIMESTAMPTZ,
+          awarded_by TEXT,
+          commitment_id TEXT,
+          notes TEXT,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      // Index for fast bids lookup by RFQ
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_bids_rfq
+        ON "${schemaName}".bids(rfq_id)
+      `);
+
+      // Create bid_versions table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".bid_versions (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          bid_id UUID NOT NULL REFERENCES "${schemaName}".bids(id) ON DELETE CASCADE,
+          version_number INTEGER NOT NULL,
+          total_amount NUMERIC(15,2) NOT NULL,
+          line_items JSONB NOT NULL,
+          scope_notes TEXT,
+          exclusions TEXT,
+          inclusions TEXT,
+          valid_until TIMESTAMPTZ,
+          submitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          trigger_amendment_id UUID REFERENCES "${schemaName}".rfq_amendments(id) ON DELETE SET NULL
+        )
+      `);
+
+      // Index for fast bid versions lookup
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_bid_versions_bid
+        ON "${schemaName}".bid_versions(bid_id)
+      `);
+
+      // Create bid_leveling_notes table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".bid_leveling_notes (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          rfq_id UUID NOT NULL REFERENCES "${schemaName}".rfqs(id) ON DELETE CASCADE,
+          bid_id UUID NOT NULL REFERENCES "${schemaName}".bids(id) ON DELETE CASCADE,
+          category TEXT NOT NULL,
+          note TEXT NOT NULL,
+          adjustment_amount NUMERIC(15,2),
+          created_by TEXT NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      // Index for fast bid leveling notes lookup by RFQ
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_bid_leveling_notes_rfq
+        ON "${schemaName}".bid_leveling_notes(rfq_id)
+      `);
+
       // Register tenant in public schema
       const insertResult = await client.query(
         `INSERT INTO tenants (schema_name, clerk_org_id, name, status)

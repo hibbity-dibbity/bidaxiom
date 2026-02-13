@@ -482,6 +482,141 @@ export function createTenantSchema(schemaName: string) {
     comments: text("comments"),
   });
 
+  /**
+   * Subcontractor directory
+   * Company's subcontractor contacts and trade capabilities
+   */
+  const subcontractorDirectory = schema.table("subcontractor_directory", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyName: text("company_name").notNull(),
+    contactName: text("contact_name"),
+    contactEmail: text("contact_email"),
+    contactPhone: text("contact_phone"),
+    address: text("address"),
+    trades: jsonb("trades").notNull().default([]).$type<number[]>(),
+    notes: text("notes"),
+    status: text("status").notNull().default("active"), // active, inactive, blacklisted
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * Request for Quotation (RFQ)
+   * Tracks RFQ issuance to subcontractors
+   */
+  const rfqs = schema.table("rfqs", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+    rfqNumber: text("rfq_number").notNull(),
+    title: text("title").notNull(),
+    description: text("description"),
+    scopeOfWork: text("scope_of_work").notNull(),
+    trades: jsonb("trades").notNull().default([]).$type<number[]>(),
+    dueDate: timestamp("due_date", { withTimezone: true }).notNull(),
+    status: text("status").notNull().default("draft"), // draft, issued, closed, awarded, cancelled
+    issuedAt: timestamp("issued_at", { withTimezone: true }),
+    issuedBy: text("issued_by"),
+    closedAt: timestamp("closed_at", { withTimezone: true }),
+    attachmentIds: jsonb("attachment_ids").default([]).$type<string[]>(),
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * RFQ amendments
+   * Immutable amendment trail for RFQs
+   */
+  const rfqAmendments = schema.table("rfq_amendments", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    rfqId: uuid("rfq_id").notNull().references(() => rfqs.id, { onDelete: "cascade" }),
+    amendmentNumber: integer("amendment_number").notNull(),
+    description: text("description").notNull(),
+    scopeChanges: text("scope_changes"),
+    dueDateChange: timestamp("due_date_change", { withTimezone: true }),
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * RFQ invitations
+   * Tracks which subs were invited to an RFQ
+   */
+  const rfqInvitations = schema.table("rfq_invitations", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    rfqId: uuid("rfq_id").notNull().references(() => rfqs.id, { onDelete: "cascade" }),
+    subcontractorId: uuid("subcontractor_id").references(() => subcontractorDirectory.id, { onDelete: "set null" }),
+    externalEmail: text("external_email"),
+    externalCompanyName: text("external_company_name"),
+    status: text("status").notNull().default("pending"), // pending, viewed, responded, declined
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    viewedAt: timestamp("viewed_at", { withTimezone: true }),
+    respondedAt: timestamp("responded_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * Bids
+   * Bid submissions from subcontractors
+   */
+  const bids = schema.table("bids", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    rfqId: uuid("rfq_id").notNull().references(() => rfqs.id, { onDelete: "cascade" }),
+    invitationId: uuid("invitation_id").references(() => rfqInvitations.id, { onDelete: "set null" }),
+    subcontractorId: uuid("subcontractor_id").references(() => subcontractorDirectory.id, { onDelete: "set null" }),
+    bidderCompanyName: text("bidder_company_name").notNull(),
+    bidderContactEmail: text("bidder_contact_email"),
+    currentVersionId: uuid("current_version_id"),
+    status: text("status").notNull().default("submitted"), // submitted, under_review, shortlisted, awarded, rejected, withdrawn
+    submittedAt: timestamp("submitted_at", { withTimezone: true }).defaultNow().notNull(),
+    awardedAt: timestamp("awarded_at", { withTimezone: true }),
+    awardedBy: text("awarded_by"),
+    commitmentId: text("commitment_id"), // TEXT reference to avoid circular FK
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * Bid versions
+   * Snapshot versioning for bids
+   */
+  const bidVersions = schema.table("bid_versions", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    bidId: uuid("bid_id").notNull().references(() => bids.id, { onDelete: "cascade" }),
+    versionNumber: integer("version_number").notNull(),
+    totalAmount: numeric("total_amount", { precision: 15, scale: 2 }).notNull(),
+    lineItems: jsonb("line_items").notNull().$type<Array<{
+      description: string;
+      quantity?: number;
+      unitPrice?: number;
+      amount: number;
+      costCodeId?: number;
+    }>>(),
+    scopeNotes: text("scope_notes"),
+    exclusions: text("exclusions"),
+    inclusions: text("inclusions"),
+    validUntil: timestamp("valid_until", { withTimezone: true }),
+    submittedAt: timestamp("submitted_at", { withTimezone: true }).defaultNow().notNull(),
+    triggerAmendmentId: uuid("trigger_amendment_id").references(() => rfqAmendments.id, { onDelete: "set null" }),
+  });
+
+  /**
+   * Bid leveling notes
+   * Scope leveling annotations for bid comparison
+   */
+  const bidLevelingNotes = schema.table("bid_leveling_notes", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    rfqId: uuid("rfq_id").notNull().references(() => rfqs.id, { onDelete: "cascade" }),
+    bidId: uuid("bid_id").notNull().references(() => bids.id, { onDelete: "cascade" }),
+    category: text("category").notNull(), // scope_gap, scope_extra, clarification, risk
+    note: text("note").notNull(),
+    adjustmentAmount: numeric("adjustment_amount", { precision: 15, scale: 2 }),
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
   return {
     schema,
     auditLogs,
@@ -509,6 +644,13 @@ export function createTenantSchema(schemaName: string) {
     retainageHeld,
     lienWaivers,
     paymentAppApprovalSteps,
+    subcontractorDirectory,
+    rfqs,
+    rfqAmendments,
+    rfqInvitations,
+    bids,
+    bidVersions,
+    bidLevelingNotes,
   };
 }
 
