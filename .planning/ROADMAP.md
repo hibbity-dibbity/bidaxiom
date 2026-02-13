@@ -2,7 +2,7 @@
 
 ## Overview
 
-A cloud-first construction management SaaS that enables GCs and subs to collaborate on the full project financial lifecycle. The roadmap delivers this value through nine phases: foundation (authentication and multi-tenant isolation), company configuration, project management, budget tracking, change orders, payment applications, bidding workflows, and finally external integrations (QuickBooks and calendar). Each phase builds on the previous, establishing data integrity patterns and security boundaries before adding complexity.
+A cloud-first construction management SaaS that enables GCs and subs to collaborate on the full project financial lifecycle. The roadmap delivers this value through ten phases: foundation (authentication and multi-tenant isolation), company configuration, project management, budget tracking, change orders, payment applications, bidding workflows, QuickBooks integration, enhanced document management, and finally calendar integration and custom auth migration. Each phase builds on the previous, establishing data integrity patterns and security boundaries before adding complexity.
 
 ## Phases
 
@@ -20,8 +20,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 6: Payment Applications** - AIA G702/G703 forms, retainage, lien waivers, invoice tracking
 - [ ] **Phase 7: Bidding & Procurement** - RFQ issuance, bid collection, comparison, directory, versioning
 - [ ] **Phase 8: QuickBooks Integration** - OAuth connection, bi-directional sync, error handling
-- [ ] **Phase 9: Calendar Integration** - Google/Outlook sync, project milestones on calendars
-- [ ] **Phase 10: Custom Authentication Migration** - Replace Clerk with custom auth (JWT, sessions, MFA, org management)
+- [ ] **Phase 9: Document Management Enhancement** - Versioning, workflows (RFI/Submittal/Transmittal), granular permissions, tagging
+- [ ] **Phase 10: Calendar Integration** - Google/Outlook sync, project milestones on calendars
+- [ ] **Phase 11: Custom Authentication Migration** - Replace Clerk with custom auth (JWT, sessions, MFA, org management)
 
 ## Phase Details
 
@@ -168,13 +169,35 @@ Plans:
 **Plans**: 5 plans across 3 waves
 
 Plans:
-- [ ] 08-01-PLAN.md -- DB schema (3 QBO tables), shared types, CASL abilities (wave 1)
-- [ ] 08-02-PLAN.md -- OAuth module, token encryption, BullMQ queue, QBO client factory (wave 1)
-- [ ] 08-03-PLAN.md -- Sync workers, entity mappers (project/invoice/bill), CDC fallback (wave 2)
-- [ ] 08-04-PLAN.md -- tRPC quickbooks router, webhook handler, server registration (wave 2)
-- [ ] 08-05-PLAN.md -- Frontend: integrations settings page, sync status, OAuth callback (wave 3)
+- [ ] 08-01-PLAN.md — DB schema (3 QBO tables), shared types, CASL abilities (wave 1)
+- [ ] 08-02-PLAN.md — OAuth module, token encryption, BullMQ queue, QBO client factory (wave 1)
+- [ ] 08-03-PLAN.md — Sync workers, entity mappers (project/invoice/bill), CDC fallback (wave 2)
+- [ ] 08-04-PLAN.md — tRPC quickbooks router, webhook handler, server registration (wave 2)
+- [ ] 08-05-PLAN.md — Frontend: integrations settings page, sync status, OAuth callback (wave 3)
 
-### Phase 9: Calendar Integration
+### Phase 9: Document Management Enhancement
+**Goal**: Enhance existing document system with enterprise features - versioning, workflows, permissions, and tagging
+**Depends on**: Phase 3 (builds on existing document infrastructure)
+**Requirements**: DOC-01, DOC-02, DOC-03, DOC-04, DOC-05, DOC-06
+**Success Criteria** (what must be TRUE):
+  1. Documents can be tagged and categorized for advanced search and filtering
+  2. Users can share documents with granular permissions (view/edit) beyond project team
+  3. Documents can be part of formal workflows (RFI, Submittal, Transmittal) with approval chains
+  4. Workflow approvals follow configurable multi-step processes with role-based access
+  5. All document access and workflow actions are fully audited
+  6. Users can search documents by name, tags, category, and content type
+**Plans**: 7 plans across 3 waves
+
+Plans:
+- [ ] 09-01-PLAN.md — DB schema for tags, categories, access logs, permissions (wave 1)
+- [ ] 09-02-PLAN.md — Document tagging and search API procedures (wave 2)
+- [ ] 09-03-PLAN.md — Granular permissions schema and CASL enhancements (wave 2)
+- [ ] 09-04-PLAN.md — Document/folder sharing API with permission management (wave 3)
+- [ ] 09-05-PLAN.md — Workflow schema (RFI/Submittal/Transmittal) with approval chains (wave 1)
+- [ ] 09-06-PLAN.md — Workflow tRPC router with lifecycle and approval procedures (wave 2)
+- [ ] 09-07-PLAN.md — Frontend: search, tagging, sharing, workflow creation and approval UI (wave 3)
+
+### Phase 10: Calendar Integration
 **Goal**: Users can connect calendars with bi-directional sync of project milestones
 **Depends on**: Phase 3
 **Requirements**: CALR-01, CALR-02, CALR-03
@@ -185,12 +208,12 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 09-01: TBD during planning
-- [ ] 09-02: TBD during planning
+- [ ] 10-01: TBD during planning
+- [ ] 10-02: TBD during planning
 
-### Phase 10: Custom Authentication Migration
+### Phase 11: Custom Authentication Migration
 **Goal**: Replace Clerk with a custom-built authentication system to eliminate third-party dependency, reduce costs, and gain full control over auth flows
-**Depends on**: Phase 9 (all features complete before migration)
+**Depends on**: Phase 10 (all features complete before migration)
 **Requirements**: TBD during planning
 **Success Criteria** (what must be TRUE):
   1. Custom JWT-based authentication replaces all Clerk auth flows (sign-in, sign-up, password reset)
@@ -204,14 +227,14 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 10-01: TBD during planning
-- [ ] 10-02: TBD during planning
-- [ ] 10-03: TBD during planning
+- [ ] 11-01: TBD during planning
+- [ ] 11-02: TBD during planning
+- [ ] 11-03: TBD during planning
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -221,11 +244,12 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 4. Budget & Cost Tracking | 4/4 | Complete | 2026-02-12 |
 | 5. Change Order Management | 0/4 | Not started | - |
 | 6. Payment Applications | 0/5 | Not started | - |
-| 7. Bidding & Procurement | 0/TBD | Not started | - |
-| 8. QuickBooks Integration | 0/TBD | Not started | - |
-| 9. Calendar Integration | 0/TBD | Not started | - |
-| 10. Custom Authentication Migration | 0/TBD | Not started | - |
+| 7. Bidding & Procurement | 0/5 | Not started | - |
+| 8. QuickBooks Integration | 0/5 | Not started | - |
+| 9. Document Management Enhancement | 0/7 | Not started | - |
+| 10. Calendar Integration | 0/TBD | Not started | - |
+| 11. Custom Authentication Migration | 0/TBD | Not started | - |
 
 ---
 *Roadmap created: 2026-02-10*
-*Last updated: 2026-02-12*
+*Last updated: 2026-02-13*
