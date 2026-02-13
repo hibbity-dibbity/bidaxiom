@@ -192,6 +192,8 @@ export function createTenantSchema(schemaName: string) {
     projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
     folderId: uuid("folder_id").references(() => folders.id, { onDelete: "set null" }),
     name: text("name").notNull(),
+    category: text("category"), // contract, drawing, specification, submittal, rfi, change_order, payment_app, invoice, report, photo, closeout, other
+    description: text("description"),
     currentVersionId: uuid("current_version_id"),
     fileSize: integer("file_size"),
     contentType: text("content_type"),
@@ -214,6 +216,105 @@ export function createTenantSchema(schemaName: string) {
     uploadedBy: text("uploaded_by").notNull(),
     uploadedAt: timestamp("uploaded_at", { withTimezone: true }).defaultNow().notNull(),
     changeNotes: text("change_notes"),
+  });
+
+  /**
+   * Document tags
+   * Many-to-many relationship between documents and tags for organization
+   */
+  const documentTags = schema.table("document_tags", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    documentId: uuid("document_id").notNull().references(() => documents.id, { onDelete: "cascade" }),
+    tag: text("tag").notNull(), // lowercase, normalized
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * Document access logs
+   * Audit trail for document view and download events
+   */
+  const documentAccessLogs = schema.table("document_access_logs", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    documentId: uuid("document_id").notNull().references(() => documents.id, { onDelete: "cascade" }),
+    userId: text("user_id").notNull(), // Clerk user ID
+    action: text("action").notNull(), // view, download
+    ipAddress: text("ip_address"),
+    accessedAt: timestamp("accessed_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * Document workflows (RFI, Submittal, Transmittal)
+   * Links documents to formal workflow processes with approval chains
+   * One workflow per document (unique constraint on documentId)
+   */
+  const documentWorkflows = schema.table("document_workflows", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    documentId: uuid("document_id").notNull().unique().references(() => documents.id, { onDelete: "cascade" }),
+    workflowType: text("workflow_type").notNull(), // rfi, submittal, transmittal
+    workflowNumber: text("workflow_number").notNull(), // e.g., "RFI-001", "SUB-024", "TX-012"
+    projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }), // Denormalized for queries
+    title: text("title").notNull(),
+    description: text("description"),
+    status: text("status").notNull().default("draft"), // draft, submitted, under_review, approved, rejected, closed, cancelled
+    priority: text("priority"), // low, medium, high, urgent
+    dueDate: timestamp("due_date", { withTimezone: true }),
+    submittedBy: text("submitted_by"),
+    submittedAt: timestamp("submitted_at", { withTimezone: true }),
+    responseDocumentId: uuid("response_document_id").references(() => documents.id, { onDelete: "set null" }),
+    respondedBy: text("responded_by"),
+    respondedAt: timestamp("responded_at", { withTimezone: true }),
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * Workflow approvals
+   * Multi-step approval process for document workflows
+   * Supports specific user, any with role, or all with role requirements
+   */
+  const workflowApprovals = schema.table("workflow_approvals", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workflowId: uuid("workflow_id").notNull().references(() => documentWorkflows.id, { onDelete: "cascade" }),
+    stepNumber: integer("step_number").notNull(),
+    approverUserId: text("approver_user_id"), // Nullable - null means any user with role
+    approverRole: text("approver_role"), // Nullable - project_manager, superintendent, etc.
+    requirementType: text("requirement_type").notNull(), // specific_user, any_with_role, all_with_role
+    status: text("status").notNull().default("pending"), // pending, approved, rejected, skipped
+    reviewedBy: text("reviewed_by"),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    comments: text("comments"),
+  });
+
+  /**
+   * Workflow counters
+   * Sequential numbering for workflow types per project
+   * Uses SELECT FOR UPDATE for race-free sequential numbering
+   */
+  const workflowCounters = schema.table("workflow_counters", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+    workflowType: text("workflow_type").notNull(), // rfi, submittal, transmittal
+    currentNumber: integer("current_number").notNull().default(0),
+  });
+
+  /**
+   * Workflow history
+   * Tracks all state changes and field updates for workflows
+   * Complete audit trail for workflow lifecycle
+   */
+  const workflowHistory = schema.table("workflow_history", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workflowId: uuid("workflow_id").notNull().references(() => documentWorkflows.id, { onDelete: "cascade" }),
+    changedBy: text("changed_by").notNull(),
+    changedAt: timestamp("changed_at", { withTimezone: true }).defaultNow().notNull(),
+    fromStatus: text("from_status"),
+    toStatus: text("to_status").notNull(),
+    fieldName: text("field_name"), // Nullable - for non-status field changes
+    oldValue: text("old_value"), // Nullable
+    newValue: text("new_value"), // Nullable
+    comment: text("comment"),
   });
 
   /**
@@ -711,6 +812,12 @@ export function createTenantSchema(schemaName: string) {
     folders,
     documents,
     documentVersions,
+    documentTags,
+    documentAccessLogs,
+    documentWorkflows,
+    workflowApprovals,
+    workflowCounters,
+    workflowHistory,
     budgetLineItems,
     commitments,
     commitmentLineItems,
