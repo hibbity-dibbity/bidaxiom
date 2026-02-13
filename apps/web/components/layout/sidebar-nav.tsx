@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   LayoutDashboard,
   FolderKanban,
+  Users,
   Gavel,
   DollarSign,
   FileText,
@@ -27,6 +28,12 @@ const navItems = [
     label: "Projects",
     href: "/projects",
     icon: FolderKanban,
+    active: true,
+  },
+  {
+    label: "Customers",
+    href: "/customers",
+    icon: Users,
     active: true,
   },
   {

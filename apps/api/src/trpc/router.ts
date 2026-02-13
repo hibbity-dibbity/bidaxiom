@@ -3,6 +3,8 @@ import { healthRouter } from "./routers/health.js";
 import { tenantRouter } from "./routers/tenant.js";
 import { auditRouter } from "./routers/audit.js";
 import { companyRouter } from "./routers/company.js";
+import { customerRouter } from "./routers/customer.js";
+import { userRouter } from "./routers/user.js";
 import { projectRouter } from "./routers/project.js";
 import { documentRouter } from "./routers/document.js";
 
@@ -18,6 +20,8 @@ export const appRouter = router({
   tenant: tenantRouter,
   audit: auditRouter,
   company: companyRouter,
+  customer: customerRouter,
+  user: userRouter,
   project: projectRouter,
   document: documentRouter,
 });

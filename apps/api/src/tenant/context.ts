@@ -56,6 +56,7 @@ export async function buildTenantContext(
       auditLogs: tenantDb.auditLogs,
       userProfiles: tenantDb.userProfiles,
       companyProfiles: tenantDb.companyProfiles,
+      customers: tenantDb.customers,
       projects: tenantDb.projects,
       projectTeamMembers: tenantDb.projectTeamMembers,
       projectPhases: tenantDb.projectPhases,

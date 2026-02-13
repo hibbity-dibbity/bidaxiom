@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -26,10 +27,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { ChevronRight, Calendar, DollarSign, Users, FileText, Edit, UserPlus, X, CheckCircle2, Circle, Clock } from "lucide-react";
+import { ChevronRight, Calendar, DollarSign, Users, FileText, Edit, UserPlus, X, CheckCircle2, Circle, Clock, Building2, User, Mail, Phone, MapPin, Plus } from "lucide-react";
 import type { ProjectStatus, ProjectRole } from "@construction/shared";
 import { useState } from "react";
 import { toast } from "sonner";
+import { getCustomerDisplayName } from "@construction/shared";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 
 const statusColors: Record<ProjectStatus, string> = {
   active: "bg-green-500/10 text-green-700 border-green-200",
@@ -53,15 +56,79 @@ const phaseStatusColors = {
 export default function ProjectDashboardPage({
   params,
 }: {
-  params: Promise<{ projectId: string }>;
+  params: { projectId: string };
 }) {
-  const { projectId } = use(params);
+  const { projectId } = params;
   const [addMemberOpen, setAddMemberOpen] = useState(false);
+  const [editProjectOpen, setEditProjectOpen] = useState(false);
+  const [inviteUserOpen, setInviteUserOpen] = useState(false);
   const [newMemberUserId, setNewMemberUserId] = useState("");
   const [newMemberRole, setNewMemberRole] = useState<ProjectRole>("viewer");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteFirstName, setInviteFirstName] = useState("");
+  const [inviteLastName, setInviteLastName] = useState("");
+
+  // Edit form state
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editLocation, setEditLocation] = useState("");
+  const [editJobNumber, setEditJobNumber] = useState("");
+  const [editProjectType, setEditProjectType] = useState("");
+  const [editStatus, setEditStatus] = useState("");
+  const [editStartDate, setEditStartDate] = useState("");
+  const [editEndDate, setEditEndDate] = useState("");
+  const [editCustomerId, setEditCustomerId] = useState("");
+  const [addCustomerOpen, setAddCustomerOpen] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({
+    companyName: "",
+    contactName: "",
+    phone: "",
+    email: "",
+    address: "",
+  });
 
   const utils = trpc.useUtils();
   const { data: project, isLoading } = trpc.project.getById.useQuery({ id: projectId });
+  const { data: companyProfile } = trpc.company.getCurrent.useQuery();
+  const { data: customersData, isLoading: customersLoading, error: customersError } = trpc.customer.list.useQuery({ limit: 100, offset: 0 });
+  const { data: usersData } = trpc.user.list.useQuery({ limit: 100, offset: 0 });
+
+  // Debug: Log project and customer data
+  useEffect(() => {
+    if (project) {
+      console.log("🔍 Project Detail - Project data:", {
+        id: project.id,
+        name: project.name,
+        jobNumber: project.jobNumber,
+        hasJobNumber: !!project.jobNumber,
+        customerId: project.customerId
+      });
+
+      if (!project.jobNumber) {
+        console.warn("⚠️ Project has NO job number:", project.name);
+      }
+    }
+  }, [project]);
+
+  // Debug: Log customers data
+  useEffect(() => {
+    console.log("🔍 Customers data:", {
+      hasData: !!customersData,
+      itemsCount: customersData?.items?.length || 0,
+      items: customersData?.items || []
+    });
+  }, [customersData]);
+
+  const updateProjectMutation = trpc.project.update.useMutation({
+    onSuccess: () => {
+      utils.project.getById.invalidate({ id: projectId });
+      toast.success("Project updated");
+      setEditProjectOpen(false);
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to update project");
+    },
+  });
 
   const addTeamMemberMutation = trpc.project.addTeamMember.useMutation({
     onSuccess: () => {
@@ -83,6 +150,33 @@ export default function ProjectDashboardPage({
     },
     onError: (error) => {
       toast.error(error.message || "Failed to remove team member");
+    },
+  });
+
+  const createCustomerMutation = trpc.customer.create.useMutation({
+    onSuccess: (data) => {
+      utils.customer.list.invalidate();
+      setEditCustomerId(data.id);
+      toast.success("Customer created");
+      setAddCustomerOpen(false);
+      setNewCustomer({ companyName: "", contactName: "", phone: "", email: "", address: "" });
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to create customer");
+    },
+  });
+
+  const inviteUserMutation = trpc.user.invite.useMutation({
+    onSuccess: () => {
+      utils.user.list.invalidate();
+      toast.success("Invitation sent successfully");
+      setInviteUserOpen(false);
+      setInviteEmail("");
+      setInviteFirstName("");
+      setInviteLastName("");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to send invitation");
     },
   });
 
@@ -165,7 +259,12 @@ export default function ProjectDashboardPage({
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold tracking-tight">{project.name}</h1>
+            <h1 className="text-3xl font-bold tracking-tight">
+              {project.jobNumber && (
+                <>{project.jobNumber}-</>
+              )}
+              {project.name}
+            </h1>
             <Badge className={statusColors[project.status as ProjectStatus]} variant="outline">
               {project.status.replace("_", " ")}
             </Badge>
@@ -174,11 +273,195 @@ export default function ProjectDashboardPage({
             <p className="text-muted-foreground mt-1">{project.location}</p>
           )}
         </div>
-        <Button variant="outline" size="sm">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setEditName(project.name);
+            setEditDescription(project.description || "");
+            setEditLocation(project.location || "");
+            setEditJobNumber(project.jobNumber || "");
+            setEditProjectType(project.projectType);
+            setEditStatus(project.status);
+            setEditStartDate(project.startDate ? new Date(project.startDate).toISOString().split('T')[0] : "");
+            setEditEndDate(project.endDate ? new Date(project.endDate).toISOString().split('T')[0] : "");
+            setEditCustomerId(project.customerId);
+            setEditProjectOpen(true);
+          }}
+        >
           <Edit className="mr-2 h-4 w-4" />
           Edit Project
         </Button>
       </div>
+
+      {/* Edit Project Dialog */}
+      <Dialog open={editProjectOpen} onOpenChange={setEditProjectOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Project</DialogTitle>
+            <DialogDescription>
+              Update project details
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Project Name</Label>
+              <Input
+                id="edit-name"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="Project name"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-job-number">Job Number</Label>
+              <Input
+                id="edit-job-number"
+                value={editJobNumber}
+                onChange={(e) => setEditJobNumber(e.target.value)}
+                placeholder={companyProfile?.jobNumberSettings?.template || "Enter job number"}
+                className="font-mono"
+                maxLength={50}
+              />
+              {companyProfile?.jobNumberSettings?.enabled && companyProfile.jobNumberSettings.template && (
+                <p className="text-xs text-muted-foreground">
+                  Must match format: {companyProfile.jobNumberSettings.template}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-customer">Customer</Label>
+              <div className="flex gap-2">
+                <SearchableSelect
+                  options={
+                    customersData?.items.map((customer) => ({
+                      value: customer.id,
+                      label: getCustomerDisplayName(customer),
+                    })) || []
+                  }
+                  value={editCustomerId}
+                  onValueChange={setEditCustomerId}
+                  placeholder="Select customer"
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setAddCustomerOpen(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">Description</Label>
+              <Textarea
+                id="edit-description"
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                placeholder="Project description"
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-location">Location</Label>
+              <Input
+                id="edit-location"
+                value={editLocation}
+                onChange={(e) => setEditLocation(e.target.value)}
+                placeholder="123 Main St, City, State"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-project-type">Project Type</Label>
+                <Select value={editProjectType} onValueChange={setEditProjectType}>
+                  <SelectTrigger id="edit-project-type">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="commercial">Commercial</SelectItem>
+                    <SelectItem value="residential">Residential</SelectItem>
+                    <SelectItem value="infrastructure">Infrastructure</SelectItem>
+                    <SelectItem value="industrial">Industrial</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-status">Status</Label>
+                <Select value={editStatus} onValueChange={setEditStatus}>
+                  <SelectTrigger id="edit-status">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="on_hold">On Hold</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="archived">Archived</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-start-date">Start Date</Label>
+                <Input
+                  id="edit-start-date"
+                  type="date"
+                  value={editStartDate}
+                  onChange={(e) => setEditStartDate(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-end-date">End Date</Label>
+                <Input
+                  id="edit-end-date"
+                  type="date"
+                  value={editEndDate}
+                  onChange={(e) => setEditEndDate(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditProjectOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (!editCustomerId) {
+                  toast.error("Customer is required");
+                  return;
+                }
+                updateProjectMutation.mutate({
+                  id: projectId,
+                  name: editName,
+                  jobNumber: editJobNumber || null,
+                  customerId: editCustomerId,
+                  description: editDescription || null,
+                  location: editLocation || null,
+                  projectType: editProjectType as any,
+                  status: editStatus as any,
+                  startDate: editStartDate ? new Date(editStartDate).toISOString() : null,
+                  endDate: editEndDate ? new Date(editEndDate).toISOString() : null,
+                });
+              }}
+              disabled={updateProjectMutation.isPending}
+            >
+              {updateProjectMutation.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Overview Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -237,6 +520,75 @@ export default function ProjectDashboardPage({
         </Card>
       </div>
 
+      {/* Customer Information */}
+      {project.customer && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Customer Information</CardTitle>
+                <CardDescription>Details about the project customer</CardDescription>
+              </div>
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/customers/${project.customer.id}`}>
+                  View Customer Portal
+                </Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div className="flex items-start gap-3">
+                {project.customer.companyName ? (
+                  <Building2 className="h-5 w-5 text-muted-foreground mt-0.5" />
+                ) : (
+                  <User className="h-5 w-5 text-muted-foreground mt-0.5" />
+                )}
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Customer</p>
+                  <p className="text-base font-semibold">
+                    {getCustomerDisplayName(project.customer)}
+                  </p>
+                  {project.customer.companyName && (
+                    <p className="text-xs text-muted-foreground">Contact: {project.customer.contactName}</p>
+                  )}
+                </div>
+              </div>
+
+              {project.customer.phone && (
+                <div className="flex items-start gap-3">
+                  <Phone className="h-5 w-5 text-muted-foreground mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-muted-foreground">Phone</p>
+                    <p className="text-base">{project.customer.phone}</p>
+                  </div>
+                </div>
+              )}
+
+              {project.customer.email && (
+                <div className="flex items-start gap-3">
+                  <Mail className="h-5 w-5 text-muted-foreground mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-muted-foreground">Email</p>
+                    <p className="text-base">{project.customer.email}</p>
+                  </div>
+                </div>
+              )}
+
+              {project.customer.address && (
+                <div className="flex items-start gap-3">
+                  <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-muted-foreground">Address</p>
+                    <p className="text-base">{project.customer.address}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Team Section */}
       <Card>
         <CardHeader>
@@ -261,16 +613,37 @@ export default function ProjectDashboardPage({
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
-                    <Label htmlFor="userId">User ID</Label>
-                    <Input
-                      id="userId"
-                      placeholder="user_xxx or clerk_id"
-                      value={newMemberUserId}
-                      onChange={(e) => setNewMemberUserId(e.target.value)}
-                    />
+                    <Label htmlFor="user-select">Team Member</Label>
+                    <div className="flex gap-2">
+                      <SearchableSelect
+                        options={
+                          usersData?.items.map((user) => ({
+                            value: user.clerkUserId,
+                            label: user.firstName && user.lastName
+                              ? `${user.firstName} ${user.lastName} (${user.email})`
+                              : user.email,
+                          })) || []
+                        }
+                        value={newMemberUserId}
+                        onValueChange={setNewMemberUserId}
+                        placeholder="Select team member"
+                        className="flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          setAddMemberOpen(false);
+                          setInviteUserOpen(true);
+                        }}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="role">Role</Label>
+                    <Label htmlFor="role">Project Role</Label>
                     <Select value={newMemberRole} onValueChange={(value) => setNewMemberRole(value as ProjectRole)}>
                       <SelectTrigger id="role">
                         <SelectValue />
@@ -313,7 +686,9 @@ export default function ProjectDashboardPage({
                 {project.teamMembers.map((member: any) => (
                   <TableRow key={member.userId}>
                     <TableCell className="font-medium">
-                      {member.userProfile?.fullName || member.userId}
+                      {member.firstName && member.lastName
+                        ? `${member.firstName} ${member.lastName}`
+                        : member.email || member.userId}
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">{member.role.replace("_", " ")}</Badge>
@@ -414,6 +789,171 @@ export default function ProjectDashboardPage({
           )}
         </CardContent>
       </Card>
+
+      {/* Add Customer Dialog */}
+      <Dialog open={addCustomerOpen} onOpenChange={setAddCustomerOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Add Customer</DialogTitle>
+            <DialogDescription>
+              Create a new customer record
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="add-company">Company Name (Optional)</Label>
+              <Input
+                id="add-company"
+                value={newCustomer.companyName}
+                onChange={(e) => setNewCustomer({ ...newCustomer, companyName: e.target.value })}
+                placeholder="ABC Construction Inc."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="add-contact">Contact Name *</Label>
+              <Input
+                id="add-contact"
+                value={newCustomer.contactName}
+                onChange={(e) => setNewCustomer({ ...newCustomer, contactName: e.target.value })}
+                placeholder="John Doe"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="add-phone">Phone</Label>
+                <Input
+                  id="add-phone"
+                  value={newCustomer.phone}
+                  onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
+                  placeholder="(555) 123-4567"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="add-email">Email</Label>
+                <Input
+                  id="add-email"
+                  type="email"
+                  value={newCustomer.email}
+                  onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
+                  placeholder="john@example.com"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="add-address">Address</Label>
+              <Textarea
+                id="add-address"
+                value={newCustomer.address}
+                onChange={(e) => setNewCustomer({ ...newCustomer, address: e.target.value })}
+                placeholder="123 Main St, City, State, ZIP"
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setAddCustomerOpen(false);
+                setNewCustomer({ companyName: "", contactName: "", phone: "", email: "", address: "" });
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (!newCustomer.contactName.trim()) {
+                  toast.error("Contact name is required");
+                  return;
+                }
+                createCustomerMutation.mutate(newCustomer);
+              }}
+              disabled={createCustomerMutation.isPending}
+            >
+              {createCustomerMutation.isPending ? "Creating..." : "Create Customer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Invite User Dialog */}
+      <Dialog open={inviteUserOpen} onOpenChange={setInviteUserOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Invite Team Member</DialogTitle>
+            <DialogDescription>
+              Send an invitation to a new user to join your organization
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="invite-email">Email Address *</Label>
+              <Input
+                id="invite-email"
+                type="email"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                placeholder="user@example.com"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="invite-first-name">First Name</Label>
+                <Input
+                  id="invite-first-name"
+                  value={inviteFirstName}
+                  onChange={(e) => setInviteFirstName(e.target.value)}
+                  placeholder="John"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="invite-last-name">Last Name</Label>
+                <Input
+                  id="invite-last-name"
+                  value={inviteLastName}
+                  onChange={(e) => setInviteLastName(e.target.value)}
+                  placeholder="Doe"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setInviteUserOpen(false);
+                setInviteEmail("");
+                setInviteFirstName("");
+                setInviteLastName("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (!inviteEmail.trim()) {
+                  toast.error("Email is required");
+                  return;
+                }
+                inviteUserMutation.mutate({
+                  email: inviteEmail,
+                  firstName: inviteFirstName || undefined,
+                  lastName: inviteLastName || undefined,
+                });
+              }}
+              disabled={inviteUserMutation.isPending}
+            >
+              {inviteUserMutation.isPending ? "Sending..." : "Send Invitation"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

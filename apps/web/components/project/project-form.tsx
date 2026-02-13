@@ -1,9 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createProjectSchema, DEFAULT_PROJECT_PHASES } from "@construction/shared";
+import { createProjectSchema, DEFAULT_PROJECT_PHASES, previewJobNumber } from "@construction/shared";
 import { z } from "zod";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -23,11 +24,22 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Plus, X, GripVertical } from "lucide-react";
+import { getCustomerDisplayName } from "@construction/shared";
 
 type ProjectFormValues = z.infer<typeof createProjectSchema>;
 
@@ -66,11 +78,44 @@ const PROJECT_ROLES = [
 export function ProjectForm() {
   const router = useRouter();
   const utils = trpc.useUtils();
+  const [manualJobNumber, setManualJobNumber] = useState(false);
+  const [addCustomerOpen, setAddCustomerOpen] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({
+    companyName: "",
+    contactName: "",
+    phone: "",
+    email: "",
+    address: "",
+  });
+
+  // Fetch company profile for job number settings
+  const { data: companyProfile } = trpc.company.getCurrent.useQuery();
+  const jobNumberSettings = companyProfile?.jobNumberSettings;
+  const jobNumbersEnabled = jobNumberSettings?.enabled ?? false;
+
+  // Fetch customers for dropdown
+  const { data: customersData } = trpc.customer.list.useQuery({ limit: 100, offset: 0 });
+  const customers = customersData?.items || [];
+
+  const createCustomerMutation = trpc.customer.create.useMutation({
+    onSuccess: (data) => {
+      utils.customer.list.invalidate();
+      form.setValue("customerId", data.id);
+      toast.success("Customer created");
+      setAddCustomerOpen(false);
+      setNewCustomer({ companyName: "", contactName: "", phone: "", email: "", address: "" });
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to create customer");
+    },
+  });
 
   const form = useForm<ProjectFormValues>({
     resolver: zodResolver(createProjectSchema) as any,
     defaultValues: {
       name: "",
+      jobNumber: undefined,
+      customerId: "",
       description: "",
       location: "",
       projectType: "commercial",
@@ -131,6 +176,40 @@ export function ProjectForm() {
                   <FormControl>
                     <Input placeholder="Downtown Office Tower" {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="customerId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Customer *</FormLabel>
+                  <div className="flex gap-2">
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Select customer" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {customers.map((customer) => (
+                          <SelectItem key={customer.id} value={customer.id}>
+                            {getCustomerDisplayName(customer)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setAddCustomerOpen(true)}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
@@ -239,6 +318,81 @@ export function ProjectForm() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Job Number */}
+        {jobNumbersEnabled && jobNumberSettings && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Job Number</CardTitle>
+              <CardDescription>
+                A unique job number will be auto-generated or you can enter one manually
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!manualJobNumber ? (
+                <div className="space-y-3">
+                  <div className="p-4 bg-muted rounded-md">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-sm font-medium mb-1">Auto-generated</div>
+                        <div className="font-mono text-lg text-primary">
+                          {previewJobNumber(jobNumberSettings.template, jobNumberSettings.nextSequenceNumber)}
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setManualJobNumber(true)}
+                      >
+                        Enter Manually
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Job number will be assigned automatically when you create the project
+                  </p>
+                </div>
+              ) : (
+                <FormField
+                  control={form.control}
+                  name="jobNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center justify-between mb-2">
+                        <FormLabel>Job Number</FormLabel>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setManualJobNumber(false);
+                            field.onChange(undefined);
+                          }}
+                        >
+                          Use Auto-generated
+                        </Button>
+                      </div>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          value={field.value || ""}
+                          placeholder={`e.g., ${previewJobNumber(jobNumberSettings.template, 1)}`}
+                          className="font-mono"
+                          maxLength={50}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Must be unique and match format: {jobNumberSettings.template}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Cost Codes */}
         <Card>
@@ -430,6 +584,96 @@ export function ProjectForm() {
           </Button>
         </div>
       </form>
+
+      {/* Add Customer Dialog */}
+      <Dialog open={addCustomerOpen} onOpenChange={setAddCustomerOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Add Customer</DialogTitle>
+            <DialogDescription>
+              Create a new customer record
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="company">Company Name (Optional)</Label>
+              <Input
+                id="company"
+                value={newCustomer.companyName}
+                onChange={(e) => setNewCustomer({ ...newCustomer, companyName: e.target.value })}
+                placeholder="ABC Construction Inc."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="contact">Contact Name *</Label>
+              <Input
+                id="contact"
+                value={newCustomer.contactName}
+                onChange={(e) => setNewCustomer({ ...newCustomer, contactName: e.target.value })}
+                placeholder="John Doe"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone</Label>
+                <Input
+                  id="phone"
+                  value={newCustomer.phone}
+                  onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
+                  placeholder="(555) 123-4567"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={newCustomer.email}
+                  onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
+                  placeholder="john@example.com"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="address">Address</Label>
+              <Textarea
+                id="address"
+                value={newCustomer.address}
+                onChange={(e) => setNewCustomer({ ...newCustomer, address: e.target.value })}
+                placeholder="123 Main St, City, State, ZIP"
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setAddCustomerOpen(false);
+                setNewCustomer({ companyName: "", contactName: "", phone: "", email: "", address: "" });
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (!newCustomer.contactName.trim()) {
+                  toast.error("Contact name is required");
+                  return;
+                }
+                createCustomerMutation.mutate(newCustomer);
+              }}
+              disabled={createCustomerMutation.isPending}
+            >
+              {createCustomerMutation.isPending ? "Creating..." : "Create Customer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Form>
   );
 }
