@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-10)
 ## Current Position
 
 Phase: 4 of 10 (Budget & Cost Tracking)
-Plan: 2 of 4 in current phase
+Plan: 3 of 4 in current phase
 Status: In Progress
-Last activity: 2026-02-13 — Completed 04-02-PLAN.md (Budget tRPC Router and Calculations)
+Last activity: 2026-02-13 — Completed 04-03-PLAN.md (Commitment Management tRPC Router)
 
-Progress: [███░░░░░░░] 30% (3 of 10 phases, 2 of 4 plans in phase 4)
+Progress: [███░░░░░░░] 30% (3 of 10 phases, 3 of 4 plans in phase 4)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
-- Average duration: 19 min
-- Total execution time: 2.20 hours
+- Total plans completed: 8
+- Average duration: 17 min
+- Total execution time: 2.36 hours
 
 **By Phase:**
 
@@ -29,10 +29,10 @@ Progress: [███░░░░░░░] 30% (3 of 10 phases, 2 of 4 plans in 
 |-------|-------|-------|----------|
 | 02 | 2 | 10 min | 5 min |
 | 03 | 3 | 9 min | 3 min |
-| 04 | 2 | 114 min | 57 min |
+| 04 | 3 | 116 min | 39 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-02 (2 min), 03-03 (3 min), 03-04 (4 min), 04-01 (111 min), 04-02 (3 min)
+- Last 5 plans: 03-03 (3 min), 03-04 (4 min), 04-01 (111 min), 04-02 (3 min), 04-03 (2 min)
 - Trend: Variable (schema-heavy plans take longer, API implementation is fast)
 
 *Updated after each plan completion*
@@ -77,6 +77,9 @@ Recent decisions affecting current work:
 - **Lock enforcement throws FORBIDDEN error**: Clear error message directs users to use change orders for locked line items (04-02)
 - **Delete prevention when commitments exist**: Referential integrity check prevents orphaned commitment line items (04-02)
 - **CSI divisions validated against CSI_DIVISIONS array**: Cost codes 0-49 must be valid CSI divisions; 50+ are custom codes (validated in future) (04-02)
+- **Commitment creation warns but doesn't block when over budget**: PMs need flexibility to approve over-budget commitments with justification; warnings provide visibility without preventing legitimate business needs (04-03)
+- **Only draft commitments can be deleted**: Once commitment enters workflow (pending/approved/executed), it should be tracked for audit; use 'closed' status instead of delete (04-03)
+- **Status transitions follow strict lifecycle**: Prevents invalid state transitions (e.g., executed → draft) that would break financial reporting and audit trail (04-03)
 
 ### Pending Todos
 
@@ -89,7 +92,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-13 (Phase 4 in progress)
-Stopped at: Completed 04-02-PLAN.md (Budget tRPC Router and Calculations). Ready for 04-03-PLAN.md.
+Stopped at: Completed 04-03-PLAN.md (Commitment Management tRPC Router). Ready for 04-04-PLAN.md.
 Resume file: None
 
 ---
