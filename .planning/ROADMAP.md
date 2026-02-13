@@ -124,12 +124,13 @@ Plans:
   3. User can track lien waiver collection status per payment
   4. User can view invoice tracking (AP/AR) with aging reports
   5. Approved pay applications automatically update committed cost actuals in budget
-**Plans**: TBD
+**Plans**: 4 plans across 3 waves
 
 Plans:
-- [ ] 06-01: TBD during planning
-- [ ] 06-02: TBD during planning
-- [ ] 06-03: TBD during planning
+- [ ] 06-01-PLAN.md — DB schema (7 tables), shared types (SOV, payment app, lien waiver, retainage), CASL abilities (wave 1)
+- [ ] 06-02-PLAN.md — SOV tRPC router, payment app calculation engine, payment app tRPC router with approval workflow and budget updates (wave 2)
+- [ ] 06-03-PLAN.md — Lien waiver tRPC router with four-type support, invoice tracking with AP/AR aging reports (wave 2)
+- [ ] 06-04-PLAN.md — Frontend: SOV editor, payment app list/create/detail (G702/G703), lien waiver tracker, aging reports, project navigation (wave 3)
 
 ### Phase 7: Bidding & Procurement
 **Goal**: GCs can issue RFQs and subs can respond with versioned bids that convert to budget commitments
