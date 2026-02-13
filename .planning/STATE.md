@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-10)
 ## Current Position
 
 Phase: 5 of 10 (Change Order Management)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In Progress
-Last activity: 2026-02-13 — Completed 05-01-PLAN.md (Change Order Schema, Types, and Permissions)
+Last activity: 2026-02-13 — Completed 05-02-PLAN.md (Change Order API with Sequential Numbering and Approval Workflow)
 
-Progress: [████░░░░░░] 40% (4 of 10 phases complete, Phase 5 Plan 1 done)
+Progress: [████░░░░░░] 40% (4 of 10 phases complete, Phase 5 Plan 2 done)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10
-- Average duration: 14 min
-- Total execution time: 2.54 hours
+- Total plans completed: 11
+- Average duration: 13 min
+- Total execution time: 2.69 hours
 
 **By Phase:**
 
@@ -30,11 +30,11 @@ Progress: [████░░░░░░] 40% (4 of 10 phases complete, Phase 5
 | 02 | 2 | 10 min | 5 min |
 | 03 | 3 | 9 min | 3 min |
 | 04 | 4 | 123 min | 31 min |
-| 05 | 1 | 4 min | 4 min |
+| 05 | 2 | 13 min | 6.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-01 (111 min), 04-02 (3 min), 04-03 (2 min), 04-04 (7 min), 05-01 (4 min)
-- Trend: Schema-heavy plans take longer (04-01: 111 min), but API and UI implementation is consistently fast (2-7 min)
+- Last 5 plans: 04-02 (3 min), 04-03 (2 min), 04-04 (7 min), 05-01 (4 min), 05-02 (9 min)
+- Trend: Schema-heavy plans take longer (04-01: 111 min), but API and UI implementation is consistently fast (2-9 min)
 
 *Updated after each plan completion*
 
@@ -85,6 +85,10 @@ Recent decisions affecting current work:
 - **Sequential counters without DB constraint**: Uniqueness enforced via SELECT FOR UPDATE in service layer to avoid migration complexity with composite unique constraints (05-01)
 - **Flexible approval requirements**: Supports "all" (all approvers must approve), "any" (first approval completes step), "specific" (exact user must approve) (05-01)
 - **Field-level history tracking for change orders**: Change order history table records every field change with old/new values for complete audit trail (05-01)
+- **SELECT FOR UPDATE for sequential numbering**: Prevents duplicate PCO/CO numbers under concurrent requests by locking counter row during transaction (05-02)
+- **SQL expressions for atomic budget updates**: Budget impacts use `sql\`budgeted_amount + ${amountChange}\`` to ensure atomic increment/decrement without race conditions (05-02)
+- **Single transaction for final CO approval**: CO number generation, status update, and budget impacts happen atomically - if any part fails, entire operation rolls back (05-02)
+- **Budget reversal on void**: Voiding an approved CO subtracts amountChange from budget line items to maintain financial accuracy (05-02)
 
 ### Pending Todos
 
@@ -96,8 +100,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-13 (Phase 5 Plan 1 complete)
-Stopped at: Completed 05-01-PLAN.md (Change Order Schema, Types, and Permissions)
+Last session: 2026-02-13 (Phase 5 Plan 2 complete)
+Stopped at: Completed 05-02-PLAN.md (Change Order API with Sequential Numbering and Approval Workflow)
 Resume file: None
 
 ---
