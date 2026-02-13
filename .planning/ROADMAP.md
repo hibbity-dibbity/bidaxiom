@@ -229,11 +229,14 @@ Plans:
   1. User can connect Google Calendar or Outlook/Microsoft 365 calendar
   2. Calendar events sync bi-directionally at company and user level
   3. Project milestones and deadlines appear on connected calendars
-**Plans**: TBD
+**Plans**: 5 plans across 3 waves
 
 Plans:
-- [ ] 11-01: TBD during planning
-- [ ] 11-02: TBD during planning
+- [ ] 11-01-PLAN.md — DB schema (3 calendar tables), shared types, CASL abilities (wave 1)
+- [ ] 11-02-PLAN.md — Google and Microsoft OAuth modules, client factories, BullMQ queue (wave 1)
+- [ ] 11-03-PLAN.md — Sync workers, event mappers, webhook handlers (wave 2)
+- [ ] 11-04-PLAN.md — tRPC calendar router, webhook routes, OAuth callbacks, worker startup (wave 2)
+- [ ] 11-05-PLAN.md — Frontend: calendar connection cards, sync status, OAuth callback, project sync (wave 3)
 
 ### Phase 12: Custom Authentication Migration
 **Goal**: Replace Clerk with a custom-built authentication system to eliminate third-party dependency, reduce costs, and gain full control over auth flows
@@ -272,7 +275,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 8. QuickBooks Integration | 5/5 | Complete | 2026-02-13 |
 | 9. Document Management Enhancement | 8/8 | Complete | 2026-02-13 |
 | 10. Reporting & Analytics | 5/5 | Complete | 2026-02-13 |
-| 11. Calendar Integration | 0/TBD | Not started | - |
+| 11. Calendar Integration | 0/5 | Planned | - |
 | 12. Custom Authentication Migration | 0/TBD | Not started | - |
 
 ---
