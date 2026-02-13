@@ -63,6 +63,7 @@ export type AppSubjects =
   | "Bid"
   | "RFQ"
   | "SubcontractorDirectory"
+  | "QuickBooks"
   | "AuditLog"
   | "User"
   | "CompanySettings"

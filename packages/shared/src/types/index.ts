@@ -12,3 +12,19 @@ export {
   AuditAction,
   type AuditLogEntry,
 } from "./tenant";
+
+export {
+  qboConnectionStatusEnum,
+  qboEnvironmentEnum,
+  qboEntityTypeEnum,
+  qboSyncDirectionEnum,
+  qboSyncStatusEnum,
+  qboConnectionSchema,
+  qboSyncStateSchema,
+  qboEntityMappingSchema,
+  qboSyncNotificationSchema,
+  type QboConnection,
+  type QboSyncState,
+  type QboEntityMapping,
+  type QboSyncNotification,
+} from "./quickbooks";

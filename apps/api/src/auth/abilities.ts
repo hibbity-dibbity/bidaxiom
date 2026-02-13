@@ -50,6 +50,7 @@ export function defineAbilitiesFor(
       can("read", "AuditLog");
       can("read", "User");
       cannot("manage", "CompanySettings");
+      cannot("manage", "QuickBooks");
       break;
 
     case "org:accountant":
@@ -66,9 +67,11 @@ export function defineAbilitiesFor(
       can("approve", "ChangeOrder");
       can("read", "RFQ");
       can("read", "Bid");
+      can("read", "QuickBooks");
       can("read", "AuditLog");
       can("read", "User");
       cannot("manage", "CompanySettings");
+      cannot("manage", "QuickBooks");
       break;
 
     case "org:estimator":
