@@ -7,6 +7,7 @@ import { customerRouter } from "./routers/customer.js";
 import { userRouter } from "./routers/user.js";
 import { projectRouter } from "./routers/project.js";
 import { documentRouter } from "./routers/document.js";
+import { budgetRouter } from "./routers/budget.js";
 
 /**
  * Root application router.
@@ -24,6 +25,7 @@ export const appRouter = router({
   user: userRouter,
   project: projectRouter,
   document: documentRouter,
+  budget: budgetRouter,
 });
 
 /**
