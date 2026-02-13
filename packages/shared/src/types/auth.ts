@@ -69,5 +69,6 @@ export type AppSubjects =
   | "CompanySettings"
   | "Document"
   | "Folder"
+  | "Workflow"
   | "ProjectTeam"
   | "all";

@@ -18,6 +18,7 @@ import { rfqRouter } from "./routers/rfq.js";
 import { subcontractorRouter } from "./routers/subcontractor.js";
 import { bidRouter } from "./routers/bid.js";
 import { quickbooksRouter } from "./routers/quickbooks.js";
+import { workflowRouter } from "./routers/workflow.js";
 
 /**
  * Root application router.
@@ -46,6 +47,7 @@ export const appRouter = router({
   subcontractor: subcontractorRouter,
   bid: bidRouter,
   quickbooks: quickbooksRouter,
+  workflow: workflowRouter,
 });
 
 /**
