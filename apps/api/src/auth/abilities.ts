@@ -37,6 +37,7 @@ export function defineAbilitiesFor(
       can("read", "Project"); // Can list all projects
       can("manage", "Project", { id: { $in: userProjectIds } }); // Can manage assigned projects
       can("manage", "Budget");
+      can("manage", "Commitment");
       can("manage", "ChangeOrder");
       can("manage", "PayApplication");
       can("manage", "Document", { projectId: { $in: userProjectIds } });
@@ -51,6 +52,8 @@ export function defineAbilitiesFor(
     case "org:accountant":
       can("read", "Project", { id: { $in: userProjectIds } });
       can("manage", "Budget");
+      can("manage", "Commitment");
+      can("read", "Commitment");
       can("manage", "PayApplication");
       can("manage", "Document", { projectId: { $in: userProjectIds } });
       can("manage", "Folder", { projectId: { $in: userProjectIds } });
@@ -65,6 +68,7 @@ export function defineAbilitiesFor(
       can("manage", "Bid");
       can("manage", "RFQ");
       can("read", "Budget");
+      can("read", "Commitment");
       can("read", "Document", { projectId: { $in: userProjectIds } });
       can("read", "Folder", { projectId: { $in: userProjectIds } });
       can("read", "User");
@@ -77,6 +81,7 @@ export function defineAbilitiesFor(
       can("manage", "Document", { projectId: { $in: userProjectIds } });
       can("manage", "Folder", { projectId: { $in: userProjectIds } });
       can("read", "Budget");
+      can("read", "Commitment");
       can("read", "ChangeOrder");
       can("read", "User");
       cannot("manage", "CompanySettings");
@@ -85,6 +90,8 @@ export function defineAbilitiesFor(
 
     case "org:foreman":
       can("read", "Project", { id: { $in: userProjectIds } });
+      can("read", "Budget");
+      can("read", "Commitment");
       can("read", "Document", { projectId: { $in: userProjectIds } });
       can("read", "Folder", { projectId: { $in: userProjectIds } });
       can("read", "User");
@@ -99,6 +106,7 @@ export function defineAbilitiesFor(
       can("read", "Document", { projectId: { $in: userProjectIds } });
       can("read", "Folder", { projectId: { $in: userProjectIds } });
       can("read", "Budget");
+      can("read", "Commitment");
       can("read", "Bid");
       break;
   }

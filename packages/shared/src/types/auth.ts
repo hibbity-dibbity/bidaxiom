@@ -55,6 +55,7 @@ export type AppActions =
 export type AppSubjects =
   | "Project"
   | "Budget"
+  | "Commitment"
   | "ChangeOrder"
   | "PayApplication"
   | "Bid"
