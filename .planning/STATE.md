@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-10)
 ## Current Position
 
 Phase: 9 of 12 (Document Management Enhancement)
-Plan: 2 of 7 in current phase
+Plan: 6 of 7 in current phase
 Status: In Progress
-Last activity: 2026-02-13 — Completed 09-02-PLAN.md (Document Tagging, Search, and Access Logging APIs)
+Last activity: 2026-02-13 — Completed 09-06-PLAN.md (Workflow Management API)
 
-Progress: [███████░░░] 75% (9 of 12 phases, 2 of 7 plans complete in current phase)
+Progress: [████████░░] 86% (9 of 12 phases, 6 of 7 plans complete in current phase)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 28
-- Average duration: 7.2 min
-- Total execution time: 3.4 hours
+- Total plans completed: 29
+- Average duration: 7.0 min
+- Total execution time: 3.5 hours
 
 **By Phase:**
 
@@ -34,11 +34,11 @@ Progress: [███████░░░] 75% (9 of 12 phases, 2 of 7 plans com
 | 06 | 4 | 21 min | 5.3 min |
 | 07 | 4 | 19 min | 4.8 min |
 | 08 | 5 | 28 min | 5.6 min |
-| 09 | 2 | 6 min | 3 min |
+| 09 | 6 | 21 min | 3.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 08-05 (8 min), 05-04 (1.5 min), 09-01 (3 min), 09-05 (3 min), 09-02 (3 min)
-- Trend: Phase 9 document management enhancement progressing efficiently at 3 min per plan average.
+- Last 5 plans: 05-04 (1.5 min), 09-01 (3 min), 09-05 (3 min), 09-02 (3 min), 09-06 (5 min)
+- Trend: Phase 9 document management enhancement progressing efficiently at 3.5 min per plan average.
 
 *Updated after each plan completion*
 | Phase 06 P02 | 8 | 2 tasks | 5 files |
@@ -58,6 +58,7 @@ Progress: [███████░░░] 75% (9 of 12 phases, 2 of 7 plans com
 | Phase 09-document-management-enhancement P05 | 3 min | 2 tasks | 3 files |
 | Phase 09 P01 | 3 | 2 tasks | 5 files |
 | Phase 09-document-management-enhancement P02 | 3 min | 2 tasks | 1 file |
+| Phase 09-document-management-enhancement P06 | 5 min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -158,6 +159,10 @@ Recent decisions affecting current work:
 - [Phase 09-01]: Lowercase normalized tags in database for case-insensitive search without LOWER() overhead
 - [Phase 09-01]: Separate document_access_logs table for high-volume access events vs general audit_logs
 - [Phase 09-01]: Document schemas moved to dedicated document.ts file with project.ts re-exports for backward compatibility
+- [Phase 09-06]: Multi-step approval with three requirement types (specific_user, any_with_role, all_with_role) for flexible workflow approval chains
+- [Phase 09-06]: Approval authorization enforced at procedure level (too granular for CASL) - CASL enforces project-level access, procedure enforces step-level approval rights
+- [Phase 09-06]: Foremen can update workflows they submitted (submittedBy: userId condition) to respond to RFIs/Submittals they created
+- [Phase 09-06]: Superintendents can only delete draft workflows (status: 'draft' condition) to prevent accidental data loss once workflow enters approval process
 
 ### Pending Todos
 
@@ -170,7 +175,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-13 (Phase 9 - Document Management Enhancement)
-Stopped at: Completed 09-02-PLAN.md (Document Tagging, Search, and Access Logging APIs)
+Stopped at: Completed 09-06-PLAN.md (Workflow Management API)
 Resume file: None
 
 ---
