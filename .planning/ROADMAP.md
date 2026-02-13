@@ -144,13 +144,14 @@ Plans:
   5. RFQs support versioning and amendments (immutable originals with amendment trail)
   6. Bids support snapshot versioning with upstream change notifications
   7. Awarded bids can be converted into budget commitments
-**Plans**: TBD
+**Plans**: 5 plans across 3 waves
 
 Plans:
-- [ ] 07-01: TBD during planning
-- [ ] 07-02: TBD during planning
-- [ ] 07-03: TBD during planning
-- [ ] 07-04: TBD during planning
+- [ ] 07-01-PLAN.md — DB schema (7 tables), shared bidding types, CASL abilities (wave 1)
+- [ ] 07-02-PLAN.md — RFQ tRPC router with lifecycle, amendments, invitations + subcontractor directory router (wave 2)
+- [ ] 07-03-PLAN.md — Bid tRPC router with versioning, comparison, leveling, award-to-commitment (wave 2)
+- [ ] 07-04-PLAN.md — Frontend: RFQ list, creation, detail, bid comparison pages (wave 3)
+- [ ] 07-05-PLAN.md — Frontend: subcontractor directory pages, sidebar navigation (wave 3)
 
 ### Phase 8: QuickBooks Integration
 **Goal**: Companies can connect QuickBooks with bi-directional sync for projects, invoices, and bills
