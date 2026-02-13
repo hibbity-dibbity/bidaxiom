@@ -14,6 +14,8 @@ import { sovRouter } from "./routers/sov.js";
 import { paymentAppRouter } from "./routers/payment-app.js";
 import { lienWaiverRouter } from "./routers/lien-waiver.js";
 import { invoiceTrackingRouter } from "./routers/invoice-tracking.js";
+import { rfqRouter } from "./routers/rfq.js";
+import { subcontractorRouter } from "./routers/subcontractor.js";
 
 /**
  * Root application router.
@@ -38,6 +40,8 @@ export const appRouter = router({
   paymentApp: paymentAppRouter,
   lienWaiver: lienWaiverRouter,
   invoiceTracking: invoiceTrackingRouter,
+  rfq: rfqRouter,
+  subcontractor: subcontractorRouter,
 });
 
 /**
