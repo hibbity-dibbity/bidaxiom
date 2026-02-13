@@ -85,6 +85,10 @@ export async function buildTenantContext(
       bids: tenantDb.bids,
       bidVersions: tenantDb.bidVersions,
       bidLevelingNotes: tenantDb.bidLevelingNotes,
+      qboConnections: tenantDb.qboConnections,
+      qboSyncState: tenantDb.qboSyncState,
+      qboEntityMappings: tenantDb.qboEntityMappings,
+      qboSyncNotifications: tenantDb.qboSyncNotifications,
     },
   };
 }

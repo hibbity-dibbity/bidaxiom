@@ -617,6 +617,75 @@ export function createTenantSchema(schemaName: string) {
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   });
 
+  /**
+   * QuickBooks Online connections
+   * Stores OAuth tokens and connection metadata for QBO integration
+   */
+  const qboConnections = schema.table("qbo_connections", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    realmId: text("realm_id").notNull(),
+    environment: text("environment").notNull(), // sandbox | production
+    accessToken: text("access_token"), // Short-lived (1 hour), OK unencrypted
+    encryptedRefreshToken: text("encrypted_refresh_token").notNull(), // AES-256-GCM encrypted
+    tokenExpiresAt: timestamp("token_expires_at", { withTimezone: true }).notNull(),
+    refreshTokenExpiresAt: timestamp("refresh_token_expires_at", { withTimezone: true }).notNull(),
+    companyName: text("company_name"),
+    status: text("status").notNull().default("active"), // active | disconnected | expired | error
+    lastSyncAt: timestamp("last_sync_at", { withTimezone: true }),
+    errorMessage: text("error_message"),
+    connectedBy: text("connected_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * QuickBooks sync state
+   * Tracks last successful sync per entity type
+   */
+  const qboSyncState = schema.table("qbo_sync_state", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    entityType: text("entity_type").notNull(), // project, invoice, bill, payment, vendor, customer
+    lastSuccessfulSync: timestamp("last_successful_sync", { withTimezone: true }),
+    lastCdcSync: timestamp("last_cdc_sync", { withTimezone: true }),
+    syncStatus: text("sync_status").notNull().default("pending"), // pending | syncing | synced | error | conflict
+    errorMessage: text("error_message"),
+    syncedCount: integer("synced_count").notNull().default(0),
+    errorCount: integer("error_count").notNull().default(0),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * QuickBooks entity mappings
+   * Bidirectional mapping between platform IDs and QBO IDs
+   */
+  const qboEntityMappings = schema.table("qbo_entity_mappings", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    entityType: text("entity_type").notNull(), // project, invoice, bill, payment, vendor, customer
+    platformId: uuid("platform_id").notNull(),
+    qboId: text("qbo_id").notNull(), // QBO entity ID (string, not integer)
+    qboSyncToken: text("qbo_sync_token"), // QBO's optimistic lock token
+    direction: text("direction").notNull().default("bidirectional"), // platform_to_qbo | qbo_to_platform | bidirectional
+    lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
+    syncStatus: text("sync_status").notNull().default("synced"), // pending | syncing | synced | error | conflict
+    metadata: jsonb("metadata").default({}).$type<Record<string, unknown>>(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * QuickBooks sync notifications
+   * User-facing alerts for sync failures after retries exhausted
+   */
+  const qboSyncNotifications = schema.table("qbo_sync_notifications", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    entityType: text("entity_type").notNull(), // project, invoice, bill, payment, vendor, customer
+    entityId: text("entity_id"), // Platform or QBO ID of the failed entity
+    message: text("message").notNull(),
+    severity: text("severity").notNull().default("error"), // error | warning | info
+    dismissed: boolean("dismissed").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
   return {
     schema,
     auditLogs,
@@ -651,6 +720,10 @@ export function createTenantSchema(schemaName: string) {
     bids,
     bidVersions,
     bidLevelingNotes,
+    qboConnections,
+    qboSyncState,
+    qboEntityMappings,
+    qboSyncNotifications,
   };
 }
 

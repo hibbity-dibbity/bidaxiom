@@ -834,6 +834,91 @@ export async function provisionTenantSchema(
         ON "${schemaName}".bid_leveling_notes(rfq_id)
       `);
 
+      // Create qbo_connections table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".qbo_connections (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          realm_id TEXT NOT NULL,
+          environment TEXT NOT NULL,
+          access_token TEXT,
+          encrypted_refresh_token TEXT NOT NULL,
+          token_expires_at TIMESTAMPTZ NOT NULL,
+          refresh_token_expires_at TIMESTAMPTZ NOT NULL,
+          company_name TEXT,
+          status TEXT NOT NULL DEFAULT 'active',
+          last_sync_at TIMESTAMPTZ,
+          error_message TEXT,
+          connected_by TEXT NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      // Index for webhook lookup by realmId
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_qbo_connections_realm
+        ON "${schemaName}".qbo_connections(realm_id)
+      `);
+
+      // Create qbo_sync_state table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".qbo_sync_state (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          entity_type TEXT NOT NULL,
+          last_successful_sync TIMESTAMPTZ,
+          last_cdc_sync TIMESTAMPTZ,
+          sync_status TEXT NOT NULL DEFAULT 'pending',
+          error_message TEXT,
+          synced_count INTEGER NOT NULL DEFAULT 0,
+          error_count INTEGER NOT NULL DEFAULT 0,
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      // Create qbo_entity_mappings table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".qbo_entity_mappings (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          entity_type TEXT NOT NULL,
+          platform_id UUID NOT NULL,
+          qbo_id TEXT NOT NULL,
+          qbo_sync_token TEXT,
+          direction TEXT NOT NULL DEFAULT 'bidirectional',
+          last_synced_at TIMESTAMPTZ,
+          sync_status TEXT NOT NULL DEFAULT 'synced',
+          metadata JSONB DEFAULT '{}'::jsonb,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          UNIQUE(entity_type, platform_id),
+          UNIQUE(entity_type, qbo_id)
+        )
+      `);
+
+      // Index for forward mapping (platform -> QBO)
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_qbo_entity_mappings_platform
+        ON "${schemaName}".qbo_entity_mappings(entity_type, platform_id)
+      `);
+
+      // Index for reverse mapping (QBO -> platform)
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_qbo_entity_mappings_qbo
+        ON "${schemaName}".qbo_entity_mappings(entity_type, qbo_id)
+      `);
+
+      // Create qbo_sync_notifications table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".qbo_sync_notifications (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          entity_type TEXT NOT NULL,
+          entity_id TEXT,
+          message TEXT NOT NULL,
+          severity TEXT NOT NULL DEFAULT 'error',
+          dismissed BOOLEAN NOT NULL DEFAULT false,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
       // Register tenant in public schema
       const insertResult = await client.query(
         `INSERT INTO tenants (schema_name, clerk_org_id, name, status)
