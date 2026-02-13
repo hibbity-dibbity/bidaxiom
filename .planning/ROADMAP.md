@@ -187,7 +187,7 @@ Plans:
   4. Workflow approvals follow configurable multi-step processes with role-based access
   5. All document access and workflow actions are fully audited
   6. Users can search documents by name, tags, category, and content type
-**Plans**: 7 plans across 3 waves
+**Plans**: 8 plans across 3 waves
 
 Plans:
 - [ ] 09-01-PLAN.md — DB schema for tags, categories, access logs, permissions (wave 1)
@@ -197,6 +197,7 @@ Plans:
 - [ ] 09-05-PLAN.md — Workflow schema (RFI/Submittal/Transmittal) with approval chains (wave 1)
 - [ ] 09-06-PLAN.md — Workflow tRPC router with lifecycle and approval procedures (wave 2)
 - [ ] 09-07-PLAN.md — Frontend: search, tagging, sharing, workflow creation and approval UI (wave 3)
+- [ ] 09-08-PLAN.md — Gap closure: Complete share dialog with getDocumentPermissions and current shares table (wave 1)
 
 ### Phase 10: Reporting & Analytics
 **Goal**: Build comprehensive reporting and analytics system with pre-built reports, custom builder, dashboards, and scheduled delivery
@@ -269,7 +270,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 6. Payment Applications | 0/5 | Not started | - |
 | 7. Bidding & Procurement | 0/5 | Not started | - |
 | 8. QuickBooks Integration | 0/5 | Not started | - |
-| 9. Document Management Enhancement | 0/7 | Not started | - |
+| 9. Document Management Enhancement | 0/8 | Not started | - |
 | 10. Reporting & Analytics | 0/5 | Not started | - |
 | 11. Calendar Integration | 0/TBD | Not started | - |
 | 12. Custom Authentication Migration | 0/TBD | Not started | - |
