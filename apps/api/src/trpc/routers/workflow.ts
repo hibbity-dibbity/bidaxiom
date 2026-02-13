@@ -421,13 +421,13 @@ export const workflowRouter = router({
           newWorkflowStatus = "rejected";
         } else if (input.action === "approve") {
           // Check if all steps are now approved
-          const allSteps = await tx
+          const allSteps: Array<{ status: string | null }> = await tx
             .select({ status: schema.workflowApprovals.status })
             .from(schema.workflowApprovals)
             .where(eq(schema.workflowApprovals.workflowId, approval.workflowId));
 
-          const allApproved = allSteps.every((s: { status: string }) => s.status === "approved");
-          const anyRejected = allSteps.some((s: { status: string }) => s.status === "rejected");
+          const allApproved = allSteps.every((s) => s.status === "approved");
+          const anyRejected = allSteps.some((s) => s.status === "rejected");
 
           if (anyRejected) {
             newWorkflowStatus = "rejected";

@@ -7,6 +7,8 @@ import {
   integer,
   numeric,
   boolean,
+  unique,
+  index,
 } from "drizzle-orm/pg-core";
 import type { TradesConfig, JobNumberSettings, RetainageConfig } from "@construction/shared";
 
@@ -316,6 +318,50 @@ export function createTenantSchema(schemaName: string) {
     newValue: text("new_value"), // Nullable
     comment: text("comment"),
   });
+
+  /**
+   * Document permissions
+   * Granular sharing permissions for specific documents
+   * Allows users to grant view/edit access to individuals beyond project team
+   * Folder permissions are inherited when document has no explicit permissions
+   */
+  const documentPermissions = schema.table("document_permissions", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    documentId: uuid("document_id").notNull().references(() => documents.id, { onDelete: "cascade" }),
+    userId: text("user_id").notNull(), // Clerk user ID of person granted access
+    permissionLevel: text("permission_level").notNull(), // view, edit
+    grantedBy: text("granted_by").notNull(), // Clerk user ID who shared
+    grantedAt: timestamp("granted_at", { withTimezone: true }).defaultNow().notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }), // null = no expiration
+  }, (table) => ({
+    // One permission level per user per document
+    uniqueDocumentUser: unique().on(table.documentId, table.userId),
+    // Fast permission checks
+    documentUserIdx: index().on(table.documentId, table.userId),
+    // "Shared with me" queries
+    userIdx: index().on(table.userId),
+  }));
+
+  /**
+   * Folder permissions
+   * Granular sharing permissions for folders
+   * Permissions cascade to documents within when includeSubfolders is true
+   */
+  const folderPermissions = schema.table("folder_permissions", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    folderId: uuid("folder_id").notNull().references(() => folders.id, { onDelete: "cascade" }),
+    userId: text("user_id").notNull(), // Clerk user ID of person granted access
+    permissionLevel: text("permission_level").notNull(), // view, edit
+    includeSubfolders: boolean("include_subfolders").notNull().default(true), // cascade to child folders
+    grantedBy: text("granted_by").notNull(),
+    grantedAt: timestamp("granted_at", { withTimezone: true }).defaultNow().notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }), // null = no expiration
+  }, (table) => ({
+    // One permission level per user per folder
+    uniqueFolderUser: unique().on(table.folderId, table.userId),
+    // Fast permission checks
+    folderUserIdx: index().on(table.folderId, table.userId),
+  }));
 
   /**
    * Budget line items
@@ -818,6 +864,8 @@ export function createTenantSchema(schemaName: string) {
     workflowApprovals,
     workflowCounters,
     workflowHistory,
+    documentPermissions,
+    folderPermissions,
     budgetLineItems,
     commitments,
     commitmentLineItems,

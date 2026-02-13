@@ -69,6 +69,8 @@ export async function buildTenantContext(
       workflowApprovals: tenantDb.workflowApprovals,
       workflowCounters: tenantDb.workflowCounters,
       workflowHistory: tenantDb.workflowHistory,
+      documentPermissions: tenantDb.documentPermissions,
+      folderPermissions: tenantDb.folderPermissions,
       budgetLineItems: tenantDb.budgetLineItems,
       commitments: tenantDb.commitments,
       commitmentLineItems: tenantDb.commitmentLineItems,
