@@ -62,6 +62,7 @@ export type AppSubjects =
   | "LienWaiver"
   | "Bid"
   | "RFQ"
+  | "SubcontractorDirectory"
   | "AuditLog"
   | "User"
   | "CompanySettings"

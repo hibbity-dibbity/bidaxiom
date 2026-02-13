@@ -44,8 +44,9 @@ export function defineAbilitiesFor(
       can("manage", "LienWaiver");
       can("manage", "Document", { projectId: { $in: userProjectIds } });
       can("manage", "Folder", { projectId: { $in: userProjectIds } });
+      can("manage", "RFQ");
       can("read", "Bid");
-      can("read", "RFQ");
+      can("read", "SubcontractorDirectory");
       can("read", "AuditLog");
       can("read", "User");
       cannot("manage", "CompanySettings");
@@ -63,6 +64,8 @@ export function defineAbilitiesFor(
       can("manage", "Folder", { projectId: { $in: userProjectIds } });
       can("read", "ChangeOrder");
       can("approve", "ChangeOrder");
+      can("read", "RFQ");
+      can("read", "Bid");
       can("read", "AuditLog");
       can("read", "User");
       cannot("manage", "CompanySettings");
@@ -72,6 +75,7 @@ export function defineAbilitiesFor(
       can("read", "Project", { id: { $in: userProjectIds } });
       can("manage", "Bid");
       can("manage", "RFQ");
+      can("manage", "SubcontractorDirectory");
       can("read", "Budget");
       can("read", "Commitment");
       can("read", "ChangeOrder");
@@ -95,6 +99,8 @@ export function defineAbilitiesFor(
       can("read", "PaymentApp");
       can("approve", "PaymentApp");
       can("read", "LienWaiver");
+      can("read", "RFQ");
+      can("read", "Bid");
       can("read", "User");
       cannot("manage", "CompanySettings");
       cannot("delete", "all");
@@ -107,6 +113,7 @@ export function defineAbilitiesFor(
       can("read", "ChangeOrder");
       can("read", "PaymentApp");
       can("read", "LienWaiver");
+      can("read", "RFQ");
       can("read", "Document", { projectId: { $in: userProjectIds } });
       can("read", "Folder", { projectId: { $in: userProjectIds } });
       can("read", "User");
