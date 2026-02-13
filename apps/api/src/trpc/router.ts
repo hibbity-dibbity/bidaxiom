@@ -10,6 +10,8 @@ import { documentRouter } from "./routers/document.js";
 import { budgetRouter } from "./routers/budget.js";
 import { commitmentRouter } from "./routers/commitment.js";
 import { changeOrderRouter } from "./routers/change-order.js";
+import { sovRouter } from "./routers/sov.js";
+import { paymentAppRouter } from "./routers/payment-app.js";
 import { lienWaiverRouter } from "./routers/lien-waiver.js";
 import { invoiceTrackingRouter } from "./routers/invoice-tracking.js";
 
@@ -32,6 +34,8 @@ export const appRouter = router({
   budget: budgetRouter,
   commitment: commitmentRouter,
   changeOrder: changeOrderRouter,
+  sov: sovRouter,
+  paymentApp: paymentAppRouter,
   lienWaiver: lienWaiverRouter,
   invoiceTracking: invoiceTrackingRouter,
 });
