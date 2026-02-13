@@ -215,11 +215,11 @@ Plans:
 **Plans**: 5 plans across 3 waves
 
 Plans:
-- [ ] 10-01-PLAN.md — DB schema (report definitions, templates, schedules, materialized data), shared types, CASL abilities (wave 1)
-- [ ] 10-02-PLAN.md — Report execution engine, query builder, analytics calculator, report tRPC router (wave 2)
-- [ ] 10-03-PLAN.md — Export services (PDF via puppeteer, Excel via exceljs, CSV), download endpoints (wave 2)
-- [ ] 10-04-PLAN.md — Scheduled delivery (BullMQ job processor, nodemailer email sender, schedule router) (wave 2)
-- [ ] 10-05-PLAN.md — Frontend: report list, builder with drag-and-drop, filter UI, chart preview, export/schedule dialogs, pre-built templates (wave 3)
+- [x] 10-01-PLAN.md — DB schema (report definitions, templates, schedules, materialized data), shared types, CASL abilities (wave 1)
+- [x] 10-02-PLAN.md — Report execution engine, query builder, analytics calculator, report tRPC router (wave 2)
+- [x] 10-03-PLAN.md — Export services (PDF via puppeteer, Excel via exceljs, CSV), download endpoints (wave 2)
+- [x] 10-04-PLAN.md — Scheduled delivery (BullMQ job processor, nodemailer email sender, schedule router) (wave 2)
+- [x] 10-05-PLAN.md — Frontend: report list, builder with drag-and-drop, filter UI, chart preview, export/schedule dialogs, pre-built templates (wave 3)
 
 ### Phase 11: Calendar Integration
 **Goal**: Users can connect calendars with bi-directional sync of project milestones
@@ -271,7 +271,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 7. Bidding & Procurement | 0/5 | Not started | - |
 | 8. QuickBooks Integration | 0/5 | Not started | - |
 | 9. Document Management Enhancement | 0/8 | Not started | - |
-| 10. Reporting & Analytics | 0/5 | Not started | - |
+| 10. Reporting & Analytics | 5/5 | Complete | 2026-02-13 |
 | 11. Calendar Integration | 0/TBD | Not started | - |
 | 12. Custom Authentication Migration | 0/TBD | Not started | - |
 
