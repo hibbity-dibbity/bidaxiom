@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-10)
 ## Current Position
 
 Phase: 4 of 10 (Budget & Cost Tracking)
-Plan: 1 of 4 in current phase
+Plan: 2 of 4 in current phase
 Status: In Progress
-Last activity: 2026-02-13 — Completed 04-01-PLAN.md (Budget and Cost Tracking Schema)
+Last activity: 2026-02-13 — Completed 04-02-PLAN.md (Budget tRPC Router and Calculations)
 
-Progress: [███░░░░░░░] 30% (3 of 10 phases, 1 of 4 plans in phase 4)
+Progress: [███░░░░░░░] 30% (3 of 10 phases, 2 of 4 plans in phase 4)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
-- Average duration: 22 min
-- Total execution time: 2.15 hours
+- Total plans completed: 7
+- Average duration: 19 min
+- Total execution time: 2.20 hours
 
 **By Phase:**
 
@@ -29,11 +29,11 @@ Progress: [███░░░░░░░] 30% (3 of 10 phases, 1 of 4 plans in 
 |-------|-------|-------|----------|
 | 02 | 2 | 10 min | 5 min |
 | 03 | 3 | 9 min | 3 min |
-| 04 | 1 | 111 min | 111 min |
+| 04 | 2 | 114 min | 57 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-02 (5 min), 03-02 (2 min), 03-03 (3 min), 03-04 (4 min), 04-01 (111 min)
-- Trend: Variable (schema-heavy plan took longer)
+- Last 5 plans: 03-02 (2 min), 03-03 (3 min), 03-04 (4 min), 04-01 (111 min), 04-02 (3 min)
+- Trend: Variable (schema-heavy plans take longer, API implementation is fast)
 
 *Updated after each plan completion*
 
@@ -72,6 +72,11 @@ Recent decisions affecting current work:
 - **CSI cost codes 0-49, custom codes 50+**: Standard CSI divisions use IDs 0-49, companies add custom codes starting at 50 to avoid conflicts (04-01)
 - **Commitment line items optional budget reference**: budgetLineItemId can be NULL to support commitments that don't map to existing budget lines (04-01)
 - **Foremen budget/commitment read access**: Foremen need cost visibility for assigned projects to make informed decisions (04-01)
+- **Variance thresholds default to 10% warning, 20% critical**: Industry-standard cost variance alert levels; configurable per company in future (04-02)
+- **Simplified EV calculation for Phase 4**: EV = committedCost as proxy until Phase 6 payment applications provide actual progress data (04-02)
+- **Lock enforcement throws FORBIDDEN error**: Clear error message directs users to use change orders for locked line items (04-02)
+- **Delete prevention when commitments exist**: Referential integrity check prevents orphaned commitment line items (04-02)
+- **CSI divisions validated against CSI_DIVISIONS array**: Cost codes 0-49 must be valid CSI divisions; 50+ are custom codes (validated in future) (04-02)
 
 ### Pending Todos
 
@@ -84,7 +89,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-13 (Phase 4 in progress)
-Stopped at: Completed 04-01-PLAN.md (Budget and Cost Tracking Schema). Ready for 04-02-PLAN.md.
+Stopped at: Completed 04-02-PLAN.md (Budget tRPC Router and Calculations). Ready for 04-03-PLAN.md.
 Resume file: None
 
 ---
