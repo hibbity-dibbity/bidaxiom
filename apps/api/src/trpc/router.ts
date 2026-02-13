@@ -9,6 +9,7 @@ import { projectRouter } from "./routers/project.js";
 import { documentRouter } from "./routers/document.js";
 import { budgetRouter } from "./routers/budget.js";
 import { commitmentRouter } from "./routers/commitment.js";
+import { changeOrderRouter } from "./routers/change-order.js";
 
 /**
  * Root application router.
@@ -28,6 +29,7 @@ export const appRouter = router({
   document: documentRouter,
   budget: budgetRouter,
   commitment: commitmentRouter,
+  changeOrder: changeOrderRouter,
 });
 
 /**
