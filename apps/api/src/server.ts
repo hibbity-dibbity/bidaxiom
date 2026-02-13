@@ -67,6 +67,15 @@ try {
   console.warn("S3 bucket initialization failed (MinIO may not be running):", err);
 }
 
+// Seed report templates (idempotent)
+try {
+  const { seedReportTemplates } = await import('./db/seed/report-templates.js');
+  const { db } = await import('./db/client.js');
+  await seedReportTemplates(db);
+} catch (error) {
+  console.error('Failed to seed report templates:', error);
+}
+
 // Start QBO sync worker (processes background sync jobs)
 try {
   startQboSyncWorker();
