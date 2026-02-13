@@ -10,6 +10,7 @@ import {
   DollarSign,
   FileText,
   Settings,
+  HardHat,
 } from "lucide-react";
 import {
   SidebarMenu,
@@ -34,6 +35,12 @@ const navItems = [
     label: "Customers",
     href: "/customers",
     icon: Users,
+    active: true,
+  },
+  {
+    label: "Subcontractors",
+    href: "/subcontractors",
+    icon: HardHat,
     active: true,
   },
   {
