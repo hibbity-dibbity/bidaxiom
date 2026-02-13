@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-10)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** Phase 4 - Budget & Cost Tracking
+**Current focus:** Phase 5 - Change Order Management
 
 ## Current Position
 
-Phase: 4 of 10 (Budget & Cost Tracking)
-Plan: 4 of 4 in current phase
-Status: Phase Complete
-Last activity: 2026-02-13 — Completed 04-04-PLAN.md (Budget and Commitment Frontend Pages)
+Phase: 5 of 10 (Change Order Management)
+Plan: 1 of 3 in current phase
+Status: In Progress
+Last activity: 2026-02-13 — Completed 05-01-PLAN.md (Change Order Schema, Types, and Permissions)
 
-Progress: [████░░░░░░] 40% (4 of 10 phases complete)
+Progress: [████░░░░░░] 40% (4 of 10 phases complete, Phase 5 Plan 1 done)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
-- Average duration: 15 min
-- Total execution time: 2.47 hours
+- Total plans completed: 10
+- Average duration: 14 min
+- Total execution time: 2.54 hours
 
 **By Phase:**
 
@@ -30,10 +30,11 @@ Progress: [████░░░░░░] 40% (4 of 10 phases complete)
 | 02 | 2 | 10 min | 5 min |
 | 03 | 3 | 9 min | 3 min |
 | 04 | 4 | 123 min | 31 min |
+| 05 | 1 | 4 min | 4 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-04 (4 min), 04-01 (111 min), 04-02 (3 min), 04-03 (2 min), 04-04 (7 min)
-- Trend: Schema-heavy plans take longer (04-01: 111 min), API and UI implementation is fast (2-7 min)
+- Last 5 plans: 04-01 (111 min), 04-02 (3 min), 04-03 (2 min), 04-04 (7 min), 05-01 (4 min)
+- Trend: Schema-heavy plans take longer (04-01: 111 min), but API and UI implementation is consistently fast (2-7 min)
 
 *Updated after each plan completion*
 
@@ -80,6 +81,10 @@ Recent decisions affecting current work:
 - **Commitment creation warns but doesn't block when over budget**: PMs need flexibility to approve over-budget commitments with justification; warnings provide visibility without preventing legitimate business needs (04-03)
 - **Only draft commitments can be deleted**: Once commitment enters workflow (pending/approved/executed), it should be tracked for audit; use 'closed' status instead of delete (04-03)
 - **Status transitions follow strict lifecycle**: Prevents invalid state transitions (e.g., executed → draft) that would break financial reporting and audit trail (04-03)
+- **Discriminated union for CO types**: Owner COs require requestedBy, internal require reason enum, subcontractor require commitmentId for type-safe validation at creation time (05-01)
+- **Sequential counters without DB constraint**: Uniqueness enforced via SELECT FOR UPDATE in service layer to avoid migration complexity with composite unique constraints (05-01)
+- **Flexible approval requirements**: Supports "all" (all approvers must approve), "any" (first approval completes step), "specific" (exact user must approve) (05-01)
+- **Field-level history tracking for change orders**: Change order history table records every field change with old/new values for complete audit trail (05-01)
 
 ### Pending Todos
 
@@ -91,8 +96,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-13 (Phase 4 complete)
-Stopped at: Completed 04-04-PLAN.md (Budget and Commitment Frontend Pages). Phase 4 complete. Ready for Phase 5.
+Last session: 2026-02-13 (Phase 5 Plan 1 complete)
+Stopped at: Completed 05-01-PLAN.md (Change Order Schema, Types, and Permissions)
 Resume file: None
 
 ---
