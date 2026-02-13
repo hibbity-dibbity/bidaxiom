@@ -112,10 +112,10 @@ Plans:
 **Plans**: 4 plans across 3 waves
 
 Plans:
-- [ ] 05-01-PLAN.md — DB schema (5 tables), shared types (discriminated union), CASL abilities (wave 1)
-- [ ] 05-02-PLAN.md — Change order tRPC router with sequential numbering, approval workflow, budget updates (wave 2)
-- [ ] 05-03-PLAN.md — Frontend: CO list, creation form, detail view, approval panel, history timeline (wave 3)
-- [ ] 05-04-PLAN.md — Gap closure: Add submit for approval dialog to change order detail page (wave 1)
+- [x] 05-01-PLAN.md — DB schema (5 tables), shared types (discriminated union), CASL abilities (wave 1)
+- [x] 05-02-PLAN.md — Change order tRPC router with sequential numbering, approval workflow, budget updates (wave 2)
+- [x] 05-03-PLAN.md — Frontend: CO list, creation form, detail view, approval panel, history timeline (wave 3)
+- [x] 05-04-PLAN.md — Gap closure: Add submit for approval dialog to change order detail page (wave 1)
 
 ### Phase 6: Payment Applications
 **Goal**: Users can create and track payment applications with retainage and lien waivers
@@ -130,11 +130,11 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 06-01-PLAN.md — DB schema (7 tables), shared types (SOV, payment app, lien waiver, retainage), CASL abilities (wave 1)
-- [ ] 06-02-PLAN.md — SOV tRPC router, payment app calculation engine, payment app tRPC router with approval workflow and budget updates (wave 2)
-- [ ] 06-03-PLAN.md — Lien waiver tRPC router with four-type support, invoice tracking with AP/AR aging reports (wave 2)
-- [ ] 06-04-PLAN.md — Frontend: SOV editor, payment app list/create/detail (G702/G703), lien waiver tracker, aging reports, project navigation (wave 3)
-- [ ] 06-05-PLAN.md — Gap closure: Add budget actualCost column, retainageConfig to company profiles, update payment app approval to write budget actuals (wave 1)
+- [x] 06-01-PLAN.md — DB schema (7 tables), shared types (SOV, payment app, lien waiver, retainage), CASL abilities (wave 1)
+- [x] 06-02-PLAN.md — SOV tRPC router, payment app calculation engine, payment app tRPC router with approval workflow and budget updates (wave 2)
+- [x] 06-03-PLAN.md — Lien waiver tRPC router with four-type support, invoice tracking with AP/AR aging reports (wave 2)
+- [x] 06-04-PLAN.md — Frontend: SOV editor, payment app list/create/detail (G702/G703), lien waiver tracker, aging reports, project navigation (wave 3)
+- [x] 06-05-PLAN.md — Gap closure: Add budget actualCost column, retainageConfig to company profiles, update payment app approval to write budget actuals (wave 1)
 
 ### Phase 7: Bidding & Procurement
 **Goal**: GCs can issue RFQs and subs can respond with versioned bids that convert to budget commitments
@@ -151,11 +151,11 @@ Plans:
 **Plans**: 5 plans across 3 waves
 
 Plans:
-- [ ] 07-01-PLAN.md — DB schema (7 tables), shared bidding types, CASL abilities (wave 1)
-- [ ] 07-02-PLAN.md — RFQ tRPC router with lifecycle, amendments, invitations + subcontractor directory router (wave 2)
-- [ ] 07-03-PLAN.md — Bid tRPC router with versioning, comparison, leveling, award-to-commitment (wave 2)
-- [ ] 07-04-PLAN.md — Frontend: RFQ list, creation, detail, bid comparison pages (wave 3)
-- [ ] 07-05-PLAN.md — Frontend: subcontractor directory pages, sidebar navigation (wave 3)
+- [x] 07-01-PLAN.md — DB schema (7 tables), shared bidding types, CASL abilities (wave 1)
+- [x] 07-02-PLAN.md — RFQ tRPC router with lifecycle, amendments, invitations + subcontractor directory router (wave 2)
+- [x] 07-03-PLAN.md — Bid tRPC router with versioning, comparison, leveling, award-to-commitment (wave 2)
+- [x] 07-04-PLAN.md — Frontend: RFQ list, creation, detail, bid comparison pages (wave 3)
+- [x] 07-05-PLAN.md — Frontend: subcontractor directory pages, sidebar navigation (wave 3)
 
 ### Phase 8: QuickBooks Integration
 **Goal**: Companies can connect QuickBooks with bi-directional sync for projects, invoices, and bills
@@ -170,11 +170,11 @@ Plans:
 **Plans**: 5 plans across 3 waves
 
 Plans:
-- [ ] 08-01-PLAN.md — DB schema (3 QBO tables), shared types, CASL abilities (wave 1)
-- [ ] 08-02-PLAN.md — OAuth module, token encryption, BullMQ queue, QBO client factory (wave 1)
-- [ ] 08-03-PLAN.md — Sync workers, entity mappers (project/invoice/bill), CDC fallback (wave 2)
-- [ ] 08-04-PLAN.md — tRPC quickbooks router, webhook handler, server registration (wave 2)
-- [ ] 08-05-PLAN.md — Frontend: integrations settings page, sync status, OAuth callback (wave 3)
+- [x] 08-01-PLAN.md — DB schema (3 QBO tables), shared types, CASL abilities (wave 1)
+- [x] 08-02-PLAN.md — OAuth module, token encryption, BullMQ queue, QBO client factory (wave 1)
+- [x] 08-03-PLAN.md — Sync workers, entity mappers (project/invoice/bill), CDC fallback (wave 2)
+- [x] 08-04-PLAN.md — tRPC quickbooks router, webhook handler, server registration (wave 2)
+- [x] 08-05-PLAN.md — Frontend: integrations settings page, sync status, OAuth callback (wave 3)
 
 ### Phase 9: Document Management Enhancement
 **Goal**: Enhance existing document system with enterprise features - versioning, workflows, permissions, and tagging
@@ -190,14 +190,14 @@ Plans:
 **Plans**: 8 plans across 3 waves
 
 Plans:
-- [ ] 09-01-PLAN.md — DB schema for tags, categories, access logs, permissions (wave 1)
-- [ ] 09-02-PLAN.md — Document tagging and search API procedures (wave 2)
-- [ ] 09-03-PLAN.md — Granular permissions schema and CASL enhancements (wave 2)
-- [ ] 09-04-PLAN.md — Document/folder sharing API with permission management (wave 3)
-- [ ] 09-05-PLAN.md — Workflow schema (RFI/Submittal/Transmittal) with approval chains (wave 1)
-- [ ] 09-06-PLAN.md — Workflow tRPC router with lifecycle and approval procedures (wave 2)
-- [ ] 09-07-PLAN.md — Frontend: search, tagging, sharing, workflow creation and approval UI (wave 3)
-- [ ] 09-08-PLAN.md — Gap closure: Complete share dialog with getDocumentPermissions and current shares table (wave 1)
+- [x] 09-01-PLAN.md — DB schema for tags, categories, access logs, permissions (wave 1)
+- [x] 09-02-PLAN.md — Document tagging and search API procedures (wave 2)
+- [x] 09-03-PLAN.md — Granular permissions schema and CASL enhancements (wave 2)
+- [x] 09-04-PLAN.md — Document/folder sharing API with permission management (wave 3)
+- [x] 09-05-PLAN.md — Workflow schema (RFI/Submittal/Transmittal) with approval chains (wave 1)
+- [x] 09-06-PLAN.md — Workflow tRPC router with lifecycle and approval procedures (wave 2)
+- [x] 09-07-PLAN.md — Frontend: search, tagging, sharing, workflow creation and approval UI (wave 3)
+- [x] 09-08-PLAN.md — Gap closure: Complete share dialog with getDocumentPermissions and current shares table (wave 1)
 
 ### Phase 10: Reporting & Analytics
 **Goal**: Build comprehensive reporting and analytics system with pre-built reports, custom builder, dashboards, and scheduled delivery
@@ -266,11 +266,11 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 2. Company Setup & Configuration | 2/2 | Complete | 2026-02-12 |
 | 3. Project Management Core | 5/5 | Complete | 2026-02-12 |
 | 4. Budget & Cost Tracking | 4/4 | Complete | 2026-02-12 |
-| 5. Change Order Management | 0/4 | Not started | - |
-| 6. Payment Applications | 0/5 | Not started | - |
-| 7. Bidding & Procurement | 0/5 | Not started | - |
-| 8. QuickBooks Integration | 0/5 | Not started | - |
-| 9. Document Management Enhancement | 0/8 | Not started | - |
+| 5. Change Order Management | 4/4 | Complete | 2026-02-13 |
+| 6. Payment Applications | 5/5 | Complete | 2026-02-13 |
+| 7. Bidding & Procurement | 5/5 | Complete | 2026-02-13 |
+| 8. QuickBooks Integration | 5/5 | Complete | 2026-02-13 |
+| 9. Document Management Enhancement | 8/8 | Complete | 2026-02-13 |
 | 10. Reporting & Analytics | 5/5 | Complete | 2026-02-13 |
 | 11. Calendar Integration | 0/TBD | Not started | - |
 | 12. Custom Authentication Migration | 0/TBD | Not started | - |
