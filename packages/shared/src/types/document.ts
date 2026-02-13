@@ -156,3 +156,38 @@ export const updateWorkflowSchema = z.object({
   dueDate: z.string().datetime().nullable().optional(),
   status: workflowStatusEnum.optional(), // for manual status changes
 });
+
+// ===== Document and Folder Permissions Schemas =====
+
+// Permission level enum
+export const documentPermissionLevelEnum = z.enum(["view", "edit"]);
+export type DocumentPermissionLevel = z.infer<typeof documentPermissionLevelEnum>;
+
+// Share document permission
+export const shareDocumentSchema = z.object({
+  documentId: z.string().uuid(),
+  userId: z.string().min(1), // Clerk user ID
+  permissionLevel: documentPermissionLevelEnum,
+  expiresAt: z.string().datetime().optional(),
+});
+
+// Revoke document permission
+export const revokeDocumentPermissionSchema = z.object({
+  documentId: z.string().uuid(),
+  userId: z.string().min(1),
+});
+
+// Share folder permission
+export const shareFolderSchema = z.object({
+  folderId: z.string().uuid(),
+  userId: z.string().min(1), // Clerk user ID
+  permissionLevel: documentPermissionLevelEnum,
+  includeSubfolders: z.boolean().default(true),
+  expiresAt: z.string().datetime().optional(),
+});
+
+// Revoke folder permission
+export const revokeFolderPermissionSchema = z.object({
+  folderId: z.string().uuid(),
+  userId: z.string().min(1),
+});
