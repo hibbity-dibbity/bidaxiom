@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-10)
 ## Current Position
 
 Phase: 6 of 10 (Payment Applications)
-Plan: 1 of 4 in current phase
+Plan: 3 of 4 in current phase
 Status: In Progress
-Last activity: 2026-02-13 — Completed 06-01-PLAN.md (Payment Application Schema and Types)
+Last activity: 2026-02-13 — Completed 06-03-PLAN.md (Lien Waiver and Invoice Tracking API)
 
-Progress: [█████░░░░░] 52% (5 of 10 phases complete, Phase 6 started)
+Progress: [█████░░░░░] 54% (5 of 10 phases complete, Phase 6 in progress)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 13
-- Average duration: 11 min
-- Total execution time: 2.88 hours
+- Total plans completed: 15
+- Average duration: 10 min
+- Total execution time: 3.05 hours
 
 **By Phase:**
 
@@ -31,11 +31,11 @@ Progress: [█████░░░░░] 52% (5 of 10 phases complete, Phase 6
 | 03 | 3 | 9 min | 3 min |
 | 04 | 4 | 123 min | 31 min |
 | 05 | 3 | 20 min | 6.7 min |
-| 06 | 1 | 4 min | 4 min |
+| 06 | 3 | 14 min | 4.7 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-04 (7 min), 05-01 (4 min), 05-02 (9 min), 05-03 (7 min), 06-01 (4 min)
-- Trend: Schema-heavy plans take longer (04-01: 111 min), but API and UI implementation is consistently fast (2-9 min). Phase 6 started with fast schema setup (4 min).
+- Last 5 plans: 05-01 (4 min), 05-02 (9 min), 05-03 (7 min), 06-01 (4 min), 06-02 (5 min), 06-03 (5 min)
+- Trend: Phase 6 maintaining fast pace (4-5 min per plan). API routers with complex SQL logic still executing quickly.
 
 *Updated after each plan completion*
 
@@ -95,6 +95,11 @@ Recent decisions affecting current work:
 - **Progressive retainage rate support**: retainageConfigSchema includes optional progressiveRates array for decreasing retainage as project completion increases (06-01)
 - **4 lien waiver types following AIA standard**: partial/final × conditional/unconditional per AIA G706/G707 ensures industry-standard compliance (06-01)
 - **State-specific lien waiver requirements**: 10 states require statutory forms; tracking requirements prevents compliance issues (06-01)
+- **SQL-based aging calculations via EXTRACT/CASE**: PostgreSQL date arithmetic orders of magnitude faster than JavaScript loops for thousands of invoices (06-03)
+- **State requirement auto-detection**: Extract state code from project.location, apply STATE_LIEN_WAIVER_REQUIREMENTS automatically; advisory not blocking (06-03)
+- **Advisory warnings for risky lien waiver types**: Unconditional waivers risky (immediate rights waiver); final waivers for last payment - warn but don't block for user flexibility (06-03)
+- **Status transition enforcement for lien waivers**: Prevents invalid transitions (stored → pending), ensures audit trail integrity (06-03)
+- **Delete only pending lien waivers**: Once received, waivers are permanent record; deletion would break audit trail (06-03)
 
 ### Pending Todos
 
@@ -106,8 +111,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-13 (Phase 6 started)
-Stopped at: Completed 06-01-PLAN.md (Payment Application Schema and Types)
+Last session: 2026-02-13 (Phase 6 in progress)
+Stopped at: Completed 06-03-PLAN.md (Lien Waiver and Invoice Tracking API)
 Resume file: None
 
 ---
