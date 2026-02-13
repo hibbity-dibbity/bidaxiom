@@ -155,6 +155,8 @@ Recent decisions affecting current work:
 - [Phase 09-document-management-enhancement]: Sequential numbering uses SELECT FOR UPDATE pattern for race-free workflow number generation — Prevents duplicate numbers under concurrent requests
 - [Phase 09-01]: TEXT column + Zod validation for document category (follows Phase 2 companyType pattern)
 - [Phase 09-01]: Lowercase normalized tags in database for case-insensitive search without LOWER() overhead
+- [Phase 09-01]: Separate document_access_logs table for high-volume access events vs general audit_logs
+- [Phase 09-01]: Document schemas moved to dedicated document.ts file with project.ts re-exports for backward compatibility
 
 ### Pending Todos
 
