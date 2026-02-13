@@ -465,6 +465,205 @@ export async function provisionTenantSchema(
         ON "${schemaName}".change_order_history(change_order_id)
       `);
 
+      // Create sov_items table (Schedule of Values)
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".sov_items (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          project_id UUID NOT NULL REFERENCES "${schemaName}".projects(id) ON DELETE CASCADE,
+          budget_line_item_id UUID REFERENCES "${schemaName}".budget_line_items(id) ON DELETE SET NULL,
+          item_number TEXT NOT NULL,
+          description TEXT NOT NULL,
+          scheduled_value NUMERIC(15,2) NOT NULL,
+          order_index INTEGER NOT NULL DEFAULT 0,
+          created_by TEXT NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      // Index for fast SOV items lookup by project
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_sov_items_project
+        ON "${schemaName}".sov_items(project_id)
+      `);
+
+      // Index for fast SOV items lookup by budget line item
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_sov_items_budget
+        ON "${schemaName}".sov_items(budget_line_item_id)
+      `);
+
+      // Create payment_apps table (AIA G702 summary)
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".payment_apps (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          project_id UUID NOT NULL REFERENCES "${schemaName}".projects(id) ON DELETE CASCADE,
+          application_number TEXT NOT NULL,
+          period_start TIMESTAMPTZ NOT NULL,
+          period_end TIMESTAMPTZ NOT NULL,
+          original_contract_sum NUMERIC(15,2) NOT NULL,
+          net_change_by_change_orders NUMERIC(15,2) DEFAULT 0,
+          contract_sum_to_date NUMERIC(15,2) NOT NULL,
+          total_completed_and_stored NUMERIC(15,2) NOT NULL DEFAULT 0,
+          retainage_amount NUMERIC(15,2) NOT NULL DEFAULT 0,
+          total_earned_less_retainage NUMERIC(15,2) NOT NULL DEFAULT 0,
+          previous_payments NUMERIC(15,2) DEFAULT 0,
+          current_payment_due NUMERIC(15,2) NOT NULL DEFAULT 0,
+          balance_to_finish NUMERIC(15,2) NOT NULL DEFAULT 0,
+          status TEXT NOT NULL DEFAULT 'draft',
+          submitted_at TIMESTAMPTZ,
+          approved_at TIMESTAMPTZ,
+          approved_by TEXT,
+          paid_at TIMESTAMPTZ,
+          created_by TEXT NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      // Index for fast payment apps lookup by project
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_payment_apps_project
+        ON "${schemaName}".payment_apps(project_id)
+      `);
+
+      // Index for fast payment apps lookup by status
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_payment_apps_status
+        ON "${schemaName}".payment_apps(status)
+      `);
+
+      // Create payment_app_line_items table (AIA G703 continuation sheet)
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".payment_app_line_items (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          payment_app_id UUID NOT NULL REFERENCES "${schemaName}".payment_apps(id) ON DELETE CASCADE,
+          sov_item_id UUID NOT NULL REFERENCES "${schemaName}".sov_items(id) ON DELETE RESTRICT,
+          previous_percent_complete NUMERIC(5,2) NOT NULL DEFAULT 0,
+          current_percent_complete NUMERIC(5,2) NOT NULL,
+          work_completed_this_period NUMERIC(15,2) NOT NULL,
+          materials_stored_this_period NUMERIC(15,2) NOT NULL DEFAULT 0,
+          total_completed_and_stored NUMERIC(15,2) NOT NULL,
+          retainage_percent NUMERIC(5,2) NOT NULL,
+          retainage_amount NUMERIC(15,2) NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      // Index for fast payment app line items lookup by payment app
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_payment_app_line_items_app
+        ON "${schemaName}".payment_app_line_items(payment_app_id)
+      `);
+
+      // Index for fast payment app line items lookup by SOV item
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_payment_app_line_items_sov
+        ON "${schemaName}".payment_app_line_items(sov_item_id)
+      `);
+
+      // Create payment_app_counters table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".payment_app_counters (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          project_id UUID NOT NULL REFERENCES "${schemaName}".projects(id) ON DELETE CASCADE,
+          year INTEGER NOT NULL,
+          last_number INTEGER NOT NULL DEFAULT 0
+        )
+      `);
+
+      // Index for fast counter lookup by project and year
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_payment_app_counters_lookup
+        ON "${schemaName}".payment_app_counters(project_id, year)
+      `);
+
+      // Create retainage_held table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".retainage_held (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          project_id UUID NOT NULL REFERENCES "${schemaName}".projects(id) ON DELETE CASCADE,
+          payment_app_id UUID NOT NULL REFERENCES "${schemaName}".payment_apps(id) ON DELETE CASCADE,
+          amount_held NUMERIC(15,2) NOT NULL,
+          retainage_rate NUMERIC(5,2) NOT NULL,
+          status TEXT NOT NULL DEFAULT 'held',
+          released_amount NUMERIC(15,2) DEFAULT 0,
+          released_at TIMESTAMPTZ,
+          released_by TEXT,
+          release_notes TEXT,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      // Index for fast retainage held lookup by project
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_retainage_held_project
+        ON "${schemaName}".retainage_held(project_id)
+      `);
+
+      // Index for fast retainage held lookup by payment app
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_retainage_held_app
+        ON "${schemaName}".retainage_held(payment_app_id)
+      `);
+
+      // Create lien_waivers table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".lien_waivers (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          project_id UUID NOT NULL REFERENCES "${schemaName}".projects(id) ON DELETE CASCADE,
+          payment_app_id UUID NOT NULL REFERENCES "${schemaName}".payment_apps(id) ON DELETE CASCADE,
+          waiver_type TEXT NOT NULL,
+          party_name TEXT NOT NULL,
+          party_type TEXT NOT NULL,
+          through_date TIMESTAMPTZ NOT NULL,
+          amount_waived NUMERIC(15,2) NOT NULL,
+          status TEXT NOT NULL DEFAULT 'pending',
+          received_at TIMESTAMPTZ,
+          received_by TEXT,
+          requires_notarization BOOLEAN NOT NULL DEFAULT false,
+          is_notarized BOOLEAN NOT NULL DEFAULT false,
+          uses_statutory_form BOOLEAN NOT NULL DEFAULT false,
+          document_id UUID REFERENCES "${schemaName}".documents(id) ON DELETE SET NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      // Index for fast lien waivers lookup by project
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_lien_waivers_project
+        ON "${schemaName}".lien_waivers(project_id)
+      `);
+
+      // Index for fast lien waivers lookup by payment app
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_lien_waivers_app
+        ON "${schemaName}".lien_waivers(payment_app_id)
+      `);
+
+      // Create payment_app_approval_steps table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".payment_app_approval_steps (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          payment_app_id UUID NOT NULL REFERENCES "${schemaName}".payment_apps(id) ON DELETE CASCADE,
+          step_order INTEGER NOT NULL,
+          approver_role TEXT,
+          approver_user_id TEXT,
+          requirement_type TEXT NOT NULL DEFAULT 'all',
+          status TEXT NOT NULL DEFAULT 'pending',
+          approved_by TEXT,
+          approved_at TIMESTAMPTZ,
+          comments TEXT
+        )
+      `);
+
+      // Index for fast payment app approval steps lookup
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_payment_app_approval_steps_app
+        ON "${schemaName}".payment_app_approval_steps(payment_app_id)
+      `);
+
       // Register tenant in public schema
       const insertResult = await client.query(
         `INSERT INTO tenants (schema_name, clerk_org_id, name, status)

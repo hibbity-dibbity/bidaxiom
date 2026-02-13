@@ -71,6 +71,13 @@ export async function buildTenantContext(
       changeOrderCounters: tenantDb.changeOrderCounters,
       approvalWorkflowSteps: tenantDb.approvalWorkflowSteps,
       changeOrderHistory: tenantDb.changeOrderHistory,
+      sovItems: tenantDb.sovItems,
+      paymentApps: tenantDb.paymentApps,
+      paymentAppLineItems: tenantDb.paymentAppLineItems,
+      paymentAppCounters: tenantDb.paymentAppCounters,
+      retainageHeld: tenantDb.retainageHeld,
+      lienWaivers: tenantDb.lienWaivers,
+      paymentAppApprovalSteps: tenantDb.paymentAppApprovalSteps,
     },
   };
 }

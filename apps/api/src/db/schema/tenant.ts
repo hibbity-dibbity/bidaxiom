@@ -348,6 +348,140 @@ export function createTenantSchema(schemaName: string) {
     comments: text("comments"),
   });
 
+  /**
+   * Schedule of Values (SOV) items
+   * Defines the cost breakdown structure for payment applications
+   */
+  const sovItems = schema.table("sov_items", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+    budgetLineItemId: uuid("budget_line_item_id").references(() => budgetLineItems.id, { onDelete: "set null" }),
+    itemNumber: text("item_number").notNull(),
+    description: text("description").notNull(),
+    scheduledValue: numeric("scheduled_value", { precision: 15, scale: 2 }).notNull(),
+    orderIndex: integer("order_index").notNull().default(0),
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * Payment applications (AIA G702 summary)
+   * Tracks contractor applications for payment
+   */
+  const paymentApps = schema.table("payment_apps", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+    applicationNumber: text("application_number").notNull(),
+    periodStart: timestamp("period_start", { withTimezone: true }).notNull(),
+    periodEnd: timestamp("period_end", { withTimezone: true }).notNull(),
+    originalContractSum: numeric("original_contract_sum", { precision: 15, scale: 2 }).notNull(),
+    netChangeByChangeOrders: numeric("net_change_by_change_orders", { precision: 15, scale: 2 }).default("0"),
+    contractSumToDate: numeric("contract_sum_to_date", { precision: 15, scale: 2 }).notNull(),
+    totalCompletedAndStored: numeric("total_completed_and_stored", { precision: 15, scale: 2 }).notNull().default("0"),
+    retainageAmount: numeric("retainage_amount", { precision: 15, scale: 2 }).notNull().default("0"),
+    totalEarnedLessRetainage: numeric("total_earned_less_retainage", { precision: 15, scale: 2 }).notNull().default("0"),
+    previousPayments: numeric("previous_payments", { precision: 15, scale: 2 }).default("0"),
+    currentPaymentDue: numeric("current_payment_due", { precision: 15, scale: 2 }).notNull().default("0"),
+    balanceToFinish: numeric("balance_to_finish", { precision: 15, scale: 2 }).notNull().default("0"),
+    status: text("status").notNull().default("draft"), // draft, submitted, under_review, approved, rejected, paid
+    submittedAt: timestamp("submitted_at", { withTimezone: true }),
+    approvedAt: timestamp("approved_at", { withTimezone: true }),
+    approvedBy: text("approved_by"),
+    paidAt: timestamp("paid_at", { withTimezone: true }),
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * Payment application line items (AIA G703 continuation sheet)
+   * Individual line items within a payment application
+   */
+  const paymentAppLineItems = schema.table("payment_app_line_items", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    paymentAppId: uuid("payment_app_id").notNull().references(() => paymentApps.id, { onDelete: "cascade" }),
+    sovItemId: uuid("sov_item_id").notNull().references(() => sovItems.id, { onDelete: "restrict" }),
+    previousPercentComplete: numeric("previous_percent_complete", { precision: 5, scale: 2 }).notNull().default("0"),
+    currentPercentComplete: numeric("current_percent_complete", { precision: 5, scale: 2 }).notNull(),
+    workCompletedThisPeriod: numeric("work_completed_this_period", { precision: 15, scale: 2 }).notNull(),
+    materialsStoredThisPeriod: numeric("materials_stored_this_period", { precision: 15, scale: 2 }).notNull().default("0"),
+    totalCompletedAndStored: numeric("total_completed_and_stored", { precision: 15, scale: 2 }).notNull(),
+    retainagePercent: numeric("retainage_percent", { precision: 5, scale: 2 }).notNull(),
+    retainageAmount: numeric("retainage_amount", { precision: 15, scale: 2 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * Payment application counters
+   * Sequential numbering for payment applications
+   */
+  const paymentAppCounters = schema.table("payment_app_counters", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+    year: integer("year").notNull(),
+    lastNumber: integer("last_number").notNull().default(0),
+  });
+
+  /**
+   * Retainage held
+   * Tracks retainage amounts held from payment applications
+   */
+  const retainageHeld = schema.table("retainage_held", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+    paymentAppId: uuid("payment_app_id").notNull().references(() => paymentApps.id, { onDelete: "cascade" }),
+    amountHeld: numeric("amount_held", { precision: 15, scale: 2 }).notNull(),
+    retainageRate: numeric("retainage_rate", { precision: 5, scale: 2 }).notNull(),
+    status: text("status").notNull().default("held"), // held, eligible_for_release, released
+    releasedAmount: numeric("released_amount", { precision: 15, scale: 2 }).default("0"),
+    releasedAt: timestamp("released_at", { withTimezone: true }),
+    releasedBy: text("released_by"),
+    releaseNotes: text("release_notes"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * Lien waivers
+   * Tracks conditional and unconditional lien waivers for payment applications
+   */
+  const lienWaivers = schema.table("lien_waivers", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+    paymentAppId: uuid("payment_app_id").notNull().references(() => paymentApps.id, { onDelete: "cascade" }),
+    waiverType: text("waiver_type").notNull(), // partial_conditional, partial_unconditional, final_conditional, final_unconditional
+    partyName: text("party_name").notNull(),
+    partyType: text("party_type").notNull(), // subcontractor, supplier, vendor
+    throughDate: timestamp("through_date", { withTimezone: true }).notNull(),
+    amountWaived: numeric("amount_waived", { precision: 15, scale: 2 }).notNull(),
+    status: text("status").notNull().default("pending"), // pending, received, verified, stored
+    receivedAt: timestamp("received_at", { withTimezone: true }),
+    receivedBy: text("received_by"),
+    requiresNotarization: boolean("requires_notarization").notNull().default(false),
+    isNotarized: boolean("is_notarized").notNull().default(false),
+    usesStatutoryForm: boolean("uses_statutory_form").notNull().default(false),
+    documentId: uuid("document_id").references(() => documents.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * Payment application approval steps
+   * Multi-step approval workflow for payment applications
+   */
+  const paymentAppApprovalSteps = schema.table("payment_app_approval_steps", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    paymentAppId: uuid("payment_app_id").notNull().references(() => paymentApps.id, { onDelete: "cascade" }),
+    stepOrder: integer("step_order").notNull(),
+    approverRole: text("approver_role"),
+    approverUserId: text("approver_user_id"),
+    requirementType: text("requirement_type").notNull().default("all"), // all, any, specific
+    status: text("status").notNull().default("pending"), // pending, approved, rejected, skipped
+    approvedBy: text("approved_by"),
+    approvedAt: timestamp("approved_at", { withTimezone: true }),
+    comments: text("comments"),
+  });
+
   return {
     schema,
     auditLogs,
@@ -368,6 +502,13 @@ export function createTenantSchema(schemaName: string) {
     changeOrderCounters,
     approvalWorkflowSteps,
     changeOrderHistory,
+    sovItems,
+    paymentApps,
+    paymentAppLineItems,
+    paymentAppCounters,
+    retainageHeld,
+    lienWaivers,
+    paymentAppApprovalSteps,
   };
 }
 
