@@ -220,6 +220,7 @@ export {
   type CostPerformanceMetrics,
   type CashFlowProjection,
   type ReportExportOptions,
+  type ReportData,
   createReportDefinitionSchema,
   type CreateReportDefinition,
   updateReportDefinitionSchema,

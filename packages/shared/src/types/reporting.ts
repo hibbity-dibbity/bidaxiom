@@ -318,6 +318,21 @@ export interface ReportExportOptions {
   paperSize: "letter" | "a4";
 }
 
+/**
+ * Report execution data result.
+ * Contains the rows returned by the report query and metadata about execution.
+ */
+export interface ReportData {
+  rows: Record<string, any>[];
+  metadata?: {
+    generatedAt?: Date;
+    rowCount?: number;
+    executionTime?: number;
+    fromCache?: boolean;
+    filtersApplied?: Record<string, any>;
+  };
+}
+
 // ============================================================================
 // Create/Update Schemas
 // ============================================================================
