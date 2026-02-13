@@ -17,6 +17,7 @@ import { invoiceTrackingRouter } from "./routers/invoice-tracking.js";
 import { rfqRouter } from "./routers/rfq.js";
 import { subcontractorRouter } from "./routers/subcontractor.js";
 import { bidRouter } from "./routers/bid.js";
+import { quickbooksRouter } from "./routers/quickbooks.js";
 
 /**
  * Root application router.
@@ -44,6 +45,7 @@ export const appRouter = router({
   rfq: rfqRouter,
   subcontractor: subcontractorRouter,
   bid: bidRouter,
+  quickbooks: quickbooksRouter,
 });
 
 /**
