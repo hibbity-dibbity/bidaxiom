@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-10)
 ## Current Position
 
 Phase: 10 of 12 (Reporting and Analytics)
-Plan: 4 of 5 in current phase
+Plan: 5 of 5 in current phase
 Status: In Progress
-Last activity: 2026-02-13 — Completed 10-03-PLAN.md (Report Export with PDF, Excel, and CSV)
+Last activity: 2026-02-13 — Completed 10-04-PLAN.md (Scheduled Report Delivery)
 
-Progress: [████████░░] 90% (10 of 12 phases, 3 of 5 plans complete in current phase)
+Progress: [████████░░] 91% (10 of 12 phases, 4 of 5 plans complete in current phase)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 36
-- Average duration: 6.6 min
-- Total execution time: 4.0 hours
+- Total plans completed: 37
+- Average duration: 6.7 min
+- Total execution time: 4.2 hours
 
 **By Phase:**
 
@@ -35,11 +35,11 @@ Progress: [████████░░] 90% (10 of 12 phases, 3 of 5 plans co
 | 07 | 4 | 19 min | 4.8 min |
 | 08 | 5 | 28 min | 5.6 min |
 | 09 | 7 | 45.5 min | 6.5 min |
-| 10 | 3 | 20.8 min | 6.9 min |
+| 10 | 4 | 32.1 min | 8.0 min |
 
 **Recent Trend:**
-- Last 5 plans: 09-08 (6.1 min), 10-01 (5 min), 10-02 (7.8 min), 10-03 (8 min)
-- Trend: Phase 10 export generation with puppeteer/exceljs completed in 8 minutes, maintaining strong pace with multi-format export complexity.
+- Last 5 plans: 10-01 (5 min), 10-02 (7.8 min), 10-03 (8 min), 10-04 (11.3 min)
+- Trend: Phase 10 scheduled report delivery completed in 11.3 minutes, including nodemailer integration, BullMQ worker setup, and 7-procedure tRPC router with validation.
 
 *Updated after each plan completion*
 | Phase 06 P02 | 8 | 2 tasks | 5 files |
@@ -68,6 +68,7 @@ Progress: [████████░░] 90% (10 of 12 phases, 3 of 5 plans co
 | Phase 10-reporting-and-analytics P01 | 5 min | 2 tasks | 7 files |
 | Phase 10-reporting-and-analytics P02 | 7.8 min | 2 tasks | 5 files |
 | Phase 10-reporting-and-analytics P03 | 8 min | 2 tasks | 9 files |
+| Phase 10-reporting-and-analytics P04 | 11.3 min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -189,6 +190,11 @@ Recent decisions affecting current work:
 - [Phase 10-03]: 24-hour expiry for temp exports - Balances user convenience with disk space management; typical workflow requires download within hours
 - [Phase 10-03]: Fastify download endpoint instead of tRPC - tRPC doesn't handle binary file streaming well; Fastify native streaming more efficient
 - [Phase 10-03]: Path traversal security in download endpoint - Validates normalized path starts with REPORTS_TEMP_DIR to prevent ../../../etc/passwd attacks
+- [Phase 10-04]: Non-fatal worker startup - API can start without Redis; worker failures don't block server startup (follows Phase 8 QBO worker pattern)
+- [Phase 10-04]: 5-minute schedule checker interval - Balance between timely delivery and reduced database load; suitable for business reporting use cases
+- [Phase 10-04]: Exponential backoff retry (3 attempts, 5s start) - Email delivery can fail temporarily (SMTP issues, network); retries with backoff increase success rate
+- [Phase 10-04]: nextRunAt pre-calculated on create/update - Worker queries are fast (indexed WHERE nextRunAt <= NOW() AND isActive = true); avoids runtime cron parsing
+- [Phase 10-04]: nodemailer with SMTP config from env - Cloud-agnostic email delivery; works with Gmail, SendGrid, AWS SES, or any SMTP provider
 
 ### Pending Todos
 
@@ -201,7 +207,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-13 (Phase 10 - Reporting and Analytics)
-Stopped at: Completed 10-03-PLAN.md (Report Export with PDF, Excel, and CSV)
+Stopped at: Completed 10-04-PLAN.md (Scheduled Report Delivery)
 Resume file: None
 
 ---
