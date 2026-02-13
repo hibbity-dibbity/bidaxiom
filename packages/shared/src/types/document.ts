@@ -191,3 +191,8 @@ export const revokeFolderPermissionSchema = z.object({
   folderId: z.string().uuid(),
   userId: z.string().min(1),
 });
+
+// Get document permissions (list all users with access)
+export const getDocumentPermissionsSchema = z.object({
+  documentId: z.string().uuid(),
+});

@@ -14,6 +14,7 @@ import {
   revokeDocumentPermissionSchema,
   shareFolderSchema,
   revokeFolderPermissionSchema,
+  getDocumentPermissionsSchema,
   AuditAction,
 } from "@construction/shared";
 import { generateUploadUrl, generateDownloadUrl } from "../../storage/presigned.js";
@@ -1475,6 +1476,108 @@ export const documentRouter = router({
       });
 
       return { success: true };
+    }),
+
+  /**
+   * Get all permissions granted for a document.
+   * Returns list of users with access, permission levels, expiration dates, and grantor info.
+   */
+  getDocumentPermissions: protectedProcedure
+    .input(getDocumentPermissionsSchema)
+    .query(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+      const userId = ctx.userId;
+
+      // Verify document exists and get projectId + folderId
+      const [document] = await db
+        .select({
+          id: schema.documents.id,
+          projectId: schema.documents.projectId,
+          folderId: schema.documents.folderId,
+        })
+        .from(schema.documents)
+        .where(eq(schema.documents.id, input.documentId))
+        .limit(1);
+
+      if (!document) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Document not found",
+        });
+      }
+
+      // Load abilities and check user has read permission
+      const abilities = await loadProjectAbilities({
+        tenant: ctx.tenant,
+        userId: ctx.userId,
+        orgRole: ctx.orgRole,
+      });
+
+      // Load explicit permissions for access fallback
+      const explicitPerms = await loadDocumentPermissions(
+        db,
+        schema,
+        userId
+      );
+
+      // Check access using helper
+      checkDocumentAccess(abilities, explicitPerms, document, "read");
+
+      // Query document permissions with user joins
+      const permissions = await db
+        .select({
+          userId: schema.documentPermissions.userId,
+          permissionLevel: schema.documentPermissions.permissionLevel,
+          expiresAt: schema.documentPermissions.expiresAt,
+          grantedBy: schema.documentPermissions.grantedBy,
+          grantedAt: schema.documentPermissions.grantedAt,
+          userFirstName: schema.userProfiles.firstName,
+          userLastName: schema.userProfiles.lastName,
+          userEmail: schema.userProfiles.email,
+          grantedByFirstName: sql<string | null>`granted_by_profile.first_name`,
+          grantedByLastName: sql<string | null>`granted_by_profile.last_name`,
+        })
+        .from(schema.documentPermissions)
+        .leftJoin(
+          schema.userProfiles,
+          eq(schema.documentPermissions.userId, schema.userProfiles.clerkUserId)
+        )
+        .leftJoin(
+          sql`${schema.userProfiles} AS granted_by_profile`,
+          sql`${schema.documentPermissions.grantedBy} = granted_by_profile.clerk_user_id`
+        )
+        .where(eq(schema.documentPermissions.documentId, input.documentId))
+        .orderBy(desc(schema.documentPermissions.grantedAt));
+
+      // Transform to expected format
+      const permissionsList = permissions.map((p) => ({
+        userId: p.userId,
+        user: {
+          firstName: p.userFirstName,
+          lastName: p.userLastName,
+          email: p.userEmail,
+        },
+        permissionLevel: p.permissionLevel,
+        expiresAt: p.expiresAt,
+        grantedBy: p.grantedBy,
+        grantedByUser: {
+          firstName: p.grantedByFirstName,
+          lastName: p.grantedByLastName,
+        },
+        grantedAt: p.grantedAt,
+      }));
+
+      return {
+        success: true,
+        permissions: permissionsList,
+      };
     }),
 
   /**

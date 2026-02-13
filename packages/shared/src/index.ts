@@ -169,4 +169,5 @@ export {
   revokeDocumentPermissionSchema,
   shareFolderSchema,
   revokeFolderPermissionSchema,
+  getDocumentPermissionsSchema,
 } from "./types/document.js";
