@@ -107,11 +107,12 @@ Plans:
   2. Change orders automatically update budget when approved via configurable multi-party workflows
   3. PCOs (Pending Change Orders) and approved COs use separate numbering sequences
   4. Change order history is tracked with full audit trail (who, when, old/new values)
-**Plans**: TBD
+**Plans**: 3 plans across 3 waves
 
 Plans:
-- [ ] 05-01: TBD during planning
-- [ ] 05-02: TBD during planning
+- [ ] 05-01-PLAN.md — DB schema (5 tables), shared types (discriminated union), CASL abilities (wave 1)
+- [ ] 05-02-PLAN.md — Change order tRPC router with sequential numbering, approval workflow, budget updates (wave 2)
+- [ ] 05-03-PLAN.md — Frontend: CO list, creation form, detail view, approval panel, history timeline (wave 3)
 
 ### Phase 6: Payment Applications
 **Goal**: Users can create and track payment applications with retainage and lien waivers
