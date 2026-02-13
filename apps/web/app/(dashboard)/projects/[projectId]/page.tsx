@@ -203,6 +203,7 @@ export default function ProjectDashboardPage({
   const { data: companyProfile } = trpc.company.getCurrent.useQuery();
   const { data: customersData, isLoading: customersLoading, error: customersError } = trpc.customer.list.useQuery({ limit: 100, offset: 0 });
   const { data: usersData } = trpc.user.list.useQuery({ limit: 100, offset: 0 });
+  const { data: budgetSummary } = trpc.budget.getProjectSummary.useQuery({ projectId });
 
   // Debug: Log project and customer data
   useEffect(() => {
@@ -628,6 +629,36 @@ export default function ProjectDashboardPage({
         </DialogContent>
       </Dialog>
 
+      {/* Project Navigation */}
+      <div className="border-b">
+        <nav className="flex gap-6 overflow-x-auto">
+          <Link
+            href={`/projects/${projectId}`}
+            className="border-b-2 border-primary py-3 text-sm font-medium"
+          >
+            Overview
+          </Link>
+          <Link
+            href={`/projects/${projectId}/documents`}
+            className="border-b-2 border-transparent py-3 text-sm text-muted-foreground hover:text-foreground"
+          >
+            Documents
+          </Link>
+          <Link
+            href={`/projects/${projectId}/budget`}
+            className="border-b-2 border-transparent py-3 text-sm text-muted-foreground hover:text-foreground"
+          >
+            Budget
+          </Link>
+          <Link
+            href={`/projects/${projectId}/commitments`}
+            className="border-b-2 border-transparent py-3 text-sm text-muted-foreground hover:text-foreground"
+          >
+            Commitments
+          </Link>
+        </nav>
+      </div>
+
       {/* Overview Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -636,8 +667,31 @@ export default function ProjectDashboardPage({
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$0</div>
-            <p className="text-xs text-muted-foreground">Phase 4 feature</p>
+            {budgetSummary ? (
+              <>
+                <div className="text-2xl font-bold">
+                  {new Intl.NumberFormat("en-US", {
+                    style: "currency",
+                    currency: "USD",
+                    minimumFractionDigits: 0,
+                  }).format(budgetSummary.totalBudgeted)}
+                </div>
+                <Button variant="link" className="h-auto p-0 text-xs" asChild>
+                  <Link href={`/projects/${projectId}/budget`}>
+                    View budget details
+                  </Link>
+                </Button>
+              </>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">--</div>
+                <Button variant="link" className="h-auto p-0 text-xs" asChild>
+                  <Link href={`/projects/${projectId}/budget`}>
+                    Set up budget
+                  </Link>
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
 
