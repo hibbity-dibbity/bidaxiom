@@ -125,13 +125,14 @@ Plans:
   3. User can track lien waiver collection status per payment
   4. User can view invoice tracking (AP/AR) with aging reports
   5. Approved pay applications automatically update committed cost actuals in budget
-**Plans**: 4 plans across 3 waves
+**Plans**: 5 plans
 
 Plans:
 - [ ] 06-01-PLAN.md — DB schema (7 tables), shared types (SOV, payment app, lien waiver, retainage), CASL abilities (wave 1)
 - [ ] 06-02-PLAN.md — SOV tRPC router, payment app calculation engine, payment app tRPC router with approval workflow and budget updates (wave 2)
 - [ ] 06-03-PLAN.md — Lien waiver tRPC router with four-type support, invoice tracking with AP/AR aging reports (wave 2)
 - [ ] 06-04-PLAN.md — Frontend: SOV editor, payment app list/create/detail (G702/G703), lien waiver tracker, aging reports, project navigation (wave 3)
+- [ ] 06-05-PLAN.md — Gap closure: Add budget actualCost column, retainageConfig to company profiles, update payment app approval to write budget actuals (wave 1)
 
 ### Phase 7: Bidding & Procurement
 **Goal**: GCs can issue RFQs and subs can respond with versioned bids that convert to budget commitments
@@ -219,7 +220,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 3. Project Management Core | 5/5 | Complete | 2026-02-12 |
 | 4. Budget & Cost Tracking | 4/4 | Complete | 2026-02-12 |
 | 5. Change Order Management | 0/4 | Not started | - |
-| 6. Payment Applications | 0/TBD | Not started | - |
+| 6. Payment Applications | 0/5 | Not started | - |
 | 7. Bidding & Procurement | 0/TBD | Not started | - |
 | 8. QuickBooks Integration | 0/TBD | Not started | - |
 | 9. Calendar Integration | 0/TBD | Not started | - |
