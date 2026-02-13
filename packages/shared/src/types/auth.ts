@@ -58,6 +58,8 @@ export type AppSubjects =
   | "Commitment"
   | "ChangeOrder"
   | "PayApplication"
+  | "PaymentApp"
+  | "LienWaiver"
   | "Bid"
   | "RFQ"
   | "AuditLog"

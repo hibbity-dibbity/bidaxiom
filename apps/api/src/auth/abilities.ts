@@ -40,6 +40,8 @@ export function defineAbilitiesFor(
       can("manage", "Commitment");
       can("manage", "ChangeOrder");
       can("manage", "PayApplication");
+      can("manage", "PaymentApp");
+      can("manage", "LienWaiver");
       can("manage", "Document", { projectId: { $in: userProjectIds } });
       can("manage", "Folder", { projectId: { $in: userProjectIds } });
       can("read", "Bid");
@@ -55,6 +57,8 @@ export function defineAbilitiesFor(
       can("manage", "Commitment");
       can("read", "Commitment");
       can("manage", "PayApplication");
+      can("manage", "PaymentApp");
+      can("manage", "LienWaiver");
       can("manage", "Document", { projectId: { $in: userProjectIds } });
       can("manage", "Folder", { projectId: { $in: userProjectIds } });
       can("read", "ChangeOrder");
@@ -71,6 +75,8 @@ export function defineAbilitiesFor(
       can("read", "Budget");
       can("read", "Commitment");
       can("read", "ChangeOrder");
+      can("read", "PaymentApp");
+      can("read", "LienWaiver");
       can("read", "Document", { projectId: { $in: userProjectIds } });
       can("read", "Folder", { projectId: { $in: userProjectIds } });
       can("read", "User");
@@ -86,6 +92,9 @@ export function defineAbilitiesFor(
       can("read", "Commitment");
       can("read", "ChangeOrder");
       can("approve", "ChangeOrder");
+      can("read", "PaymentApp");
+      can("approve", "PaymentApp");
+      can("read", "LienWaiver");
       can("read", "User");
       cannot("manage", "CompanySettings");
       cannot("delete", "all");
@@ -96,6 +105,8 @@ export function defineAbilitiesFor(
       can("read", "Budget");
       can("read", "Commitment");
       can("read", "ChangeOrder");
+      can("read", "PaymentApp");
+      can("read", "LienWaiver");
       can("read", "Document", { projectId: { $in: userProjectIds } });
       can("read", "Folder", { projectId: { $in: userProjectIds } });
       can("read", "User");
@@ -112,6 +123,8 @@ export function defineAbilitiesFor(
       can("read", "Budget");
       can("read", "Commitment");
       can("read", "ChangeOrder");
+      can("read", "PaymentApp");
+      can("read", "LienWaiver");
       can("read", "Bid");
       break;
   }
