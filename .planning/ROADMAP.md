@@ -2,7 +2,7 @@
 
 ## Overview
 
-A cloud-first construction management SaaS that enables GCs and subs to collaborate on the full project financial lifecycle. The roadmap delivers this value through ten phases: foundation (authentication and multi-tenant isolation), company configuration, project management, budget tracking, change orders, payment applications, bidding workflows, QuickBooks integration, enhanced document management, and finally calendar integration and custom auth migration. Each phase builds on the previous, establishing data integrity patterns and security boundaries before adding complexity.
+A cloud-first construction management SaaS that enables GCs and subs to collaborate on the full project financial lifecycle. The roadmap delivers this value through eleven phases: foundation (authentication and multi-tenant isolation), company configuration, project management, budget tracking, change orders, payment applications, bidding workflows, QuickBooks integration, enhanced document management, reporting and analytics, and finally calendar integration and custom auth migration. Each phase builds on the previous, establishing data integrity patterns and security boundaries before adding complexity.
 
 ## Phases
 
@@ -21,8 +21,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 7: Bidding & Procurement** - RFQ issuance, bid collection, comparison, directory, versioning
 - [ ] **Phase 8: QuickBooks Integration** - OAuth connection, bi-directional sync, error handling
 - [ ] **Phase 9: Document Management Enhancement** - Versioning, workflows (RFI/Submittal/Transmittal), granular permissions, tagging
-- [ ] **Phase 10: Calendar Integration** - Google/Outlook sync, project milestones on calendars
-- [ ] **Phase 11: Custom Authentication Migration** - Replace Clerk with custom auth (JWT, sessions, MFA, org management)
+- [ ] **Phase 10: Reporting & Analytics** - Pre-built reports, custom builder, dashboards, export (PDF/Excel/CSV), scheduled delivery
+- [ ] **Phase 11: Calendar Integration** - Google/Outlook sync, project milestones on calendars
+- [ ] **Phase 12: Custom Authentication Migration** - Replace Clerk with custom auth (JWT, sessions, MFA, org management)
 
 ## Phase Details
 
@@ -197,7 +198,29 @@ Plans:
 - [ ] 09-06-PLAN.md — Workflow tRPC router with lifecycle and approval procedures (wave 2)
 - [ ] 09-07-PLAN.md — Frontend: search, tagging, sharing, workflow creation and approval UI (wave 3)
 
-### Phase 10: Calendar Integration
+### Phase 10: Reporting & Analytics
+**Goal**: Build comprehensive reporting and analytics system with pre-built reports, custom builder, dashboards, and scheduled delivery
+**Depends on**: Phases 3-9 (all data sources)
+**Requirements**: REPT-01, REPT-02, REPT-03, REPT-04, REPT-05, REPT-06
+**Success Criteria** (what must be TRUE):
+  1. Users can create custom reports with visual builder (drag-and-drop columns, filters)
+  2. Pre-built report templates cover common use cases (project status, budget variance, payment status, change orders, bid comparison)
+  3. Reports can be exported to PDF, Excel, and CSV formats
+  4. Interactive dashboards display charts and graphs using recharts
+  5. Financial analytics calculate industry-standard metrics (CPI, earned value, cash flow projections)
+  6. Reports can be scheduled for automatic email delivery (daily, weekly, monthly, quarterly)
+  7. Materialized views cache report data for performance (1-hour TTL)
+  8. Role-based access controls report creation and viewing
+**Plans**: 5 plans across 3 waves
+
+Plans:
+- [ ] 10-01-PLAN.md — DB schema (report definitions, templates, schedules, materialized data), shared types, CASL abilities (wave 1)
+- [ ] 10-02-PLAN.md — Report execution engine, query builder, analytics calculator, report tRPC router (wave 2)
+- [ ] 10-03-PLAN.md — Export services (PDF via puppeteer, Excel via exceljs, CSV), download endpoints (wave 2)
+- [ ] 10-04-PLAN.md — Scheduled delivery (BullMQ job processor, nodemailer email sender, schedule router) (wave 2)
+- [ ] 10-05-PLAN.md — Frontend: report list, builder with drag-and-drop, filter UI, chart preview, export/schedule dialogs, pre-built templates (wave 3)
+
+### Phase 11: Calendar Integration
 **Goal**: Users can connect calendars with bi-directional sync of project milestones
 **Depends on**: Phase 3
 **Requirements**: CALR-01, CALR-02, CALR-03
@@ -208,12 +231,12 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 10-01: TBD during planning
-- [ ] 10-02: TBD during planning
+- [ ] 11-01: TBD during planning
+- [ ] 11-02: TBD during planning
 
-### Phase 11: Custom Authentication Migration
+### Phase 12: Custom Authentication Migration
 **Goal**: Replace Clerk with a custom-built authentication system to eliminate third-party dependency, reduce costs, and gain full control over auth flows
-**Depends on**: Phase 10 (all features complete before migration)
+**Depends on**: Phase 11 (all features complete before migration)
 **Requirements**: TBD during planning
 **Success Criteria** (what must be TRUE):
   1. Custom JWT-based authentication replaces all Clerk auth flows (sign-in, sign-up, password reset)
@@ -227,14 +250,14 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 11-01: TBD during planning
-- [ ] 11-02: TBD during planning
-- [ ] 11-03: TBD during planning
+- [ ] 12-01: TBD during planning
+- [ ] 12-02: TBD during planning
+- [ ] 12-03: TBD during planning
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -247,8 +270,9 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 7. Bidding & Procurement | 0/5 | Not started | - |
 | 8. QuickBooks Integration | 0/5 | Not started | - |
 | 9. Document Management Enhancement | 0/7 | Not started | - |
-| 10. Calendar Integration | 0/TBD | Not started | - |
-| 11. Custom Authentication Migration | 0/TBD | Not started | - |
+| 10. Reporting & Analytics | 0/5 | Not started | - |
+| 11. Calendar Integration | 0/TBD | Not started | - |
+| 12. Custom Authentication Migration | 0/TBD | Not started | - |
 
 ---
 *Roadmap created: 2026-02-10*
