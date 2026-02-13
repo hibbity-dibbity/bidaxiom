@@ -10,7 +10,14 @@ import {
   unique,
   index,
 } from "drizzle-orm/pg-core";
-import type { TradesConfig, JobNumberSettings, RetainageConfig } from "@construction/shared";
+import type {
+  TradesConfig,
+  JobNumberSettings,
+  RetainageConfig,
+  ReportFilter,
+  ReportColumn,
+  ReportChartConfig,
+} from "@construction/shared";
 
 /**
  * Creates a tenant-scoped schema with all tenant-specific tables.
@@ -846,6 +853,89 @@ export function createTenantSchema(schemaName: string) {
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   });
 
+  /**
+   * Report definitions
+   * User-created custom reports with filter, column, and chart configurations
+   * Supports saving and reusing report configurations across different data sources
+   */
+  const reportDefinitions = schema.table("report_definitions", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    description: text("description"),
+    type: text("type").notNull(), // ReportType enum
+    dataSource: text("data_source").notNull(), // projects, budgets, change_orders, payment_apps, bids, commitments
+    filters: jsonb("filters").notNull().default([]).$type<ReportFilter[]>(),
+    columns: jsonb("columns").notNull().$type<ReportColumn[]>(),
+    sortBy: jsonb("sort_by").$type<{ field: string; direction: "asc" | "desc" }>(),
+    groupBy: text("group_by"),
+    chartConfig: jsonb("chart_config").$type<ReportChartConfig>(),
+    status: text("status").notNull().default("active"), // ReportStatus enum: draft, active, archived
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * Report templates
+   * Pre-built report configurations that can be instantiated by users
+   * System templates (isSystem=true) are read-only, tenant templates can be customized
+   */
+  const reportTemplates = schema.table("report_templates", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    description: text("description"),
+    type: text("type").notNull(), // ReportType enum
+    isSystem: boolean("is_system").notNull().default(false),
+    definition: jsonb("definition").notNull().$type<Partial<{
+      type: string;
+      dataSource: string;
+      filters: ReportFilter[];
+      columns: ReportColumn[];
+      sortBy?: { field: string; direction: "asc" | "desc" };
+      groupBy?: string;
+      chartConfig?: ReportChartConfig;
+      status: string;
+    }>>(),
+    previewImageUrl: text("preview_image_url"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * Report schedules
+   * Automated report generation and email delivery on a recurring schedule
+   * Supports daily, weekly, monthly, and quarterly frequencies
+   */
+  const reportSchedules = schema.table("report_schedules", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    reportDefinitionId: uuid("report_definition_id").notNull().references(() => reportDefinitions.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    frequency: text("frequency").notNull(), // ScheduleFrequency enum: daily, weekly, monthly, quarterly
+    dayOfWeek: integer("day_of_week"), // 0-6, Sunday=0
+    dayOfMonth: integer("day_of_month"), // 1-31
+    time: text("time").notNull(), // HH:MM format
+    recipients: jsonb("recipients").notNull().$type<string[]>(),
+    format: text("format").notNull(), // ExportFormat enum: pdf, excel, csv
+    isActive: boolean("is_active").notNull().default(true),
+    lastRunAt: timestamp("last_run_at", { withTimezone: true }),
+    nextRunAt: timestamp("next_run_at", { withTimezone: true }),
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * Materialized report data
+   * Cached report results with expiry timestamps for performance optimization
+   * Avoids re-running expensive queries for frequently accessed reports
+   */
+  const materializedReportData = schema.table("materialized_report_data", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    reportDefinitionId: uuid("report_definition_id").notNull().references(() => reportDefinitions.id, { onDelete: "cascade" }),
+    data: jsonb("data").notNull().$type<unknown>(),
+    generatedAt: timestamp("generated_at", { withTimezone: true }).defaultNow().notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  });
+
   return {
     schema,
     auditLogs,
@@ -892,6 +982,10 @@ export function createTenantSchema(schemaName: string) {
     qboSyncState,
     qboEntityMappings,
     qboSyncNotifications,
+    reportDefinitions,
+    reportTemplates,
+    reportSchedules,
+    materializedReportData,
   };
 }
 

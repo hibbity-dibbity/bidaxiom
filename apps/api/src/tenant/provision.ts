@@ -921,6 +921,97 @@ export async function provisionTenantSchema(
         )
       `);
 
+      // Create report_definitions table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".report_definitions (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          name TEXT NOT NULL,
+          description TEXT,
+          type TEXT NOT NULL,
+          data_source TEXT NOT NULL,
+          filters JSONB NOT NULL DEFAULT '[]'::jsonb,
+          columns JSONB NOT NULL,
+          sort_by JSONB,
+          group_by TEXT,
+          chart_config JSONB,
+          status TEXT NOT NULL DEFAULT 'active',
+          created_by TEXT NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      // Index for fast report type lookups
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_report_definitions_type
+        ON "${schemaName}".report_definitions(type)
+      `);
+
+      // Index for fast active report lookups
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_report_definitions_status
+        ON "${schemaName}".report_definitions(status)
+      `);
+
+      // Create report_templates table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".report_templates (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          name TEXT NOT NULL,
+          description TEXT,
+          type TEXT NOT NULL,
+          is_system BOOLEAN NOT NULL DEFAULT false,
+          definition JSONB NOT NULL,
+          preview_image_url TEXT,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      // Create report_schedules table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".report_schedules (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          report_definition_id UUID NOT NULL REFERENCES "${schemaName}".report_definitions(id) ON DELETE CASCADE,
+          name TEXT NOT NULL,
+          frequency TEXT NOT NULL,
+          day_of_week INTEGER,
+          day_of_month INTEGER,
+          time TEXT NOT NULL,
+          recipients JSONB NOT NULL,
+          format TEXT NOT NULL,
+          is_active BOOLEAN NOT NULL DEFAULT true,
+          last_run_at TIMESTAMPTZ,
+          next_run_at TIMESTAMPTZ,
+          created_by TEXT NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      // Index for fast scheduled report lookups (only active schedules)
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_report_schedules_next_run
+        ON "${schemaName}".report_schedules(next_run_at)
+        WHERE is_active = true
+      `);
+
+      // Create materialized_report_data table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".materialized_report_data (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          report_definition_id UUID NOT NULL REFERENCES "${schemaName}".report_definitions(id) ON DELETE CASCADE,
+          data JSONB NOT NULL,
+          generated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          expires_at TIMESTAMPTZ NOT NULL
+        )
+      `);
+
+      // Index for fast cache expiry cleanup
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_materialized_report_data_expires
+        ON "${schemaName}".materialized_report_data(expires_at)
+      `);
+
       // Register tenant in public schema
       const insertResult = await client.query(
         `INSERT INTO tenants (schema_name, clerk_org_id, name, status)
