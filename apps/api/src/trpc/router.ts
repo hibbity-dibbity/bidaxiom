@@ -8,6 +8,7 @@ import { userRouter } from "./routers/user.js";
 import { projectRouter } from "./routers/project.js";
 import { documentRouter } from "./routers/document.js";
 import { budgetRouter } from "./routers/budget.js";
+import { commitmentRouter } from "./routers/commitment.js";
 
 /**
  * Root application router.
@@ -26,6 +27,7 @@ export const appRouter = router({
   project: projectRouter,
   document: documentRouter,
   budget: budgetRouter,
+  commitment: commitmentRouter,
 });
 
 /**
