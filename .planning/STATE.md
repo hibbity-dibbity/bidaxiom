@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-10)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** Phase 6 - Payment Applications
+**Current focus:** Phase 8 - QuickBooks Integration
 
 ## Current Position
 
-Phase: 7 of 10 (Bidding and Procurement)
-Plan: 4 of 5 in current phase
+Phase: 8 of 10 (QuickBooks Integration)
+Plan: 1 of 5 in current phase
 Status: In Progress
-Last activity: 2026-02-13 — Completed 07-05-PLAN.md (Subcontractor Directory UI)
+Last activity: 2026-02-13 — Completed 08-01-PLAN.md (QuickBooks Integration Foundation)
 
-Progress: [██████░░░░] 60% (6 of 10 phases complete, Phase 7 in progress)
+Progress: [███████░░░] 70% (7 of 10 phases complete, Phase 8 in progress)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 20
-- Average duration: 8.4 min
-- Total execution time: 2.8 hours
+- Total plans completed: 21
+- Average duration: 8.1 min
+- Total execution time: 2.9 hours
 
 **By Phase:**
 
@@ -33,10 +33,11 @@ Progress: [██████░░░░] 60% (6 of 10 phases complete, Phase 7
 | 05 | 3 | 20 min | 6.7 min |
 | 06 | 4 | 21 min | 5.3 min |
 | 07 | 4 | 19 min | 4.8 min |
+| 08 | 1 | 3 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 06-04 (7 min), 07-01 (3 min), 07-02 (6 min), 07-03 (4 min), 07-05 (6 min)
-- Trend: Phase 7 maintaining excellent velocity (3-6 min per plan). UI and API plans both execute efficiently.
+- Last 5 plans: 07-02 (6 min), 07-03 (4 min), 07-05 (6 min), 07-04 (6 min), 08-01 (3 min)
+- Trend: Excellent velocity continues into Phase 8. Foundation plans remain fast (3 min).
 
 *Updated after each plan completion*
 | Phase 06 P02 | 8 | 2 tasks | 5 files |
@@ -45,6 +46,8 @@ Progress: [██████░░░░] 60% (6 of 10 phases complete, Phase 7
 | Phase 07-bidding-and-procurement P02 | 6 min | 2 tasks | 3 files |
 | Phase 07-bidding-and-procurement P03 | 4 min | 2 tasks | 2 files |
 | Phase 07-bidding-and-procurement P05 | 6 min | 2 tasks | 7 files |
+| Phase 07-bidding-and-procurement P04 | 6 | 2 tasks | 11 files |
+| Phase 08-quickbooks-integration P01 | 3 min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -118,6 +121,11 @@ Recent decisions affecting current work:
 - [Phase 07-03]: Award converts bid to commitment in single transaction (bid status, RFQ status, commitment creation, reject other bids)
 - [Phase 07-03]: Bid comparison sorts by leveledAmount (totalAmount + scope leveling adjustments)
 - [Phase 07-03]: Only PMs/admins can award bids (manage RFQ permission required, not just update Bid)
+- [Phase 08-01]: Admin-only QBO management (org:admin can connect/disconnect, org:accountant gets read-only access)
+- [Phase 08-01]: Encrypted refresh tokens (access tokens 1hr TTL unencrypted, refresh tokens 180d TTL encrypted with AES-256-GCM)
+- [Phase 08-01]: Polymorphic entity mappings (no FK from qbo_entity_mappings to projects/invoices - validated at application level)
+- [Phase 08-01]: Sync notifications for user visibility (BullMQ worker inserts notification after retry exhaustion)
+- [Phase 08-01]: Bidirectional sync direction tracking (platform_to_qbo, qbo_to_platform, bidirectional)
 
 ### Pending Todos
 
@@ -129,8 +137,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-13 (Phase 7 in progress)
-Stopped at: Completed 07-05-PLAN.md (Subcontractor Directory UI)
+Last session: 2026-02-13 (Phase 8 in progress)
+Stopped at: Completed 08-01-PLAN.md (QuickBooks Integration Foundation)
 Resume file: None
 
 ---
