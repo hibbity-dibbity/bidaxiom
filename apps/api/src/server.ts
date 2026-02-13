@@ -18,6 +18,11 @@ import { webhookRoutes } from "./webhooks/routes.js";
 import { pool } from "./db/client.js";
 import { ensureBucket } from "./storage/client.js";
 import { startQboSyncWorker } from "./integrations/quickbooks/sync/workers.js";
+import { startScheduledReportsWorker, scheduleNextReports } from "./jobs/scheduled-reports.js";
+import fs from "fs";
+import path from "path";
+import os from "os";
+import { cleanupExpiredExports } from "./services/report-exporter.js";
 
 const fastify = Fastify({
   logger: {
@@ -69,6 +74,63 @@ try {
 } catch (err) {
   console.warn("QBO sync worker failed to start (Redis may not be running):", err);
 }
+
+// Start scheduled reports worker
+try {
+  startScheduledReportsWorker();
+  console.log("Scheduled reports worker started");
+} catch (err) {
+  console.warn("Scheduled reports worker failed to start (Redis may not be running):", err);
+}
+
+// Schedule checker (every 5 minutes)
+setInterval(async () => {
+  try {
+    await scheduleNextReports();
+  } catch (error) {
+    console.error('Error checking scheduled reports:', error);
+  }
+}, 5 * 60 * 1000);
+
+// Report export download endpoint (non-tRPC for file streaming)
+const REPORTS_TEMP_DIR = process.env.REPORTS_TEMP_DIR || path.join(os.tmpdir(), 'construction-reports');
+
+fastify.get('/api/reports/download/:filename', async (request, reply) => {
+  const { filename } = request.params as { filename: string };
+  const filePath = path.join(REPORTS_TEMP_DIR, filename);
+
+  // Security: prevent path traversal
+  const normalizedPath = path.normalize(filePath);
+  if (!normalizedPath.startsWith(REPORTS_TEMP_DIR)) {
+    return reply.code(403).send({ error: 'Access denied' });
+  }
+
+  if (!fs.existsSync(filePath)) {
+    return reply.code(404).send({ error: 'File not found or expired' });
+  }
+
+  const ext = path.extname(filename);
+  const mimeTypes: Record<string, string> = {
+    '.pdf': 'application/pdf',
+    '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    '.csv': 'text/csv',
+  };
+
+  const stream = fs.createReadStream(filePath);
+  reply.type(mimeTypes[ext] || 'application/octet-stream');
+  reply.header('Content-Disposition', `attachment; filename="${filename}"`);
+  return reply.send(stream);
+});
+
+// Cleanup expired exports every 6 hours
+setInterval(async () => {
+  try {
+    const deleted = await cleanupExpiredExports();
+    console.log(`Cleaned up ${deleted} expired report exports`);
+  } catch (error) {
+    console.error('Error during export cleanup:', error);
+  }
+}, 6 * 60 * 60 * 1000);
 
 // Health check (non-tRPC, for load balancers)
 fastify.get("/health", async () => {
