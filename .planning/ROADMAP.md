@@ -13,8 +13,8 @@ A cloud-first construction management SaaS that enables GCs and subs to collabor
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation & Multi-Tenant Infrastructure** - Authentication, tenant isolation, audit logging, authorization
-- [ ] **Phase 2: Company Setup & Configuration** - Company types, trade configuration, CSI-based standards
-- [ ] **Phase 3: Project Management Core** - Project creation, access control, document management
+- [x] **Phase 2: Company Setup & Configuration** - Company types, trade configuration, CSI-based standards
+- [x] **Phase 3: Project Management Core** - Project creation, access control, document management
 - [ ] **Phase 4: Budget & Cost Tracking** - Cost codes, budget vs actuals, committed costs, forecasting
 - [ ] **Phase 5: Change Order Management** - Owner/internal/sub change orders, approval workflows, audit trail
 - [ ] **Phase 6: Payment Applications** - AIA G702/G703 forms, retainage, lien waivers, invoice tracking
@@ -59,8 +59,8 @@ Plans:
 **Plans**: 2 plans across 2 waves
 
 Plans:
-- [ ] 02-01-PLAN.md — Backend: DB schema with effective dating, CSI seed data, company tRPC router (wave 1)
-- [ ] 02-02-PLAN.md — Frontend: Company setup UI with type selection, trade combobox, custom trades (wave 2)
+- [x] 02-01-PLAN.md — Backend: DB schema with effective dating, CSI seed data, company tRPC router (wave 1)
+- [x] 02-02-PLAN.md — Frontend: Company setup UI with type selection, trade combobox, custom trades (wave 2)
 
 ### Phase 3: Project Management Core
 **Goal**: Users can create projects with team access controls and manage versioned documents
@@ -74,11 +74,11 @@ Plans:
 **Plans**: 5 plans across 3 waves
 
 Plans:
-- [ ] 03-01-PLAN.md — DB schema, shared types, CASL abilities for projects (wave 1)
-- [ ] 03-02-PLAN.md — MinIO Docker service and S3 storage client (wave 1)
-- [ ] 03-03-PLAN.md — Project tRPC router with CRUD and team management (wave 2)
-- [ ] 03-04-PLAN.md — Document tRPC router with upload, versioning, folders (wave 2)
-- [ ] 03-05-PLAN.md — Frontend: project list, creation, dashboard, document browser (wave 3)
+- [x] 03-01-PLAN.md — DB schema, shared types, CASL abilities for projects (wave 1)
+- [x] 03-02-PLAN.md — MinIO Docker service and S3 storage client (wave 1)
+- [x] 03-03-PLAN.md — Project tRPC router with CRUD and team management (wave 2)
+- [x] 03-04-PLAN.md — Document tRPC router with upload, versioning, folders (wave 2)
+- [x] 03-05-PLAN.md — Frontend: project list, creation, dashboard, document browser (wave 3)
 
 ### Phase 4: Budget & Cost Tracking
 **Goal**: Users can track project budgets against actuals and committed costs with real-time forecasting
@@ -90,12 +90,13 @@ Plans:
   3. User can track committed costs (subcontracts and purchase orders) against budget
   4. User can generate cost-to-complete forecasts based on current actuals and commitments
   5. Budget line items lock once payment application is created against them (changes require change order)
-**Plans**: TBD
+**Plans**: 4 plans across 4 waves
 
 Plans:
-- [ ] 04-01: TBD during planning
-- [ ] 04-02: TBD during planning
-- [ ] 04-03: TBD during planning
+- [ ] 04-01-PLAN.md — DB schema, shared types, CASL abilities for budget/commitments (wave 1)
+- [ ] 04-02-PLAN.md — Budget tRPC router with CRUD, locking, variance, forecast (wave 2)
+- [ ] 04-03-PLAN.md — Commitment tRPC router with line items, status lifecycle (wave 3)
+- [ ] 04-04-PLAN.md — Frontend: budget dashboard, line item editor, commitment pages, Recharts (wave 4)
 
 ### Phase 5: Change Order Management
 **Goal**: Users can create change orders with approval workflows that automatically update budgets
@@ -207,8 +208,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Multi-Tenant Infrastructure | 8/8 | Complete | 2026-02-12 |
-| 2. Company Setup & Configuration | 0/2 | Planning complete | - |
-| 3. Project Management Core | 0/5 | Planning complete | - |
+| 2. Company Setup & Configuration | 2/2 | Complete | 2026-02-12 |
+| 3. Project Management Core | 5/5 | Complete | 2026-02-12 |
 | 4. Budget & Cost Tracking | 0/TBD | Not started | - |
 | 5. Change Order Management | 0/TBD | Not started | - |
 | 6. Payment Applications | 0/TBD | Not started | - |
