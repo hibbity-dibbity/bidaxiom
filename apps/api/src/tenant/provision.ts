@@ -136,11 +136,28 @@ export async function provisionTenantSchema(
         WHERE valid_to IS NULL
       `);
 
+      // Create customers table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".customers (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          company_name TEXT,
+          contact_name TEXT NOT NULL,
+          phone TEXT,
+          email TEXT,
+          address TEXT,
+          created_by TEXT NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
       // Create projects table
       await client.query(`
         CREATE TABLE IF NOT EXISTS "${schemaName}".projects (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
           name TEXT NOT NULL,
+          job_number TEXT,
+          customer_id UUID NOT NULL REFERENCES "${schemaName}".customers(id) ON DELETE RESTRICT,
           description TEXT,
           location TEXT,
           project_type TEXT NOT NULL,
@@ -319,6 +336,133 @@ export async function provisionTenantSchema(
       await client.query(`
         CREATE INDEX IF NOT EXISTS idx_commitment_line_items_budget
         ON "${schemaName}".commitment_line_items(budget_line_item_id)
+      `);
+
+      // Create change_orders table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".change_orders (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          project_id UUID NOT NULL REFERENCES "${schemaName}".projects(id) ON DELETE CASCADE,
+          type TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'draft',
+          pco_number TEXT,
+          co_number TEXT,
+          title TEXT NOT NULL,
+          description TEXT NOT NULL,
+          reason TEXT,
+          commitment_id UUID REFERENCES "${schemaName}".commitments(id) ON DELETE SET NULL,
+          requested_by TEXT,
+          total_amount NUMERIC(15,2) NOT NULL DEFAULT 0,
+          related_documents JSONB NOT NULL DEFAULT '[]'::jsonb,
+          submitted_at TIMESTAMPTZ,
+          submitted_by TEXT,
+          approved_at TIMESTAMPTZ,
+          approved_by TEXT,
+          rejected_at TIMESTAMPTZ,
+          rejected_by TEXT,
+          rejection_reason TEXT,
+          created_by TEXT NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      // Index for fast change orders lookup by project
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_change_orders_project
+        ON "${schemaName}".change_orders(project_id)
+      `);
+
+      // Index for fast change orders lookup by status
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_change_orders_status
+        ON "${schemaName}".change_orders(status)
+      `);
+
+      // Create change_order_line_items table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".change_order_line_items (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          change_order_id UUID NOT NULL REFERENCES "${schemaName}".change_orders(id) ON DELETE CASCADE,
+          budget_line_item_id UUID REFERENCES "${schemaName}".budget_line_items(id) ON DELETE SET NULL,
+          cost_code_id INTEGER NOT NULL,
+          description TEXT NOT NULL,
+          amount_change NUMERIC(15,2) NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      // Index for fast change order line items lookup
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_change_order_line_items_co
+        ON "${schemaName}".change_order_line_items(change_order_id)
+      `);
+
+      // Index for fast budget line item cross-reference
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_change_order_line_items_budget
+        ON "${schemaName}".change_order_line_items(budget_line_item_id)
+      `);
+
+      // Create change_order_counters table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".change_order_counters (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          project_id UUID NOT NULL REFERENCES "${schemaName}".projects(id) ON DELETE CASCADE,
+          type TEXT NOT NULL,
+          year INTEGER NOT NULL,
+          last_number INTEGER NOT NULL DEFAULT 0
+        )
+      `);
+
+      // Index for fast counter lookup by project, type, and year
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_change_order_counters_lookup
+        ON "${schemaName}".change_order_counters(project_id, type, year)
+      `);
+
+      // Create approval_workflow_steps table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".approval_workflow_steps (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          change_order_id UUID NOT NULL REFERENCES "${schemaName}".change_orders(id) ON DELETE CASCADE,
+          step_order INTEGER NOT NULL,
+          approver_role TEXT,
+          approver_user_id TEXT,
+          requirement_type TEXT NOT NULL DEFAULT 'all',
+          status TEXT NOT NULL DEFAULT 'pending',
+          approved_by TEXT,
+          approved_at TIMESTAMPTZ,
+          comments TEXT
+        )
+      `);
+
+      // Index for fast approval steps lookup
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_approval_steps_co
+        ON "${schemaName}".approval_workflow_steps(change_order_id)
+      `);
+
+      // Create change_order_history table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".change_order_history (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          change_order_id UUID NOT NULL REFERENCES "${schemaName}".change_orders(id) ON DELETE CASCADE,
+          revision_number INTEGER NOT NULL,
+          changed_by TEXT NOT NULL,
+          changed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          change_type TEXT NOT NULL,
+          field_name TEXT,
+          old_value JSONB,
+          new_value JSONB,
+          comments TEXT
+        )
+      `);
+
+      // Index for fast change order history lookup
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_change_order_history_co
+        ON "${schemaName}".change_order_history(change_order_id)
       `);
 
       // Register tenant in public schema

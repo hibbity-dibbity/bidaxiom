@@ -258,6 +258,96 @@ export function createTenantSchema(schemaName: string) {
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   });
 
+  /**
+   * Change orders table
+   * Tracks owner, internal, and subcontractor change orders with status workflow
+   */
+  const changeOrders = schema.table("change_orders", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+    type: text("type").notNull(), // 'owner', 'internal', 'subcontractor'
+    status: text("status").notNull().default("draft"), // draft, pco_submitted, pending_approval, approved, rejected, void
+    pcoNumber: text("pco_number"), // e.g., "PCO-2024-001" (assigned on submit)
+    coNumber: text("co_number"), // e.g., "CO-2024-001" (assigned on approval)
+    title: text("title").notNull(),
+    description: text("description").notNull(),
+    reason: text("reason"), // for internal COs: error, efficiency, value_engineering, other
+    commitmentId: uuid("commitment_id").references(() => commitments.id, { onDelete: "set null" }), // for subcontractor COs
+    requestedBy: text("requested_by"), // for owner COs: who requested the change
+    totalAmount: numeric("total_amount", { precision: 15, scale: 2 }).notNull().default("0"),
+    relatedDocuments: jsonb("related_documents").notNull().default([]).$type<string[]>(), // array of document IDs from Phase 3
+    submittedAt: timestamp("submitted_at", { withTimezone: true }),
+    submittedBy: text("submitted_by"),
+    approvedAt: timestamp("approved_at", { withTimezone: true }),
+    approvedBy: text("approved_by"),
+    rejectedAt: timestamp("rejected_at", { withTimezone: true }),
+    rejectedBy: text("rejected_by"),
+    rejectionReason: text("rejection_reason"),
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * Change order line items
+   * Individual line items within a change order mapped to budget line items
+   */
+  const changeOrderLineItems = schema.table("change_order_line_items", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    changeOrderId: uuid("change_order_id").notNull().references(() => changeOrders.id, { onDelete: "cascade" }),
+    budgetLineItemId: uuid("budget_line_item_id").references(() => budgetLineItems.id, { onDelete: "set null" }),
+    costCodeId: integer("cost_code_id").notNull(),
+    description: text("description").notNull(),
+    amountChange: numeric("amount_change", { precision: 15, scale: 2 }).notNull(), // positive = increase, negative = decrease
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * Change order counters
+   * Sequential numbering for PCO and CO numbers scoped by project and year
+   */
+  const changeOrderCounters = schema.table("change_order_counters", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+    type: text("type").notNull(), // 'pco' or 'co'
+    year: integer("year").notNull(),
+    lastNumber: integer("last_number").notNull().default(0),
+  });
+
+  /**
+   * Approval workflow steps
+   * Defines multi-step approval requirements for change orders
+   */
+  const approvalWorkflowSteps = schema.table("approval_workflow_steps", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    changeOrderId: uuid("change_order_id").notNull().references(() => changeOrders.id, { onDelete: "cascade" }),
+    stepOrder: integer("step_order").notNull(), // 1, 2, 3...
+    approverRole: text("approver_role"), // normalized Clerk role e.g., "org:project_manager"
+    approverUserId: text("approver_user_id"), // specific user or null = any with role
+    requirementType: text("requirement_type").notNull().default("all"), // 'all', 'any', 'specific'
+    status: text("status").notNull().default("pending"), // pending, approved, rejected, skipped
+    approvedBy: text("approved_by"),
+    approvedAt: timestamp("approved_at", { withTimezone: true }),
+    comments: text("comments"),
+  });
+
+  /**
+   * Change order history
+   * Field-level audit trail for change order modifications
+   */
+  const changeOrderHistory = schema.table("change_order_history", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    changeOrderId: uuid("change_order_id").notNull().references(() => changeOrders.id, { onDelete: "cascade" }),
+    revisionNumber: integer("revision_number").notNull(),
+    changedBy: text("changed_by").notNull(),
+    changedAt: timestamp("changed_at", { withTimezone: true }).defaultNow().notNull(),
+    changeType: text("change_type").notNull(), // 'field_update', 'status_change', 'approval', 'line_item_change'
+    fieldName: text("field_name"), // e.g., 'description', 'totalAmount'
+    oldValue: jsonb("old_value").$type<unknown>(),
+    newValue: jsonb("new_value").$type<unknown>(),
+    comments: text("comments"),
+  });
+
   return {
     schema,
     auditLogs,
@@ -273,6 +363,11 @@ export function createTenantSchema(schemaName: string) {
     budgetLineItems,
     commitments,
     commitmentLineItems,
+    changeOrders,
+    changeOrderLineItems,
+    changeOrderCounters,
+    approvalWorkflowSteps,
+    changeOrderHistory,
   };
 }
 

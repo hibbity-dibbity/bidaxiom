@@ -66,6 +66,11 @@ export async function buildTenantContext(
       budgetLineItems: tenantDb.budgetLineItems,
       commitments: tenantDb.commitments,
       commitmentLineItems: tenantDb.commitmentLineItems,
+      changeOrders: tenantDb.changeOrders,
+      changeOrderLineItems: tenantDb.changeOrderLineItems,
+      changeOrderCounters: tenantDb.changeOrderCounters,
+      approvalWorkflowSteps: tenantDb.approvalWorkflowSteps,
+      changeOrderHistory: tenantDb.changeOrderHistory,
     },
   };
 }
