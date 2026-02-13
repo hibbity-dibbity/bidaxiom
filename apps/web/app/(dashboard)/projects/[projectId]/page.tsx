@@ -204,6 +204,7 @@ export default function ProjectDashboardPage({
   const { data: customersData, isLoading: customersLoading, error: customersError } = trpc.customer.list.useQuery({ limit: 100, offset: 0 });
   const { data: usersData } = trpc.user.list.useQuery({ limit: 100, offset: 0 });
   const { data: budgetSummary } = trpc.budget.getProjectSummary.useQuery({ projectId });
+  const { data: changeOrders } = trpc.changeOrder.list.useQuery({ projectId });
 
   // Debug: Log project and customer data
   useEffect(() => {
@@ -656,6 +657,12 @@ export default function ProjectDashboardPage({
           >
             Commitments
           </Link>
+          <Link
+            href={`/projects/${projectId}/change-orders`}
+            className="border-b-2 border-transparent py-3 text-sm text-muted-foreground hover:text-foreground"
+          >
+            Change Orders
+          </Link>
         </nav>
       </div>
 
@@ -735,6 +742,35 @@ export default function ProjectDashboardPage({
             <Button variant="link" className="h-auto p-0 text-xs" asChild>
               <Link href={`/projects/${projectId}/documents`}>View documents</Link>
             </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Change Orders</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {changeOrders ? (
+              <>
+                <div className="text-2xl font-bold">
+                  {changeOrders.filter((co) => co.status === "pending_approval" || co.status === "pco_submitted").length}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Pending ({changeOrders.filter((co) => co.status === "approved").length} approved)
+                </p>
+                <Button variant="link" className="h-auto p-0 text-xs" asChild>
+                  <Link href={`/projects/${projectId}/change-orders`}>View change orders</Link>
+                </Button>
+              </>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">--</div>
+                <Button variant="link" className="h-auto p-0 text-xs" asChild>
+                  <Link href={`/projects/${projectId}/change-orders`}>Create change order</Link>
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>

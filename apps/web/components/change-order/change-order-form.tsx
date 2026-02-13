@@ -101,7 +101,7 @@ export function ChangeOrderForm({ projectId }: ChangeOrderFormProps) {
 
   const lineItems = watch("lineItems");
   const totalAmount = lineItems.reduce(
-    (sum, item) => sum + (Number(item.amountChange) || 0),
+    (sum: number, item: any) => sum + (Number(item.amountChange) || 0),
     0
   );
 
@@ -404,9 +404,9 @@ export function ChangeOrderForm({ projectId }: ChangeOrderFormProps) {
                         ))}
                       </SelectContent>
                     </Select>
-                    {errors.lineItems?.[index]?.costCodeId && (
+                    {(errors.lineItems as any)?.[index]?.costCodeId && (
                       <p className="text-sm text-red-600">
-                        {errors.lineItems[index]?.costCodeId?.message}
+                        {(errors.lineItems as any)[index]?.costCodeId?.message}
                       </p>
                     )}
                   </div>
@@ -417,9 +417,9 @@ export function ChangeOrderForm({ projectId }: ChangeOrderFormProps) {
                       {...register(`lineItems.${index}.description`)}
                       placeholder="Enter description"
                     />
-                    {errors.lineItems?.[index]?.description && (
+                    {(errors.lineItems as any)?.[index]?.description && (
                       <p className="text-sm text-red-600">
-                        {errors.lineItems[index]?.description?.message}
+                        {(errors.lineItems as any)[index]?.description?.message}
                       </p>
                     )}
                   </div>
@@ -434,9 +434,9 @@ export function ChangeOrderForm({ projectId }: ChangeOrderFormProps) {
                       })}
                       placeholder="0.00 (can be negative)"
                     />
-                    {errors.lineItems?.[index]?.amountChange && (
+                    {(errors.lineItems as any)?.[index]?.amountChange && (
                       <p className="text-sm text-red-600">
-                        {errors.lineItems[index]?.amountChange?.message}
+                        {(errors.lineItems as any)[index]?.amountChange?.message}
                       </p>
                     )}
                   </div>
@@ -446,7 +446,7 @@ export function ChangeOrderForm({ projectId }: ChangeOrderFormProps) {
               {errors.lineItems && typeof errors.lineItems === "object" && !Array.isArray(errors.lineItems) && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{errors.lineItems.message}</AlertDescription>
+                  <AlertDescription>{(errors.lineItems as any).message}</AlertDescription>
                 </Alert>
               )}
             </CardContent>
