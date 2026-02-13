@@ -53,6 +53,7 @@ Progress: [████████░░] 80% (8 of 10 phases complete)
 | Phase 08-quickbooks-integration P03 | 5 min | 2 tasks | 7 files |
 | Phase 08-quickbooks-integration P04 | 7 min | 2 tasks | 5 files |
 | Phase 08-quickbooks-integration P05 | 8 min | 3 tasks | 6 files |
+| Phase 06 P05 | 5 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -145,6 +146,8 @@ Recent decisions affecting current work:
 - [Phase 08-05]: 5-second polling for sync status (near-real-time updates during active sync without overwhelming API)
 - [Phase 08-05]: 30-second polling for notifications (balances timely delivery with reduced API load for infrequent events)
 - [Phase 08-05]: Settings landing page card pattern (added Integrations card to maintain consistency with Team Members and Company Profile)
+- [Phase 06-05]: actualCost DEFAULT 0: Existing budget line items start with zero (no payment apps approved yet)
+- [Phase 06-05]: Migration script checks table existence: Gracefully handles tenants from different phases
 
 ### Pending Todos
 
