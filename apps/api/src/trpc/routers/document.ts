@@ -7,12 +7,15 @@ import {
   uploadVersionSchema,
   createFolderSchema,
   presignedUrlSchema,
+  createTagSchema,
+  removeTagSchema,
+  searchDocumentsSchema,
   AuditAction,
 } from "@construction/shared";
 import { generateUploadUrl, generateDownloadUrl } from "../../storage/presigned.js";
 import { createAuditLog } from "../../audit/logger.js";
 import { defineAbilitiesFor } from "../../auth/abilities.js";
-import { eq, desc, and, isNull } from "drizzle-orm";
+import { eq, desc, and, isNull, inArray, like, sql } from "drizzle-orm";
 import { ForbiddenError } from "@casl/ability";
 
 /**
@@ -829,5 +832,367 @@ export const documentRouter = router({
       });
 
       return updatedFolder;
+    }),
+
+  /**
+   * Add a tag to a document.
+   * Tag is normalized (trimmed, lowercase) to enable case-insensitive search.
+   */
+  addTag: protectedProcedure
+    .input(createTagSchema)
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+      const userId = ctx.userId;
+
+      // Verify document exists
+      const [document] = await db
+        .select({ id: schema.documents.id, projectId: schema.documents.projectId })
+        .from(schema.documents)
+        .where(eq(schema.documents.id, input.documentId))
+        .limit(1);
+
+      if (!document) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Document not found",
+        });
+      }
+
+      // Load abilities and check permission
+      const abilities = await loadProjectAbilities({
+        tenant: ctx.tenant,
+        userId: ctx.userId,
+        orgRole: ctx.orgRole,
+      });
+      ForbiddenError.from(abilities).throwUnlessCan("update", "Document");
+
+      // Normalize tag (trim, lowercase)
+      const normalizedTag = input.tag.trim().toLowerCase();
+
+      // Check if tag already exists on document (prevent duplicates)
+      const [existingTag] = await db
+        .select()
+        .from(schema.documentTags)
+        .where(
+          and(
+            eq(schema.documentTags.documentId, input.documentId),
+            eq(schema.documentTags.tag, normalizedTag)
+          )
+        )
+        .limit(1);
+
+      if (existingTag) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Tag already exists on this document",
+        });
+      }
+
+      // Insert tag
+      await db.insert(schema.documentTags).values({
+        documentId: input.documentId,
+        tag: normalizedTag,
+        createdBy: userId,
+      });
+
+      // Audit log
+      await createAuditLog(db, schema, {
+        entityType: "Document",
+        entityId: input.documentId,
+        action: AuditAction.UPDATE,
+        actorId: userId,
+        changes: {
+          after: { tags: { added: [normalizedTag] } },
+        },
+      });
+
+      return { success: true };
+    }),
+
+  /**
+   * Remove a tag from a document.
+   */
+  removeTag: protectedProcedure
+    .input(removeTagSchema)
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+      const userId = ctx.userId;
+
+      // Verify document exists
+      const [document] = await db
+        .select({ id: schema.documents.id, projectId: schema.documents.projectId })
+        .from(schema.documents)
+        .where(eq(schema.documents.id, input.documentId))
+        .limit(1);
+
+      if (!document) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Document not found",
+        });
+      }
+
+      // Load abilities and check permission
+      const abilities = await loadProjectAbilities({
+        tenant: ctx.tenant,
+        userId: ctx.userId,
+        orgRole: ctx.orgRole,
+      });
+      ForbiddenError.from(abilities).throwUnlessCan("update", "Document");
+
+      // Normalize tag for consistent deletion
+      const normalizedTag = input.tag.trim().toLowerCase();
+
+      // Delete tag
+      await db
+        .delete(schema.documentTags)
+        .where(
+          and(
+            eq(schema.documentTags.documentId, input.documentId),
+            eq(schema.documentTags.tag, normalizedTag)
+          )
+        );
+
+      // Audit log
+      await createAuditLog(db, schema, {
+        entityType: "Document",
+        entityId: input.documentId,
+        action: AuditAction.UPDATE,
+        actorId: userId,
+        changes: {
+          after: { tags: { removed: [normalizedTag] } },
+        },
+      });
+
+      return { success: true };
+    }),
+
+  /**
+   * Get all tags for a document.
+   * Returns tags in chronological order (newest first).
+   */
+  getTags: protectedProcedure
+    .input(z.object({ documentId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+
+      // Verify document exists
+      const [document] = await db
+        .select({ id: schema.documents.id, projectId: schema.documents.projectId })
+        .from(schema.documents)
+        .where(eq(schema.documents.id, input.documentId))
+        .limit(1);
+
+      if (!document) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Document not found",
+        });
+      }
+
+      // Load abilities and check permission
+      const abilities = await loadProjectAbilities({
+        tenant: ctx.tenant,
+        userId: ctx.userId,
+        orgRole: ctx.orgRole,
+      });
+      ForbiddenError.from(abilities).throwUnlessCan("read", "Document");
+
+      // Query tags, ordered by createdAt DESC (newest first)
+      const tags = await db
+        .select({
+          tag: schema.documentTags.tag,
+          createdBy: schema.documentTags.createdBy,
+          createdAt: schema.documentTags.createdAt,
+        })
+        .from(schema.documentTags)
+        .where(eq(schema.documentTags.documentId, input.documentId))
+        .orderBy(desc(schema.documentTags.createdAt));
+
+      return tags;
+    }),
+
+  /**
+   * Search documents with advanced filters.
+   * Supports text search, tags (AND logic), category, and content type filters.
+   */
+  search: protectedProcedure
+    .input(searchDocumentsSchema)
+    .query(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+
+      // Load abilities and check permission
+      const abilities = await loadProjectAbilities({
+        tenant: ctx.tenant,
+        userId: ctx.userId,
+        orgRole: ctx.orgRole,
+      });
+      ForbiddenError.from(abilities).throwUnlessCan("read", "Document");
+
+      // Build WHERE conditions
+      const conditions = [eq(schema.documents.projectId, input.projectId)];
+
+      // Text search on document name (case-insensitive)
+      if (input.query) {
+        conditions.push(like(schema.documents.name, `%${input.query}%`));
+      }
+
+      // Category filter
+      if (input.category) {
+        conditions.push(eq(schema.documents.category, input.category));
+      }
+
+      // Content type filter
+      if (input.contentTypes && input.contentTypes.length > 0) {
+        conditions.push(inArray(schema.documents.contentType, input.contentTypes));
+      }
+
+      // Base query without tag filtering
+      let query = db
+        .select({
+          id: schema.documents.id,
+          projectId: schema.documents.projectId,
+          folderId: schema.documents.folderId,
+          name: schema.documents.name,
+          category: schema.documents.category,
+          description: schema.documents.description,
+          fileSize: schema.documents.fileSize,
+          contentType: schema.documents.contentType,
+          currentVersionId: schema.documents.currentVersionId,
+          createdBy: schema.documents.createdBy,
+          createdAt: schema.documents.createdAt,
+          updatedAt: schema.documents.updatedAt,
+        })
+        .from(schema.documents)
+        .where(and(...conditions))
+        .orderBy(desc(schema.documents.updatedAt))
+        .limit(100);
+
+      // Execute base query
+      let documents = await query;
+
+      // If tags filter provided, do manual filtering with AND logic
+      // (must match ALL tags)
+      if (input.tags && input.tags.length > 0) {
+        const normalizedTags = input.tags.map(t => t.toLowerCase());
+
+        // Get all document-tag mappings for these documents
+        const documentIds = documents.map(d => d.id);
+
+        if (documentIds.length > 0) {
+          const docTags = await db
+            .select({
+              documentId: schema.documentTags.documentId,
+              tag: schema.documentTags.tag,
+            })
+            .from(schema.documentTags)
+            .where(inArray(schema.documentTags.documentId, documentIds));
+
+          // Group tags by document
+          const tagsByDoc = new Map<string, string[]>();
+          for (const dt of docTags) {
+            if (!tagsByDoc.has(dt.documentId)) {
+              tagsByDoc.set(dt.documentId, []);
+            }
+            tagsByDoc.get(dt.documentId)!.push(dt.tag);
+          }
+
+          // Filter documents that have ALL required tags
+          documents = documents.filter(doc => {
+            const docTagList = tagsByDoc.get(doc.id) || [];
+            return normalizedTags.every(reqTag => docTagList.includes(reqTag));
+          });
+        } else {
+          documents = [];
+        }
+      }
+
+      return documents;
+    }),
+
+  /**
+   * Log document access (view or download).
+   * Creates audit trail entry for compliance and analytics.
+   */
+  logAccess: protectedProcedure
+    .input(
+      z.object({
+        documentId: z.string().uuid(),
+        action: z.enum(["view", "download"]),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+      const userId = ctx.userId;
+
+      // Verify document exists
+      const [document] = await db
+        .select({ id: schema.documents.id, projectId: schema.documents.projectId })
+        .from(schema.documents)
+        .where(eq(schema.documents.id, input.documentId))
+        .limit(1);
+
+      if (!document) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Document not found",
+        });
+      }
+
+      // Load abilities and check permission
+      const abilities = await loadProjectAbilities({
+        tenant: ctx.tenant,
+        userId: ctx.userId,
+        orgRole: ctx.orgRole,
+      });
+      ForbiddenError.from(abilities).throwUnlessCan("read", "Document");
+
+      // Insert access log
+      // Note: ipAddress could be extracted from ctx.req if available in future
+      await db.insert(schema.documentAccessLogs).values({
+        documentId: input.documentId,
+        userId: userId,
+        action: input.action,
+        ipAddress: null, // Can be added from request context if needed
+      });
+
+      // No audit log needed - this IS the audit log
+
+      return { success: true };
     }),
 });
