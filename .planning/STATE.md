@@ -179,6 +179,11 @@ Recent decisions affecting current work:
 - [Phase 10-01]: JSONB for report filters, columns, and chart config - Provides flexibility for evolving report structures without schema migrations
 - [Phase 10-01]: Materialized data with expiry timestamps - Performance optimization for expensive aggregate queries, TTL-based cache invalidation
 - [Phase 10-01]: Partial index on next_run_at WHERE is_active = true - Scheduled job worker only queries active schedules, reduces index size
+- [Phase 10-02]: Materialized view caching with 1-hour expiry - Balances data freshness with database performance for frequently-accessed reports
+- [Phase 10-02]: Dynamic SQL query builder using Drizzle operators - Type-safe query construction prevents SQL injection while maintaining flexibility
+- [Phase 10-02]: Division-by-zero handling returns 0 for CPI - Prevents crashes when actual costs are zero at project start; 0 indicates insufficient data
+- [Phase 10-02]: Cash flow uses commitments only (payment apps not in schema) - Outflow tracking available now, inflow placeholder for future Phase 6 implementation
+- [Phase 10-02]: Earned Value Management formulas for cost performance - Industry-standard calculations (EV = BAC × %Complete, CPI = EV / AC) provide accurate project forecasting
 - [Phase 10-03]: Puppeteer for PDF generation - Industry-standard HTML-to-PDF conversion with headless Chrome for full CSS and chart support
 - [Phase 10-03]: ExcelJS for Excel workbook generation - Pure JavaScript Excel library with cell formatting, multiple sheets, no native dependencies
 - [Phase 10-03]: 24-hour expiry for temp exports - Balances user convenience with disk space management; typical workflow requires download within hours
