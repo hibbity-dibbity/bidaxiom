@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-10)
 ## Current Position
 
 Phase: 9 of 12 (Document Management Enhancement)
-Plan: 6 of 7 in current phase
+Plan: 5 of 7 in current phase
 Status: In Progress
-Last activity: 2026-02-13 — Completed 09-06-PLAN.md (Workflow Management API)
+Last activity: 2026-02-13 — Completed 09-03-PLAN.md (Document and Folder Permissions)
 
-Progress: [████████░░] 86% (9 of 12 phases, 6 of 7 plans complete in current phase)
+Progress: [████████░░] 83% (9 of 12 phases, 5 of 7 plans complete in current phase)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 29
-- Average duration: 7.0 min
-- Total execution time: 3.5 hours
+- Total plans completed: 30
+- Average duration: 7.1 min
+- Total execution time: 3.6 hours
 
 **By Phase:**
 
@@ -34,11 +34,11 @@ Progress: [████████░░] 86% (9 of 12 phases, 6 of 7 plans com
 | 06 | 4 | 21 min | 5.3 min |
 | 07 | 4 | 19 min | 4.8 min |
 | 08 | 5 | 28 min | 5.6 min |
-| 09 | 6 | 21 min | 3.5 min |
+| 09 | 5 | 28.4 min | 5.7 min |
 
 **Recent Trend:**
-- Last 5 plans: 05-04 (1.5 min), 09-01 (3 min), 09-05 (3 min), 09-02 (3 min), 09-06 (5 min)
-- Trend: Phase 9 document management enhancement progressing efficiently at 3.5 min per plan average.
+- Last 5 plans: 09-01 (3 min), 09-05 (3 min), 09-02 (3 min), 09-06 (5 min), 09-03 (7.4 min)
+- Trend: Phase 9 document management enhancement maintaining strong pace with 5.7 min per plan average.
 
 *Updated after each plan completion*
 | Phase 06 P02 | 8 | 2 tasks | 5 files |
@@ -58,6 +58,8 @@ Progress: [████████░░] 86% (9 of 12 phases, 6 of 7 plans com
 | Phase 09-document-management-enhancement P05 | 3 min | 2 tasks | 3 files |
 | Phase 09 P01 | 3 | 2 tasks | 5 files |
 | Phase 09-document-management-enhancement P02 | 3 min | 2 tasks | 1 file |
+| Phase 09-document-management-enhancement P03 | 7.4 min | 2 tasks | 5 files |
+| Phase 09-document-management-enhancement P05 | 3 min | 2 tasks | 3 files |
 | Phase 09-document-management-enhancement P06 | 5 min | 2 tasks | 3 files |
 
 ## Accumulated Context
@@ -159,6 +161,10 @@ Recent decisions affecting current work:
 - [Phase 09-01]: Lowercase normalized tags in database for case-insensitive search without LOWER() overhead
 - [Phase 09-01]: Separate document_access_logs table for high-volume access events vs general audit_logs
 - [Phase 09-01]: Document schemas moved to dedicated document.ts file with project.ts re-exports for backward compatibility
+- [Phase 09-03]: Explicit permissions supplement, not replace, project-level permissions — Admin and PM roles maintain full access; explicit grants extend to non-team members
+- [Phase 09-03]: loadDocumentPermissions called explicitly in router for performance — Avoids N+1 queries by requiring manual invocation instead of automatic execution
+- [Phase 09-03]: Permission expiration uses nullable timestamp — NULL means no expiration; enables time-limited sharing
+- [Phase 09-03]: Folder permissions cascade via folderId reference — Documents inherit permissions from parent folder when includeSubfolders is true
 - [Phase 09-06]: Multi-step approval with three requirement types (specific_user, any_with_role, all_with_role) for flexible workflow approval chains
 - [Phase 09-06]: Approval authorization enforced at procedure level (too granular for CASL) - CASL enforces project-level access, procedure enforces step-level approval rights
 - [Phase 09-06]: Foremen can update workflows they submitted (submittedBy: userId condition) to respond to RFIs/Submittals they created
@@ -175,7 +181,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-13 (Phase 9 - Document Management Enhancement)
-Stopped at: Completed 09-06-PLAN.md (Workflow Management API)
+Stopped at: Completed 09-03-PLAN.md (Document and Folder Permissions)
 Resume file: None
 
 ---
