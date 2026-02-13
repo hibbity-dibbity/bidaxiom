@@ -38,32 +38,118 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Plus, X, GripVertical } from "lucide-react";
+import { Plus, X, GripVertical, Info } from "lucide-react";
 import { getCustomerDisplayName } from "@construction/shared";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type ProjectFormValues = z.infer<typeof createProjectSchema>;
 
 const CSI_DIVISIONS = [
-  { value: 0, label: "00 - Procurement and Contracting" },
-  { value: 1, label: "01 - General Requirements" },
-  { value: 2, label: "02 - Existing Conditions" },
-  { value: 3, label: "03 - Concrete" },
-  { value: 4, label: "04 - Masonry" },
-  { value: 5, label: "05 - Metals" },
-  { value: 6, label: "06 - Wood, Plastics, and Composites" },
-  { value: 7, label: "07 - Thermal and Moisture Protection" },
-  { value: 8, label: "08 - Openings" },
-  { value: 9, label: "09 - Finishes" },
-  { value: 10, label: "10 - Specialties" },
-  { value: 21, label: "21 - Fire Suppression" },
-  { value: 22, label: "22 - Plumbing" },
-  { value: 23, label: "23 - HVAC" },
-  { value: 26, label: "26 - Electrical" },
-  { value: 27, label: "27 - Communications" },
-  { value: 28, label: "28 - Electronic Safety and Security" },
-  { value: 31, label: "31 - Earthwork" },
-  { value: 32, label: "32 - Exterior Improvements" },
-  { value: 33, label: "33 - Utilities" },
+  {
+    value: 0,
+    label: "00 - Procurement and Contracting",
+    description: "Bidding requirements, contract forms, conditions of the contract, and project procurement procedures"
+  },
+  {
+    value: 1,
+    label: "01 - General Requirements",
+    description: "Project management, temporary facilities, quality control, project meetings, and submittal procedures"
+  },
+  {
+    value: 2,
+    label: "02 - Existing Conditions",
+    description: "Demolition, site remediation, asbestos abatement, existing structure assessments, and hazardous material removal"
+  },
+  {
+    value: 3,
+    label: "03 - Concrete",
+    description: "Cast-in-place concrete, precast concrete, concrete finishing, formwork, and concrete accessories"
+  },
+  {
+    value: 4,
+    label: "04 - Masonry",
+    description: "Brick masonry, stone masonry, concrete block (CMU), glass block, and mortar"
+  },
+  {
+    value: 5,
+    label: "05 - Metals",
+    description: "Structural steel, metal joists, metal decking, cold-formed metal framing, and ornamental metals"
+  },
+  {
+    value: 6,
+    label: "06 - Wood, Plastics, and Composites",
+    description: "Rough carpentry, finish carpentry, architectural woodwork, plastic fabrications, and composite materials"
+  },
+  {
+    value: 7,
+    label: "07 - Thermal and Moisture Protection",
+    description: "Waterproofing, insulation, roofing, siding, membrane roofing, and joint sealants"
+  },
+  {
+    value: 8,
+    label: "08 - Openings",
+    description: "Doors, windows, skylights, glazing, curtain walls, and specialty openings"
+  },
+  {
+    value: 9,
+    label: "09 - Finishes",
+    description: "Drywall, tile, flooring, carpet, painting, wallcovering, and acoustical ceilings"
+  },
+  {
+    value: 10,
+    label: "10 - Specialties",
+    description: "Toilet partitions, fire extinguishers, signage, lockers, flagpoles, and building specialties"
+  },
+  {
+    value: 21,
+    label: "21 - Fire Suppression",
+    description: "Fire sprinkler systems, standpipes, fire pumps, and fire suppression equipment"
+  },
+  {
+    value: 22,
+    label: "22 - Plumbing",
+    description: "Plumbing fixtures, domestic water piping, sanitary waste, water heaters, and sewage systems"
+  },
+  {
+    value: 23,
+    label: "23 - HVAC",
+    description: "Heating systems, ventilation, air conditioning, ductwork, fans, and climate control equipment"
+  },
+  {
+    value: 26,
+    label: "26 - Electrical",
+    description: "Power distribution, lighting systems, fire alarm, emergency power, and electrical equipment"
+  },
+  {
+    value: 27,
+    label: "27 - Communications",
+    description: "Data cabling, structured cabling, phone systems, audio/visual, and telecommunications infrastructure"
+  },
+  {
+    value: 28,
+    label: "28 - Electronic Safety and Security",
+    description: "Access control systems, CCTV surveillance, intrusion detection, and building security systems"
+  },
+  {
+    value: 31,
+    label: "31 - Earthwork",
+    description: "Excavation, grading, soil stabilization, trenching, and earthwork operations"
+  },
+  {
+    value: 32,
+    label: "32 - Exterior Improvements",
+    description: "Paving, landscaping, fencing, retaining walls, site improvements, and irrigation"
+  },
+  {
+    value: 33,
+    label: "33 - Utilities",
+    description: "Water distribution, sanitary sewers, storm drainage, and underground utility systems"
+  },
 ];
 
 const PROJECT_ROLES = [
@@ -397,10 +483,37 @@ export function ProjectForm() {
         {/* Cost Codes */}
         <Card>
           <CardHeader>
-            <CardTitle>CSI Cost Codes</CardTitle>
-            <CardDescription>
-              Select relevant divisions for this project
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>CSI Cost Codes</CardTitle>
+                <CardDescription>
+                  Select relevant divisions for this project
+                </CardDescription>
+              </div>
+              <FormField
+                control={form.control}
+                name="costCodes"
+                render={({ field }) => {
+                  const allSelected = field.value?.length === CSI_DIVISIONS.length;
+                  return (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (allSelected) {
+                          field.onChange([]);
+                        } else {
+                          field.onChange(CSI_DIVISIONS.map((d) => d.value));
+                        }
+                      }}
+                    >
+                      {allSelected ? "Deselect All" : "Select All"}
+                    </Button>
+                  );
+                }}
+              />
+            </div>
           </CardHeader>
           <CardContent>
             <FormField
@@ -408,36 +521,48 @@ export function ProjectForm() {
               name="costCodes"
               render={() => (
                 <FormItem>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {CSI_DIVISIONS.map((division) => (
-                      <FormField
-                        key={division.value}
-                        control={form.control}
-                        name="costCodes"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value?.includes(division.value)}
-                                onCheckedChange={(checked) => {
-                                  return checked
-                                    ? field.onChange([...field.value, division.value])
-                                    : field.onChange(
-                                        field.value?.filter(
-                                          (value) => value !== division.value
-                                        )
-                                      );
-                                }}
-                              />
-                            </FormControl>
-                            <FormLabel className="text-sm font-normal cursor-pointer">
-                              {division.label}
-                            </FormLabel>
-                          </FormItem>
-                        )}
-                      />
-                    ))}
-                  </div>
+                  <TooltipProvider>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {CSI_DIVISIONS.map((division) => (
+                        <FormField
+                          key={division.value}
+                          control={form.control}
+                          name="costCodes"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value?.includes(division.value)}
+                                  onCheckedChange={(checked) => {
+                                    return checked
+                                      ? field.onChange([...field.value, division.value])
+                                      : field.onChange(
+                                          field.value?.filter(
+                                            (value) => value !== division.value
+                                          )
+                                        );
+                                  }}
+                                />
+                              </FormControl>
+                              <div className="flex items-center gap-1.5 flex-1">
+                                <FormLabel className="text-sm font-normal cursor-pointer">
+                                  {division.label}
+                                </FormLabel>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                                  </TooltipTrigger>
+                                  <TooltipContent className="max-w-xs">
+                                    <p>{division.description}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                      ))}
+                    </div>
+                  </TooltipProvider>
                   <FormMessage />
                 </FormItem>
               )}

@@ -27,12 +27,122 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { ChevronRight, Calendar, DollarSign, Users, FileText, Edit, UserPlus, X, CheckCircle2, Circle, Clock, Building2, User, Mail, Phone, MapPin, Plus } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ChevronRight, Calendar, DollarSign, Users, FileText, Edit, UserPlus, X, CheckCircle2, Circle, Clock, Building2, User, Mail, Phone, MapPin, Plus, Info } from "lucide-react";
 import type { ProjectStatus, ProjectRole } from "@construction/shared";
 import { useState } from "react";
 import { toast } from "sonner";
 import { getCustomerDisplayName } from "@construction/shared";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+const CSI_DIVISIONS = [
+  {
+    value: 0,
+    label: "00 - Procurement and Contracting",
+    description: "Bidding requirements, contract forms, conditions of the contract, and project procurement procedures"
+  },
+  {
+    value: 1,
+    label: "01 - General Requirements",
+    description: "Project management, temporary facilities, quality control, project meetings, and submittal procedures"
+  },
+  {
+    value: 2,
+    label: "02 - Existing Conditions",
+    description: "Demolition, site remediation, asbestos abatement, existing structure assessments, and hazardous material removal"
+  },
+  {
+    value: 3,
+    label: "03 - Concrete",
+    description: "Cast-in-place concrete, precast concrete, concrete finishing, formwork, and concrete accessories"
+  },
+  {
+    value: 4,
+    label: "04 - Masonry",
+    description: "Brick masonry, stone masonry, concrete block (CMU), glass block, and mortar"
+  },
+  {
+    value: 5,
+    label: "05 - Metals",
+    description: "Structural steel, metal joists, metal decking, cold-formed metal framing, and ornamental metals"
+  },
+  {
+    value: 6,
+    label: "06 - Wood, Plastics, and Composites",
+    description: "Rough carpentry, finish carpentry, architectural woodwork, plastic fabrications, and composite materials"
+  },
+  {
+    value: 7,
+    label: "07 - Thermal and Moisture Protection",
+    description: "Waterproofing, insulation, roofing, siding, membrane roofing, and joint sealants"
+  },
+  {
+    value: 8,
+    label: "08 - Openings",
+    description: "Doors, windows, skylights, glazing, curtain walls, and specialty openings"
+  },
+  {
+    value: 9,
+    label: "09 - Finishes",
+    description: "Drywall, tile, flooring, carpet, painting, wallcovering, and acoustical ceilings"
+  },
+  {
+    value: 10,
+    label: "10 - Specialties",
+    description: "Toilet partitions, fire extinguishers, signage, lockers, flagpoles, and building specialties"
+  },
+  {
+    value: 21,
+    label: "21 - Fire Suppression",
+    description: "Fire sprinkler systems, standpipes, fire pumps, and fire suppression equipment"
+  },
+  {
+    value: 22,
+    label: "22 - Plumbing",
+    description: "Plumbing fixtures, domestic water piping, sanitary waste, water heaters, and sewage systems"
+  },
+  {
+    value: 23,
+    label: "23 - HVAC",
+    description: "Heating systems, ventilation, air conditioning, ductwork, fans, and climate control equipment"
+  },
+  {
+    value: 26,
+    label: "26 - Electrical",
+    description: "Power distribution, lighting systems, fire alarm, emergency power, and electrical equipment"
+  },
+  {
+    value: 27,
+    label: "27 - Communications",
+    description: "Data cabling, structured cabling, phone systems, audio/visual, and telecommunications infrastructure"
+  },
+  {
+    value: 28,
+    label: "28 - Electronic Safety and Security",
+    description: "Access control systems, CCTV surveillance, intrusion detection, and building security systems"
+  },
+  {
+    value: 31,
+    label: "31 - Earthwork",
+    description: "Excavation, grading, soil stabilization, trenching, and earthwork operations"
+  },
+  {
+    value: 32,
+    label: "32 - Exterior Improvements",
+    description: "Paving, landscaping, fencing, retaining walls, site improvements, and irrigation"
+  },
+  {
+    value: 33,
+    label: "33 - Utilities",
+    description: "Water distribution, sanitary sewers, storm drainage, and underground utility systems"
+  },
+];
 
 const statusColors: Record<ProjectStatus, string> = {
   active: "bg-green-500/10 text-green-700 border-green-200",
@@ -78,6 +188,7 @@ export default function ProjectDashboardPage({
   const [editStartDate, setEditStartDate] = useState("");
   const [editEndDate, setEditEndDate] = useState("");
   const [editCustomerId, setEditCustomerId] = useState("");
+  const [editCostCodes, setEditCostCodes] = useState<number[]>([]);
   const [addCustomerOpen, setAddCustomerOpen] = useState(false);
   const [newCustomer, setNewCustomer] = useState({
     companyName: "",
@@ -286,6 +397,7 @@ export default function ProjectDashboardPage({
             setEditStartDate(project.startDate ? new Date(project.startDate).toISOString().split('T')[0] : "");
             setEditEndDate(project.endDate ? new Date(project.endDate).toISOString().split('T')[0] : "");
             setEditCustomerId(project.customerId);
+            setEditCostCodes(project.costCodes || []);
             setEditProjectOpen(true);
           }}
         >
@@ -431,6 +543,58 @@ export default function ProjectDashboardPage({
                 />
               </div>
             </div>
+
+            {/* CSI Cost Codes */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>CSI Cost Codes</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (editCostCodes.length === CSI_DIVISIONS.length) {
+                      setEditCostCodes([]);
+                    } else {
+                      setEditCostCodes(CSI_DIVISIONS.map((d) => d.value));
+                    }
+                  }}
+                >
+                  {editCostCodes.length === CSI_DIVISIONS.length ? "Deselect All" : "Select All"}
+                </Button>
+              </div>
+              <TooltipProvider>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto border rounded-md p-3">
+                  {CSI_DIVISIONS.map((division) => (
+                    <div key={division.value} className="flex items-start space-x-3">
+                      <Checkbox
+                        checked={editCostCodes.includes(division.value)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setEditCostCodes([...editCostCodes, division.value]);
+                          } else {
+                            setEditCostCodes(editCostCodes.filter((v) => v !== division.value));
+                          }
+                        }}
+                      />
+                      <div className="flex items-center gap-1.5 flex-1">
+                        <Label className="text-sm font-normal cursor-pointer">
+                          {division.label}
+                        </Label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p>{division.description}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </TooltipProvider>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditProjectOpen(false)}>
@@ -453,6 +617,7 @@ export default function ProjectDashboardPage({
                   status: editStatus as any,
                   startDate: editStartDate ? new Date(editStartDate).toISOString() : null,
                   endDate: editEndDate ? new Date(editEndDate).toISOString() : null,
+                  costCodes: editCostCodes,
                 });
               }}
               disabled={updateProjectMutation.isPending}
