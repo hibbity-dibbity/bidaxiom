@@ -208,6 +208,7 @@ export default function ProjectDashboardPage({
   const { data: paymentAppSummary } = trpc.paymentApp.getSummary.useQuery({ projectId });
   const { data: sovItems } = trpc.sov.list.useQuery({ projectId });
   const { data: retainage } = trpc.paymentApp.getRetainage.useQuery({ projectId });
+  const { data: rfqs } = trpc.rfq.list.useQuery({ projectId });
 
   // Debug: Log project and customer data
   useEffect(() => {
@@ -684,6 +685,12 @@ export default function ProjectDashboardPage({
           >
             Invoices
           </Link>
+          <Link
+            href={`/projects/${projectId}/rfqs`}
+            className="border-b-2 border-transparent py-3 text-sm text-muted-foreground hover:text-foreground"
+          >
+            RFQs
+          </Link>
         </nav>
       </div>
 
@@ -879,6 +886,35 @@ export default function ProjectDashboardPage({
               <>
                 <div className="text-2xl font-bold">$0</div>
                 <p className="text-xs text-muted-foreground">No retainage</p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">RFQs</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {rfqs ? (
+              <>
+                <div className="text-2xl font-bold">
+                  {rfqs.filter((r) => r.status === "issued").length}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Issued ({rfqs.reduce((sum, r) => sum + (r.bidCount || 0), 0)} bids received)
+                </p>
+                <Button variant="link" className="h-auto p-0 text-xs" asChild>
+                  <Link href={`/projects/${projectId}/rfqs`}>View RFQs</Link>
+                </Button>
+              </>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">--</div>
+                <Button variant="link" className="h-auto p-0 text-xs" asChild>
+                  <Link href={`/projects/${projectId}/rfqs`}>Create RFQ</Link>
+                </Button>
               </>
             )}
           </CardContent>
