@@ -10,12 +10,16 @@ import {
   createTagSchema,
   removeTagSchema,
   searchDocumentsSchema,
+  shareDocumentSchema,
+  revokeDocumentPermissionSchema,
+  shareFolderSchema,
+  revokeFolderPermissionSchema,
   AuditAction,
 } from "@construction/shared";
 import { generateUploadUrl, generateDownloadUrl } from "../../storage/presigned.js";
 import { createAuditLog } from "../../audit/logger.js";
-import { defineAbilitiesFor } from "../../auth/abilities.js";
-import { eq, desc, and, isNull, inArray, like, sql } from "drizzle-orm";
+import { defineAbilitiesFor, loadDocumentPermissions } from "../../auth/abilities.js";
+import { eq, desc, and, or, isNull, inArray, like, sql } from "drizzle-orm";
 import { ForbiddenError } from "@casl/ability";
 
 /**
@@ -1194,5 +1198,572 @@ export const documentRouter = router({
       // No audit log needed - this IS the audit log
 
       return { success: true };
+    }),
+
+  /**
+   * Share a document with a user.
+   * Grants explicit permission (view or edit) to a user who may not be on the project team.
+   */
+  shareDocument: protectedProcedure
+    .input(shareDocumentSchema)
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+      const userId = ctx.userId;
+
+      // Verify document exists and get projectId
+      const [document] = await db
+        .select({
+          id: schema.documents.id,
+          projectId: schema.documents.projectId,
+          folderId: schema.documents.folderId,
+        })
+        .from(schema.documents)
+        .where(eq(schema.documents.id, input.documentId))
+        .limit(1);
+
+      if (!document) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Document not found",
+        });
+      }
+
+      // Load abilities and check user has update permission
+      const abilities = await loadProjectAbilities({
+        tenant: ctx.tenant,
+        userId: ctx.userId,
+        orgRole: ctx.orgRole,
+      });
+      ForbiddenError.from(abilities).throwUnlessCan("update", "Document");
+
+      // Validate target user exists in tenant
+      const [targetUser] = await db
+        .select({ id: schema.userProfiles.id })
+        .from(schema.userProfiles)
+        .where(eq(schema.userProfiles.clerkUserId, input.userId))
+        .limit(1);
+
+      if (!targetUser) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Target user not found in this organization",
+        });
+      }
+
+      // Upsert permission (insert or update on conflict)
+      await db
+        .insert(schema.documentPermissions)
+        .values({
+          documentId: input.documentId,
+          userId: input.userId,
+          permissionLevel: input.permissionLevel,
+          grantedBy: userId,
+          grantedAt: new Date(),
+          expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
+        })
+        .onConflictDoUpdate({
+          target: [schema.documentPermissions.documentId, schema.documentPermissions.userId],
+          set: {
+            permissionLevel: input.permissionLevel,
+            grantedBy: userId,
+            grantedAt: new Date(),
+            expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
+          },
+        });
+
+      // Audit log
+      await createAuditLog(db, schema, {
+        entityType: "Document",
+        entityId: input.documentId,
+        action: AuditAction.UPDATE,
+        actorId: userId,
+        changes: {
+          after: {
+            permissions: {
+              granted: {
+                userId: input.userId,
+                permissionLevel: input.permissionLevel,
+              },
+            },
+          },
+        },
+      });
+
+      return { success: true };
+    }),
+
+  /**
+   * Revoke a document permission.
+   * Only the user who granted the permission or an admin/PM can revoke.
+   */
+  revokeDocumentPermission: protectedProcedure
+    .input(revokeDocumentPermissionSchema)
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+      const userId = ctx.userId;
+
+      // Verify document exists
+      const [document] = await db
+        .select({ id: schema.documents.id, projectId: schema.documents.projectId })
+        .from(schema.documents)
+        .where(eq(schema.documents.id, input.documentId))
+        .limit(1);
+
+      if (!document) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Document not found",
+        });
+      }
+
+      // Load abilities and check user has update permission
+      const abilities = await loadProjectAbilities({
+        tenant: ctx.tenant,
+        userId: ctx.userId,
+        orgRole: ctx.orgRole,
+      });
+      ForbiddenError.from(abilities).throwUnlessCan("update", "Document");
+
+      // Get permission record to check if user can revoke
+      const [permission] = await db
+        .select({ grantedBy: schema.documentPermissions.grantedBy })
+        .from(schema.documentPermissions)
+        .where(
+          and(
+            eq(schema.documentPermissions.documentId, input.documentId),
+            eq(schema.documentPermissions.userId, input.userId)
+          )
+        )
+        .limit(1);
+
+      if (!permission) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Permission not found",
+        });
+      }
+
+      // Check if user is the one who granted the permission or is admin/PM
+      const canRevoke =
+        permission.grantedBy === userId ||
+        ctx.orgRole === "org:admin" ||
+        ctx.orgRole === "org:project_manager";
+
+      if (!canRevoke) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You can only revoke permissions you granted",
+        });
+      }
+
+      // Delete permission
+      await db
+        .delete(schema.documentPermissions)
+        .where(
+          and(
+            eq(schema.documentPermissions.documentId, input.documentId),
+            eq(schema.documentPermissions.userId, input.userId)
+          )
+        );
+
+      // Audit log
+      await createAuditLog(db, schema, {
+        entityType: "Document",
+        entityId: input.documentId,
+        action: AuditAction.UPDATE,
+        actorId: userId,
+        changes: {
+          after: {
+            permissions: {
+              revoked: { userId: input.userId },
+            },
+          },
+        },
+      });
+
+      return { success: true };
+    }),
+
+  /**
+   * Share a folder with a user.
+   * Grants explicit permission (view or edit) with optional subfolder inheritance.
+   */
+  shareFolder: protectedProcedure
+    .input(shareFolderSchema)
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+      const userId = ctx.userId;
+
+      // Verify folder exists and get projectId
+      const [folder] = await db
+        .select({ id: schema.folders.id, projectId: schema.folders.projectId })
+        .from(schema.folders)
+        .where(eq(schema.folders.id, input.folderId))
+        .limit(1);
+
+      if (!folder) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Folder not found",
+        });
+      }
+
+      // Load abilities and check user has update permission on Folder
+      const abilities = await loadProjectAbilities({
+        tenant: ctx.tenant,
+        userId: ctx.userId,
+        orgRole: ctx.orgRole,
+      });
+      ForbiddenError.from(abilities).throwUnlessCan("update", "Folder");
+
+      // Validate target user exists in tenant
+      const [targetUser] = await db
+        .select({ id: schema.userProfiles.id })
+        .from(schema.userProfiles)
+        .where(eq(schema.userProfiles.clerkUserId, input.userId))
+        .limit(1);
+
+      if (!targetUser) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Target user not found in this organization",
+        });
+      }
+
+      // Upsert permission
+      await db
+        .insert(schema.folderPermissions)
+        .values({
+          folderId: input.folderId,
+          userId: input.userId,
+          permissionLevel: input.permissionLevel,
+          includeSubfolders: input.includeSubfolders,
+          grantedBy: userId,
+          grantedAt: new Date(),
+          expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
+        })
+        .onConflictDoUpdate({
+          target: [schema.folderPermissions.folderId, schema.folderPermissions.userId],
+          set: {
+            permissionLevel: input.permissionLevel,
+            includeSubfolders: input.includeSubfolders,
+            grantedBy: userId,
+            grantedAt: new Date(),
+            expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
+          },
+        });
+
+      // Audit log
+      await createAuditLog(db, schema, {
+        entityType: "Folder",
+        entityId: input.folderId,
+        action: AuditAction.UPDATE,
+        actorId: userId,
+        changes: {
+          after: {
+            permissions: {
+              granted: {
+                userId: input.userId,
+                permissionLevel: input.permissionLevel,
+                includeSubfolders: input.includeSubfolders,
+              },
+            },
+          },
+        },
+      });
+
+      return { success: true };
+    }),
+
+  /**
+   * Revoke a folder permission.
+   * Only the user who granted the permission or an admin/PM can revoke.
+   */
+  revokeFolderPermission: protectedProcedure
+    .input(revokeFolderPermissionSchema)
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+      const userId = ctx.userId;
+
+      // Verify folder exists
+      const [folder] = await db
+        .select({ id: schema.folders.id, projectId: schema.folders.projectId })
+        .from(schema.folders)
+        .where(eq(schema.folders.id, input.folderId))
+        .limit(1);
+
+      if (!folder) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Folder not found",
+        });
+      }
+
+      // Load abilities and check user has update permission
+      const abilities = await loadProjectAbilities({
+        tenant: ctx.tenant,
+        userId: ctx.userId,
+        orgRole: ctx.orgRole,
+      });
+      ForbiddenError.from(abilities).throwUnlessCan("update", "Folder");
+
+      // Get permission record to check if user can revoke
+      const [permission] = await db
+        .select({ grantedBy: schema.folderPermissions.grantedBy })
+        .from(schema.folderPermissions)
+        .where(
+          and(
+            eq(schema.folderPermissions.folderId, input.folderId),
+            eq(schema.folderPermissions.userId, input.userId)
+          )
+        )
+        .limit(1);
+
+      if (!permission) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Permission not found",
+        });
+      }
+
+      // Check if user is the one who granted the permission or is admin/PM
+      const canRevoke =
+        permission.grantedBy === userId ||
+        ctx.orgRole === "org:admin" ||
+        ctx.orgRole === "org:project_manager";
+
+      if (!canRevoke) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You can only revoke permissions you granted",
+        });
+      }
+
+      // Delete permission
+      await db
+        .delete(schema.folderPermissions)
+        .where(
+          and(
+            eq(schema.folderPermissions.folderId, input.folderId),
+            eq(schema.folderPermissions.userId, input.userId)
+          )
+        );
+
+      // Audit log
+      await createAuditLog(db, schema, {
+        entityType: "Folder",
+        entityId: input.folderId,
+        action: AuditAction.UPDATE,
+        actorId: userId,
+        changes: {
+          after: {
+            permissions: {
+              revoked: { userId: input.userId },
+            },
+          },
+        },
+      });
+
+      return { success: true };
+    }),
+
+  /**
+   * Get documents shared with the current user.
+   * Returns documents where user has explicit permission (not via project team).
+   */
+  getSharedWithMe: protectedProcedure
+    .query(async ({ ctx }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+      const userId = ctx.userId;
+
+      // Load explicit permissions for this user
+      const explicitPerms = await loadDocumentPermissions(db, schema, userId);
+
+      // Build list of document IDs to fetch
+      const documentIdsToFetch = Array.from(explicitPerms.documentIds);
+
+      // If no explicit document permissions, return empty array
+      if (documentIdsToFetch.length === 0 && explicitPerms.folderIds.size === 0) {
+        return [];
+      }
+
+      // Query documents with explicit permissions or in folders with permissions
+      const conditions = [];
+
+      if (documentIdsToFetch.length > 0) {
+        conditions.push(inArray(schema.documents.id, documentIdsToFetch));
+      }
+
+      if (explicitPerms.folderIds.size > 0) {
+        const folderIdsArray = Array.from(explicitPerms.folderIds);
+        conditions.push(inArray(schema.documents.folderId, folderIdsArray));
+      }
+
+      if (conditions.length === 0) {
+        return [];
+      }
+
+      // Fetch documents
+      const documents = await db
+        .select({
+          id: schema.documents.id,
+          projectId: schema.documents.projectId,
+          folderId: schema.documents.folderId,
+          name: schema.documents.name,
+          category: schema.documents.category,
+          description: schema.documents.description,
+          fileSize: schema.documents.fileSize,
+          contentType: schema.documents.contentType,
+          currentVersionId: schema.documents.currentVersionId,
+          createdBy: schema.documents.createdBy,
+          createdAt: schema.documents.createdAt,
+          updatedAt: schema.documents.updatedAt,
+        })
+        .from(schema.documents)
+        .where(or(...conditions))
+        .orderBy(desc(schema.documents.updatedAt))
+        .limit(100);
+
+      // For each document, get permission details
+      const result = await Promise.all(
+        documents.map(async (doc) => {
+          // Check if permission is from document or folder
+          let permissionLevel: "view" | "edit" = "view";
+          let grantedBy: string | null = null;
+          let grantedAt: Date | null = null;
+
+          // Check document permissions first
+          const [docPerm] = await db
+            .select({
+              permissionLevel: schema.documentPermissions.permissionLevel,
+              grantedBy: schema.documentPermissions.grantedBy,
+              grantedAt: schema.documentPermissions.grantedAt,
+            })
+            .from(schema.documentPermissions)
+            .where(
+              and(
+                eq(schema.documentPermissions.documentId, doc.id),
+                eq(schema.documentPermissions.userId, userId)
+              )
+            )
+            .limit(1);
+
+          if (docPerm) {
+            permissionLevel = docPerm.permissionLevel as "view" | "edit";
+            grantedBy = docPerm.grantedBy;
+            grantedAt = docPerm.grantedAt;
+          } else if (doc.folderId) {
+            // Check folder permissions
+            const [folderPerm] = await db
+              .select({
+                permissionLevel: schema.folderPermissions.permissionLevel,
+                grantedBy: schema.folderPermissions.grantedBy,
+                grantedAt: schema.folderPermissions.grantedAt,
+              })
+              .from(schema.folderPermissions)
+              .where(
+                and(
+                  eq(schema.folderPermissions.folderId, doc.folderId),
+                  eq(schema.folderPermissions.userId, userId)
+                )
+              )
+              .limit(1);
+
+            if (folderPerm) {
+              permissionLevel = folderPerm.permissionLevel as "view" | "edit";
+              grantedBy = folderPerm.grantedBy;
+              grantedAt = folderPerm.grantedAt;
+            }
+          }
+
+          // Get project name
+          const [project] = await db
+            .select({ name: schema.projects.name })
+            .from(schema.projects)
+            .where(eq(schema.projects.id, doc.projectId))
+            .limit(1);
+
+          // Get folder name if applicable
+          let folderName: string | null = null;
+          if (doc.folderId) {
+            const [folder] = await db
+              .select({ name: schema.folders.name })
+              .from(schema.folders)
+              .where(eq(schema.folders.id, doc.folderId))
+              .limit(1);
+            folderName = folder?.name ?? null;
+          }
+
+          // Get granter profile
+          let grantedByProfile: { fullName: string; email: string } | null = null;
+          if (grantedBy) {
+            const [profile] = await db
+              .select({
+                firstName: schema.userProfiles.firstName,
+                lastName: schema.userProfiles.lastName,
+                email: schema.userProfiles.email,
+              })
+              .from(schema.userProfiles)
+              .where(eq(schema.userProfiles.clerkUserId, grantedBy))
+              .limit(1);
+
+            if (profile) {
+              grantedByProfile = {
+                fullName:
+                  profile.firstName && profile.lastName
+                    ? `${profile.firstName} ${profile.lastName}`
+                    : profile.email,
+                email: profile.email,
+              };
+            }
+          }
+
+          return {
+            document: doc,
+            project: { name: project?.name ?? "Unknown Project" },
+            folder: folderName ? { name: folderName } : null,
+            permissionLevel,
+            grantedBy: grantedByProfile,
+            grantedAt,
+          };
+        })
+      );
+
+      return result;
     }),
 });

@@ -163,4 +163,10 @@ export {
   reviewApprovalSchema,
   respondToWorkflowSchema,
   updateWorkflowSchema,
+  documentPermissionLevelEnum,
+  type DocumentPermissionLevel,
+  shareDocumentSchema,
+  revokeDocumentPermissionSchema,
+  shareFolderSchema,
+  revokeFolderPermissionSchema,
 } from "./types/document.js";
