@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-10)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** Phase 3 - Project Management Core
+**Current focus:** Phase 4 - Budget & Cost Tracking
 
 ## Current Position
 
-Phase: 3 of 9 (Project Management Core)
-Plan: 4 of 5 in current phase
+Phase: 4 of 10 (Budget & Cost Tracking)
+Plan: 1 of 4 in current phase
 Status: In Progress
-Last activity: 2026-02-12 — Completed 03-04-PLAN.md (Document and Folder Management API)
+Last activity: 2026-02-13 — Completed 04-01-PLAN.md (Budget and Cost Tracking Schema)
 
-Progress: [███░░░░░░░] 27% (2 of 9 phases, 4 of 5 plans in phase 3)
+Progress: [███░░░░░░░] 30% (3 of 10 phases, 1 of 4 plans in phase 4)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
-- Average duration: 3 min
-- Total execution time: 0.30 hours
+- Total plans completed: 6
+- Average duration: 22 min
+- Total execution time: 2.15 hours
 
 **By Phase:**
 
@@ -29,10 +29,11 @@ Progress: [███░░░░░░░] 27% (2 of 9 phases, 4 of 5 plans in p
 |-------|-------|-------|----------|
 | 02 | 2 | 10 min | 5 min |
 | 03 | 3 | 9 min | 3 min |
+| 04 | 1 | 111 min | 111 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-01 (5 min), 02-02 (5 min), 03-02 (2 min), 03-03 (3 min), 03-04 (4 min)
-- Trend: Steady
+- Last 5 plans: 02-02 (5 min), 03-02 (2 min), 03-03 (3 min), 03-04 (4 min), 04-01 (111 min)
+- Trend: Variable (schema-heavy plan took longer)
 
 *Updated after each plan completion*
 
@@ -66,6 +67,11 @@ Recent decisions affecting current work:
 - **Soft delete for documents**: DB record deleted but S3 objects remain; orphaned storage cleanup via S3 lifecycle policies (future work) (03-04)
 - **Storage key validation**: All uploaded storageKeys must start with tenants/{tenantId}/ to prevent cross-tenant injection attacks (03-04)
 - **Server-managed folder orderIndex**: Calculated by querying max value then incrementing; prevents race conditions from concurrent client requests (03-04)
+- **NUMERIC(15,2) for currency columns**: PostgreSQL NUMERIC ensures exact decimal precision for financial calculations, preventing floating-point errors (04-01)
+- **Budget line item locking**: isLocked/lockedAt/lockedBy enforces change order workflow after payment applications are created (04-01)
+- **CSI cost codes 0-49, custom codes 50+**: Standard CSI divisions use IDs 0-49, companies add custom codes starting at 50 to avoid conflicts (04-01)
+- **Commitment line items optional budget reference**: budgetLineItemId can be NULL to support commitments that don't map to existing budget lines (04-01)
+- **Foremen budget/commitment read access**: Foremen need cost visibility for assigned projects to make informed decisions (04-01)
 
 ### Pending Todos
 
@@ -77,10 +83,10 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-12 (Phase 3 in progress)
-Stopped at: Completed 03-04-PLAN.md (Document and Folder Management API). Ready for 03-05-PLAN.md or next plan.
+Last session: 2026-02-13 (Phase 4 in progress)
+Stopped at: Completed 04-01-PLAN.md (Budget and Cost Tracking Schema). Ready for 04-02-PLAN.md.
 Resume file: None
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-12*
+*Last updated: 2026-02-13*
