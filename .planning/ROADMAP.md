@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Foundation & Multi-Tenant Infrastructure** - Authentication, tenant isolation, audit logging, authorization
 - [x] **Phase 2: Company Setup & Configuration** - Company types, trade configuration, CSI-based standards
 - [x] **Phase 3: Project Management Core** - Project creation, access control, document management
-- [ ] **Phase 4: Budget & Cost Tracking** - Cost codes, budget vs actuals, committed costs, forecasting
+- [x] **Phase 4: Budget & Cost Tracking** - Cost codes, budget vs actuals, committed costs, forecasting
 - [ ] **Phase 5: Change Order Management** - Owner/internal/sub change orders, approval workflows, audit trail
 - [ ] **Phase 6: Payment Applications** - AIA G702/G703 forms, retainage, lien waivers, invoice tracking
 - [ ] **Phase 7: Bidding & Procurement** - RFQ issuance, bid collection, comparison, directory, versioning
@@ -93,10 +93,10 @@ Plans:
 **Plans**: 4 plans across 4 waves
 
 Plans:
-- [ ] 04-01-PLAN.md — DB schema, shared types, CASL abilities for budget/commitments (wave 1)
-- [ ] 04-02-PLAN.md — Budget tRPC router with CRUD, locking, variance, forecast (wave 2)
-- [ ] 04-03-PLAN.md — Commitment tRPC router with line items, status lifecycle (wave 3)
-- [ ] 04-04-PLAN.md — Frontend: budget dashboard, line item editor, commitment pages, Recharts (wave 4)
+- [x] 04-01-PLAN.md — DB schema, shared types, CASL abilities for budget/commitments (wave 1)
+- [x] 04-02-PLAN.md — Budget tRPC router with CRUD, locking, variance, forecast (wave 2)
+- [x] 04-03-PLAN.md — Commitment tRPC router with line items, status lifecycle (wave 3)
+- [x] 04-04-PLAN.md — Frontend: budget dashboard, line item editor, commitment pages, Recharts (wave 4)
 
 ### Phase 5: Change Order Management
 **Goal**: Users can create change orders with approval workflows that automatically update budgets
@@ -210,7 +210,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 1. Foundation & Multi-Tenant Infrastructure | 8/8 | Complete | 2026-02-12 |
 | 2. Company Setup & Configuration | 2/2 | Complete | 2026-02-12 |
 | 3. Project Management Core | 5/5 | Complete | 2026-02-12 |
-| 4. Budget & Cost Tracking | 0/TBD | Not started | - |
+| 4. Budget & Cost Tracking | 4/4 | Complete | 2026-02-12 |
 | 5. Change Order Management | 0/TBD | Not started | - |
 | 6. Payment Applications | 0/TBD | Not started | - |
 | 7. Bidding & Procurement | 0/TBD | Not started | - |
