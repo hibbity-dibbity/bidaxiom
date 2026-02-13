@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-10)
 ## Current Position
 
 Phase: 8 of 10 (QuickBooks Integration)
-Plan: 1 of 5 in current phase
+Plan: 2 of 5 in current phase
 Status: In Progress
-Last activity: 2026-02-13 — Completed 08-01-PLAN.md (QuickBooks Integration Foundation)
+Last activity: 2026-02-13 — Completed 08-02-PLAN.md (OAuth and Infrastructure)
 
 Progress: [███████░░░] 70% (7 of 10 phases complete, Phase 8 in progress)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 21
-- Average duration: 8.1 min
-- Total execution time: 2.9 hours
+- Total plans completed: 22
+- Average duration: 7.9 min
+- Total execution time: 2.95 hours
 
 **By Phase:**
 
@@ -33,11 +33,11 @@ Progress: [███████░░░] 70% (7 of 10 phases complete, Phase 8
 | 05 | 3 | 20 min | 6.7 min |
 | 06 | 4 | 21 min | 5.3 min |
 | 07 | 4 | 19 min | 4.8 min |
-| 08 | 1 | 3 min | 3 min |
+| 08 | 2 | 8 min | 4 min |
 
 **Recent Trend:**
-- Last 5 plans: 07-02 (6 min), 07-03 (4 min), 07-05 (6 min), 07-04 (6 min), 08-01 (3 min)
-- Trend: Excellent velocity continues into Phase 8. Foundation plans remain fast (3 min).
+- Last 5 plans: 07-03 (4 min), 07-05 (6 min), 07-04 (6 min), 08-01 (3 min), 08-02 (5 min)
+- Trend: Phase 8 maintains strong velocity (3-5 min per plan). Infrastructure setup efficient.
 
 *Updated after each plan completion*
 | Phase 06 P02 | 8 | 2 tasks | 5 files |
@@ -48,6 +48,7 @@ Progress: [███████░░░] 70% (7 of 10 phases complete, Phase 8
 | Phase 07-bidding-and-procurement P05 | 6 min | 2 tasks | 7 files |
 | Phase 07-bidding-and-procurement P04 | 6 | 2 tasks | 11 files |
 | Phase 08-quickbooks-integration P01 | 3 min | 2 tasks | 7 files |
+| Phase 08-quickbooks-integration P02 | 5 min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -126,6 +127,9 @@ Recent decisions affecting current work:
 - [Phase 08-01]: Polymorphic entity mappings (no FK from qbo_entity_mappings to projects/invoices - validated at application level)
 - [Phase 08-01]: Sync notifications for user visibility (BullMQ worker inserts notification after retry exhaustion)
 - [Phase 08-01]: Bidirectional sync direction tracking (platform_to_qbo, qbo_to_platform, bidirectional)
+- [Phase 08-02]: ConnectionOptions for BullMQ instead of IORedis instance (avoids version conflicts between app ioredis and BullMQ's bundled version)
+- [Phase 08-02]: promisifyQbo helper for callback-style APIs (node-quickbooks uses callbacks; async/await wrapper provides cleaner syntax)
+- [Phase 08-02]: OAuth token refresh rotation handling (QBO invalidates old refresh token on refresh; must store new token)
 
 ### Pending Todos
 
@@ -138,7 +142,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-13 (Phase 8 in progress)
-Stopped at: Completed 08-01-PLAN.md (QuickBooks Integration Foundation)
+Stopped at: Completed 08-02-PLAN.md (OAuth and Infrastructure)
 Resume file: None
 
 ---
