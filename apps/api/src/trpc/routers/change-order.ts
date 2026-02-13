@@ -878,4 +878,587 @@ export const changeOrderRouter = router({
 
       return { success: true };
     }),
+
+  /**
+   * Approve a change order at the current approval step.
+   * If this is the final approval, generates CO number and atomically updates budget.
+   */
+  approve: protectedProcedure
+    .input(approveRejectSchema)
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+      const abilities = await loadProjectAbilities({
+        tenant: ctx.tenant,
+        userId: ctx.userId,
+        orgRole: ctx.orgRole,
+      });
+
+      // Check permission
+      ForbiddenError.from(abilities).throwUnlessCan("approve", "ChangeOrder");
+
+      // Get change order
+      const [changeOrder] = await db
+        .select()
+        .from(schema.changeOrders)
+        .where(eq(schema.changeOrders.id, input.changeOrderId))
+        .limit(1);
+
+      if (!changeOrder) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Change order not found",
+        });
+      }
+
+      // Verify status allows approval
+      if (changeOrder.status !== "pco_submitted" && changeOrder.status !== "pending_approval") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Cannot approve change order in ${changeOrder.status} status`,
+        });
+      }
+
+      // Load approval steps ordered by stepOrder
+      const approvalSteps = await db
+        .select()
+        .from(schema.approvalWorkflowSteps)
+        .where(eq(schema.approvalWorkflowSteps.changeOrderId, input.changeOrderId))
+        .orderBy(schema.approvalWorkflowSteps.stepOrder);
+
+      if (approvalSteps.length === 0) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No approval workflow steps found",
+        });
+      }
+
+      // Find current pending step
+      const currentStep = approvalSteps.find(s => s.status === "pending");
+      if (!currentStep) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No pending approval step found",
+        });
+      }
+
+      // Validate user can approve this step
+      const normalizedRole = ctx.orgRole?.startsWith("org:") ? ctx.orgRole : `org:${ctx.orgRole}`;
+      const canApprove =
+        (currentStep.approverUserId && currentStep.approverUserId === ctx.userId) ||
+        (currentStep.approverRole && currentStep.approverRole === normalizedRole) ||
+        (!currentStep.approverUserId && !currentStep.approverRole);
+
+      if (!canApprove) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You are not authorized to approve this step",
+        });
+      }
+
+      // Get next revision number
+      const [maxRevision] = await db
+        .select({ max: sql<number>`COALESCE(MAX(${schema.changeOrderHistory.revisionNumber}), 0)` })
+        .from(schema.changeOrderHistory)
+        .where(eq(schema.changeOrderHistory.changeOrderId, input.changeOrderId));
+
+      const nextRevision = (maxRevision?.max ?? 0) + 1;
+
+      // Mark step as approved
+      await db
+        .update(schema.approvalWorkflowSteps)
+        .set({
+          status: "approved",
+          approvedBy: ctx.userId,
+          approvedAt: new Date(),
+          comments: input.comments,
+        })
+        .where(eq(schema.approvalWorkflowSteps.id, currentStep.id));
+
+      // Check if all steps are now approved
+      const remainingPending = approvalSteps.filter(
+        s => s.id !== currentStep.id && s.status === "pending"
+      );
+      const isFinalApproval = remainingPending.length === 0;
+
+      if (isFinalApproval) {
+        // CRITICAL TRANSACTION: Generate CO number, update status, apply budget impacts
+        const result = await db.transaction(async (tx) => {
+          // Generate CO number
+          const coNumber = await getNextChangeOrderNumber(
+            tx as any,
+            schema.changeOrderCounters,
+            changeOrder.projectId,
+            "co"
+          );
+
+          // Update change order status
+          const [updated] = await tx
+            .update(schema.changeOrders)
+            .set({
+              status: "approved",
+              coNumber,
+              approvedAt: new Date(),
+              approvedBy: ctx.userId,
+              updatedAt: new Date(),
+            })
+            .where(eq(schema.changeOrders.id, input.changeOrderId))
+            .returning();
+
+          // Apply budget impacts
+          const lineItems = await tx
+            .select()
+            .from(schema.changeOrderLineItems)
+            .where(eq(schema.changeOrderLineItems.changeOrderId, input.changeOrderId));
+
+          for (const lineItem of lineItems) {
+            if (lineItem.budgetLineItemId) {
+              // Update budget line item: budgeted_amount += amountChange
+              await tx
+                .update(schema.budgetLineItems)
+                .set({
+                  budgetedAmount: sql`${schema.budgetLineItems.budgetedAmount} + ${lineItem.amountChange}`,
+                })
+                .where(eq(schema.budgetLineItems.id, lineItem.budgetLineItemId));
+            }
+          }
+
+          // Record history: status change to approved
+          await tx.insert(schema.changeOrderHistory).values({
+            changeOrderId: input.changeOrderId,
+            revisionNumber: nextRevision,
+            changedBy: ctx.userId,
+            changeType: "status_change",
+            fieldName: "status",
+            oldValue: { status: changeOrder.status },
+            newValue: { status: "approved", coNumber },
+          } as any);
+
+          // Record history: approval action
+          await tx.insert(schema.changeOrderHistory).values({
+            changeOrderId: input.changeOrderId,
+            revisionNumber: nextRevision + 1,
+            changedBy: ctx.userId,
+            changeType: "approval",
+            fieldName: undefined,
+            oldValue: undefined,
+            newValue: { step: currentStep.stepOrder, approvedBy: ctx.userId, finalApproval: true },
+          } as any);
+
+          return updated;
+        });
+
+        // Create audit log
+        await createAuditLog(db, schema, {
+          entityType: "ChangeOrder",
+          entityId: input.changeOrderId,
+          action: AuditAction.UPDATE,
+          actorId: ctx.userId,
+          changes: {
+            before: changeOrder,
+            after: result,
+          },
+        });
+
+        return result;
+      } else {
+        // Not final approval - update status to pending_approval if needed
+        let updated = changeOrder;
+        if (changeOrder.status === "pco_submitted") {
+          [updated] = await db
+            .update(schema.changeOrders)
+            .set({
+              status: "pending_approval",
+              updatedAt: new Date(),
+            })
+            .where(eq(schema.changeOrders.id, input.changeOrderId))
+            .returning();
+        }
+
+        // Record history: approval action (more steps pending)
+        await db.insert(schema.changeOrderHistory).values({
+          changeOrderId: input.changeOrderId,
+          revisionNumber: nextRevision,
+          changedBy: ctx.userId,
+          changeType: "approval",
+          fieldName: undefined,
+          oldValue: undefined,
+          newValue: {
+            step: currentStep.stepOrder,
+            approvedBy: ctx.userId,
+            moreStepsPending: true,
+          },
+        } as any);
+
+        // Create audit log
+        await createAuditLog(db, schema, {
+          entityType: "ChangeOrder",
+          entityId: input.changeOrderId,
+          action: AuditAction.UPDATE,
+          actorId: ctx.userId,
+          changes: {
+            before: changeOrder,
+            after: updated,
+          },
+        });
+
+        return updated;
+      }
+    }),
+
+  /**
+   * Reject a change order at the current approval step.
+   * Marks remaining steps as skipped and allows resubmission after edit.
+   */
+  reject: protectedProcedure
+    .input(approveRejectSchema)
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+      const abilities = await loadProjectAbilities({
+        tenant: ctx.tenant,
+        userId: ctx.userId,
+        orgRole: ctx.orgRole,
+      });
+
+      // Check permission
+      ForbiddenError.from(abilities).throwUnlessCan("approve", "ChangeOrder");
+
+      // Get change order
+      const [changeOrder] = await db
+        .select()
+        .from(schema.changeOrders)
+        .where(eq(schema.changeOrders.id, input.changeOrderId))
+        .limit(1);
+
+      if (!changeOrder) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Change order not found",
+        });
+      }
+
+      // Verify status allows rejection
+      if (changeOrder.status !== "pco_submitted" && changeOrder.status !== "pending_approval") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Cannot reject change order in ${changeOrder.status} status`,
+        });
+      }
+
+      // Load approval steps
+      const approvalSteps = await db
+        .select()
+        .from(schema.approvalWorkflowSteps)
+        .where(eq(schema.approvalWorkflowSteps.changeOrderId, input.changeOrderId))
+        .orderBy(schema.approvalWorkflowSteps.stepOrder);
+
+      const currentStep = approvalSteps.find(s => s.status === "pending");
+      if (!currentStep) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No pending approval step found",
+        });
+      }
+
+      // Validate user can reject this step
+      const normalizedRole = ctx.orgRole?.startsWith("org:") ? ctx.orgRole : `org:${ctx.orgRole}`;
+      const canReject =
+        (currentStep.approverUserId && currentStep.approverUserId === ctx.userId) ||
+        (currentStep.approverRole && currentStep.approverRole === normalizedRole) ||
+        (!currentStep.approverUserId && !currentStep.approverRole);
+
+      if (!canReject) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You are not authorized to reject this step",
+        });
+      }
+
+      // Get next revision number
+      const [maxRevision] = await db
+        .select({ max: sql<number>`COALESCE(MAX(${schema.changeOrderHistory.revisionNumber}), 0)` })
+        .from(schema.changeOrderHistory)
+        .where(eq(schema.changeOrderHistory.changeOrderId, input.changeOrderId));
+
+      const nextRevision = (maxRevision?.max ?? 0) + 1;
+
+      // Reject step and skip remaining
+      const result = await db.transaction(async (tx) => {
+        // Mark current step as rejected
+        await tx
+          .update(schema.approvalWorkflowSteps)
+          .set({
+            status: "rejected",
+            comments: input.comments,
+          })
+          .where(eq(schema.approvalWorkflowSteps.id, currentStep.id));
+
+        // Skip all remaining pending steps
+        const remainingPendingIds = approvalSteps
+          .filter(s => s.id !== currentStep.id && s.status === "pending")
+          .map(s => s.id);
+
+        if (remainingPendingIds.length > 0) {
+          await tx
+            .update(schema.approvalWorkflowSteps)
+            .set({ status: "skipped" })
+            .where(inArray(schema.approvalWorkflowSteps.id, remainingPendingIds));
+        }
+
+        // Update change order status
+        const [updated] = await tx
+          .update(schema.changeOrders)
+          .set({
+            status: "rejected",
+            rejectedAt: new Date(),
+            rejectedBy: ctx.userId,
+            rejectionReason: input.comments,
+            updatedAt: new Date(),
+          })
+          .where(eq(schema.changeOrders.id, input.changeOrderId))
+          .returning();
+
+        // Record history
+        await tx.insert(schema.changeOrderHistory).values({
+          changeOrderId: input.changeOrderId,
+          revisionNumber: nextRevision,
+          changedBy: ctx.userId,
+          changeType: "status_change",
+          fieldName: "status",
+          oldValue: { status: changeOrder.status },
+          newValue: { status: "rejected", reason: input.comments },
+        } as any);
+
+        return updated;
+      });
+
+      // Create audit log
+      await createAuditLog(db, schema, {
+        entityType: "ChangeOrder",
+        entityId: input.changeOrderId,
+        action: AuditAction.UPDATE,
+        actorId: ctx.userId,
+        changes: {
+          before: changeOrder,
+          after: result,
+        },
+      });
+
+      return result;
+    }),
+
+  /**
+   * Void a change order.
+   * If CO was approved, reverses budget impacts.
+   */
+  void: protectedProcedure
+    .input(
+      z.object({
+        changeOrderId: z.string().uuid(),
+        reason: z.string().max(2000),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+      const abilities = await loadProjectAbilities({
+        tenant: ctx.tenant,
+        userId: ctx.userId,
+        orgRole: ctx.orgRole,
+      });
+
+      // Check permission
+      ForbiddenError.from(abilities).throwUnlessCan("manage", "ChangeOrder");
+
+      // Get change order
+      const [changeOrder] = await db
+        .select()
+        .from(schema.changeOrders)
+        .where(eq(schema.changeOrders.id, input.changeOrderId))
+        .limit(1);
+
+      if (!changeOrder) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Change order not found",
+        });
+      }
+
+      // Cannot void if already void
+      if (changeOrder.status === "void") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Change order is already void",
+        });
+      }
+
+      // Get next revision number
+      const [maxRevision] = await db
+        .select({ max: sql<number>`COALESCE(MAX(${schema.changeOrderHistory.revisionNumber}), 0)` })
+        .from(schema.changeOrderHistory)
+        .where(eq(schema.changeOrderHistory.changeOrderId, input.changeOrderId));
+
+      const nextRevision = (maxRevision?.max ?? 0) + 1;
+
+      // Void change order (and reverse budget if approved)
+      const result = await db.transaction(async (tx) => {
+        // If CO was approved, reverse budget impacts
+        if (changeOrder.status === "approved") {
+          const lineItems = await tx
+            .select()
+            .from(schema.changeOrderLineItems)
+            .where(eq(schema.changeOrderLineItems.changeOrderId, input.changeOrderId));
+
+          for (const lineItem of lineItems) {
+            if (lineItem.budgetLineItemId) {
+              // Reverse: budgeted_amount -= amountChange
+              await tx
+                .update(schema.budgetLineItems)
+                .set({
+                  budgetedAmount: sql`${schema.budgetLineItems.budgetedAmount} - ${lineItem.amountChange}`,
+                })
+                .where(eq(schema.budgetLineItems.id, lineItem.budgetLineItemId));
+            }
+          }
+        }
+
+        // Update change order status
+        const [updated] = await tx
+          .update(schema.changeOrders)
+          .set({
+            status: "void",
+            updatedAt: new Date(),
+          })
+          .where(eq(schema.changeOrders.id, input.changeOrderId))
+          .returning();
+
+        // Record history
+        await tx.insert(schema.changeOrderHistory).values({
+          changeOrderId: input.changeOrderId,
+          revisionNumber: nextRevision,
+          changedBy: ctx.userId,
+          changeType: "status_change",
+          fieldName: "status",
+          oldValue: { status: changeOrder.status },
+          newValue: { status: "void", reason: input.reason },
+        } as any);
+
+        return updated;
+      });
+
+      // Create audit log
+      await createAuditLog(db, schema, {
+        entityType: "ChangeOrder",
+        entityId: input.changeOrderId,
+        action: AuditAction.UPDATE,
+        actorId: ctx.userId,
+        changes: {
+          before: changeOrder,
+          after: result,
+        },
+      });
+
+      return result;
+    }),
+
+  /**
+   * Get change order history.
+   * Returns all field-level changes ordered chronologically.
+   */
+  getHistory: protectedProcedure
+    .input(z.object({ changeOrderId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+      const abilities = await loadProjectAbilities({
+        tenant: ctx.tenant,
+        userId: ctx.userId,
+        orgRole: ctx.orgRole,
+      });
+
+      // Check permission
+      ForbiddenError.from(abilities).throwUnlessCan("read", "ChangeOrder");
+
+      // Get history
+      const history = await db
+        .select()
+        .from(schema.changeOrderHistory)
+        .where(eq(schema.changeOrderHistory.changeOrderId, input.changeOrderId))
+        .orderBy(schema.changeOrderHistory.changedAt);
+
+      return history;
+    }),
+
+  /**
+   * Get approval workflow status.
+   * Returns all approval steps with computed canCurrentUserApprove field.
+   */
+  getApprovalStatus: protectedProcedure
+    .input(z.object({ changeOrderId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+      const abilities = await loadProjectAbilities({
+        tenant: ctx.tenant,
+        userId: ctx.userId,
+        orgRole: ctx.orgRole,
+      });
+
+      // Check permission
+      ForbiddenError.from(abilities).throwUnlessCan("read", "ChangeOrder");
+
+      // Get approval steps
+      const steps = await db
+        .select()
+        .from(schema.approvalWorkflowSteps)
+        .where(eq(schema.approvalWorkflowSteps.changeOrderId, input.changeOrderId))
+        .orderBy(schema.approvalWorkflowSteps.stepOrder);
+
+      // Find current pending step
+      const currentPendingStep = steps.find(s => s.status === "pending");
+
+      // Compute canCurrentUserApprove
+      const normalizedRole = ctx.orgRole?.startsWith("org:") ? ctx.orgRole : `org:${ctx.orgRole}`;
+      const stepsWithPermission = steps.map(step => ({
+        ...step,
+        canCurrentUserApprove:
+          step.id === currentPendingStep?.id &&
+          ((step.approverUserId && step.approverUserId === ctx.userId) ||
+           (step.approverRole && step.approverRole === normalizedRole) ||
+           (!step.approverUserId && !step.approverRole)),
+      }));
+
+      return stepsWithPermission;
+    }),
 });
