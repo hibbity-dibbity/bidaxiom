@@ -247,6 +247,80 @@ export async function provisionTenantSchema(
         )
       `);
 
+      // Create budget_line_items table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".budget_line_items (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          project_id UUID NOT NULL REFERENCES "${schemaName}".projects(id) ON DELETE CASCADE,
+          cost_code_id INTEGER NOT NULL,
+          description TEXT NOT NULL,
+          budgeted_amount NUMERIC(15,2) NOT NULL,
+          is_locked BOOLEAN NOT NULL DEFAULT false,
+          locked_at TIMESTAMPTZ,
+          locked_by TEXT,
+          created_by TEXT NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      // Index for fast budget line items lookup by project
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_budget_line_items_project
+        ON "${schemaName}".budget_line_items(project_id)
+      `);
+
+      // Create commitments table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".commitments (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          project_id UUID NOT NULL REFERENCES "${schemaName}".projects(id) ON DELETE CASCADE,
+          type TEXT NOT NULL,
+          vendor_name TEXT NOT NULL,
+          contract_number TEXT,
+          description TEXT,
+          total_amount NUMERIC(15,2) NOT NULL,
+          status TEXT NOT NULL DEFAULT 'draft',
+          executed_at TIMESTAMPTZ,
+          approved_by TEXT,
+          approved_at TIMESTAMPTZ,
+          created_by TEXT NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      // Index for fast commitments lookup by project
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_commitments_project
+        ON "${schemaName}".commitments(project_id)
+      `);
+
+      // Create commitment_line_items table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".commitment_line_items (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          commitment_id UUID NOT NULL REFERENCES "${schemaName}".commitments(id) ON DELETE CASCADE,
+          budget_line_item_id UUID REFERENCES "${schemaName}".budget_line_items(id) ON DELETE SET NULL,
+          cost_code_id INTEGER NOT NULL,
+          description TEXT NOT NULL,
+          amount NUMERIC(15,2) NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      // Index for fast commitment line items lookup
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_commitment_line_items_commitment
+        ON "${schemaName}".commitment_line_items(commitment_id)
+      `);
+
+      // Index for fast budget line item cross-reference
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_commitment_line_items_budget
+        ON "${schemaName}".commitment_line_items(budget_line_item_id)
+      `);
+
       // Register tenant in public schema
       const insertResult = await client.query(
         `INSERT INTO tenants (schema_name, clerk_org_id, name, status)

@@ -6,8 +6,9 @@ import {
   jsonb,
   integer,
   numeric,
+  boolean,
 } from "drizzle-orm/pg-core";
-import type { TradesConfig } from "@construction/shared";
+import type { TradesConfig, JobNumberSettings } from "@construction/shared";
 
 /**
  * Creates a tenant-scoped schema with all tenant-specific tables.
@@ -70,10 +71,35 @@ export function createTenantSchema(schemaName: string) {
       .notNull()
       .$type<TradesConfig>()
       .default({ csiDivisions: [], customTrades: [] }),
+    jobNumberSettings: jsonb("job_number_settings")
+      .$type<JobNumberSettings>()
+      .default({
+        enabled: false,
+        template: "{YYYY}-{NNN}",
+        nextSequenceNumber: 1,
+        lastGeneratedFormat: null,
+      }),
     validFrom: timestamp("valid_from", { withTimezone: true }).defaultNow().notNull(),
     validTo: timestamp("valid_to", { withTimezone: true }), // NULL = current active version
     createdBy: text("created_by").notNull(), // Clerk user ID
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * Customers table
+   * Stores customer/client information for projects
+   */
+  const customers = schema.table("customers", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyName: text("company_name"), // Nullable - not all customers are companies
+    contactName: text("contact_name").notNull(), // Primary contact person
+    phone: text("phone"),
+    email: text("email"),
+    address: text("address"),
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   });
 
   /**
@@ -83,6 +109,8 @@ export function createTenantSchema(schemaName: string) {
   const projects = schema.table("projects", {
     id: uuid("id").primaryKey().defaultRandom(),
     name: text("name").notNull(),
+    jobNumber: text("job_number"), // Nullable, unique constraint via partial index
+    customerId: uuid("customer_id").notNull().references(() => customers.id, { onDelete: "restrict" }),
     description: text("description"),
     location: text("location"),
     projectType: text("project_type").notNull(), // commercial, residential, infrastructure, industrial
@@ -176,17 +204,75 @@ export function createTenantSchema(schemaName: string) {
     changeNotes: text("change_notes"),
   });
 
+  /**
+   * Budget line items
+   * Each line item represents a budget allocation for a specific cost code
+   * Cost codes 0-49 are CSI divisions, 50+ are custom company codes
+   */
+  const budgetLineItems = schema.table("budget_line_items", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+    costCodeId: integer("cost_code_id").notNull(),
+    description: text("description").notNull(),
+    budgetedAmount: numeric("budgeted_amount", { precision: 15, scale: 2 }).notNull(),
+    isLocked: boolean("is_locked").notNull().default(false),
+    lockedAt: timestamp("locked_at", { withTimezone: true }),
+    lockedBy: text("locked_by"),
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * Commitments (subcontracts and purchase orders)
+   * Tracks financial commitments before actual costs are incurred
+   */
+  const commitments = schema.table("commitments", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+    type: text("type").notNull(), // 'subcontract' or 'purchase_order'
+    vendorName: text("vendor_name").notNull(),
+    contractNumber: text("contract_number"),
+    description: text("description"),
+    totalAmount: numeric("total_amount", { precision: 15, scale: 2 }).notNull(),
+    status: text("status").notNull().default("draft"), // draft, pending, approved, executed, closed
+    executedAt: timestamp("executed_at", { withTimezone: true }),
+    approvedBy: text("approved_by"),
+    approvedAt: timestamp("approved_at", { withTimezone: true }),
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * Commitment line items
+   * Maps commitments to budget line items for cost tracking
+   */
+  const commitmentLineItems = schema.table("commitment_line_items", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    commitmentId: uuid("commitment_id").notNull().references(() => commitments.id, { onDelete: "cascade" }),
+    budgetLineItemId: uuid("budget_line_item_id").references(() => budgetLineItems.id, { onDelete: "set null" }),
+    costCodeId: integer("cost_code_id").notNull(),
+    description: text("description").notNull(),
+    amount: numeric("amount", { precision: 15, scale: 2 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
   return {
     schema,
     auditLogs,
     userProfiles,
     companyProfiles,
+    customers,
     projects,
     projectTeamMembers,
     projectPhases,
     folders,
     documents,
     documentVersions,
+    budgetLineItems,
+    commitments,
+    commitmentLineItems,
   };
 }
 

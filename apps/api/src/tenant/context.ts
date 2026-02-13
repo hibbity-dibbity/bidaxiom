@@ -63,6 +63,9 @@ export async function buildTenantContext(
       folders: tenantDb.folders,
       documents: tenantDb.documents,
       documentVersions: tenantDb.documentVersions,
+      budgetLineItems: tenantDb.budgetLineItems,
+      commitments: tenantDb.commitments,
+      commitmentLineItems: tenantDb.commitmentLineItems,
     },
   };
 }
