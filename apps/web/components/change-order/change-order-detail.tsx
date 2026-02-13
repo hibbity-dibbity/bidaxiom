@@ -27,8 +27,15 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Edit, Trash2, Ban, ArrowLeft } from "lucide-react";
+import { Edit, Trash2, Ban, ArrowLeft, Send, Plus } from "lucide-react";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ApprovalPanel } from "./approval-panel";
 import { ChangeOrderHistory } from "./change-order-history";
 import { CSI_DIVISIONS } from "@construction/shared";
@@ -65,6 +72,15 @@ export function ChangeOrderDetail({ changeOrderId, projectId }: ChangeOrderDetai
   const utils = trpc.useUtils();
   const [voidDialogOpen, setVoidDialogOpen] = useState(false);
   const [voidReason, setVoidReason] = useState("");
+  const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
+  const [approvalSteps, setApprovalSteps] = useState<
+    Array<{
+      stepOrder: number;
+      approverRole?: string;
+      approverUserId?: string;
+      requirementType: "all" | "any" | "specific";
+    }>
+  >([]);
 
   const { data, isLoading } = trpc.changeOrder.getById.useQuery({ id: changeOrderId });
 
@@ -90,6 +106,19 @@ export function ChangeOrderDetail({ changeOrderId, projectId }: ChangeOrderDetai
     },
   });
 
+  const submitMutation = trpc.changeOrder.submit.useMutation({
+    onSuccess: () => {
+      utils.changeOrder.getById.invalidate({ id: changeOrderId });
+      utils.changeOrder.list.invalidate({ projectId });
+      toast.success("Change order submitted for approval");
+      setSubmitDialogOpen(false);
+      setApprovalSteps([]);
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to submit change order");
+    },
+  });
+
   const getDivisionName = (costCodeId: number) => {
     const division = CSI_DIVISIONS.find((d) => d.division === costCodeId);
     return division
@@ -112,6 +141,55 @@ export function ChangeOrderDetail({ changeOrderId, projectId }: ChangeOrderDetai
     if (confirm("Are you sure you want to delete this change order?")) {
       deleteMutation.mutate({ id: changeOrderId });
     }
+  };
+
+  const handleAddStep = () => {
+    const newStep = {
+      stepOrder: approvalSteps.length + 1,
+      approverRole: "org:project_manager",
+      requirementType: "all" as const,
+    };
+    setApprovalSteps([...approvalSteps, newStep]);
+  };
+
+  const handleRemoveStep = (index: number) => {
+    const updatedSteps = approvalSteps
+      .filter((_, i) => i !== index)
+      .map((step, i) => ({ ...step, stepOrder: i + 1 }));
+    setApprovalSteps(updatedSteps);
+  };
+
+  const handleUpdateStep = (
+    index: number,
+    field: "approverRole" | "requirementType",
+    value: string
+  ) => {
+    const updatedSteps = [...approvalSteps];
+    if (field === "approverRole") {
+      updatedSteps[index] = { ...updatedSteps[index], approverRole: value };
+    } else {
+      updatedSteps[index] = {
+        ...updatedSteps[index],
+        requirementType: value as "all" | "any" | "specific",
+      };
+    }
+    setApprovalSteps(updatedSteps);
+  };
+
+  const handleSubmitForApproval = () => {
+    if (approvalSteps.length === 0) {
+      toast.error("At least one approval step is required");
+      return;
+    }
+    submitMutation.mutate({
+      changeOrderId,
+      approvalSteps: approvalSteps.map((step) => ({
+        stepOrder: step.stepOrder,
+        approverRole: step.approverRole,
+        approverUserId: step.approverUserId ?? undefined,
+        requirementType: step.requirementType,
+      })),
+    });
   };
 
   if (isLoading) {
@@ -169,10 +247,128 @@ export function ChangeOrderDetail({ changeOrderId, projectId }: ChangeOrderDetai
               <CardTitle className="text-3xl">{co.title}</CardTitle>
             </div>
             <div className="flex gap-2">
-              {canEdit && (
+              {co.status === "draft" && (
+                <Dialog open={submitDialogOpen} onOpenChange={setSubmitDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Send className="h-4 w-4 mr-2" />
+                      Submit for Approval
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Submit for Approval</DialogTitle>
+                      <DialogDescription>
+                        Configure approval workflow for this change order. At least one approval step is required.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      {/* Approval Steps */}
+                      {approvalSteps.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          No approval steps configured. Click "Add Step" to start.
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {approvalSteps.map((step, index) => (
+                            <div key={index} className="border rounded-lg p-4 space-y-3">
+                              <div className="flex items-center justify-between">
+                                <Badge variant="outline">Step {step.stepOrder}</Badge>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleRemoveStep(index)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                              <div className="grid gap-3">
+                                <div className="space-y-2">
+                                  <Label>Approver Role</Label>
+                                  <Select
+                                    value={step.approverRole}
+                                    onValueChange={(value) =>
+                                      handleUpdateStep(index, "approverRole", value)
+                                    }
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select role" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="org:project_manager">
+                                        Project Manager
+                                      </SelectItem>
+                                      <SelectItem value="org:superintendent">
+                                        Superintendent
+                                      </SelectItem>
+                                      <SelectItem value="org:accountant">
+                                        Accountant
+                                      </SelectItem>
+                                      <SelectItem value="org:admin">Admin</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Requirement Type</Label>
+                                  <Select
+                                    value={step.requirementType}
+                                    onValueChange={(value) =>
+                                      handleUpdateStep(index, "requirementType", value)
+                                    }
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select requirement" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="all">All approvers</SelectItem>
+                                      <SelectItem value="any">Any approver</SelectItem>
+                                      <SelectItem value="specific">
+                                        Specific approver
+                                      </SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {/* Add Step Button */}
+                      <Button
+                        variant="outline"
+                        onClick={handleAddStep}
+                        className="w-full"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Step
+                      </Button>
+                    </div>
+                    <DialogFooter>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setSubmitDialogOpen(false);
+                          setApprovalSteps([]);
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={handleSubmitForApproval}
+                        disabled={approvalSteps.length === 0 || submitMutation.isPending}
+                      >
+                        {submitMutation.isPending
+                          ? "Submitting..."
+                          : "Submit for Approval"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              )}
+              {co.status === "rejected" && (
                 <Button variant="outline" size="sm">
                   <Edit className="h-4 w-4 mr-2" />
-                  Edit
+                  Edit & Resubmit
                 </Button>
               )}
               {canVoid && (
