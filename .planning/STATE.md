@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-10)
 ## Current Position
 
 Phase: 8 of 10 (QuickBooks Integration)
-Plan: 3 of 5 in current phase
+Plan: 4 of 5 in current phase
 Status: In Progress
-Last activity: 2026-02-13 — Completed 08-03-PLAN.md (Sync Engine and CDC)
+Last activity: 2026-02-13 — Completed 08-04-PLAN.md (tRPC Router and Webhooks)
 
 Progress: [███████░░░] 70% (7 of 10 phases complete, Phase 8 in progress)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 23
+- Total plans completed: 24
 - Average duration: 7.7 min
-- Total execution time: 3.03 hours
+- Total execution time: 3.15 hours
 
 **By Phase:**
 
@@ -33,11 +33,11 @@ Progress: [███████░░░] 70% (7 of 10 phases complete, Phase 8
 | 05 | 3 | 20 min | 6.7 min |
 | 06 | 4 | 21 min | 5.3 min |
 | 07 | 4 | 19 min | 4.8 min |
-| 08 | 3 | 13 min | 4.3 min |
+| 08 | 4 | 20 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 07-05 (6 min), 07-04 (6 min), 08-01 (3 min), 08-02 (5 min), 08-03 (5 min)
-- Trend: Phase 8 maintains strong velocity (3-5 min per plan). Sync engine implementation efficient.
+- Last 5 plans: 07-04 (6 min), 08-01 (3 min), 08-02 (5 min), 08-03 (5 min), 08-04 (7 min)
+- Trend: Phase 8 maintains strong velocity (3-7 min per plan). API integration layer efficient.
 
 *Updated after each plan completion*
 | Phase 06 P02 | 8 | 2 tasks | 5 files |
@@ -50,6 +50,7 @@ Progress: [███████░░░] 70% (7 of 10 phases complete, Phase 8
 | Phase 08-quickbooks-integration P01 | 3 min | 2 tasks | 7 files |
 | Phase 08-quickbooks-integration P02 | 5 min | 2 tasks | 6 files |
 | Phase 08-quickbooks-integration P03 | 5 min | 2 tasks | 7 files |
+| Phase 08-quickbooks-integration P04 | 7 min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -134,6 +135,10 @@ Recent decisions affecting current work:
 - [Phase 08-03]: Mappers accept db/schema from worker (not building own tenant context; keeps mappers pure and testable)
 - [Phase 08-03]: SyncToken conflicts marked for user review, not auto-merged (financial data conflicts require user judgment)
 - [Phase 08-03]: CDC queries QBO directly via makeApiCall (node-quickbooks lacks CDC helper method)
+- [Phase 08-04]: OAuth callback redirect pattern (API redirects to frontend with code, frontend calls tRPC for token exchange)
+- [Phase 08-04]: Runtime null checks for tenant/abilities (TypeScript doesn't know authorizedProcedure guarantees non-null)
+- [Phase 08-04]: Non-fatal worker startup (try/catch allows API to start without Redis)
+- [Phase 08-04]: CloudEvents webhook format (MANDATORY as of May 15, 2026 - old format deprecated)
 
 ### Pending Todos
 
@@ -146,7 +151,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-13 (Phase 8 in progress)
-Stopped at: Completed 08-03-PLAN.md (Sync Engine and CDC)
+Stopped at: Completed 08-04-PLAN.md (tRPC Router and Webhooks)
 Resume file: None
 
 ---
