@@ -498,7 +498,7 @@ export const documentRouter = router({
       const downloadUrl = await generateDownloadUrl(
         currentVersion.storageKey,
         document.name,
-        document.contentType ?? undefined
+        document.contentType || undefined
       );
 
       return {
