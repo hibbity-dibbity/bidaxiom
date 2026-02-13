@@ -96,9 +96,9 @@ export {
   approveRejectSchema,
   type ApproveReject,
   VALID_CO_STATUS_TRANSITIONS,
-} from "./types/change-order.js";
+} from "./types/change-order";
 
-export * from "./types/payment-app.js";
+export * from "./types/payment-app";
 
 export {
   rfqStatusEnum,
@@ -135,7 +135,7 @@ export {
   type CreateLevelingNote,
   type BidComparisonRow,
   type RfqSummary,
-} from "./types/bidding.js";
+} from "./types/bidding";
 
 export {
   documentCategoryEnum,
@@ -170,4 +170,62 @@ export {
   shareFolderSchema,
   revokeFolderPermissionSchema,
   getDocumentPermissionsSchema,
-} from "./types/document.js";
+} from "./types/document";
+
+export {
+  reportTypeEnum,
+  type ReportType,
+  REPORT_TYPES,
+  aggregationFunctionEnum,
+  type AggregationFunction,
+  AGGREGATION_FUNCTIONS,
+  chartTypeEnum,
+  type ChartType,
+  CHART_TYPES,
+  filterOperatorEnum,
+  type FilterOperator,
+  FILTER_OPERATORS,
+  scheduleFrequencyEnum,
+  type ScheduleFrequency,
+  SCHEDULE_FREQUENCIES,
+  exportFormatEnum,
+  type ExportFormat,
+  EXPORT_FORMATS,
+  reportStatusEnum,
+  type ReportStatus,
+  REPORT_STATUSES,
+  dataSourceEnum,
+  type DataSource,
+  DATA_SOURCES,
+  filterDataTypeEnum,
+  type FilterDataType,
+  FILTER_DATA_TYPES,
+  reportFilterSchema,
+  type ReportFilter,
+  reportColumnSchema,
+  type ReportColumn,
+  reportChartConfigSchema,
+  type ReportChartConfig,
+  reportSortSchema,
+  type ReportSort,
+  reportDefinitionSchema,
+  type ReportDefinition,
+  reportTemplateSchema,
+  type ReportTemplate,
+  reportScheduleSchema,
+  type ReportSchedule,
+  materializedReportDataSchema,
+  type MaterializedReportData,
+  type BudgetVarianceMetrics,
+  type CostPerformanceMetrics,
+  type CashFlowProjection,
+  type ReportExportOptions,
+  createReportDefinitionSchema,
+  type CreateReportDefinition,
+  updateReportDefinitionSchema,
+  type UpdateReportDefinition,
+  createReportScheduleSchema,
+  type CreateReportSchedule,
+  updateReportScheduleSchema,
+  type UpdateReportSchedule,
+} from "./types/reporting";

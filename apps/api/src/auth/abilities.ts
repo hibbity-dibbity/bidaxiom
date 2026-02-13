@@ -154,6 +154,7 @@ export function defineAbilitiesFor(
       can("manage", "RFQ");
       can("read", "Bid");
       can("read", "SubcontractorDirectory");
+      can("manage", "Report");
       can("read", "AuditLog");
       can("read", "User");
       cannot("manage", "CompanySettings");
@@ -176,6 +177,7 @@ export function defineAbilitiesFor(
       can("approve", "ChangeOrder");
       can("read", "RFQ");
       can("read", "Bid");
+      can("manage", "Report");
       can("read", "QuickBooks");
       can("read", "AuditLog");
       can("read", "User");
@@ -198,6 +200,7 @@ export function defineAbilitiesFor(
       can("create", "Workflow", { projectId: { $in: userProjectIds } });
       can("read", "Workflow", { projectId: { $in: userProjectIds } });
       can("update", "Workflow", { projectId: { $in: userProjectIds } });
+      can("read", "Report");
       can("read", "User");
       cannot("manage", "CompanySettings");
       break;
@@ -220,6 +223,7 @@ export function defineAbilitiesFor(
       can("read", "LienWaiver");
       can("read", "RFQ");
       can("read", "Bid");
+      can("read", "Report");
       can("read", "User");
       cannot("manage", "CompanySettings");
       cannot("delete", "all");
@@ -237,6 +241,7 @@ export function defineAbilitiesFor(
       can("read", "Folder", { projectId: { $in: userProjectIds } });
       can("read", "Workflow", { projectId: { $in: userProjectIds } });
       can("update", "Workflow", { projectId: { $in: userProjectIds }, submittedBy: userId });
+      can("read", "Report");
       can("read", "User");
       cannot("manage", "CompanySettings");
       cannot("delete", "all");
@@ -255,6 +260,7 @@ export function defineAbilitiesFor(
       can("read", "PaymentApp");
       can("read", "LienWaiver");
       can("read", "Bid");
+      can("read", "Report");
       break;
   }
 

@@ -71,4 +71,5 @@ export type AppSubjects =
   | "Folder"
   | "Workflow"
   | "ProjectTeam"
+  | "Report"
   | "all";
