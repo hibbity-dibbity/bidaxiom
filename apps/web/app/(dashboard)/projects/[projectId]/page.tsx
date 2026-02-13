@@ -205,6 +205,9 @@ export default function ProjectDashboardPage({
   const { data: usersData } = trpc.user.list.useQuery({ limit: 100, offset: 0 });
   const { data: budgetSummary } = trpc.budget.getProjectSummary.useQuery({ projectId });
   const { data: changeOrders } = trpc.changeOrder.list.useQuery({ projectId });
+  const { data: paymentAppSummary } = trpc.paymentApp.getSummary.useQuery({ projectId });
+  const { data: sovItems } = trpc.sov.list.useQuery({ projectId });
+  const { data: retainage } = trpc.paymentApp.getRetainage.useQuery({ projectId });
 
   // Debug: Log project and customer data
   useEffect(() => {
@@ -663,6 +666,24 @@ export default function ProjectDashboardPage({
           >
             Change Orders
           </Link>
+          <Link
+            href={`/projects/${projectId}/sov`}
+            className="border-b-2 border-transparent py-3 text-sm text-muted-foreground hover:text-foreground"
+          >
+            Schedule of Values
+          </Link>
+          <Link
+            href={`/projects/${projectId}/payment-apps`}
+            className="border-b-2 border-transparent py-3 text-sm text-muted-foreground hover:text-foreground"
+          >
+            Payment Apps
+          </Link>
+          <Link
+            href={`/projects/${projectId}/invoices`}
+            className="border-b-2 border-transparent py-3 text-sm text-muted-foreground hover:text-foreground"
+          >
+            Invoices
+          </Link>
         </nav>
       </div>
 
@@ -769,6 +790,95 @@ export default function ProjectDashboardPage({
                 <Button variant="link" className="h-auto p-0 text-xs" asChild>
                   <Link href={`/projects/${projectId}/change-orders`}>Create change order</Link>
                 </Button>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">SOV</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {sovItems && sovItems.items.length > 0 ? (
+              <>
+                <div className="text-2xl font-bold">{sovItems.items.length}</div>
+                <p className="text-xs text-muted-foreground">
+                  {new Intl.NumberFormat("en-US", {
+                    style: "currency",
+                    currency: "USD",
+                    minimumFractionDigits: 0,
+                  }).format(
+                    sovItems.items.reduce((sum, item) => sum + Number(item.scheduledValue), 0)
+                  )}{" "}
+                  scheduled
+                </p>
+                <Button variant="link" className="h-auto p-0 text-xs" asChild>
+                  <Link href={`/projects/${projectId}/sov`}>Manage SOV</Link>
+                </Button>
+              </>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">--</div>
+                <Button variant="link" className="h-auto p-0 text-xs" asChild>
+                  <Link href={`/projects/${projectId}/sov`}>Set up SOV</Link>
+                </Button>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Payment Apps</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {paymentAppSummary ? (
+              <>
+                <div className="text-2xl font-bold">
+                  {paymentAppSummary.counts.submitted + paymentAppSummary.counts.underReview}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Pending ({paymentAppSummary.counts.approved} approved)
+                </p>
+                <Button variant="link" className="h-auto p-0 text-xs" asChild>
+                  <Link href={`/projects/${projectId}/payment-apps`}>View payment apps</Link>
+                </Button>
+              </>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">--</div>
+                <Button variant="link" className="h-auto p-0 text-xs" asChild>
+                  <Link href={`/projects/${projectId}/payment-apps`}>Create payment app</Link>
+                </Button>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Retainage</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {retainage ? (
+              <>
+                <div className="text-2xl font-bold">
+                  {new Intl.NumberFormat("en-US", {
+                    style: "currency",
+                    currency: "USD",
+                    minimumFractionDigits: 0,
+                  }).format(Number(retainage.summary.totalHeld))}
+                </div>
+                <p className="text-xs text-muted-foreground">Total held</p>
+              </>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">$0</div>
+                <p className="text-xs text-muted-foreground">No retainage</p>
               </>
             )}
           </CardContent>
