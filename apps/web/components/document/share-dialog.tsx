@@ -24,10 +24,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Check, ChevronsUpDown, Calendar as CalendarIcon, X } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Check, ChevronsUpDown, X, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -41,28 +42,43 @@ interface ShareDialogProps {
 export function ShareDialog({ documentId, open, onOpenChange }: ShareDialogProps) {
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [permissionLevel, setPermissionLevel] = useState<"view" | "edit">("view");
-  const [expiresAt, setExpiresAt] = useState<Date | undefined>();
+  const [expiresAt, setExpiresAt] = useState<string>("");
   const [userComboboxOpen, setUserComboboxOpen] = useState(false);
 
   const utils = trpc.useUtils();
 
   // Fetch available users
-  const { data: users } = trpc.user.list.useQuery();
+  const { data: usersData } = trpc.user.list.useQuery({ limit: 100 });
+  const users = usersData?.items || [];
 
-  // Fetch current shares (need to add this procedure if it doesn't exist)
-  // For now, we'll handle this in the getSharedWithMe query
-  // TODO: Add document.getShares procedure to show current shares
+  // Fetch current shares
+  const { data: currentShares, isLoading: sharesLoading } = trpc.document.getDocumentPermissions.useQuery(
+    { documentId },
+    { enabled: open }
+  );
 
   const shareDocumentMutation = trpc.document.shareDocument.useMutation({
     onSuccess: () => {
       toast.success("Document shared successfully");
       setSelectedUserId("");
       setPermissionLevel("view");
-      setExpiresAt(undefined);
+      setExpiresAt("");
       utils.document.getSharedWithMe.invalidate();
+      utils.document.getDocumentPermissions.invalidate({ documentId });
     },
     onError: (error) => {
       toast.error(error.message || "Failed to share document");
+    },
+  });
+
+  const revokePermissionMutation = trpc.document.revokeDocumentPermission.useMutation({
+    onSuccess: () => {
+      toast.success("Permission revoked");
+      utils.document.getDocumentPermissions.invalidate({ documentId });
+      utils.document.getSharedWithMe.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to revoke permission");
     },
   });
 
@@ -76,11 +92,11 @@ export function ShareDialog({ documentId, open, onOpenChange }: ShareDialogProps
       documentId,
       userId: selectedUserId,
       permissionLevel,
-      expiresAt: expiresAt?.toISOString(),
+      expiresAt: expiresAt ? new Date(expiresAt).toISOString() : undefined,
     });
   };
 
-  const selectedUser = users?.find((u: any) => u.clerkUserId === selectedUserId);
+  const selectedUser = users.find((u: any) => u.clerkUserId === selectedUserId);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -115,7 +131,7 @@ export function ShareDialog({ documentId, open, onOpenChange }: ShareDialogProps
                   <CommandInput placeholder="Search users..." />
                   <CommandEmpty>No users found.</CommandEmpty>
                   <CommandGroup className="max-h-64 overflow-auto">
-                    {users?.map((user: any) => (
+                    {users.map((user: any) => (
                       <CommandItem
                         key={user.clerkUserId}
                         value={`${user.firstName} ${user.lastName} ${user.email}`}
@@ -167,34 +183,18 @@ export function ShareDialog({ documentId, open, onOpenChange }: ShareDialogProps
           <div className="space-y-2">
             <Label>Expiration Date (Optional)</Label>
             <div className="flex gap-2">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "flex-1 justify-start text-left font-normal",
-                      !expiresAt && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {expiresAt ? format(expiresAt, "PPP") : "No expiration"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={expiresAt}
-                    onSelect={setExpiresAt}
-                    disabled={(date) => date < new Date()}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+              <Input
+                type="date"
+                value={expiresAt}
+                onChange={(e) => setExpiresAt(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+                className="flex-1"
+              />
               {expiresAt && (
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setExpiresAt(undefined)}
+                  onClick={() => setExpiresAt("")}
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -207,19 +207,79 @@ export function ShareDialog({ documentId, open, onOpenChange }: ShareDialogProps
           {/* Share Button */}
           <Button
             onClick={handleShare}
-            disabled={!selectedUserId || shareDocumentMutation.isLoading}
+            disabled={!selectedUserId || shareDocumentMutation.isPending}
             className="w-full"
           >
-            {shareDocumentMutation.isLoading ? "Sharing..." : "Share Document"}
+            {shareDocumentMutation.isPending ? "Sharing..." : "Share Document"}
           </Button>
 
-          {/* Current Shares Section - Placeholder */}
-          <div className="space-y-2">
-            <Label className="text-sm text-muted-foreground">Current Shares</Label>
-            <div className="text-sm text-muted-foreground italic">
-              Share history will appear here after implementation
-            </div>
-            {/* TODO: Add document.getShares procedure and display list here with Revoke buttons */}
+          <Separator />
+
+          {/* People with Access Section */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">People with Access</Label>
+
+            {sharesLoading ? (
+              <div className="text-sm text-muted-foreground">Loading current shares...</div>
+            ) : !currentShares?.permissions || currentShares.permissions.length === 0 ? (
+              <div className="text-sm text-muted-foreground">
+                No one has access to this document yet
+              </div>
+            ) : (
+              <div className="border rounded-md">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>User</TableHead>
+                      <TableHead>Permission</TableHead>
+                      <TableHead>Expires</TableHead>
+                      <TableHead className="w-[80px]">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {currentShares.permissions.map((permission: any) => (
+                      <TableRow key={permission.userId}>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-medium text-sm">
+                              {permission.user.firstName} {permission.user.lastName}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {permission.user.email}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={permission.permissionLevel === "view" ? "secondary" : "default"}>
+                            {permission.permissionLevel === "view" ? "View" : "Edit"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {permission.expiresAt
+                            ? format(new Date(permission.expiresAt), "PPP")
+                            : "Never"}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              revokePermissionMutation.mutate({
+                                documentId,
+                                userId: permission.userId,
+                              });
+                            }}
+                            disabled={revokePermissionMutation.isPending}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </div>
         </div>
       </DialogContent>
