@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-10)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** Phase 5 - Change Order Management
+**Current focus:** Phase 6 - Payment Applications
 
 ## Current Position
 
-Phase: 5 of 10 (Change Order Management)
-Plan: 3 of 3 in current phase
-Status: Complete
-Last activity: 2026-02-13 — Completed 05-03-PLAN.md (Change Order Management Frontend)
+Phase: 6 of 10 (Payment Applications)
+Plan: 1 of 4 in current phase
+Status: In Progress
+Last activity: 2026-02-13 — Completed 06-01-PLAN.md (Payment Application Schema and Types)
 
-Progress: [█████░░░░░] 50% (5 of 10 phases complete, Phase 5 complete)
+Progress: [█████░░░░░] 52% (5 of 10 phases complete, Phase 6 started)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 12
-- Average duration: 12 min
-- Total execution time: 2.81 hours
+- Total plans completed: 13
+- Average duration: 11 min
+- Total execution time: 2.88 hours
 
 **By Phase:**
 
@@ -31,10 +31,11 @@ Progress: [█████░░░░░] 50% (5 of 10 phases complete, Phase 5
 | 03 | 3 | 9 min | 3 min |
 | 04 | 4 | 123 min | 31 min |
 | 05 | 3 | 20 min | 6.7 min |
+| 06 | 1 | 4 min | 4 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-03 (2 min), 04-04 (7 min), 05-01 (4 min), 05-02 (9 min), 05-03 (7 min)
-- Trend: Schema-heavy plans take longer (04-01: 111 min), but API and UI implementation is consistently fast (2-9 min)
+- Last 5 plans: 04-04 (7 min), 05-01 (4 min), 05-02 (9 min), 05-03 (7 min), 06-01 (4 min)
+- Trend: Schema-heavy plans take longer (04-01: 111 min), but API and UI implementation is consistently fast (2-9 min). Phase 6 started with fast schema setup (4 min).
 
 *Updated after each plan completion*
 
@@ -90,6 +91,10 @@ Recent decisions affecting current work:
 - **Single transaction for final CO approval**: CO number generation, status update, and budget impacts happen atomically - if any part fails, entire operation rolls back (05-02)
 - **Budget reversal on void**: Voiding an approved CO subtracts amountChange from budget line items to maintain financial accuracy (05-02)
 - [Phase 05-03]: Used type assertions for discriminated union form errors with react-hook-form
+- **RESTRICT on SOV item deletion from payment app line items**: Prevents orphaned billing lines that would break payment app integrity (06-01)
+- **Progressive retainage rate support**: retainageConfigSchema includes optional progressiveRates array for decreasing retainage as project completion increases (06-01)
+- **4 lien waiver types following AIA standard**: partial/final × conditional/unconditional per AIA G706/G707 ensures industry-standard compliance (06-01)
+- **State-specific lien waiver requirements**: 10 states require statutory forms; tracking requirements prevents compliance issues (06-01)
 
 ### Pending Todos
 
@@ -101,8 +106,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-13 (Phase 5 complete)
-Stopped at: Completed 05-03-PLAN.md (Change Order Management Frontend)
+Last session: 2026-02-13 (Phase 6 started)
+Stopped at: Completed 06-01-PLAN.md (Payment Application Schema and Types)
 Resume file: None
 
 ---
