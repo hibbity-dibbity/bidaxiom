@@ -48,6 +48,48 @@ async function loadProjectAbilities(ctx: {
 }
 
 /**
+ * Helper to check document access with fallback to explicit permissions.
+ * First checks project-level abilities via CASL.
+ * If that fails, checks if user has explicit permission on the document or its folder.
+ *
+ * @param abilities - CASL abilities (project-level)
+ * @param explicitPerms - Explicit document/folder permissions
+ * @param document - Document with id and folderId
+ * @param action - Action to check ("read", "update", "delete")
+ * @throws TRPCError with FORBIDDEN code if access denied
+ */
+function checkDocumentAccess(
+  abilities: ReturnType<typeof defineAbilitiesFor>,
+  explicitPerms: Awaited<ReturnType<typeof loadDocumentPermissions>>,
+  document: { id: string; folderId: string | null },
+  action: "read" | "update" | "delete"
+): void {
+  // Try project-level abilities first
+  try {
+    ForbiddenError.from(abilities).throwUnlessCan(action, "Document");
+    return; // Access granted via project-level permission
+  } catch (err) {
+    // Project-level check failed, try explicit permissions
+  }
+
+  // Check explicit permissions as fallback
+  const hasExplicitAccess =
+    (action === "read" &&
+      (explicitPerms.documentIds.has(document.id) ||
+       (document.folderId !== null && explicitPerms.folderIds.has(document.folderId)))) ||
+    ((action === "update" || action === "delete") &&
+      (explicitPerms.documentEditIds.has(document.id) ||
+       (document.folderId !== null && explicitPerms.folderEditIds.has(document.folderId))));
+
+  if (!hasExplicitAccess) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: `You don't have permission to ${action} this document`,
+    });
+  }
+}
+
+/**
  * Document and folder management router.
  * Handles pre-signed uploads, document versioning, and folder organization with CASL enforcement.
  */
@@ -346,6 +388,7 @@ export const documentRouter = router({
 
   /**
    * List documents in a project, optionally filtered by folder.
+   * Returns documents user has access to via project membership OR explicit permissions.
    */
   list: protectedProcedure
     .input(
@@ -364,15 +407,15 @@ export const documentRouter = router({
 
       const { db, schema } = ctx.tenant;
 
-      // Load abilities and check permission
+      // Load abilities and explicit permissions
       const abilities = await loadProjectAbilities({
         tenant: ctx.tenant,
         userId: ctx.userId,
         orgRole: ctx.orgRole,
       });
-      ForbiddenError.from(abilities).throwUnlessCan("read", "Document");
+      const explicitPerms = await loadDocumentPermissions(db, schema, ctx.userId);
 
-      // Build WHERE clause
+      // Build WHERE clause for project documents
       const conditions = [eq(schema.documents.projectId, input.projectId)];
 
       if (input.folderId === null) {
@@ -409,28 +452,43 @@ export const documentRouter = router({
         .where(and(...conditions))
         .orderBy(schema.documents.name);
 
-      // Transform rows to include nested uploadedByProfile
-      const documents = rows.map((row) => ({
-        id: row.id,
-        projectId: row.projectId,
-        folderId: row.folderId,
-        name: row.name,
-        fileSize: row.fileSize,
-        contentType: row.contentType,
-        currentVersionId: row.currentVersionId,
-        createdBy: row.createdBy,
-        createdAt: row.createdAt,
-        updatedAt: row.updatedAt,
-        uploadedByProfile: row.profileId
-          ? {
-              id: row.profileId,
-              fullName: row.profileFirstName && row.profileLastName
-                ? `${row.profileFirstName} ${row.profileLastName}`
-                : row.profileEmail,
-              email: row.profileEmail,
-            }
-          : null,
-      }));
+      // Filter documents based on project-level abilities OR explicit permissions
+      const canReadProjectDocuments = abilities.can("read", "Document");
+
+      const documents = rows
+        .filter((row) => {
+          if (canReadProjectDocuments) {
+            return true; // Project team member can see all project documents
+          }
+
+          // Check explicit permissions for non-team members
+          return (
+            explicitPerms.documentIds.has(row.id) ||
+            (row.folderId !== null && explicitPerms.folderIds.has(row.folderId))
+          );
+        })
+        .map((row) => ({
+          id: row.id,
+          projectId: row.projectId,
+          folderId: row.folderId,
+          name: row.name,
+          fileSize: row.fileSize,
+          contentType: row.contentType,
+          currentVersionId: row.currentVersionId,
+          createdBy: row.createdBy,
+          createdAt: row.createdAt,
+          updatedAt: row.updatedAt,
+          uploadedByProfile: row.profileId
+            ? {
+                id: row.profileId,
+                fullName:
+                  row.profileFirstName && row.profileLastName
+                    ? `${row.profileFirstName} ${row.profileLastName}`
+                    : row.profileEmail,
+                email: row.profileEmail,
+              }
+            : null,
+        }));
 
       return documents;
     }),
@@ -438,6 +496,7 @@ export const documentRouter = router({
   /**
    * Get download URL for a document.
    * Returns pre-signed GET URL for the current version.
+   * Checks project-level abilities first, then explicit permissions as fallback.
    */
   getDownloadUrl: protectedProcedure
     .input(z.object({ documentId: z.string().uuid() }))
@@ -457,6 +516,7 @@ export const documentRouter = router({
           id: schema.documents.id,
           name: schema.documents.name,
           projectId: schema.documents.projectId,
+          folderId: schema.documents.folderId,
           currentVersionId: schema.documents.currentVersionId,
           fileSize: schema.documents.fileSize,
           contentType: schema.documents.contentType,
@@ -479,13 +539,16 @@ export const documentRouter = router({
         });
       }
 
-      // Load abilities and check permission
+      // Load abilities and explicit permissions
       const abilities = await loadProjectAbilities({
         tenant: ctx.tenant,
         userId: ctx.userId,
         orgRole: ctx.orgRole,
       });
-      ForbiddenError.from(abilities).throwUnlessCan("read", "Document");
+      const explicitPerms = await loadDocumentPermissions(db, schema, ctx.userId);
+
+      // Check access with fallback to explicit permissions
+      checkDocumentAccess(abilities, explicitPerms, document, "read");
 
       // Fetch current version to get storage key
       const [currentVersion] = await db
@@ -518,6 +581,7 @@ export const documentRouter = router({
 
   /**
    * Get version history for a document.
+   * Checks project-level abilities first, then explicit permissions as fallback.
    */
   getVersionHistory: protectedProcedure
     .input(z.object({ documentId: z.string().uuid() }))
@@ -531,9 +595,13 @@ export const documentRouter = router({
 
       const { db, schema } = ctx.tenant;
 
-      // Fetch document to get projectId
+      // Fetch document to get projectId and folderId
       const [document] = await db
-        .select({ projectId: schema.documents.projectId })
+        .select({
+          id: schema.documents.id,
+          projectId: schema.documents.projectId,
+          folderId: schema.documents.folderId,
+        })
         .from(schema.documents)
         .where(eq(schema.documents.id, input.documentId))
         .limit(1);
@@ -545,13 +613,16 @@ export const documentRouter = router({
         });
       }
 
-      // Load abilities and check permission
+      // Load abilities and explicit permissions
       const abilities = await loadProjectAbilities({
         tenant: ctx.tenant,
         userId: ctx.userId,
         orgRole: ctx.orgRole,
       });
-      ForbiddenError.from(abilities).throwUnlessCan("read", "Document");
+      const explicitPerms = await loadDocumentPermissions(db, schema, ctx.userId);
+
+      // Check access with fallback to explicit permissions
+      checkDocumentAccess(abilities, explicitPerms, document, "read");
 
       // Query all versions
       const versions = await db
@@ -565,6 +636,7 @@ export const documentRouter = router({
 
   /**
    * Delete a document (soft delete - archives in DB, does NOT delete S3 objects).
+   * Checks project-level abilities first, then explicit edit permissions as fallback.
    */
   delete: protectedProcedure
     .input(z.object({ documentId: z.string().uuid() }))
@@ -579,9 +651,13 @@ export const documentRouter = router({
       const { db, schema } = ctx.tenant;
       const userId = ctx.userId;
 
-      // Fetch document to get projectId
+      // Fetch document to get projectId and folderId
       const [document] = await db
-        .select({ projectId: schema.documents.projectId })
+        .select({
+          id: schema.documents.id,
+          projectId: schema.documents.projectId,
+          folderId: schema.documents.folderId,
+        })
         .from(schema.documents)
         .where(eq(schema.documents.id, input.documentId))
         .limit(1);
@@ -593,13 +669,16 @@ export const documentRouter = router({
         });
       }
 
-      // Load abilities and check permission
+      // Load abilities and explicit permissions
       const abilities = await loadProjectAbilities({
         tenant: ctx.tenant,
         userId: ctx.userId,
         orgRole: ctx.orgRole,
       });
-      ForbiddenError.from(abilities).throwUnlessCan("delete", "Document");
+      const explicitPerms = await loadDocumentPermissions(db, schema, ctx.userId);
+
+      // Check delete access with fallback to explicit edit permissions
+      checkDocumentAccess(abilities, explicitPerms, document, "delete");
 
       // Delete from documents table (cascades to document_versions via FK)
       // NOTE: Does NOT delete actual S3 objects - orphaned storage cleanup via S3 lifecycle policies
