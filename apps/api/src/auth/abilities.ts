@@ -58,6 +58,7 @@ export function defineAbilitiesFor(
       can("manage", "Document", { projectId: { $in: userProjectIds } });
       can("manage", "Folder", { projectId: { $in: userProjectIds } });
       can("read", "ChangeOrder");
+      can("approve", "ChangeOrder");
       can("read", "AuditLog");
       can("read", "User");
       cannot("manage", "CompanySettings");
@@ -69,6 +70,7 @@ export function defineAbilitiesFor(
       can("manage", "RFQ");
       can("read", "Budget");
       can("read", "Commitment");
+      can("read", "ChangeOrder");
       can("read", "Document", { projectId: { $in: userProjectIds } });
       can("read", "Folder", { projectId: { $in: userProjectIds } });
       can("read", "User");
@@ -83,6 +85,7 @@ export function defineAbilitiesFor(
       can("read", "Budget");
       can("read", "Commitment");
       can("read", "ChangeOrder");
+      can("approve", "ChangeOrder");
       can("read", "User");
       cannot("manage", "CompanySettings");
       cannot("delete", "all");
@@ -92,6 +95,7 @@ export function defineAbilitiesFor(
       can("read", "Project", { id: { $in: userProjectIds } });
       can("read", "Budget");
       can("read", "Commitment");
+      can("read", "ChangeOrder");
       can("read", "Document", { projectId: { $in: userProjectIds } });
       can("read", "Folder", { projectId: { $in: userProjectIds } });
       can("read", "User");
@@ -107,6 +111,7 @@ export function defineAbilitiesFor(
       can("read", "Folder", { projectId: { $in: userProjectIds } });
       can("read", "Budget");
       can("read", "Commitment");
+      can("read", "ChangeOrder");
       can("read", "Bid");
       break;
   }
