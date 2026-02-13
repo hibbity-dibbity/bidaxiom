@@ -376,12 +376,54 @@ export const documentRouter = router({
         conditions.push(eq(schema.documents.folderId, input.folderId));
       }
 
-      // Query documents
-      const documents = await db
-        .select()
+      // Query documents with uploader profile
+      const rows = await db
+        .select({
+          id: schema.documents.id,
+          projectId: schema.documents.projectId,
+          folderId: schema.documents.folderId,
+          name: schema.documents.name,
+          fileSize: schema.documents.fileSize,
+          contentType: schema.documents.contentType,
+          currentVersionId: schema.documents.currentVersionId,
+          createdBy: schema.documents.createdBy,
+          createdAt: schema.documents.createdAt,
+          updatedAt: schema.documents.updatedAt,
+          profileId: schema.userProfiles.id,
+          profileFirstName: schema.userProfiles.firstName,
+          profileLastName: schema.userProfiles.lastName,
+          profileEmail: schema.userProfiles.email,
+        })
         .from(schema.documents)
+        .leftJoin(
+          schema.userProfiles,
+          eq(schema.documents.createdBy, schema.userProfiles.clerkUserId)
+        )
         .where(and(...conditions))
         .orderBy(schema.documents.name);
+
+      // Transform rows to include nested uploadedByProfile
+      const documents = rows.map((row) => ({
+        id: row.id,
+        projectId: row.projectId,
+        folderId: row.folderId,
+        name: row.name,
+        fileSize: row.fileSize,
+        contentType: row.contentType,
+        currentVersionId: row.currentVersionId,
+        createdBy: row.createdBy,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+        uploadedByProfile: row.profileId
+          ? {
+              id: row.profileId,
+              fullName: row.profileFirstName && row.profileLastName
+                ? `${row.profileFirstName} ${row.profileLastName}`
+                : row.profileEmail,
+              email: row.profileEmail,
+            }
+          : null,
+      }));
 
       return documents;
     }),
@@ -455,7 +497,8 @@ export const documentRouter = router({
       // Generate pre-signed download URL
       const downloadUrl = await generateDownloadUrl(
         currentVersion.storageKey,
-        document.name
+        document.name,
+        document.contentType ?? undefined
       );
 
       return {
