@@ -16,6 +16,7 @@ import { lienWaiverRouter } from "./routers/lien-waiver.js";
 import { invoiceTrackingRouter } from "./routers/invoice-tracking.js";
 import { rfqRouter } from "./routers/rfq.js";
 import { subcontractorRouter } from "./routers/subcontractor.js";
+import { bidRouter } from "./routers/bid.js";
 
 /**
  * Root application router.
@@ -42,6 +43,7 @@ export const appRouter = router({
   invoiceTracking: invoiceTrackingRouter,
   rfq: rfqRouter,
   subcontractor: subcontractorRouter,
+  bid: bidRouter,
 });
 
 /**
