@@ -122,6 +122,8 @@ export async function provisionTenantSchema(
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
           company_type TEXT NOT NULL,
           trades_config JSONB NOT NULL DEFAULT '{"csiDivisions":[],"customTrades":[]}'::jsonb,
+          job_number_settings JSONB DEFAULT '{"enabled":false,"template":"{YYYY}-{NNN}","nextSequenceNumber":1,"lastGeneratedFormat":null}'::jsonb,
+          retainage_config JSONB DEFAULT '{"defaultRate":10,"progressiveRates":[],"releaseConditions":{"substantialCompletion":true,"punchListComplete":false,"finalAcceptance":false,"lienWaiversRequired":true}}'::jsonb,
           valid_from TIMESTAMPTZ NOT NULL DEFAULT NOW(),
           valid_to TIMESTAMPTZ,
           created_by TEXT NOT NULL,

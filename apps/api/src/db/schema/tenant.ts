@@ -8,7 +8,7 @@ import {
   numeric,
   boolean,
 } from "drizzle-orm/pg-core";
-import type { TradesConfig, JobNumberSettings } from "@construction/shared";
+import type { TradesConfig, JobNumberSettings, RetainageConfig } from "@construction/shared";
 
 /**
  * Creates a tenant-scoped schema with all tenant-specific tables.
@@ -78,6 +78,18 @@ export function createTenantSchema(schemaName: string) {
         template: "{YYYY}-{NNN}",
         nextSequenceNumber: 1,
         lastGeneratedFormat: null,
+      }),
+    retainageConfig: jsonb("retainage_config")
+      .$type<RetainageConfig>()
+      .default({
+        defaultRate: 10,
+        progressiveRates: [],
+        releaseConditions: {
+          substantialCompletion: true,
+          punchListComplete: false,
+          finalAcceptance: false,
+          lienWaiversRequired: true,
+        },
       }),
     validFrom: timestamp("valid_from", { withTimezone: true }).defaultNow().notNull(),
     validTo: timestamp("valid_to", { withTimezone: true }), // NULL = current active version
@@ -215,6 +227,7 @@ export function createTenantSchema(schemaName: string) {
     costCodeId: integer("cost_code_id").notNull(),
     description: text("description").notNull(),
     budgetedAmount: numeric("budgeted_amount", { precision: 15, scale: 2 }).notNull(),
+    actualCost: numeric("actual_cost", { precision: 15, scale: 2 }).notNull().default("0"),
     isLocked: boolean("is_locked").notNull().default(false),
     lockedAt: timestamp("locked_at", { withTimezone: true }),
     lockedBy: text("locked_by"),
