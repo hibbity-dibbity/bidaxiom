@@ -107,12 +107,13 @@ Plans:
   2. Change orders automatically update budget when approved via configurable multi-party workflows
   3. PCOs (Pending Change Orders) and approved COs use separate numbering sequences
   4. Change order history is tracked with full audit trail (who, when, old/new values)
-**Plans**: 3 plans across 3 waves
+**Plans**: 4 plans across 3 waves
 
 Plans:
 - [ ] 05-01-PLAN.md — DB schema (5 tables), shared types (discriminated union), CASL abilities (wave 1)
 - [ ] 05-02-PLAN.md — Change order tRPC router with sequential numbering, approval workflow, budget updates (wave 2)
 - [ ] 05-03-PLAN.md — Frontend: CO list, creation form, detail view, approval panel, history timeline (wave 3)
+- [ ] 05-04-PLAN.md — Gap closure: Add submit for approval dialog to change order detail page (wave 1)
 
 ### Phase 6: Payment Applications
 **Goal**: Users can create and track payment applications with retainage and lien waivers
@@ -217,7 +218,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 2. Company Setup & Configuration | 2/2 | Complete | 2026-02-12 |
 | 3. Project Management Core | 5/5 | Complete | 2026-02-12 |
 | 4. Budget & Cost Tracking | 4/4 | Complete | 2026-02-12 |
-| 5. Change Order Management | 0/TBD | Not started | - |
+| 5. Change Order Management | 0/4 | Not started | - |
 | 6. Payment Applications | 0/TBD | Not started | - |
 | 7. Bidding & Procurement | 0/TBD | Not started | - |
 | 8. QuickBooks Integration | 0/TBD | Not started | - |
