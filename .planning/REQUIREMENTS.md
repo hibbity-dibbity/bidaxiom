@@ -92,6 +92,104 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **RWEB-01**: Application is fully functional on desktop, tablet, and mobile browsers
 - [ ] **RWEB-02**: Critical workflows (project dashboard, bid response, pay app review) are optimized for mobile viewport
 
+## v1.1 Requirements - Enterprise UX Redesign
+
+Requirements for milestone v1.1. Enterprise-grade UI/UX transformation.
+
+### Navigation (NAV)
+
+- [ ] **NAV-01**: Unified top navigation bar displays global search, primary modules, profile dropdown, settings, and dark mode toggle
+- [ ] **NAV-02**: Global search searches across job numbers, project names, and customer names with instant results
+- [ ] **NAV-03**: Contextual sidebar updates navigation options based on active page context
+- [ ] **NAV-04**: Sidebar can be collapsed and persists user's collapsed/expanded preference
+- [ ] **NAV-05**: Navigation patterns are not duplicated (no same action in multiple nav locations)
+- [ ] **NAV-06**: Primary module navigation is accessible from all pages via top bar
+
+### Theming & Branding (THEME)
+
+- [ ] **THEME-01**: Dark mode can be toggled from Account Settings and persists across sessions
+- [ ] **THEME-02**: Dark mode prevents flash of unstyled content (FOUC) using cookie-based theme storage
+- [ ] **THEME-03**: Company logo can be uploaded and stored per company
+- [ ] **THEME-04**: Company logo displays in top navigation bar
+- [ ] **THEME-05**: Company logo displays in collapsed/expanded sidebar
+- [ ] **THEME-06**: Company logo displays on sign-in page
+- [ ] **THEME-07**: Layout uses Procore-style compact spacing with sharp corners (no border radius on cards)
+- [ ] **THEME-08**: Typography follows consistent scale across all pages
+- [ ] **THEME-09**: Subtle construction accent color is applied consistently throughout UI
+
+### Forms & Validation (FORM)
+
+- [ ] **FORM-01**: Phone number fields enforce (###) ###-#### format with input masking
+- [ ] **FORM-02**: Address input uses structured fields: Street Address 1, Street Address 2, City, State (dropdown), Zip Code
+- [ ] **FORM-03**: State dropdown contains all US states for address entry
+- [ ] **FORM-04**: Form validation rules are centralized in reusable Zod schemas
+- [ ] **FORM-05**: Form validation errors display consistently across all forms
+- [ ] **FORM-06**: Existing data validation is backward compatible (doesn't break historical records)
+
+### Dashboard (DASH)
+
+- [ ] **DASH-01**: Dashboard displays user-level "My Active Projects" widget
+- [ ] **DASH-02**: Dashboard displays user-level "My Open Bids" widget
+- [ ] **DASH-03**: Dashboard displays user-level "My To-Do" widget
+- [ ] **DASH-04**: Dashboard displays company-level "Total Active Projects" widget
+- [ ] **DASH-05**: Dashboard displays company-level "Open Bids" widget
+- [ ] **DASH-06**: Dashboard displays company-level "Pending Pay Apps" widget
+- [ ] **DASH-07**: Dashboard displays company-level "Bid Opportunities" widget
+- [ ] **DASH-08**: Dashboard displays company-level "Revenue in Progress" widget
+- [ ] **DASH-09**: Dashboard displays company-level "Backlog" widget
+- [ ] **DASH-10**: Dashboard displays company-level "Estimating Pipeline Value" widget
+- [ ] **DASH-11**: Activity feed is removed from dashboard (moved to Settings)
+- [ ] **DASH-12**: "Invite Team Members" widget is removed from dashboard
+- [ ] **DASH-13**: All "Coming in Phase X" placeholders are replaced with functional widgets or removed
+
+### Projects Interface (PROJV2)
+
+- [ ] **PROJV2-01**: Projects page displays projects in compact table/list format
+- [ ] **PROJV2-02**: Projects table shows columns: Job #, Project Name, Customer Name, Status
+- [ ] **PROJV2-03**: Residential/Commercial label is removed from projects list (moved to detail page)
+- [ ] **PROJV2-04**: Projects can be filtered by Customer
+- [ ] **PROJV2-05**: Projects can be filtered by Job #
+- [ ] **PROJV2-06**: Projects can be filtered by Status
+- [ ] **PROJV2-07**: Projects can be filtered by Date
+- [ ] **PROJV2-08**: Projects can be filtered by Assigned User
+- [ ] **PROJV2-09**: Project detail page uses slug-safe URL format: /projects/{jobnumber}-{projectname}
+- [ ] **PROJV2-10**: Project detail page displays persistent header with Job #, Project Name, Status, Customer Name (linked), Address, Key Metrics
+- [ ] **PROJV2-11**: Project detail page header never reloads when navigating between sections
+- [ ] **PROJV2-12**: Project sections (Documents, Budget, Commitments, etc.) load dynamically below persistent header
+- [ ] **PROJV2-13**: Project section navigation does NOT navigate to new pages
+- [ ] **PROJV2-14**: Project detail layout is compact (reduced visual weight, no verbose descriptions)
+- [ ] **PROJV2-15**: Team section does not show assigned dates
+
+### Estimating & Project Lifecycle (EST)
+
+- [ ] **EST-01**: User can create estimate using guided step-by-step workflow (default mode)
+- [ ] **EST-02**: Guided estimate builder includes cost code template selection
+- [ ] **EST-03**: Guided estimate builder includes labor rate template application
+- [ ] **EST-04**: Guided estimate builder includes overhead and markup logic configuration
+- [ ] **EST-05**: Guided estimate builder includes material pricing entry
+- [ ] **EST-06**: Guided estimate builder includes SOV (Schedule of Values) builder
+- [ ] **EST-07**: Guided estimate builder displays margin visibility throughout workflow
+- [ ] **EST-08**: User can switch to spreadsheet-style estimating grid mode via Account Settings preference
+- [ ] **EST-09**: Spreadsheet mode allows bulk entry of estimate line items
+- [ ] **EST-10**: User can convert completed estimate to budget with one click
+- [ ] **EST-11**: User can generate bid from estimate
+- [ ] **EST-12**: User can submit bid
+- [ ] **EST-13**: User can mark bid as Won or Lost
+- [ ] **EST-14**: User can convert won bid to active project with one click
+- [ ] **EST-15**: Project status transitions are automated based on estimating lifecycle stage
+- [ ] **EST-16**: Estimating workflow is designed for minimal cognitive load (clear next steps)
+- [ ] **EST-17**: Estimating workflow requires minimal clicks between stages
+
+### Architecture & Components (ARCH)
+
+- [ ] **ARCH-01**: UI components are modular and reusable across pages
+- [ ] **ARCH-02**: Routing is clean with no unnecessary page refreshes
+- [ ] **ARCH-03**: Content loads dynamically without full page reloads where appropriate
+- [ ] **ARCH-04**: URLs follow hygiene standards (slug-safe, descriptive, bookmarkable)
+- [ ] **ARCH-05**: Reusable UI component system is centralized
+- [ ] **ARCH-06**: Validation layer is centralized and shared between client and server
+- [ ] **ARCH-07**: Architecture maintains scalable SaaS multi-tenant structure
+
 ## v2 Requirements
 
 Deferred to future release. Tracked but not in current roadmap.
@@ -134,6 +232,13 @@ Deferred to future release. Tracked but not in current roadmap.
 - **ADDON-01**: Time & Production Tracking (crew-level, foreman UX, speech-to-text)
 - **ADDON-02**: Equipment, Tools & Materials tracking (owned, rented, serialized)
 - **ADDON-03**: JV / downstream RFQs
+
+### Authentication & SSO (Future)
+
+- **AUTH-SSO-01**: SSO architecture supports OAuth providers (Google, Microsoft, etc.)
+- **AUTH-SSO-02**: Sign-in page displays SaaS branding placeholder
+- **AUTH-SSO-03**: OAuth provider integration for Google Workspace
+- **AUTH-SSO-04**: OAuth provider integration for Microsoft 365
 
 ## Out of Scope
 
@@ -224,5 +329,5 @@ Which phases cover which requirements. Updated during roadmap creation.
 - Unmapped: 0 ✓
 
 ---
-*Requirements defined: 2026-02-10*
-*Last updated: 2026-02-10 after roadmap creation*
+*Requirements defined: 2026-02-10 (v1.0), 2026-02-14 (v1.1)*
+*Last updated: 2026-02-14 after milestone v1.1 definition*
