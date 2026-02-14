@@ -265,6 +265,8 @@ Explicitly excluded. Documented to prevent scope creep.
 
 Which phases cover which requirements. Updated during roadmap creation.
 
+### v1.0 Requirements
+
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | IDMT-01 | Phase 1 | Pending |
@@ -323,11 +325,99 @@ Which phases cover which requirements. Updated during roadmap creation.
 | RWEB-01 | Phase 1 | Pending |
 | RWEB-02 | Phase 1 | Pending |
 
-**Coverage:**
-- v1 requirements: 53 total
+**v1.0 Coverage:**
+- Total requirements: 53
 - Mapped to phases: 53
 - Unmapped: 0 ✓
 
+### v1.1 Requirements (Enterprise UX Redesign)
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| NAV-01 | Phase 13 | Pending |
+| NAV-02 | Phase 13 | Pending |
+| NAV-03 | Phase 13 | Pending |
+| NAV-04 | Phase 13 | Pending |
+| NAV-05 | Phase 13 | Pending |
+| NAV-06 | Phase 13 | Pending |
+| THEME-01 | Phase 13 | Pending |
+| THEME-02 | Phase 13 | Pending |
+| THEME-03 | Phase 13 | Pending |
+| THEME-04 | Phase 13 | Pending |
+| THEME-05 | Phase 13 | Pending |
+| THEME-06 | Phase 13 | Pending |
+| THEME-07 | Phase 13 | Pending |
+| THEME-08 | Phase 13 | Pending |
+| THEME-09 | Phase 13 | Pending |
+| FORM-01 | Phase 14 | Pending |
+| FORM-02 | Phase 14 | Pending |
+| FORM-03 | Phase 14 | Pending |
+| FORM-04 | Phase 14 | Pending |
+| FORM-05 | Phase 14 | Pending |
+| FORM-06 | Phase 14 | Pending |
+| DASH-01 | Phase 15 | Pending |
+| DASH-02 | Phase 15 | Pending |
+| DASH-03 | Phase 15 | Pending |
+| DASH-04 | Phase 15 | Pending |
+| DASH-05 | Phase 15 | Pending |
+| DASH-06 | Phase 15 | Pending |
+| DASH-07 | Phase 15 | Pending |
+| DASH-08 | Phase 15 | Pending |
+| DASH-09 | Phase 15 | Pending |
+| DASH-10 | Phase 15 | Pending |
+| DASH-11 | Phase 15 | Pending |
+| DASH-12 | Phase 15 | Pending |
+| DASH-13 | Phase 15 | Pending |
+| PROJV2-01 | Phase 16 | Pending |
+| PROJV2-02 | Phase 16 | Pending |
+| PROJV2-03 | Phase 16 | Pending |
+| PROJV2-04 | Phase 16 | Pending |
+| PROJV2-05 | Phase 16 | Pending |
+| PROJV2-06 | Phase 16 | Pending |
+| PROJV2-07 | Phase 16 | Pending |
+| PROJV2-08 | Phase 16 | Pending |
+| PROJV2-09 | Phase 16 | Pending |
+| PROJV2-10 | Phase 16 | Pending |
+| PROJV2-11 | Phase 16 | Pending |
+| PROJV2-12 | Phase 16 | Pending |
+| PROJV2-13 | Phase 16 | Pending |
+| PROJV2-14 | Phase 16 | Pending |
+| PROJV2-15 | Phase 16 | Pending |
+| EST-01 | Phase 17 | Pending |
+| EST-02 | Phase 17 | Pending |
+| EST-03 | Phase 17 | Pending |
+| EST-04 | Phase 17 | Pending |
+| EST-05 | Phase 17 | Pending |
+| EST-06 | Phase 17 | Pending |
+| EST-07 | Phase 17 | Pending |
+| EST-08 | Phase 17 | Pending |
+| EST-09 | Phase 17 | Pending |
+| EST-10 | Phase 17 | Pending |
+| EST-11 | Phase 18 | Pending |
+| EST-12 | Phase 18 | Pending |
+| EST-13 | Phase 18 | Pending |
+| EST-14 | Phase 18 | Pending |
+| EST-15 | Phase 18 | Pending |
+| EST-16 | Phase 18 | Pending |
+| EST-17 | Phase 18 | Pending |
+| ARCH-01 | Phase 19 | Pending |
+| ARCH-02 | Phase 19 | Pending |
+| ARCH-03 | Phase 19 | Pending |
+| ARCH-04 | Phase 19 | Pending |
+| ARCH-05 | Phase 19 | Pending |
+| ARCH-06 | Phase 19 | Pending |
+| ARCH-07 | Phase 19 | Pending |
+
+**v1.1 Coverage:**
+- Total requirements: 73
+- Mapped to phases: 73
+- Unmapped: 0 ✓
+
+**Overall Coverage:**
+- v1.0: 53/53 requirements mapped ✓
+- v1.1: 73/73 requirements mapped ✓
+- Total: 126/126 requirements mapped ✓
+
 ---
 *Requirements defined: 2026-02-10 (v1.0), 2026-02-14 (v1.1)*
-*Last updated: 2026-02-14 after milestone v1.1 definition*
+*Last updated: 2026-02-14 after v1.1 roadmap creation*

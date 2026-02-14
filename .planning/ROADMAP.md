@@ -2,7 +2,11 @@
 
 ## Overview
 
-A cloud-first construction management SaaS that enables GCs and subs to collaborate on the full project financial lifecycle. The roadmap delivers this value through eleven phases: foundation (authentication and multi-tenant isolation), company configuration, project management, budget tracking, change orders, payment applications, bidding workflows, QuickBooks integration, enhanced document management, reporting and analytics, and finally calendar integration and custom auth migration. Each phase builds on the previous, establishing data integrity patterns and security boundaries before adding complexity.
+A cloud-first construction management SaaS that enables GCs and subs to collaborate on the full project financial lifecycle. The roadmap delivers this value through two major milestones:
+
+**v1.0 (Complete):** Foundation through Custom Authentication - Phases 1-12 deliver the core platform with authentication, multi-tenant isolation, company configuration, project management, budget tracking, change orders, payment applications, bidding workflows, QuickBooks integration, enhanced document management, reporting and analytics, and calendar integration.
+
+**v1.1 (In Progress):** Enterprise UX Redesign - Phases 13-19 transform the UI/UX from functional MVP to enterprise-grade tool optimized for solo operators with Procore-style density, guided workflows, and modern navigation patterns.
 
 ## Phases
 
@@ -12,20 +16,34 @@ A cloud-first construction management SaaS that enables GCs and subs to collabor
 
 Decimal phases appear between their surrounding integers in numeric order.
 
+### v1.0 Phases (Complete)
+
 - [x] **Phase 1: Foundation & Multi-Tenant Infrastructure** - Authentication, tenant isolation, audit logging, authorization
 - [x] **Phase 2: Company Setup & Configuration** - Company types, trade configuration, CSI-based standards
 - [x] **Phase 3: Project Management Core** - Project creation, access control, document management
 - [x] **Phase 4: Budget & Cost Tracking** - Cost codes, budget vs actuals, committed costs, forecasting
-- [ ] **Phase 5: Change Order Management** - Owner/internal/sub change orders, approval workflows, audit trail
-- [ ] **Phase 6: Payment Applications** - AIA G702/G703 forms, retainage, lien waivers, invoice tracking
-- [ ] **Phase 7: Bidding & Procurement** - RFQ issuance, bid collection, comparison, directory, versioning
-- [ ] **Phase 8: QuickBooks Integration** - OAuth connection, bi-directional sync, error handling
-- [ ] **Phase 9: Document Management Enhancement** - Versioning, workflows (RFI/Submittal/Transmittal), granular permissions, tagging
+- [x] **Phase 5: Change Order Management** - Owner/internal/sub change orders, approval workflows, audit trail
+- [x] **Phase 6: Payment Applications** - AIA G702/G703 forms, retainage, lien waivers, invoice tracking
+- [x] **Phase 7: Bidding & Procurement** - RFQ issuance, bid collection, comparison, directory, versioning
+- [x] **Phase 8: QuickBooks Integration** - OAuth connection, bi-directional sync, error handling
+- [x] **Phase 9: Document Management Enhancement** - Versioning, workflows (RFI/Submittal/Transmittal), granular permissions, tagging
 - [x] **Phase 10: Reporting & Analytics** - Pre-built reports, custom builder, dashboards, export (PDF/Excel/CSV), scheduled delivery
 - [x] **Phase 11: Calendar Integration** - Google/Outlook sync, project milestones on calendars
-- [ ] **Phase 12: Custom Authentication Migration** - Replace Clerk with custom auth (JWT, sessions, MFA, org management)
+- [x] **Phase 12: Custom Authentication Migration** - Replace Clerk with custom auth (JWT, sessions, MFA, org management)
+
+### v1.1 Phases (Enterprise UX Redesign)
+
+- [ ] **Phase 13: Navigation & Theme Foundation** - Unified top bar, contextual sidebar, dark mode with FOUC prevention, company branding
+- [ ] **Phase 14: Form Standardization & Validation** - Standardized inputs (phone, address, date), centralized Zod schemas, backward compatible validation
+- [ ] **Phase 15: Dashboard Redesign** - KPI widgets (user-level and company-level), task management, pipeline visibility
+- [ ] **Phase 16: Projects Interface Redesign** - Compact table view, advanced filtering (nuqs), slug-safe URLs, persistent header
+- [ ] **Phase 17: Estimating Workflow - Setup & Core** - Guided step-by-step builder, cost code templates, labor rates, SOV builder
+- [ ] **Phase 18: Estimating Workflow - Lifecycle & Conversion** - Bid generation, submission, won/lost tracking, conversion to active project
+- [ ] **Phase 19: Component Library & Architecture** - Reusable UI system, clean routing, dynamic content loading, architectural polish
 
 ## Phase Details
+
+### v1.0 Phase Details
 
 ### Phase 1: Foundation & Multi-Tenant Infrastructure
 **Goal**: Users can securely authenticate and all data is isolated by company with full audit trails
@@ -263,13 +281,107 @@ Plans:
 - [x] 12-07-PLAN.md — Frontend dashboard components: company switcher, user menu, onboarding, members page (wave 4)
 - [x] 12-08-PLAN.md — Clerk removal: uninstall dependencies, remove webhooks, cleanup, data migration script (wave 5)
 
+### v1.1 Phase Details (Enterprise UX Redesign)
+
+### Phase 13: Navigation & Theme Foundation
+**Goal**: Users navigate via unified top bar and contextual sidebar with dark mode support and company branding
+**Depends on**: Phase 12 (v1.0 complete)
+**Requirements**: NAV-01, NAV-02, NAV-03, NAV-04, NAV-05, NAV-06, THEME-01, THEME-02, THEME-03, THEME-04, THEME-05, THEME-06, THEME-07, THEME-08, THEME-09
+**Success Criteria** (what must be TRUE):
+  1. User navigates via unified top navigation bar with global search, primary modules, profile dropdown, and settings
+  2. Global search returns instant results across job numbers, project names, and customer names
+  3. Contextual sidebar displays navigation options based on active page context and can be collapsed with persistent preference
+  4. User can toggle dark mode from Account Settings with FOUC prevention via cookie-based theme storage
+  5. Company logo displays in top navigation, sidebar (collapsed and expanded), and sign-in page
+  6. Layout uses Procore-style compact spacing with sharp corners, consistent typography, and subtle construction accent color
+**Plans**: Not yet planned
+
+### Phase 14: Form Standardization & Validation
+**Goal**: All forms use standardized inputs with centralized validation that is backward compatible with existing data
+**Depends on**: Phase 13
+**Requirements**: FORM-01, FORM-02, FORM-03, FORM-04, FORM-05, FORM-06
+**Success Criteria** (what must be TRUE):
+  1. Phone number fields enforce (###) ###-#### format with input masking
+  2. Address input uses structured fields with state dropdown containing all US states
+  3. Form validation rules are centralized in reusable Zod schemas shared between client and server
+  4. Form validation errors display consistently across all forms
+  5. Existing data validation is backward compatible and does not break historical records
+**Plans**: Not yet planned
+
+### Phase 15: Dashboard Redesign
+**Goal**: Dashboard displays user-level and company-level KPI widgets with task and pipeline visibility
+**Depends on**: Phase 13
+**Requirements**: DASH-01, DASH-02, DASH-03, DASH-04, DASH-05, DASH-06, DASH-07, DASH-08, DASH-09, DASH-10, DASH-11, DASH-12, DASH-13
+**Success Criteria** (what must be TRUE):
+  1. Dashboard displays user-level widgets: My Active Projects, My Open Bids, My To-Do
+  2. Dashboard displays company-level widgets: Total Active Projects, Open Bids, Pending Pay Apps, Bid Opportunities, Revenue in Progress, Backlog, Estimating Pipeline Value
+  3. Activity feed is removed from dashboard (moved to Settings)
+  4. Invite Team Members widget is removed from dashboard
+  5. All "Coming in Phase X" placeholders are replaced with functional widgets or removed
+**Plans**: Not yet planned
+
+### Phase 16: Projects Interface Redesign
+**Goal**: Projects page displays compact table with advanced filtering and project detail uses persistent header with slug-safe URLs
+**Depends on**: Phase 13, Phase 14
+**Requirements**: PROJV2-01, PROJV2-02, PROJV2-03, PROJV2-04, PROJV2-05, PROJV2-06, PROJV2-07, PROJV2-08, PROJV2-09, PROJV2-10, PROJV2-11, PROJV2-12, PROJV2-13, PROJV2-14, PROJV2-15
+**Success Criteria** (what must be TRUE):
+  1. Projects page displays projects in compact table format with columns: Job #, Project Name, Customer Name, Status
+  2. Projects can be filtered by Customer, Job #, Status, Date, and Assigned User
+  3. Project detail page uses slug-safe URL format: /projects/{jobnumber}-{projectname}
+  4. Project detail page displays persistent header with Job #, Project Name, Status, Customer Name (linked), Address, Key Metrics
+  5. Project detail page header never reloads when navigating between sections
+  6. Project sections load dynamically below persistent header without navigating to new pages
+**Plans**: Not yet planned
+
+### Phase 17: Estimating Workflow - Setup & Core
+**Goal**: User can create estimates using guided step-by-step workflow with cost code templates, labor rates, and SOV builder
+**Depends on**: Phase 14
+**Requirements**: EST-01, EST-02, EST-03, EST-04, EST-05, EST-06, EST-07, EST-08, EST-09, EST-10
+**Success Criteria** (what must be TRUE):
+  1. User can create estimate using guided step-by-step workflow (default mode)
+  2. Guided estimate builder includes cost code template selection, labor rate template application, overhead and markup logic configuration, material pricing entry, and SOV builder
+  3. Guided estimate builder displays margin visibility throughout workflow
+  4. User can switch to spreadsheet-style estimating grid mode via Account Settings preference
+  5. Spreadsheet mode allows bulk entry of estimate line items
+  6. User can convert completed estimate to budget with one click
+**Plans**: Not yet planned
+
+### Phase 18: Estimating Workflow - Lifecycle & Conversion
+**Goal**: User can generate bids from estimates, submit, track won/lost, and convert to active projects
+**Depends on**: Phase 17
+**Requirements**: EST-11, EST-12, EST-13, EST-14, EST-15, EST-16, EST-17
+**Success Criteria** (what must be TRUE):
+  1. User can generate bid from estimate and submit bid
+  2. User can mark bid as Won or Lost
+  3. User can convert won bid to active project with one click
+  4. Project status transitions are automated based on estimating lifecycle stage
+  5. Estimating workflow is designed for minimal cognitive load with clear next steps
+  6. Estimating workflow requires minimal clicks between stages
+**Plans**: Not yet planned
+
+### Phase 19: Component Library & Architecture
+**Goal**: Reusable UI component system is centralized with clean routing and dynamic content loading
+**Depends on**: All previous v1.1 phases
+**Requirements**: ARCH-01, ARCH-02, ARCH-03, ARCH-04, ARCH-05, ARCH-06, ARCH-07
+**Success Criteria** (what must be TRUE):
+  1. UI components are modular and reusable across pages
+  2. Routing is clean with no unnecessary page refreshes
+  3. Content loads dynamically without full page reloads where appropriate
+  4. URLs follow hygiene standards (slug-safe, descriptive, bookmarkable)
+  5. Reusable UI component system is centralized
+  6. Validation layer is centralized and shared between client and server
+  7. Architecture maintains scalable SaaS multi-tenant structure
+**Plans**: Not yet planned
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12
+v1.0: Phases 1-12 (complete)
+v1.1: Phases 13-19 (in progress)
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
+| **v1.0 Phases** |
 | 1. Foundation & Multi-Tenant Infrastructure | 8/8 | Complete | 2026-02-12 |
 | 2. Company Setup & Configuration | 2/2 | Complete | 2026-02-12 |
 | 3. Project Management Core | 5/5 | Complete | 2026-02-12 |
@@ -282,7 +394,15 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 10. Reporting & Analytics | 5/5 | Complete | 2026-02-13 |
 | 11. Calendar Integration | 5/5 | Complete | 2026-02-14 |
 | 12. Custom Authentication Migration | 8/8 | Complete | 2026-02-14 |
+| **v1.1 Phases (Enterprise UX Redesign)** |
+| 13. Navigation & Theme Foundation | 0/TBD | Pending | - |
+| 14. Form Standardization & Validation | 0/TBD | Pending | - |
+| 15. Dashboard Redesign | 0/TBD | Pending | - |
+| 16. Projects Interface Redesign | 0/TBD | Pending | - |
+| 17. Estimating Workflow - Setup & Core | 0/TBD | Pending | - |
+| 18. Estimating Workflow - Lifecycle & Conversion | 0/TBD | Pending | - |
+| 19. Component Library & Architecture | 0/TBD | Pending | - |
 
 ---
-*Roadmap created: 2026-02-10*
-*Last updated: 2026-02-14*
+*Roadmap created: 2026-02-10 (v1.0)*
+*Last updated: 2026-02-14 (v1.1 phases added)*
