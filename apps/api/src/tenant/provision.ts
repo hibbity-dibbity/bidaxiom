@@ -9,6 +9,173 @@ export interface TenantRecord {
 }
 
 /**
+ * Provision auth tables in the public schema.
+ * This should be called once during initial setup (not on every tenant provision).
+ * Idempotent - creates tables only if they don't exist.
+ */
+export async function provisionAuthTables(pool: pg.Pool): Promise<void> {
+  const client = await pool.connect();
+
+  try {
+    console.log("Provisioning auth tables in public schema...");
+
+    // Create users table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        email TEXT NOT NULL UNIQUE,
+        email_verified BOOLEAN NOT NULL DEFAULT false,
+        password_hash TEXT NOT NULL,
+        hash_type TEXT NOT NULL DEFAULT 'argon2id',
+        first_name TEXT,
+        last_name TEXT,
+        avatar_url TEXT,
+        mfa_enabled BOOLEAN NOT NULL DEFAULT false,
+        mfa_secret TEXT,
+        mfa_backup_codes JSONB,
+        clerk_user_id TEXT,
+        last_login_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_users_clerk_user_id ON users(clerk_user_id)
+    `);
+
+    // Create organizations table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS organizations (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name TEXT NOT NULL,
+        slug TEXT NOT NULL UNIQUE,
+        tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
+        created_by UUID REFERENCES users(id),
+        clerk_org_id TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_organizations_slug ON organizations(slug)
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_organizations_clerk_org_id ON organizations(clerk_org_id)
+    `);
+
+    // Create organization_memberships table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS organization_memberships (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+        role TEXT NOT NULL DEFAULT 'org:member',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        UNIQUE(user_id, organization_id)
+      )
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_org_memberships_user ON organization_memberships(user_id)
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_org_memberships_org ON organization_memberships(organization_id)
+    `);
+
+    // Create organization_invitations table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS organization_invitations (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+        email TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'org:member',
+        token_hash TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        invited_by UUID NOT NULL REFERENCES users(id),
+        expires_at TIMESTAMPTZ NOT NULL,
+        accepted_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_org_invitations_email ON organization_invitations(email)
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_org_invitations_org ON organization_invitations(organization_id)
+    `);
+
+    // Create refresh_tokens table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS refresh_tokens (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        token_hash TEXT NOT NULL UNIQUE,
+        family_id TEXT NOT NULL,
+        expires_at TIMESTAMPTZ NOT NULL,
+        revoked_at TIMESTAMPTZ,
+        replaced_by_hash TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id)
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_refresh_tokens_family ON refresh_tokens(family_id)
+    `);
+
+    // Create email_verification_tokens table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS email_verification_tokens (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        token_hash TEXT NOT NULL,
+        expires_at TIMESTAMPTZ NOT NULL,
+        used_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_email_verification_user ON email_verification_tokens(user_id)
+    `);
+
+    // Create password_reset_tokens table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS password_reset_tokens (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        token_hash TEXT NOT NULL,
+        expires_at TIMESTAMPTZ NOT NULL,
+        used_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_password_reset_user ON password_reset_tokens(user_id)
+    `);
+
+    console.log("Auth tables provisioned successfully.");
+  } finally {
+    client.release();
+  }
+}
+
+/**
  * Generate a safe PostgreSQL schema name from a Clerk org ID.
  * Strips the "org_" prefix and sanitizes to lowercase alphanumeric + underscore.
  */

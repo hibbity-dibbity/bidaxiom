@@ -4,6 +4,9 @@ import {
   text,
   timestamp,
   index,
+  boolean,
+  unique,
+  jsonb,
 } from "drizzle-orm/pg-core";
 
 /**
@@ -42,3 +45,133 @@ export const userCompanyMappings = pgTable(
     tenantIdx: index("idx_ucm_tenant_id").on(table.tenantId),
   })
 );
+
+// --- Custom Auth Tables (Phase 12) ---
+
+/**
+ * Users table - replaces Clerk user management.
+ * Central user identity. Each user can belong to multiple organizations.
+ */
+export const users = pgTable("users", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: text("email").notNull().unique(),
+  emailVerified: boolean("email_verified").notNull().default(false),
+  passwordHash: text("password_hash").notNull(),
+  hashType: text("hash_type").notNull().default("argon2id"), // argon2id or bcrypt (for migration)
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  avatarUrl: text("avatar_url"),
+  mfaEnabled: boolean("mfa_enabled").notNull().default(false),
+  mfaSecret: text("mfa_secret"), // Encrypted TOTP secret
+  mfaBackupCodes: jsonb("mfa_backup_codes").$type<string[]>(), // Hashed backup codes
+  clerkUserId: text("clerk_user_id"), // For migration tracking, nullable
+  lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  emailIdx: index("idx_users_email").on(table.email),
+  clerkUserIdx: index("idx_users_clerk_user_id").on(table.clerkUserId),
+}));
+
+/**
+ * Organizations - replaces Clerk Organizations.
+ * Each organization maps to a tenant schema.
+ */
+export const organizations = pgTable("organizations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(), // URL-safe identifier
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }),
+  createdBy: uuid("created_by").references(() => users.id),
+  clerkOrgId: text("clerk_org_id"), // For migration tracking, nullable
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  slugIdx: index("idx_organizations_slug").on(table.slug),
+  clerkOrgIdx: index("idx_organizations_clerk_org_id").on(table.clerkOrgId),
+}));
+
+/**
+ * Organization memberships - replaces Clerk organization memberships.
+ * Maps users to organizations with roles.
+ */
+export const organizationMemberships = pgTable("organization_memberships", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  role: text("role").notNull().default("org:member"), // org:admin, org:member, org:project_manager, etc.
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  userOrgUnique: unique().on(table.userId, table.organizationId),
+  userIdx: index("idx_org_memberships_user").on(table.userId),
+  orgIdx: index("idx_org_memberships_org").on(table.organizationId),
+}));
+
+/**
+ * Organization invitations - replaces Clerk invitation flow.
+ * Admin-initiated invitations with 7-day TTL.
+ */
+export const organizationInvitations = pgTable("organization_invitations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  email: text("email").notNull(),
+  role: text("role").notNull().default("org:member"),
+  tokenHash: text("token_hash").notNull(), // Hashed invitation token
+  status: text("status").notNull().default("pending"), // pending, accepted, expired, revoked
+  invitedBy: uuid("invited_by").notNull().references(() => users.id),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  emailIdx: index("idx_org_invitations_email").on(table.email),
+  orgIdx: index("idx_org_invitations_org").on(table.organizationId),
+}));
+
+/**
+ * Refresh tokens - for JWT refresh token rotation with reuse detection.
+ * Stored in Redis for fast lookup; DB is fallback/audit.
+ */
+export const refreshTokens = pgTable("refresh_tokens", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  tokenHash: text("token_hash").notNull().unique(),
+  familyId: text("family_id").notNull(), // Token family for rotation tracking
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  replacedByHash: text("replaced_by_hash"), // Points to the token that replaced this one
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  userIdx: index("idx_refresh_tokens_user").on(table.userId),
+  familyIdx: index("idx_refresh_tokens_family").on(table.familyId),
+}));
+
+/**
+ * Email verification tokens.
+ * Token is hashed before storage; plaintext sent in email.
+ */
+export const emailVerificationTokens = pgTable("email_verification_tokens", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  tokenHash: text("token_hash").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  userIdx: index("idx_email_verification_user").on(table.userId),
+}));
+
+/**
+ * Password reset tokens.
+ * Token is hashed before storage; plaintext sent in email.
+ */
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  tokenHash: text("token_hash").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  userIdx: index("idx_password_reset_user").on(table.userId),
+}));
