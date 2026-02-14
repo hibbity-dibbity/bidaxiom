@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useOrganization } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth-context";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -32,10 +32,10 @@ const segmentLabels: Record<string, string> = {
  */
 export function Breadcrumbs() {
   const pathname = usePathname();
-  const { organization } = useOrganization();
+  const { orgName } = useAuth();
 
   const segments = pathname.split("/").filter(Boolean);
-  const companyName = organization?.name ?? "Company";
+  const companyName = orgName ?? "Company";
 
   return (
     <Breadcrumb>

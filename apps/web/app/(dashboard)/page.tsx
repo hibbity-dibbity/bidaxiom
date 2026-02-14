@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useOrganization } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth-context";
 import {
   FolderKanban,
   Gavel,
@@ -18,11 +18,11 @@ import { trpc } from "@/lib/trpc";
 
 /**
  * Company dashboard landing page.
- * Per locked decision: "Landing page after login: Company dashboard"
+ * Uses custom auth context instead of Clerk hooks.
  */
 export default function DashboardPage() {
-  const { organization } = useOrganization();
-  const companyName = organization?.name ?? "Your Company";
+  const { orgName } = useAuth();
+  const companyName = orgName || "Your Company";
 
   // Fetch real audit summary data
   const auditSummary = trpc.audit.summary.useQuery(undefined, {
