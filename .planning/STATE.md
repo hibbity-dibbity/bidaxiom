@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2026-02-14)
 
 ## Current Position
 
-Phase: Phase 13 - Navigation & Theme Foundation (pending planning)
-Plan: —
-Status: Roadmap created for v1.1
-Last activity: 2026-02-14 - v1.1 roadmap created (7 phases: 13-19)
+Phase: Phase 13 - Navigation & Theme Foundation
+Plan: 01 of 06 complete
+Status: In progress
+Last activity: 2026-02-14 - Completed 13-01 (Dark Mode Foundation)
 
-Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [░░░░░░░░░░] 0% (roadmap phase)
+Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [█░░░░░░░░░] 17% (1/6 plans in Phase 13)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 49
-- Average duration: 6.3 min
-- Total execution time: 5.42 hours
+- Total plans completed: 50
+- Average duration: 6.2 min
+- Total execution time: 5.45 hours
 
 **By Phase:**
 
@@ -38,10 +38,11 @@ Progress: v1.0: [██████████] 100% complete (12 phases) | v1.
 | 10 | 5 | 48.3 min | 9.7 min |
 | 11 | 5 | 23 min | 4.6 min |
 | 12 | 7 | 37.2 min | 5.3 min |
+| 13 | 1 | 2 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 12-02 (3 min), 12-03 (5 min), 12-04 (5 min), 12-05 (2 min), 12-06 (8 min), 12-07 (4.2 min)
-- Trend: Phase 12 custom auth migration averaging 5.3 min per plan.
+- Last 5 plans: 12-03 (5 min), 12-04 (5 min), 12-05 (2 min), 12-06 (8 min), 12-07 (4.2 min), 13-01 (2 min)
+- Trend: Strong velocity with Phase 13 starting at 2 min per plan.
 
 *Updated after each plan completion*
 | Phase 06 P02 | 8 | 2 tasks | 5 files |
@@ -84,6 +85,7 @@ Progress: v1.0: [██████████] 100% complete (12 phases) | v1.
 | Phase 12-custom-authentication-migration P07 | 4.2 min | 2 tasks | 7 files |
 | Phase 12-custom-authentication-migration P05 | 2 min | 2 tasks | 8 files |
 | Phase 12-custom-authentication-migration P06 | 8 min | 2 tasks | 7 files |
+| Phase 13-navigation-and-theme-foundation P01 | 2 min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -250,6 +252,9 @@ Recent decisions affecting current work:
 - [Phase 12-05]: Root layout changed to async Server Component (no ClerkProvider needed)
 - [Phase 12-06]: API route bridge for login/register manages session cookie after backend auth
 - [Phase 12-06]: MFA challenge handled in sign-in flow with two-step process within same page component
+- [Phase 13-01]: Cookie-based theme storage over localStorage — Prevents FOUC by ensuring server-rendered HTML matches client hydration from first paint
+- [Phase 13-01]: ThemeProvider wraps entire app before AuthProvider — Theme must be applied before any content renders
+- [Phase 13-01]: Mounted state check in ThemeToggle — Prevents hydration mismatch during next-themes initialization
 
 ### Pending Todos
 
