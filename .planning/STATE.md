@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-10)
 ## Current Position
 
 Phase: 12 of 12 (Custom Authentication Migration)
-Plan: 4 of 5 in current phase
+Plan: 4 of 8 in current phase
 Status: In progress
-Last activity: 2026-02-14 — Completed 12-05-PLAN.md (Frontend Custom Auth Infrastructure)
+Last activity: 2026-02-14 — Completed 12-04-PLAN.md (API Auth Layer Switchover)
 
-Progress: [█████████░] 96% (11.8 of 12 phases, 4 of 5 plans complete in current phase)
+Progress: [█████████░] 96% (11.5 of 12 phases, 4 of 8 plans complete in current phase)
 
 ## Performance Metrics
 
 **Velocity:**
 - Total plans completed: 46
-- Average duration: 6.2 min
-- Total execution time: 5.08 hours
+- Average duration: 6.4 min
+- Total execution time: 5.13 hours
 
 **By Phase:**
 
@@ -37,11 +37,11 @@ Progress: [█████████░] 96% (11.8 of 12 phases, 4 of 5 plans 
 | 09 | 7 | 45.5 min | 6.5 min |
 | 10 | 5 | 48.3 min | 9.7 min |
 | 11 | 5 | 23 min | 4.6 min |
-| 12 | 4 | 14 min | 3.5 min |
+| 12 | 4 | 17 min | 4.25 min |
 
 **Recent Trend:**
-- Last 5 plans: 11-05 (5 min), 12-01 (4 min), 12-02 (3 min), 12-03 (5 min), 12-05 (2 min)
-- Trend: Phase 12 frontend auth infrastructure replacing Clerk with iron-session in 2 minutes.
+- Last 5 plans: 11-05 (5 min), 12-01 (4 min), 12-02 (3 min), 12-03 (5 min), 12-04 (5 min)
+- Trend: Phase 12 API auth switchover replacing Clerk JWT with custom JWT in 5 minutes.
 
 *Updated after each plan completion*
 | Phase 06 P02 | 8 | 2 tasks | 5 files |
@@ -80,7 +80,7 @@ Progress: [█████████░] 96% (11.8 of 12 phases, 4 of 5 plans 
 | Phase 12-custom-authentication-migration P01 | 4 min | 2 tasks | 12 files |
 | Phase 12-custom-authentication-migration P02 | 3 min | 2 tasks | 3 files |
 | Phase 12-custom-authentication-migration P03 | 5 min | 2 tasks | 2 files |
-| Phase 12-custom-authentication-migration P05 | 2 min | 2 tasks | 8 files |
+| Phase 12-custom-authentication-migration P04 | 5 min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -237,6 +237,10 @@ Recent decisions affecting current work:
 - [Phase 12-03]: authProcedure integration during transition — Uses existing Clerk JWT validation until Plan 05 migrates context to custom JWT
 - [Phase 12-03]: Dual table sync for org memberships — Updates both organizationMemberships and tenant schema user_profiles for consistency
 - [Phase 12-03]: Last admin protection — Cannot remove the last admin from an organization to prevent lockout
+- [Phase 12-04]: Custom JWT verification in tRPC context — Uses verifyAccessToken from jose instead of Clerk verifyToken; preserves Context interface for backward compatibility
+- [Phase 12-04]: Dual-path tenant resolution — resolveTenantByOrgId tries custom organizations table first, falls back to legacy clerk_org_id for migration compatibility
+- [Phase 12-04]: Lazy-sync from users table — User profile sync queries public schema users table instead of Clerk API
+- [Phase 12-04]: IP extraction in Context — Added ip field for future rate limiting support
 - [Phase 12-05]: Iron-session for encrypted stateless cookies (7-day maxAge matching refresh token TTL)
 - [Phase 12-05]: Proactive token refresh when access token within 2 minutes of expiry
 - [Phase 12-05]: API route bridge pattern for tRPC client token access (tRPC headers can't call server actions)
