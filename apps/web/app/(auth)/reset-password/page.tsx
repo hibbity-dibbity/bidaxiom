@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Link from "next/link";
+import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,8 +14,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { CheckCircle2 } from "lucide-react";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 const requestResetSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -71,24 +70,30 @@ export default function ResetPasswordPage() {
     { met: /[0-9]/.test(password || ""), text: "One number" },
   ];
 
-  const onRequestSubmit = async (data: RequestResetFormData) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`${API_URL}/trpc/auth.requestPasswordReset`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ json: { email: data.email } }),
-      });
-
-      // Always show success message to prevent email enumeration
+  const requestResetMutation = trpc.auth.requestPasswordReset.useMutation({
+    onSuccess: () => {
       setRequestSent(true);
       toast.success("If an account exists, a reset link has been sent.");
-    } catch (error) {
-      toast.error("An error occurred. Please try again.");
-      console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
+    },
+    onError: (error) => {
+      toast.error(error.message || "An error occurred. Please try again.");
+    },
+  });
+
+  const resetPasswordMutation = trpc.auth.resetPassword.useMutation({
+    onSuccess: () => {
+      setResetSuccess(true);
+      toast.success("Password reset successful!");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Password reset failed");
+    },
+  });
+
+  const onRequestSubmit = async (data: RequestResetFormData) => {
+    setIsLoading(true);
+    requestResetMutation.mutate({ email: data.email });
+    setIsLoading(false);
   };
 
   const onResetSubmit = async (data: ResetPasswordFormData) => {
@@ -98,34 +103,11 @@ export default function ResetPasswordPage() {
     }
 
     setIsLoading(true);
-    try {
-      const response = await fetch(`${API_URL}/trpc/auth.resetPassword`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          json: {
-            token,
-            newPassword: data.password,
-          },
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok || !result.result?.data?.json) {
-        const error = result.error?.json?.message || "Password reset failed";
-        toast.error(error);
-        return;
-      }
-
-      setResetSuccess(true);
-      toast.success("Password reset successful!");
-    } catch (error) {
-      toast.error("An error occurred. Please try again.");
-      console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
+    resetPasswordMutation.mutate({
+      token,
+      newPassword: data.password,
+    });
+    setIsLoading(false);
   };
 
   // Request reset flow - success state

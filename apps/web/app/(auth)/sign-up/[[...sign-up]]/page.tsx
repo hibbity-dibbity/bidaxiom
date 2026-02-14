@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Link from "next/link";
+import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -58,36 +59,26 @@ export default function SignUpPage() {
     { met: /[0-9]/.test(password || ""), text: "One number" },
   ];
 
-  const onSubmit = async (data: SignupFormData) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firstName: data.firstName,
-          lastName: data.lastName,
-          email: data.email,
-          password: data.password,
-          invitationToken: invitationToken || undefined,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        toast.error(result.error || "Registration failed");
-        return;
-      }
-
+  const registerMutation = trpc.auth.register.useMutation({
+    onSuccess: () => {
       setIsSuccess(true);
       toast.success("Registration successful! Check your email to verify your account.");
-    } catch (error) {
-      toast.error("An error occurred. Please try again.");
-      console.error(error);
-    } finally {
+    },
+    onError: (error) => {
+      toast.error(error.message || "Registration failed");
       setIsLoading(false);
-    }
+    },
+  });
+
+  const onSubmit = async (data: SignupFormData) => {
+    setIsLoading(true);
+    registerMutation.mutate({
+      email: data.email,
+      password: data.password,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      invitationToken: invitationToken || undefined,
+    });
   };
 
   if (isSuccess) {

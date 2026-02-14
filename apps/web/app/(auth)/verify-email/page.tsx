@@ -1,14 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 type VerificationState = "loading" | "success" | "error";
 
@@ -19,6 +18,17 @@ export default function VerifyEmailPage() {
 
   const [state, setState] = useState<VerificationState>("loading");
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const hasAttemptedVerification = useRef(false);
+
+  const verifyMutation = trpc.auth.verifyEmail.useMutation({
+    onSuccess: () => {
+      setState("success");
+    },
+    onError: (error) => {
+      setState("error");
+      setErrorMessage(error.message || "Verification failed");
+    },
+  });
 
   useEffect(() => {
     if (!token) {
@@ -27,32 +37,13 @@ export default function VerifyEmailPage() {
       return;
     }
 
-    const verifyEmail = async () => {
-      try {
-        const response = await fetch(`${API_URL}/trpc/auth.verifyEmail`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ json: { token } }),
-        });
+    // Prevent double-calling in React Strict Mode
+    if (hasAttemptedVerification.current) {
+      return;
+    }
+    hasAttemptedVerification.current = true;
 
-        const data = await response.json();
-
-        if (!response.ok || !data.result?.data?.json) {
-          const error = data.error?.json?.message || "Verification failed";
-          setState("error");
-          setErrorMessage(error);
-          return;
-        }
-
-        setState("success");
-      } catch (error) {
-        console.error(error);
-        setState("error");
-        setErrorMessage("An error occurred during verification");
-      }
-    };
-
-    verifyEmail();
+    verifyMutation.mutate({ token });
   }, [token]);
 
   if (state === "loading") {

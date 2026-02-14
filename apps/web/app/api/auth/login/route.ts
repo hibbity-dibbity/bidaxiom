@@ -1,38 +1,32 @@
 import { NextResponse } from "next/server";
 import { login } from "@/lib/auth";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
-
+/**
+ * Store login result in session.
+ * The sign-in page already calls the tRPC login mutation,
+ * so this endpoint just stores the session data.
+ */
 export async function POST(request: Request) {
-  const body = await request.json();
+  try {
+    const result = await request.json();
 
-  const response = await fetch(`${API_URL}/trpc/auth.login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ json: body }),
-  });
+    // Validate required fields
+    if (!result.accessToken || !result.refreshToken || !result.user) {
+      return NextResponse.json(
+        { error: "Invalid login data" },
+        { status: 400 }
+      );
+    }
 
-  const data = await response.json();
-  const result = data.result?.data?.json;
+    // Store session
+    await login(result);
 
-  if (!response.ok || !result) {
-    const error = data.error?.json?.message || "Login failed";
-    return NextResponse.json({ error }, { status: response.status || 400 });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Session storage error:", error);
+    return NextResponse.json(
+      { error: "Failed to store session" },
+      { status: 500 }
+    );
   }
-
-  // MFA required
-  if (result.requiresMfa) {
-    return NextResponse.json({ requiresMfa: true, userId: result.userId });
-  }
-
-  // Successful login -- store in session
-  await login(result);
-
-  return NextResponse.json({
-    success: true,
-    user: result.user,
-    org: result.org,
-    needsOrg: !result.org, // Redirect to onboarding if no org
-    needsMfa: !result.user.mfaEnabled && process.env.NEXT_PUBLIC_ENFORCE_MFA === "true",
-  });
 }

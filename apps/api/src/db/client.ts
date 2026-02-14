@@ -14,8 +14,13 @@ let _pool: InstanceType<typeof Pool> | null = null;
 
 export function getPool(): InstanceType<typeof Pool> {
   if (!_pool) {
+    const dbUrl = process.env.DATABASE_URL;
+    console.log("Initializing database pool with DATABASE_URL:", dbUrl);
+    console.log("DATABASE_URL type:", typeof dbUrl);
+    console.log("DATABASE_URL length:", dbUrl?.length);
+
     _pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
+      connectionString: dbUrl,
       max: 20,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 5000,

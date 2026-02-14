@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { getIronSession } from "iron-session";
 import { type SessionData, sessionOptions } from "./lib/session";
 
-const publicRoutes = ["/sign-in", "/sign-up", "/verify-email", "/reset-password", "/api/webhooks"];
+const publicRoutes = ["/sign-in", "/sign-up", "/verify-email", "/reset-password", "/api/auth", "/api/webhooks"];
 const mfaSetupRoute = "/mfa-setup";
 
 function isPublicRoute(pathname: string): boolean {

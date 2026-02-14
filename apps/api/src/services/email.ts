@@ -7,8 +7,14 @@ import { Resend } from "resend";
  * (allows development without email service).
  */
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-const FROM_EMAIL = process.env.EMAIL_FROM || "noreply@constructionmgmt.app";
+// Lazy getters to ensure env vars are read after dotenv loads
+function getAppUrl(): string {
+  return process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+}
+
+function getFromEmail(): string {
+  return process.env.EMAIL_FROM || "noreply@constructionmgmt.app";
+}
 
 // Lazy initialization - only create client if API key is configured
 let resendClient: Resend | null = null;
@@ -35,7 +41,7 @@ function getResendClient(): Resend | null {
  * @param token - Verification token (plaintext)
  */
 export async function sendVerificationEmail(email: string, token: string): Promise<void> {
-  const verifyUrl = `${APP_URL}/verify-email?token=${token}`;
+  const verifyUrl = `${getAppUrl()}/verify-email?token=${token}`;
   const subject = "Verify your email address";
   const html = `
     <h2>Welcome to Construction Management</h2>
@@ -54,12 +60,19 @@ export async function sendVerificationEmail(email: string, token: string): Promi
   }
 
   try {
-    await client.emails.send({
-      from: FROM_EMAIL,
+    console.log(`[EMAIL] Attempting to send email:`);
+    console.log(`  From: ${getFromEmail()}`);
+    console.log(`  To: ${email}`);
+    console.log(`  Subject: ${subject}`);
+
+    const result = await client.emails.send({
+      from: getFromEmail(),
       to: email,
       subject,
       html,
     });
+
+    console.log(`[EMAIL] Resend API response:`, JSON.stringify(result, null, 2));
     console.log(`[EMAIL] Verification email sent to ${email}`);
   } catch (err) {
     console.error(`[EMAIL] Failed to send verification email to ${email}:`, err);
@@ -74,7 +87,7 @@ export async function sendVerificationEmail(email: string, token: string): Promi
  * @param token - Password reset token (plaintext)
  */
 export async function sendPasswordResetEmail(email: string, token: string): Promise<void> {
-  const resetUrl = `${APP_URL}/reset-password?token=${token}`;
+  const resetUrl = `${getAppUrl()}/reset-password?token=${token}`;
   const subject = "Reset your password";
   const html = `
     <h2>Password Reset Request</h2>
@@ -94,7 +107,7 @@ export async function sendPasswordResetEmail(email: string, token: string): Prom
 
   try {
     await client.emails.send({
-      from: FROM_EMAIL,
+      from: getFromEmail(),
       to: email,
       subject,
       html,
@@ -120,7 +133,7 @@ export async function sendInvitationEmail(
   inviterName: string,
   token: string
 ): Promise<void> {
-  const inviteUrl = `${APP_URL}/sign-up?invitation=${token}`;
+  const inviteUrl = `${getAppUrl()}/sign-up?invitation=${token}`;
   const subject = `You've been invited to join ${orgName}`;
   const html = `
     <h2>You've been invited!</h2>
@@ -140,7 +153,7 @@ export async function sendInvitationEmail(
 
   try {
     await client.emails.send({
-      from: FROM_EMAIL,
+      from: getFromEmail(),
       to: email,
       subject,
       html,

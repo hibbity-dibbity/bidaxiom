@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Link from "next/link";
+import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -50,91 +51,89 @@ export default function SignInPage() {
     resolver: zodResolver(mfaSchema),
   });
 
-  const onLoginSubmit = async (data: LoginFormData) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        toast.error(result.error || "Login failed");
-        return;
-      }
-
+  const loginMutation = trpc.auth.login.useMutation({
+    onSuccess: async (result) => {
       // Check if MFA is required
       if (result.requiresMfa) {
         setMfaRequired(true);
         setMfaUserId(result.userId);
-        setLoginCredentials(data);
         return;
       }
 
-      // Successful login
+      // Store session
+      await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(result),
+      });
+
       toast.success("Login successful!");
 
       // Check if user needs to set up MFA
-      if (result.needsMfa) {
+      const enforceMfa = process.env.NEXT_PUBLIC_ENFORCE_MFA === "true";
+      if (enforceMfa && !result.user.mfaEnabled) {
         router.push("/mfa-setup");
         return;
       }
 
       // Check if user needs to create/join organization
-      if (result.needsOrg) {
+      if (!result.org) {
         router.push("/onboarding");
         return;
       }
 
       // Redirect to dashboard or original destination
       router.push(redirectUrl);
-    } catch (error) {
-      toast.error("An error occurred. Please try again.");
-      console.error(error);
-    } finally {
+    },
+    onError: (error) => {
+      toast.error(error.message || "Login failed");
       setIsLoading(false);
-    }
+    },
+  });
+
+  const onLoginSubmit = async (data: LoginFormData) => {
+    setIsLoading(true);
+    setLoginCredentials(data);
+    loginMutation.mutate({
+      email: data.email,
+      password: data.password,
+    });
   };
 
-  const onMfaSubmit = async (data: MfaFormData) => {
-    if (!loginCredentials) return;
-
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/auth/login", {
+  const mfaLoginMutation = trpc.auth.login.useMutation({
+    onSuccess: async (result) => {
+      // Store session
+      await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...loginCredentials,
-          mfaToken: data.mfaToken,
-        }),
+        body: JSON.stringify(result),
       });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        toast.error(result.error || "Invalid MFA code");
-        return;
-      }
 
       toast.success("Login successful!");
 
       // Check if user needs to create/join organization
-      if (result.needsOrg) {
+      if (!result.org) {
         router.push("/onboarding");
         return;
       }
 
       router.push(redirectUrl);
-    } catch (error) {
-      toast.error("An error occurred. Please try again.");
-      console.error(error);
-    } finally {
+    },
+    onError: (error) => {
+      toast.error(error.message || "Invalid MFA code");
       setIsLoading(false);
-    }
+    },
+  });
+
+  const onMfaSubmit = async (data: MfaFormData) => {
+    if (!loginCredentials) return;
+
+    setIsLoading(true);
+    mfaLoginMutation.mutate({
+      email: loginCredentials.email,
+      password: loginCredentials.password,
+      mfaToken: data.mfaToken,
+    });
   };
 
   if (mfaRequired) {

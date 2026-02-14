@@ -7,8 +7,14 @@ import { SignJWT, jwtVerify } from "jose";
  * Secrets must be at least 256 bits (32 bytes) for HS256.
  */
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "");
-const JWT_REFRESH_SECRET = new TextEncoder().encode(process.env.JWT_REFRESH_SECRET || "");
+// Lazy-load secrets to ensure dotenv runs first
+function getJwtSecret(): Uint8Array {
+  return new TextEncoder().encode(process.env.JWT_SECRET || "");
+}
+
+function getJwtRefreshSecret(): Uint8Array {
+  return new TextEncoder().encode(process.env.JWT_REFRESH_SECRET || "");
+}
 
 const ACCESS_TOKEN_TTL = "15m"; // 15 minutes
 const REFRESH_TOKEN_TTL = "7d"; // 7 days
@@ -41,7 +47,7 @@ export async function signAccessToken(payload: AccessTokenPayload): Promise<stri
     .setSubject(payload.userId)
     .setIssuedAt()
     .setExpirationTime(ACCESS_TOKEN_TTL)
-    .sign(JWT_SECRET);
+    .sign(getJwtSecret());
 
   return jwt;
 }
@@ -60,7 +66,7 @@ export async function signRefreshToken(payload: RefreshTokenPayload): Promise<st
     .setSubject(payload.userId)
     .setIssuedAt()
     .setExpirationTime(REFRESH_TOKEN_TTL)
-    .sign(JWT_REFRESH_SECRET);
+    .sign(getJwtRefreshSecret());
 
   return jwt;
 }
@@ -73,7 +79,7 @@ export async function signRefreshToken(payload: RefreshTokenPayload): Promise<st
  * @throws If token is invalid or expired
  */
 export async function verifyAccessToken(token: string): Promise<AccessTokenPayload> {
-  const { payload } = await jwtVerify(token, JWT_SECRET);
+  const { payload } = await jwtVerify(token, getJwtSecret());
 
   return {
     userId: payload.sub as string,
@@ -91,7 +97,7 @@ export async function verifyAccessToken(token: string): Promise<AccessTokenPaylo
  * @throws If token is invalid or expired
  */
 export async function verifyRefreshToken(token: string): Promise<RefreshTokenPayload> {
-  const { payload } = await jwtVerify(token, JWT_REFRESH_SECRET);
+  const { payload } = await jwtVerify(token, getJwtRefreshSecret());
 
   return {
     userId: payload.sub as string,

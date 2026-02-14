@@ -35,7 +35,8 @@ import {
  * which manually verify the access token.
  */
 
-const db = getDb();
+// Don't initialize db at module level - it causes DATABASE_URL to be read before dotenv loads
+const getAuthDb = () => getDb();
 
 /**
  * Get client IP from tRPC context.
@@ -76,9 +77,21 @@ export const authRouter = router({
       await checkRegistrationRateLimit(ip);
 
       // Check if email already registered
-      const existing = await db.query.users.findFirst({
-        where: eq(users.email, input.email.toLowerCase()),
-      });
+      let existing;
+      try {
+        console.log("Querying users table for email:", input.email.toLowerCase());
+        existing = await getAuthDb().query.users.findFirst({
+          where: eq(users.email, input.email.toLowerCase()),
+        });
+        console.log("Query successful, existing user:", existing);
+      } catch (error) {
+        console.error("Database query error - full details:");
+        console.error("Error object:", error);
+        console.error("Error message:", (error as any).message);
+        console.error("Error stack:", (error as any).stack);
+        console.error("Error cause:", (error as any).cause);
+        throw error;
+      }
 
       if (existing) {
         throw new TRPCError({
@@ -91,7 +104,7 @@ export const authRouter = router({
       const passwordHash = await hashPassword(input.password);
 
       // Insert user
-      const [user] = await db
+      const [user] = await getAuthDb()
         .insert(users)
         .values({
           email: input.email.toLowerCase(),
@@ -106,7 +119,7 @@ export const authRouter = router({
       const { token, hash } = generateToken();
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-      await db.insert(emailVerificationTokens).values({
+      await getAuthDb().insert(emailVerificationTokens).values({
         userId: user.id,
         tokenHash: hash,
         expiresAt,
@@ -118,7 +131,7 @@ export const authRouter = router({
       // If invitation token provided, accept the invitation
       if (input.invitationToken) {
         const inviteHash = hashToken(input.invitationToken);
-        const invitation = await db.query.organizationInvitations.findFirst({
+        const invitation = await getAuthDb().query.organizationInvitations.findFirst({
           where: and(
             eq(organizationInvitations.tokenHash, inviteHash),
             eq(organizationInvitations.status, "pending"),
@@ -128,14 +141,14 @@ export const authRouter = router({
 
         if (invitation) {
           // Create organization membership
-          await db.insert(organizationMemberships).values({
+          await getAuthDb().insert(organizationMemberships).values({
             userId: user.id,
             organizationId: invitation.organizationId,
             role: invitation.role,
           });
 
           // Mark invitation as accepted
-          await db
+          await getAuthDb()
             .update(organizationInvitations)
             .set({
               status: "accepted",
@@ -169,7 +182,7 @@ export const authRouter = router({
       await checkLoginRateLimit(input.email.toLowerCase(), ip);
 
       // Find user
-      const user = await db.query.users.findFirst({
+      const user = await getAuthDb().query.users.findFirst({
         where: eq(users.email, input.email.toLowerCase()),
       });
 
@@ -197,7 +210,7 @@ export const authRouter = router({
       // Rehash bcrypt passwords to argon2id
       if (needsRehash) {
         const newHash = await hashPassword(input.password);
-        await db
+        await getAuthDb()
           .update(users)
           .set({
             passwordHash: newHash,
@@ -241,7 +254,7 @@ export const authRouter = router({
 
           if (backupResult.valid) {
             // Update remaining backup codes
-            await db
+            await getAuthDb()
               .update(users)
               .set({ mfaBackupCodes: backupResult.remainingCodes })
               .where(eq(users.id, user.id));
@@ -257,13 +270,13 @@ export const authRouter = router({
       }
 
       // Get user's first organization (if any)
-      const membership = await db.query.organizationMemberships.findFirst({
+      const membership = await getAuthDb().query.organizationMemberships.findFirst({
         where: eq(organizationMemberships.userId, user.id),
       });
 
       let org = null;
       if (membership) {
-        org = await db.query.organizations.findFirst({
+        org = await getAuthDb().query.organizations.findFirst({
           where: eq(organizations.id, membership.organizationId),
         });
       }
@@ -291,7 +304,7 @@ export const authRouter = router({
       const refreshTokenHash = hashToken(refreshToken);
       const refreshExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-      await db.insert(refreshTokens).values({
+      await getAuthDb().insert(refreshTokens).values({
         userId: user.id,
         tokenHash: refreshTokenHash,
         familyId: tokenFamily,
@@ -299,7 +312,7 @@ export const authRouter = router({
       });
 
       // Update last login
-      await db
+      await getAuthDb()
         .update(users)
         .set({ lastLoginAt: new Date() })
         .where(eq(users.id, user.id));
@@ -350,7 +363,7 @@ export const authRouter = router({
 
       // Hash token and look up in database
       const tokenHash = hashToken(input.refreshToken);
-      const storedToken = await db.query.refreshTokens.findFirst({
+      const storedToken = await getAuthDb().query.refreshTokens.findFirst({
         where: eq(refreshTokens.tokenHash, tokenHash),
       });
 
@@ -372,7 +385,7 @@ export const authRouter = router({
       // Check if token was already revoked/used (reuse detection)
       if (storedToken.revokedAt) {
         // Token reuse detected - revoke entire family
-        await db
+        await getAuthDb()
           .update(refreshTokens)
           .set({ revokedAt: new Date() })
           .where(eq(refreshTokens.familyId, storedToken.familyId));
@@ -384,7 +397,7 @@ export const authRouter = router({
       }
 
       // Get user and current org membership
-      const user = await db.query.users.findFirst({
+      const user = await getAuthDb().query.users.findFirst({
         where: eq(users.id, payload.userId),
       });
 
@@ -395,7 +408,7 @@ export const authRouter = router({
         });
       }
 
-      const membership = await db.query.organizationMemberships.findFirst({
+      const membership = await getAuthDb().query.organizationMemberships.findFirst({
         where: eq(organizationMemberships.userId, user.id),
       });
 
@@ -419,7 +432,7 @@ export const authRouter = router({
       const newRefreshExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
       // Mark old token as revoked and store new token
-      await db
+      await getAuthDb()
         .update(refreshTokens)
         .set({
           revokedAt: new Date(),
@@ -427,7 +440,7 @@ export const authRouter = router({
         })
         .where(eq(refreshTokens.id, storedToken.id));
 
-      await db.insert(refreshTokens).values({
+      await getAuthDb().insert(refreshTokens).values({
         userId: user.id,
         tokenHash: newRefreshTokenHash,
         familyId: storedToken.familyId,
@@ -453,7 +466,7 @@ export const authRouter = router({
       const tokenHash = hashToken(input.token);
 
       // Find token
-      const verificationToken = await db.query.emailVerificationTokens.findFirst({
+      const verificationToken = await getAuthDb().query.emailVerificationTokens.findFirst({
         where: and(
           eq(emailVerificationTokens.tokenHash, tokenHash),
           sql`${emailVerificationTokens.usedAt} IS NULL`,
@@ -469,12 +482,12 @@ export const authRouter = router({
       }
 
       // Mark token as used and verify user's email
-      await db
+      await getAuthDb()
         .update(emailVerificationTokens)
         .set({ usedAt: new Date() })
         .where(eq(emailVerificationTokens.id, verificationToken.id));
 
-      await db
+      await getAuthDb()
         .update(users)
         .set({ emailVerified: true })
         .where(eq(users.id, verificationToken.userId));
@@ -498,7 +511,7 @@ export const authRouter = router({
       await checkRegistrationRateLimit(ip);
 
       // Find user (but don't leak if user exists - prevent email enumeration)
-      const user = await db.query.users.findFirst({
+      const user = await getAuthDb().query.users.findFirst({
         where: eq(users.email, input.email.toLowerCase()),
       });
 
@@ -513,7 +526,7 @@ export const authRouter = router({
       const { token, hash } = generateToken();
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-      await db.insert(passwordResetTokens).values({
+      await getAuthDb().insert(passwordResetTokens).values({
         userId: user.id,
         tokenHash: hash,
         expiresAt,
@@ -544,7 +557,7 @@ export const authRouter = router({
       const tokenHash = hashToken(input.token);
 
       // Find token
-      const resetToken = await db.query.passwordResetTokens.findFirst({
+      const resetToken = await getAuthDb().query.passwordResetTokens.findFirst({
         where: and(
           eq(passwordResetTokens.tokenHash, tokenHash),
           sql`${passwordResetTokens.usedAt} IS NULL`,
@@ -563,7 +576,7 @@ export const authRouter = router({
       const newPasswordHash = await hashPassword(input.newPassword);
 
       // Update user password
-      await db
+      await getAuthDb()
         .update(users)
         .set({
           passwordHash: newPasswordHash,
@@ -572,13 +585,13 @@ export const authRouter = router({
         .where(eq(users.id, resetToken.userId));
 
       // Mark token as used
-      await db
+      await getAuthDb()
         .update(passwordResetTokens)
         .set({ usedAt: new Date() })
         .where(eq(passwordResetTokens.id, resetToken.id));
 
       // Revoke all refresh tokens for this user (security: force re-login everywhere)
-      await db
+      await getAuthDb()
         .update(refreshTokens)
         .set({ revokedAt: new Date() })
         .where(eq(refreshTokens.userId, resetToken.userId));
@@ -612,7 +625,7 @@ export const authRouter = router({
     }
 
     // Get user
-    const user = await db.query.users.findFirst({
+    const user = await getAuthDb().query.users.findFirst({
       where: eq(users.id, payload.userId),
     });
 
@@ -678,7 +691,7 @@ export const authRouter = router({
       }
 
       // Enable MFA for user
-      await db
+      await getAuthDb()
         .update(users)
         .set({
           mfaEnabled: true,
@@ -722,7 +735,7 @@ export const authRouter = router({
       }
 
       // Get user
-      const user = await db.query.users.findFirst({
+      const user = await getAuthDb().query.users.findFirst({
         where: eq(users.id, payload.userId),
       });
 
@@ -734,7 +747,7 @@ export const authRouter = router({
       }
 
       // Verify user has membership in target organization
-      const membership = await db.query.organizationMemberships.findFirst({
+      const membership = await getAuthDb().query.organizationMemberships.findFirst({
         where: and(
           eq(organizationMemberships.userId, user.id),
           eq(organizationMemberships.organizationId, input.organizationId)
@@ -748,7 +761,7 @@ export const authRouter = router({
         });
       }
 
-      const org = await db.query.organizations.findFirst({
+      const org = await getAuthDb().query.organizations.findFirst({
         where: eq(organizations.id, membership.organizationId),
       });
 
