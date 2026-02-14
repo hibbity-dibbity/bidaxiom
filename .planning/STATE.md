@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-10)
 ## Current Position
 
 Phase: 12 of 12 (Custom Authentication Migration)
-Plan: 2 of 5 in current phase
+Plan: 3 of 5 in current phase
 Status: In progress
-Last activity: 2026-02-14 — Completed 12-02-PLAN.md (Auth API and Email Service)
+Last activity: 2026-02-14 — Completed 12-03-PLAN.md (Organization Management Router)
 
-Progress: [█████████░] 96% (11.4 of 12 phases, 2 of 5 plans complete in current phase)
+Progress: [█████████░] 96% (11.6 of 12 phases, 3 of 5 plans complete in current phase)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 44
-- Average duration: 6.5 min
-- Total execution time: 4.97 hours
+- Total plans completed: 45
+- Average duration: 6.4 min
+- Total execution time: 5.05 hours
 
 **By Phase:**
 
@@ -37,11 +37,11 @@ Progress: [█████████░] 96% (11.4 of 12 phases, 2 of 5 plans 
 | 09 | 7 | 45.5 min | 6.5 min |
 | 10 | 5 | 48.3 min | 9.7 min |
 | 11 | 5 | 23 min | 4.6 min |
-| 12 | 1 | 4 min | 4 min |
+| 12 | 3 | 12 min | 4 min |
 
 **Recent Trend:**
-- Last 5 plans: 11-03 (6 min), 11-04 (4.4 min), 11-05 (5 min), 12-01 (4 min), 12-02 (3 min)
-- Trend: Phase 12 auth API with complete registration, login, token refresh, email verification, password reset, and MFA flows in 3 minutes.
+- Last 5 plans: 11-04 (4.4 min), 11-05 (5 min), 12-01 (4 min), 12-02 (3 min), 12-03 (5 min)
+- Trend: Phase 12 organization management router with full CRUD, invitation system, and tenant provisioning in 5 minutes.
 
 *Updated after each plan completion*
 | Phase 06 P02 | 8 | 2 tasks | 5 files |
@@ -79,7 +79,7 @@ Progress: [█████████░] 96% (11.4 of 12 phases, 2 of 5 plans 
 | Phase 11-calendar-integration P05 | 5 min | 2 tasks | 5 files |
 | Phase 12-custom-authentication-migration P01 | 4 min | 2 tasks | 12 files |
 | Phase 12-custom-authentication-migration P02 | 3 min | 2 tasks | 3 files |
-| Phase 12-custom-authentication-migration P02 | 3 min | 2 tasks | 3 files |
+| Phase 12-custom-authentication-migration P03 | 5 min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -232,6 +232,10 @@ Recent decisions affecting current work:
 - [Phase 12-01]: Redis rate limiting with fail-open - Non-fatal when Redis unavailable (logs warning, allows request)
 - [Phase 12-02]: Resend for email delivery with console fallback in dev mode — Allows development without email service configuration
 - [Phase 12-02]: Manual access token verification for auth protected endpoints — Existing protectedProcedure uses Clerk - manual verification bridge until Plan 03
+- [Phase 12-03]: Direct tenant provisioning on org create — Organization creation calls provisionTenantSchema directly, no webhooks needed
+- [Phase 12-03]: authProcedure integration during transition — Uses existing Clerk JWT validation until Plan 05 migrates context to custom JWT
+- [Phase 12-03]: Dual table sync for org memberships — Updates both organizationMemberships and tenant schema user_profiles for consistency
+- [Phase 12-03]: Last admin protection — Cannot remove the last admin from an organization to prevent lockout
 
 ### Pending Todos
 
@@ -244,7 +248,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-14 (Phase 12 - Custom Authentication Migration)
-Stopped at: Completed 12-02-PLAN.md (Auth API and Email Service)
+Stopped at: Completed 12-03-PLAN.md (Organization Management Router)
 Resume file: None
 
 ---
