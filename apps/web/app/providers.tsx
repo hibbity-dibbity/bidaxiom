@@ -3,35 +3,27 @@
 import { useState, useMemo } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink } from "@trpc/react-query";
-import { useAuth, useOrganization } from "@clerk/nextjs";
 import { trpc } from "@/lib/trpc";
 import { Toaster } from "@/components/ui/sonner";
 import { AbilityContext, defineAbilitiesFor } from "@/lib/abilities";
+import { AuthProvider, useAuth } from "@/lib/auth-context";
+import type { SessionData } from "@/lib/session";
 
-/**
- * App-wide providers: tRPC + React Query + auth token forwarding.
- *
- * Wraps the app with:
- * 1. tRPC provider (type-safe API calls)
- * 2. React Query provider (caching, background refetching)
- * 3. Clerk auth token forwarding (Bearer token in tRPC requests)
- */
-export function Providers({ children }: { children: React.ReactNode }) {
-  const { getToken, userId } = useAuth();
-  const { membership } = useOrganization();
+function TrpcAndAbilityProvider({ children }: { children: React.ReactNode }) {
+  const { orgRole, userId } = useAuth();
 
-  // Build CASL abilities from Clerk org role
+  // Build CASL abilities from org role
   const abilities = useMemo(() => {
-    const role = membership?.role ?? "org:member";
+    const role = orgRole ?? "org:member";
     return defineAbilitiesFor(role, userId ?? "");
-  }, [membership?.role, userId]);
+  }, [orgRole, userId]);
 
   const [queryClient] = useState(
     () =>
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 5 * 60 * 1000, // 5 minutes
+            staleTime: 5 * 60 * 1000,
             retry: 1,
             refetchOnWindowFocus: false,
           },
@@ -45,11 +37,15 @@ export function Providers({ children }: { children: React.ReactNode }) {
         httpBatchLink({
           url: `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001"}/trpc`,
           async headers() {
-            // Forward Clerk auth token to Fastify tRPC backend
-            const token = await getToken();
-            return token
-              ? { Authorization: `Bearer ${token}` }
-              : {};
+            // Fetch access token from session via API route
+            try {
+              const res = await fetch("/api/auth/token");
+              if (res.ok) {
+                const { accessToken } = await res.json();
+                return accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
+              }
+            } catch {}
+            return {};
           },
         }),
       ],
@@ -65,5 +61,19 @@ export function Providers({ children }: { children: React.ReactNode }) {
         </AbilityContext.Provider>
       </QueryClientProvider>
     </trpc.Provider>
+  );
+}
+
+export function Providers({
+  children,
+  initialSession,
+}: {
+  children: React.ReactNode;
+  initialSession: SessionData;
+}) {
+  return (
+    <AuthProvider initialSession={initialSession}>
+      <TrpcAndAbilityProvider>{children}</TrpcAndAbilityProvider>
+    </AuthProvider>
   );
 }
