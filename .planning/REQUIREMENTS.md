@@ -98,7 +98,7 @@ Requirements for milestone v1.1. Enterprise-grade UI/UX transformation.
 
 ### Navigation (NAV)
 
-- [ ] **NAV-01**: Unified top navigation bar displays global search, primary modules, profile dropdown, settings, and dark mode toggle
+- [ ] **NAV-01**: Unified top navigation bar displays global search, primary modules, profile dropdown, and settings
 - [ ] **NAV-02**: Global search searches across job numbers, project names, and customer names with instant results
 - [ ] **NAV-03**: Contextual sidebar updates navigation options based on active page context
 - [ ] **NAV-04**: Sidebar can be collapsed and persists user's collapsed/expanded preference
@@ -107,7 +107,7 @@ Requirements for milestone v1.1. Enterprise-grade UI/UX transformation.
 
 ### Theming & Branding (THEME)
 
-- [ ] **THEME-01**: Dark mode can be toggled from Account Settings and persists across sessions
+- [ ] **THEME-01**: Dark mode can be toggled from Account Settings (not in top navigation) and persists across sessions
 - [ ] **THEME-02**: Dark mode prevents flash of unstyled content (FOUC) using cookie-based theme storage
 - [ ] **THEME-03**: Company logo can be uploaded and stored per company
 - [ ] **THEME-04**: Company logo displays in top navigation bar
