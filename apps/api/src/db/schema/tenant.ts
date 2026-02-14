@@ -936,6 +936,84 @@ export function createTenantSchema(schemaName: string) {
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   });
 
+  /**
+   * Calendar connections
+   * Per-user OAuth connections to Google Calendar or Microsoft Outlook
+   * One connection per provider per user
+   */
+  const calendarConnections = schema.table("calendar_connections", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    provider: text("provider").notNull(), // google, microsoft
+    userId: text("user_id").notNull(), // Clerk user ID (per-user, not per-company)
+    status: text("status").notNull().default("active"), // active, disconnected, expired, error
+    accessToken: text("access_token"), // Short-lived (1 hour), OK unencrypted
+    encryptedRefreshToken: text("encrypted_refresh_token").notNull(), // AES-256-GCM encrypted
+    tokenExpiresAt: timestamp("token_expires_at", { withTimezone: true }).notNull(),
+    refreshTokenExpiresAt: timestamp("refresh_token_expires_at", { withTimezone: true }), // NULL for Google
+    calendarId: text("calendar_id").notNull().default("primary"), // "primary" for Google
+    providerEmail: text("provider_email"),
+    lastSyncAt: timestamp("last_sync_at", { withTimezone: true }),
+    syncToken: text("sync_token"), // Google syncToken or Microsoft deltaLink
+    webhookChannelId: text("webhook_channel_id"), // Google channel ID
+    webhookResourceId: text("webhook_resource_id"), // Google resource ID
+    webhookSubscriptionId: text("webhook_subscription_id"), // Microsoft subscription ID
+    webhookExpiresAt: timestamp("webhook_expires_at", { withTimezone: true }), // Webhook expiry
+    errorMessage: text("error_message"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  }, (table) => ({
+    // One connection per provider per user
+    uniqueProviderUser: unique().on(table.provider, table.userId),
+  }));
+
+  /**
+   * Calendar events
+   * Bidirectional sync between platform milestones and external calendar events
+   */
+  const calendarEvents = schema.table("calendar_events", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    calendarConnectionId: uuid("calendar_connection_id").notNull().references(() => calendarConnections.id, { onDelete: "cascade" }),
+    projectId: uuid("project_id").references(() => projects.id, { onDelete: "set null" }), // NULL for external-origin events
+    externalEventId: text("external_event_id").notNull(), // Google/Microsoft event ID
+    title: text("title").notNull(),
+    description: text("description"),
+    startDate: timestamp("start_date", { withTimezone: true }).notNull(),
+    endDate: timestamp("end_date", { withTimezone: true }),
+    allDay: boolean("all_day").notNull().default(false),
+    timezone: text("timezone"), // IANA timezone
+    source: text("source").notNull(), // platform, external
+    sourceEntityType: text("source_entity_type"), // project, project_phase
+    sourceEntityId: text("source_entity_id"), // Project ID or phase ID
+    etag: text("etag"), // Provider ETag for conflict detection
+    lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  }, (table) => ({
+    // Prevent duplicate events
+    uniqueConnectionEvent: unique().on(table.calendarConnectionId, table.externalEventId),
+    // Fast project milestone queries
+    projectIdIdx: index().on(table.projectId),
+    // Reverse lookups for source entity
+    sourceEntityIdx: index().on(table.sourceEntityType, table.sourceEntityId),
+  }));
+
+  /**
+   * Calendar sync state
+   * Tracks sync status and metrics per connection
+   */
+  const calendarSyncState = schema.table("calendar_sync_state", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    calendarConnectionId: uuid("calendar_connection_id").notNull().unique().references(() => calendarConnections.id, { onDelete: "cascade" }),
+    lastFullSyncAt: timestamp("last_full_sync_at", { withTimezone: true }),
+    lastIncrementalSyncAt: timestamp("last_incremental_sync_at", { withTimezone: true }),
+    syncStatus: text("sync_status").notNull().default("idle"), // idle, syncing, synced, error
+    syncedEventCount: integer("synced_event_count").notNull().default(0),
+    errorCount: integer("error_count").notNull().default(0),
+    lastError: text("last_error"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
   return {
     schema,
     auditLogs,
@@ -986,6 +1064,9 @@ export function createTenantSchema(schemaName: string) {
     reportTemplates,
     reportSchedules,
     materializedReportData,
+    calendarConnections,
+    calendarEvents,
+    calendarSyncState,
   };
 }
 

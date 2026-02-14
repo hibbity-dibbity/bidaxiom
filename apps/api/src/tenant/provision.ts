@@ -1012,6 +1012,84 @@ export async function provisionTenantSchema(
         ON "${schemaName}".materialized_report_data(expires_at)
       `);
 
+      // Create calendar_connections table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".calendar_connections (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          provider TEXT NOT NULL,
+          user_id TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'active',
+          access_token TEXT,
+          encrypted_refresh_token TEXT NOT NULL,
+          token_expires_at TIMESTAMPTZ NOT NULL,
+          refresh_token_expires_at TIMESTAMPTZ,
+          calendar_id TEXT NOT NULL DEFAULT 'primary',
+          provider_email TEXT,
+          last_sync_at TIMESTAMPTZ,
+          sync_token TEXT,
+          webhook_channel_id TEXT,
+          webhook_resource_id TEXT,
+          webhook_subscription_id TEXT,
+          webhook_expires_at TIMESTAMPTZ,
+          error_message TEXT,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          UNIQUE(provider, user_id)
+        )
+      `);
+
+      // Create calendar_events table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".calendar_events (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          calendar_connection_id UUID NOT NULL REFERENCES "${schemaName}".calendar_connections(id) ON DELETE CASCADE,
+          project_id UUID REFERENCES "${schemaName}".projects(id) ON DELETE SET NULL,
+          external_event_id TEXT NOT NULL,
+          title TEXT NOT NULL,
+          description TEXT,
+          start_date TIMESTAMPTZ NOT NULL,
+          end_date TIMESTAMPTZ,
+          all_day BOOLEAN NOT NULL DEFAULT false,
+          timezone TEXT,
+          source TEXT NOT NULL,
+          source_entity_type TEXT,
+          source_entity_id TEXT,
+          etag TEXT,
+          last_synced_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          UNIQUE(calendar_connection_id, external_event_id)
+        )
+      `);
+
+      // Index for fast project milestone queries
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_calendar_events_project
+        ON "${schemaName}".calendar_events(project_id)
+      `);
+
+      // Index for reverse lookups by source entity
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_calendar_events_source
+        ON "${schemaName}".calendar_events(source_entity_type, source_entity_id)
+      `);
+
+      // Create calendar_sync_state table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".calendar_sync_state (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          calendar_connection_id UUID NOT NULL UNIQUE REFERENCES "${schemaName}".calendar_connections(id) ON DELETE CASCADE,
+          last_full_sync_at TIMESTAMPTZ,
+          last_incremental_sync_at TIMESTAMPTZ,
+          sync_status TEXT NOT NULL DEFAULT 'idle',
+          synced_event_count INTEGER NOT NULL DEFAULT 0,
+          error_count INTEGER NOT NULL DEFAULT 0,
+          last_error TEXT,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
       // Register tenant in public schema
       const insertResult = await client.query(
         `INSERT INTO tenants (schema_name, clerk_org_id, name, status)

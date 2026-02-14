@@ -101,6 +101,9 @@ export async function buildTenantContext(
       reportTemplates: tenantDb.reportTemplates,
       reportSchedules: tenantDb.reportSchedules,
       materializedReportData: tenantDb.materializedReportData,
+      calendarConnections: tenantDb.calendarConnections,
+      calendarEvents: tenantDb.calendarEvents,
+      calendarSyncState: tenantDb.calendarSyncState,
     },
   };
 }
