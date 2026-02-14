@@ -103,6 +103,7 @@ export const companyConfigSchema = z.object({
   companyType: CompanyType,
   tradesConfig: tradesConfigSchema,
   jobNumberSettings: jobNumberSettingsSchema,
+  logoStorageKey: z.string().nullable().optional(),
 });
 
 export type CompanyConfig = z.infer<typeof companyConfigSchema>;

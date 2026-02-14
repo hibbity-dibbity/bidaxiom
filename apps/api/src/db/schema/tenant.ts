@@ -100,6 +100,7 @@ export function createTenantSchema(schemaName: string) {
           lienWaiversRequired: true,
         },
       }),
+    logoStorageKey: text("logo_storage_key"), // S3 key: tenants/{tenantId}/branding/logo.{ext}
     validFrom: timestamp("valid_from", { withTimezone: true }).defaultNow().notNull(),
     validTo: timestamp("valid_to", { withTimezone: true }), // NULL = current active version
     createdBy: text("created_by").notNull(), // Clerk user ID
