@@ -21,8 +21,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 7: Bidding & Procurement** - RFQ issuance, bid collection, comparison, directory, versioning
 - [ ] **Phase 8: QuickBooks Integration** - OAuth connection, bi-directional sync, error handling
 - [ ] **Phase 9: Document Management Enhancement** - Versioning, workflows (RFI/Submittal/Transmittal), granular permissions, tagging
-- [ ] **Phase 10: Reporting & Analytics** - Pre-built reports, custom builder, dashboards, export (PDF/Excel/CSV), scheduled delivery
-- [ ] **Phase 11: Calendar Integration** - Google/Outlook sync, project milestones on calendars
+- [x] **Phase 10: Reporting & Analytics** - Pre-built reports, custom builder, dashboards, export (PDF/Excel/CSV), scheduled delivery
+- [x] **Phase 11: Calendar Integration** - Google/Outlook sync, project milestones on calendars
 - [ ] **Phase 12: Custom Authentication Migration** - Replace Clerk with custom auth (JWT, sessions, MFA, org management)
 
 ## Phase Details
@@ -234,9 +234,9 @@ Plans:
 Plans:
 - [x] 11-01-PLAN.md — DB schema (3 calendar tables), shared types, CASL abilities (wave 1)
 - [x] 11-02-PLAN.md — Google and Microsoft OAuth modules, client factories, BullMQ queue (wave 1)
-- [ ] 11-03-PLAN.md — Sync workers, event mappers, webhook handlers (wave 2)
-- [ ] 11-04-PLAN.md — tRPC calendar router, webhook routes, OAuth callbacks, worker startup (wave 2)
-- [ ] 11-05-PLAN.md — Frontend: calendar connection cards, sync status, OAuth callback, project sync (wave 3)
+- [x] 11-03-PLAN.md — Sync workers, event mappers, webhook handlers (wave 2)
+- [x] 11-04-PLAN.md — tRPC calendar router, webhook routes, OAuth callbacks, worker startup (wave 2)
+- [x] 11-05-PLAN.md — Frontend: calendar connection cards, sync status, OAuth callback, project sync (wave 3)
 
 ### Phase 12: Custom Authentication Migration
 **Goal**: Replace Clerk with a custom-built authentication system to eliminate third-party dependency, reduce costs, and gain full control over auth flows
