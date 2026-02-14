@@ -266,11 +266,12 @@ None yet.
 | 1 | Fix document upload error - Failed INSERT query | 2026-02-14 | ab98bd5 | [1-fix-document-upload-error-failed-insert-](./quick/1-fix-document-upload-error-failed-insert-/) |
 | 2 | Remove New Folder option from project documents | 2026-02-14 | f45dbba | [2-remove-new-folder-option-from-project-do](./quick/2-remove-new-folder-option-from-project-do/) |
 | 3 | Move "Forgot password?" link below password input | 2026-02-14 | 29f3360 | [3-move-forgot-password-link-below-password](./quick/3-move-forgot-password-link-below-password/) |
+| 4 | Restore team member dropdown with existing roles | 2026-02-14 | f1c0f34 | [4-restore-team-member-dropdown-with-existi](./quick/4-restore-team-member-dropdown-with-existi/) |
 
 ## Session Continuity
 
 Last session: 2026-02-14 (Phase 12 - Custom Authentication Migration)
-Stopped at: Completed quick task 3: Move "Forgot password?" link below password input
+Stopped at: Completed quick task 4: Restore team member dropdown with existing roles
 Resume file: None
 
 ---
