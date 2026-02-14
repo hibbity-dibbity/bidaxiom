@@ -1,623 +1,441 @@
-# Technology Stack
+# Stack Research — Enterprise UI/UX Enhancement
 
-**Project:** Construction Management SaaS
-**Domain:** Multi-tenant commercial/industrial construction platform
-**Researched:** 2026-02-10
-**Research Limitations:** Created from training data (Jan 2025 cutoff) without ability to verify current versions via Context7/official docs
+**Domain:** Enterprise construction management SaaS UI/UX redesign
+**Researched:** 2026-02-14
+**Confidence:** HIGH
 
-## CONFIDENCE WARNING
+## Executive Summary
 
-**Overall Confidence: LOW-MEDIUM**
+This research identifies stack additions needed to transform the existing Next.js 14 + Tailwind + shadcn/ui foundation into an enterprise-grade interface. The focus is on NEW capabilities: dark mode, advanced navigation patterns, global search, form standardization, and component sophistication.
 
-This research was conducted without access to Context7 or WebSearch tools. All recommendations are based on training data current through January 2025. Version numbers and specific library choices should be verified against official documentation before implementation.
+**Key Finding:** The existing stack is already enterprise-ready. Strategic additions (not replacements) will unlock Procore-level UX without architectural changes. All additions integrate seamlessly with the current tRPC + PostgreSQL backend.
 
-**Required Verification:**
-- All version numbers against official npm/package registries
-- Current best practices for multi-tenancy patterns
-- Latest AI SDK capabilities and pricing
-- Current Kubernetes/container platform features
+## Recommended Stack Additions
 
----
+### Theme Management
 
-## Recommended Stack
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| next-themes | ^0.4.6 | Dark mode state management | Industry standard for Next.js 14 App Router. Zero-flash dark mode with system preference detection. Already in use (apps/web/package.json line 45). **HIGH confidence** — [official GitHub](https://github.com/pacocoursey/next-themes), [shadcn docs](https://ui.shadcn.com/docs/dark-mode/next) |
 
-### Backend Framework
+**Status:** Already installed. No action needed.
 
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| **Node.js** | 20 LTS | Runtime | Mature LTS with native ESM, superior async I/O for API-heavy workload, largest ecosystem for integrations |
-| **TypeScript** | 5.3+ | Type safety | Essential for large codebase, catches tenant isolation bugs at compile time, better IDE support |
-| **Fastify** | 4.x | HTTP framework | 3-4x faster than Express, built-in schema validation, excellent TypeScript support, plugin architecture ideal for multi-tenancy middleware |
+**Integration:** Works with existing Tailwind `dark:` classes. Add `suppressHydrationWarning` to `<html>` tag and wrap app with `ThemeProvider`.
 
-**Rationale:**
-- Node.js 20 LTS provides stability through April 2026, with built-in fetch and improved performance
-- Fastify over Express for performance and type safety — construction SaaS will handle document uploads, AI processing, and real-time updates
-- TypeScript is non-negotiable for multi-tenant systems where data isolation bugs are catastrophic
+### Form Validation & State Management
 
-**Alternatives Considered:**
-| Choice | Alternative | Why Not |
-|--------|-------------|---------|
-| Fastify | Express | No built-in validation, slower, requires more middleware for type safety |
-| Fastify | NestJS | Over-engineered for this use case, steeper learning curve, slower iteration |
-| Node.js | Go | Smaller ecosystem for integrations (QuickBooks, calendar), longer dev time |
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| react-hook-form | ^7.71.1 | Form state management | Already installed (line 49). Performant, minimal re-renders, excellent DX. **HIGH confidence** — [official docs](https://react-hook-form.com/docs/useform) |
+| zod | ^4.3.5 (upgrade from ^3.25.76) | Runtime schema validation | Upgrade needed. Type-safe validation that works client + server. Industry standard with shadcn/ui. **HIGH confidence** — [resolver compatibility](https://github.com/react-hook-form/resolvers/releases) |
+| @hookform/resolvers | ^5.2.2 | Bridge react-hook-form + zod | Already installed (line 18). Supports Zod v3.25+ and v4+. **HIGH confidence** — [GitHub releases](https://github.com/react-hook-form/resolvers) |
 
-### Database
+**Status:**
+- react-hook-form: Installed ✓
+- @hookform/resolvers: Installed ✓
+- zod: **Upgrade needed** from 3.25.76 to 4.x for latest features
 
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| **PostgreSQL** | 16.x | Primary database | Best-in-class schema isolation, JSONB for flexible construction data, proven at scale for multi-tenant SaaS |
-| **Drizzle ORM** | 0.29+ | Type-safe ORM | Lightweight, excellent TypeScript inference, supports schema-per-tenant patterns, migration control |
-| **pgBouncer** | 1.21+ | Connection pooling | Essential for schema-per-company isolation, handles connection multiplexing |
+**Integration:** Use `zodResolver` to connect schemas to forms. Works seamlessly with Next.js Server Actions for consistent client/server validation.
 
-**Rationale:**
-- PostgreSQL schema isolation provides the exact pattern needed: shared infrastructure, isolated data, manageable at scale
-- Drizzle over Prisma for schema-per-tenant: Prisma struggles with dynamic schema switching, Drizzle gives full SQL control
-- pgBouncer is critical: each tenant schema needs connection pooling without connection explosion
+### Global Search & Command Palette
 
-**Schema-Per-Tenant Pattern:**
-```typescript
-// Example approach
-const tenantDb = drizzle(pgPool, {
-  schema: companySchemas[tenantId]
-});
-// SET search_path = company_123
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| cmdk | ^1.1.1 | Command palette framework | Already installed (line 40). Used by Linear, Raycast, Vercel. Fuzzy search, keyboard nav, instant filtering. **HIGH confidence** — [npm](https://www.npmjs.com/package/cmdk), [shadcn Command](https://ui.shadcn.com/docs/components/radix/command) |
+
+**Status:** Already installed. No action needed.
+
+**Integration:**
+- shadcn/ui provides pre-built `<Command>` component wrapping cmdk
+- **Breaking change in v1.0+**: Requires `<CommandList>` wrapper around `<CommandGroup>`
+- Customize search with `filter` prop for multi-field search (not just `value`)
+
+### URL State Management
+
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| nuqs | ^2.8.8 | Type-safe URL search params | **ADD THIS.** Replaces manual `useSearchParams` + `useRouter`. Type-safe `useState`-like API for URL state. Used by Sentry, Supabase, Vercel, Clerk. Supports Next.js 14.2+ App Router. **HIGH confidence** — [official docs](https://nuqs.dev/), [GitHub](https://github.com/47ng/nuqs) |
+
+**Status:** **Not installed. Recommended addition.**
+
+**Why:**
+- Filtering, sorting, pagination, drawer state → persist in URL
+- Built-in parsers (string, int, boolean, date, enum)
+- Shallow routing built-in (no manual history API)
+- 10K GitHub stars, 1M+ weekly downloads
+
+**Integration:** Wrap app with `NuqsAdapter` in layout. Use `useQueryState` hook like `useState` but synced to URL.
+
+### Data Tables
+
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| @tanstack/react-table | ^8.21.3 | Headless table logic | **ADD THIS.** Industry-leading headless table library. Handles sorting, filtering, pagination, column visibility, row selection. TypeScript-first. Completely unstyled (you control markup). **HIGH confidence** — [official docs](https://tanstack.com/table/latest), [shadcn example](https://ui.shadcn.com/docs/components/radix/data-table) |
+
+**Status:** **Not installed. Recommended addition for data-heavy views.**
+
+**Why:**
+- Budget tables, change order lists, payment app grids need enterprise-grade sorting/filtering
+- Headless = style with existing Tailwind + shadcn/ui components
+- Memoization built-in for performance with large datasets
+- Works seamlessly with nuqs for URL-based filtering
+
+**Alternative Considered:** Building custom table logic. **Rejected** because TanStack Table solves complex edge cases (column resizing, virtualization, server-side pagination) that would take weeks to implement correctly.
+
+### Toast Notifications
+
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| sonner | ^2.0.7 | Toast notification system | Already installed (line 51). Modern, accessible, promise-based toasts. Auto-theming with next-themes. Used widely in shadcn/ui ecosystem. **HIGH confidence** — [GitHub](https://github.com/emilkowalski/sonner), [shadcn integration](https://ui.shadcn.com/docs/components/radix/sonner) |
+
+**Status:** Already installed. No action needed.
+
+**Integration:** Use `toast.promise()` for async operations (form submissions, API calls). Auto-stacks toasts, keyboard shortcuts built-in.
+
+### Charts & Data Visualization
+
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| recharts | ^3.7.0 | Chart library | Already installed (line 50). Declarative API, composable components. Good balance of power + simplicity. **MEDIUM confidence** — preferred over Tremor because Tremor is opinionated + limits low-level customization. [npm trends](https://npmtrends.com/@tremor/react-vs-recharts) shows Recharts has 67x more downloads |
+
+**Status:** Already installed. No action needed.
+
+**Alternative Considered:** Tremor. **Rejected** because Tremor is tightly coupled to Tailwind + provides high-level dashboard components that may not match Procore-style designs. Recharts gives more control.
+
+### Modal & Drawer Patterns
+
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| vaul | latest (via shadcn) | Mobile-first drawer component | **ADD via shadcn CLI.** Powers shadcn/ui `<Drawer>` component. Gesture-responsive, snap points, native-feeling animations. Built by same author as Sonner. **HIGH confidence** — [shadcn Drawer](https://ui.shadcn.com/docs/components/radix/drawer), [vaul GitHub](https://github.com/emilkowalski/vaul) |
+
+**Status:** **Not installed. Add via `npx shadcn-ui@latest add drawer`**
+
+**Why:**
+- Responsive patterns: Dialog on desktop, Drawer on mobile
+- Change order details, document previews, filtering panels
+- Physics-based animations, swipe-to-dismiss
+
+### Date & Time Handling
+
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| date-fns | ^2.30.0 (upgrade to ^4.1.0) | Date formatting & manipulation | Already installed (line 41). **Upgrade to v4** for better tree-shaking + performance. Functional API, extensive utilities (200+ functions). **HIGH confidence** — [official docs](https://date-fns.org/), [vs dayjs comparison](https://www.dhiwise.com/post/date-fns-vs-dayjs-the-battle-of-javascript-date-libraries) |
+| date-fns-tz | ^3.2.0 | Timezone support | **ADD THIS.** Essential for multi-timezone construction projects. Works with date-fns v4. **MEDIUM confidence** — needed if users work across timezones |
+| react-day-picker | ^9.13.2 | Calendar component | Already installed (line 47). Powers shadcn `<Calendar>` and `<DatePicker>`. v9 is latest with timezone support. **HIGH confidence** — [shadcn Calendar](https://ui.shadcn.com/docs/components/radix/calendar) |
+
+**Status:**
+- date-fns: Installed but **upgrade recommended** (v2 → v4)
+- date-fns-tz: **Not installed. Recommended if timezone support needed**
+- react-day-picker: Installed ✓
+
+**Why date-fns over dayjs:**
+- Better tree-shaking (date-fns imports individual functions, dayjs imports full library)
+- More extensive functionality (200+ functions vs 40+)
+- Larger ecosystem (used by shadcn/ui examples)
+
+### Input Masking
+
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| react-imask | ^7.6.1 | Input masking (phone, currency, dates) | **ADD THIS.** Best masking library for React. Supports phone numbers, currency, percentage, dates. Works with react-hook-form. **MEDIUM confidence** — [official docs](https://imask.js.org/), [npm](https://www.npmjs.com/package/react-imask) |
+
+**Status:** **Not installed. Recommended for bid amounts, phone numbers, percentages.**
+
+**Why:**
+- Bid forms need currency masking ($1,234,567.89)
+- Contact forms need phone masking ((555) 123-4567)
+- Change order percentages need decimal masking (15.5%)
+- Works with `IMaskInput` component or `useIMask` hook
+
+**Alternative Considered:** react-number-format. **Comparable** but IMask has broader pattern support (dates, regex masks).
+
+### Icon System
+
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| lucide-react | ^0.460.0 | Icon library | Already installed (line 43). Tree-shakable SVG icons. Default for shadcn/ui. 1000+ icons, consistent design, accessible. **HIGH confidence** — [official docs](https://lucide.dev/guide/packages/lucide-react), [shadcn icons](https://www.shadcn.io/icons/lucide) |
+
+**Status:** Already installed. No action needed.
+
+**Best Practice:** Import icons individually (`import { FileText } from 'lucide-react'`). Never create dynamic icon loader (imports all icons, bloats bundle).
+
+### Utility Libraries
+
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| clsx | ^2.1.0 | Conditional class names | Already installed (line 39). Tiny (228B), fast. **HIGH confidence** |
+| tailwind-merge | ^2.6.0 | Merge Tailwind classes without conflicts | Already installed (line 52). Prevents `bg-red-500 bg-blue-500` conflicts. **HIGH confidence** — [docs](https://github.com/dcastil/tailwind-merge) |
+| class-variance-authority | ^0.7.1 | Component variant system | Already installed (line 38). Powers shadcn/ui variants. Type-safe variant props. **HIGH confidence** — [docs](https://cva.style/docs) |
+
+**Status:** All installed. No action needed.
+
+**Pattern:** Combine in `cn()` helper:
+```ts
+import { clsx } from 'clsx'
+import { twMerge } from 'tailwind-merge'
+
+export const cn = (...inputs) => twMerge(clsx(inputs))
 ```
 
-**Alternatives Considered:**
-| Choice | Alternative | Why Not |
-|--------|-------------|---------|
-| PostgreSQL | MongoDB | No native schema isolation, weaker consistency for financial data, complex multi-document transactions |
-| Drizzle | Prisma | Poor dynamic schema support, connection pooling issues with multi-tenancy |
-| Drizzle | TypeORM | Less type-safe, heavier runtime overhead |
+### Animation
 
-### Frontend Framework
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| tw-animate-css | latest | Tailwind v4 animations | **MIGRATION NEEDED.** shadcn/ui deprecated `tailwindcss-animate` in favor of `tw-animate-css` for Tailwind v4 support. **HIGH confidence** — [shadcn Tailwind v4 guide](https://ui.shadcn.com/docs/tailwind-v4) |
 
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| **Next.js** | 14.x (App Router) | Full-stack React framework | Server components for performance, built-in API routes, best SEO for marketing pages, industry standard for React SaaS |
-| **React** | 18.x | UI library | Component model ideal for construction forms, largest ecosystem, proven for enterprise apps |
-| **TypeScript** | 5.3+ | Type safety | Shared types with backend, catches API contract mismatches |
-| **Tailwind CSS** | 3.4+ | Styling | Rapid UI development, excellent mobile-first responsive design, smaller bundle than component libraries |
-| **shadcn/ui** | Latest | Component library | Unstyled, accessible components you own (no dependency), Tailwind-based, ideal for custom construction UI |
-| **React Query (TanStack Query)** | 5.x | Server state | Handles caching/optimistic updates for project data, reduces backend load, offline-first capabilities |
-| **Zustand** | 4.x | Client state | Lightweight, TypeScript-first, handles UI state (modals, filters) without Redux complexity |
+**Status:** Currently using `tailwindcss-animate` (line 62). **Need to migrate when upgrading to Tailwind v4.**
 
-**Rationale:**
-- Next.js 14 App Router for server components (critical for initial page loads with large project data)
-- shadcn/ui over Material-UI/Ant Design: you need custom construction workflows (Gantt charts, bid comparisons, RFQ builders) — pre-built component libraries fight you
-- React Query essential for optimistic updates (mark RFQ sent, update project status) and cache invalidation across tenants
-- Zustand for simple client state (form wizards, modal state) without Redux boilerplate
+**Migration Steps:**
+1. Remove `tailwindcss-animate` from package.json
+2. Remove `@plugin 'tailwindcss-animate'` from globals.css
+3. Install `tw-animate-css` as dev dependency
+4. Add `@import "tw-animate-css"` to globals.css
 
-**Alternatives Considered:**
-| Choice | Alternative | Why Not |
-|--------|-------------|---------|
-| Next.js | Remix | Smaller ecosystem, less mature, Next.js is industry standard |
-| Next.js | Vite + React | No server components, manual API routing, slower initial loads |
-| shadcn/ui | Material-UI | Heavy bundle, fights custom construction UI patterns |
-| shadcn/ui | Chakra UI | Less active development, switching to paid model |
+**Note:** Not urgent unless migrating to Tailwind v4.
 
-### AI Integration
+## Installation Commands
 
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| **OpenAI API** | Latest | AI drafting engine | Best-in-class for long-form business writing (RFQs, emails), structured output for construction templates |
-| **Vercel AI SDK** | 3.x | AI framework | Streaming responses, prompt management, handles rate limiting, integrates with Next.js |
-| **Zod** | 3.x | Schema validation | Define construction document schemas, validate AI outputs against required fields |
-
-**Rationale:**
-- OpenAI GPT-4 Turbo for drafting: proven for business writing, structured outputs (JSON mode) for template filling
-- Vercel AI SDK handles streaming (show RFQ generation in real-time), retries, and provider abstraction
-- Zod critical for validating AI-generated construction documents against required fields (project #, scope, dates)
-
-**Alternative Considered:**
-| Choice | Alternative | Why Not |
-|--------|-------------|---------|
-| OpenAI | Anthropic Claude | Excellent but less ecosystem tooling, Vercel AI SDK supports both (keep option open) |
-| OpenAI | Open-source LLMs | Not reliable enough for customer-facing business documents in v1 |
-| Vercel AI SDK | LangChain | Over-engineered for drafting use case, slower to iterate |
-
-### Authentication & Authorization
-
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| **Clerk** | Latest | Auth platform | Zero Trust by default (MFA, short-lived tokens, session management), excellent DX, handles multi-tenant user assignment |
-| **CASL** | 6.x | Authorization (PBAC) | Define permissions-based access control, integrates with TypeScript for type-safe policies |
-
-**Rationale:**
-- Clerk over Auth0/Cognito: built for multi-tenant SaaS, handles organization/user relationships, NextJS integration, MFA out-of-box
-- Clerk provides JWT with short expiry, automatic token refresh, WebAuthn support
-- CASL for PBAC: define "Project Manager can edit RFQs on assigned projects" in type-safe code, not scattered conditionals
-
-**Alternatives Considered:**
-| Choice | Alternative | Why Not |
-|--------|-------------|---------|
-| Clerk | Auth0 | More expensive at scale, complex multi-tenant setup |
-| Clerk | AWS Cognito | Poor DX, manual MFA implementation, no org management |
-| Clerk | NextAuth | Manual MFA, session management, no built-in org/tenant handling |
-| CASL | Roll your own | High risk for security bugs, complex to maintain |
-
-### API & Integration Layer
-
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| **tRPC** | 10.x | Type-safe API | End-to-end type safety from backend to frontend, auto-complete API calls, catch breaking changes at compile time |
-| **Zod** | 3.x | Runtime validation | Validate API inputs, construction form data, integration payloads |
-| **Bull/BullMQ** | Latest | Job queue | Background jobs for AI generation, QuickBooks sync, email sending, long-running reports |
-| **Redis** | 7.x | Cache + Queue backing | Session cache, API rate limiting, job queue backing store |
-
-**Rationale:**
-- tRPC for internal APIs: shared types between Next.js and backend eliminate API drift, critical for fast iteration
-- BullMQ over AWS SQS: cloud-agnostic, better local dev experience, built-in retry/scheduling, Redis required anyway for caching
-- Redis essential for: rate limiting AI calls per company, caching company settings, session storage, job queue
-
-**Alternatives Considered:**
-| Choice | Alternative | Why Not |
-|--------|-------------|---------|
-| tRPC | REST | No type safety, manual API contracts, slower iteration |
-| tRPC | GraphQL | Over-engineered for this use case, complex caching |
-| BullMQ | AWS SQS | Cloud lock-in, complex local dev, less visibility |
-
-### External Integrations
-
-| Technology | Purpose | Why |
-|------------|---------|-----|
-| **QuickBooks Online API** | ERP bi-directional sync | Industry standard for construction accounting, OAuth 2.0, webhooks for real-time updates |
-| **Microsoft Graph API** | Calendar integration | Covers Outlook + Microsoft 365 (dominant in commercial construction) |
-| **Google Calendar API** | Calendar integration | Coverage for Google Workspace users |
-| **Twilio SendGrid** | Transactional email | Reliable delivery, email templates, tracking/analytics |
-| **Stripe** | Subscription billing | Industry standard, handles tiered pricing + add-on modules, excellent docs |
-
-**Rationale:**
-- QuickBooks Online (not Desktop): cloud-first, real-time sync, used by 80%+ of small-mid contractors
-- Microsoft Graph prioritized over Google: commercial construction heavily uses Microsoft 365
-- Stripe over homegrown billing: handles SCA, tax, prorations, subscription management — critical for add-on module control
-
-### File Storage
-
-| Technology | Purpose | Why |
-|------------|---------|-----|
-| **S3-compatible storage** | Document storage | Cloud-agnostic (AWS S3, MinIO, Cloudflare R2), presigned URLs for secure direct upload |
-| **@aws-sdk/client-s3** | S3 client | Standard interface, works with any S3-compatible provider |
-
-**Rationale:**
-- S3-compatible API is industry standard, enables cloud-agnostic deployment (AWS, DigitalOcean Spaces, MinIO on-prem)
-- Presigned URLs critical for construction documents: clients upload directly, no backend bandwidth, tenant-isolated buckets
-
-### Container Orchestration & Deployment
-
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| **Docker** | 24.x | Containerization | Industry standard, consistent dev/prod, enables cloud-agnostic deployment |
-| **Kubernetes** | 1.28+ | Orchestration | Cloud-agnostic, handles multi-tenancy isolation, horizontal scaling, standard across GCP/AWS/Azure/DigitalOcean |
-| **Helm** | 3.x | Package management | Templated deployments, environment-specific configs, rollback support |
-| **Terraform** | 1.6+ | Infrastructure as Code | Cloud-agnostic provisioning, version-controlled infrastructure |
-
-**Rationale:**
-- Kubernetes for cloud-agnostic: works on GKE, EKS, AKS, DigitalOcean, even on-prem
-- Helm for environment management: same chart for dev/staging/prod with value overrides
-- Terraform over CloudFormation/ARM: works across all clouds, large module ecosystem
-
-**Alternatives Considered:**
-| Choice | Alternative | Why Not |
-|--------|-------------|---------|
-| Kubernetes | Docker Swarm | Dying ecosystem, less cloud support |
-| Kubernetes | ECS/Fargate | AWS lock-in, defeats cloud-agnostic goal |
-| Kubernetes | Platform.sh/Render | Vendor lock-in, less control over multi-tenancy |
-
-### Observability & Monitoring
-
-| Technology | Purpose | Why |
-|------------|---------|-----|
-| **OpenTelemetry** | Distributed tracing | Vendor-agnostic observability, trace requests across services |
-| **Prometheus** | Metrics | Cloud-agnostic, Kubernetes-native, standard for container metrics |
-| **Grafana** | Visualization | Open-source, works with Prometheus, customizable dashboards |
-| **Sentry** | Error tracking | Excellent Next.js/Node.js integration, source maps, release tracking |
-
-**Rationale:**
-- OpenTelemetry for vendor-agnostic tracing (can send to any backend: Jaeger, Grafana Tempo, Datadog)
-- Prometheus + Grafana for cost-effective monitoring (avoid CloudWatch/Stackdriver lock-in)
-- Sentry for application errors: critical for catching tenant isolation bugs
-
-### Development & Testing
-
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| **pnpm** | 8.x | Package manager | Faster than npm/yarn, saves disk space with shared dependencies, strict dependency resolution |
-| **Vitest** | 1.x | Unit testing | Fast, Vite-powered, better TypeScript support than Jest |
-| **Playwright** | 1.40+ | E2E testing | Multi-browser, excellent debugging, test multi-tenant isolation |
-| **ESLint** | 8.x | Linting | Catch bugs, enforce code style |
-| **Prettier** | 3.x | Code formatting | Consistent formatting across team |
-| **Husky** | 8.x | Git hooks | Pre-commit linting, prevent broken commits |
-
-**Rationale:**
-- pnpm over npm: monorepo-friendly if you split frontend/backend, 2x faster installs
-- Vitest over Jest: native ESM support, faster, better watch mode for rapid iteration
-- Playwright over Cypress: better for testing multi-tenant scenarios (parallel isolated sessions)
-
----
-
-## Complete Installation Guide
-
-### Backend Dependencies
-
+### Immediate Additions (High Priority)
 ```bash
-# Core framework
-pnpm add fastify @fastify/cors @fastify/helmet @fastify/rate-limit
+# Install missing core libraries
+npm install nuqs@^2.8.8 @tanstack/react-table@^8.21.3
 
-# Database
-pnpm add drizzle-orm postgres pg
-pnpm add -D drizzle-kit
+# Add shadcn drawer component
+npx shadcn-ui@latest add drawer
 
-# Validation
-pnpm add zod
-
-# Job queue
-pnpm add bullmq ioredis
-
-# Auth
-pnpm add @clerk/fastify
-
-# AI
-pnpm add openai ai
-
-# S3
-pnpm add @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
-
-# Utilities
-pnpm add dayjs nanoid
-
-# Dev dependencies
-pnpm add -D typescript @types/node tsx vitest
+# Optional: Input masking if needed
+npm install react-imask@^7.6.1
 ```
 
-### Frontend Dependencies
-
+### Recommended Upgrades
 ```bash
-# Framework
-pnpm create next-app@latest --typescript --tailwind --app
+# Upgrade to Zod v4 for latest features
+npm install zod@^4.3.5
 
-# UI
-pnpm add @radix-ui/react-* class-variance-authority clsx tailwind-merge
-# (Install shadcn/ui components as needed via CLI)
+# Upgrade date-fns to v4 for better tree-shaking
+npm install date-fns@^4.1.0
 
-# State management
-pnpm add @tanstack/react-query zustand
-
-# API
-pnpm add @trpc/client @trpc/server @trpc/react-query @trpc/next
-
-# Auth
-pnpm add @clerk/nextjs
-
-# Forms
-pnpm add react-hook-form @hookform/resolvers
-
-# AI
-pnpm add ai
-
-# Utilities
-pnpm add date-fns zod
-
-# Dev dependencies
-pnpm add -D @playwright/test
+# Optional: Timezone support
+npm install date-fns-tz@^3.2.0
 ```
 
----
-
-## Architecture Decisions
-
-### Why Schema-Per-Tenant (Not DB-Per-Tenant)
-
-**Chosen:** PostgreSQL schemas with `SET search_path`
-
-**Why:**
-- Manageable at scale: 1000 companies = 1000 schemas in 1 DB, not 1000 DB instances
-- Backup/restore simplicity: single database dump
-- Cross-tenant queries for admin/analytics (with care)
-- Connection pooling via pgBouncer
-- Lower infrastructure cost
-
-**Not DB-per-tenant because:** Unmanageable past 50-100 tenants, expensive, complex migrations
-
-**Not shared tables with tenant_id because:** Risk of data leakage, complex queries, not true isolation for sensitive construction/financial data
-
-### Why tRPC Over REST/GraphQL
-
-**Chosen:** tRPC for internal Next.js ↔ backend APIs
-
-**Why:**
-- Type safety: API changes break at compile time, not runtime
-- Developer velocity: autocomplete for all API calls, no manual API client code
-- Refactor confidence: rename backend function → TypeScript finds all frontend usages
-- Perfect for monorepo or collocated Next.js + API routes
-
-**REST for:** External integrations (QuickBooks, calendar) — tRPC is internal-only
-
-### Why Next.js Server Components
-
-**Chosen:** Next.js 14 App Router with server components
-
-**Why:**
-- Performance: Large project data fetched on server, send HTML not JSON
-- Security: Database queries in server components, no API exposure
-- SEO: Marketing pages (pricing, features) are server-rendered
-- Streaming: Show project list while RFQs load
-
-**Risk:** New paradigm (App Router stabilized in 13.4, now mature in 14.x)
-
-### Why Fastify Over NestJS
-
-**Chosen:** Fastify with manual structure
-
-**Why:**
-- Speed: 3-4x faster than Express, 2x faster than NestJS
-- Simplicity: No DI container, no decorators, easier to debug
-- Plugin system: Clean tenant middleware injection
-- TypeScript: Excellent inference without decorators
-
-**Not NestJS because:** Over-engineered for this project, slower iteration, steeper learning curve for team
-
----
-
-## Cloud-Agnostic Strategy
-
-### Abstraction Points
-
-| Layer | Abstraction | Implementation |
-|-------|-------------|----------------|
-| **Compute** | Kubernetes | Works on GKE, EKS, AKS, DOKS |
-| **Database** | PostgreSQL | Managed on all clouds (RDS, CloudSQL, Azure DB) |
-| **Storage** | S3 API | AWS S3, MinIO, Cloudflare R2, DigitalOcean Spaces |
-| **Queue** | BullMQ + Redis | Self-hosted or managed Redis anywhere |
-| **Observability** | OpenTelemetry | Send to any backend (Jaeger, Grafana, Datadog) |
-
-**Avoid:**
-- AWS Lambda (use Kubernetes)
-- DynamoDB (use PostgreSQL)
-- CloudFormation (use Terraform)
-- AWS-specific services (SES → SendGrid, SQS → BullMQ)
-
-### Deployment Pattern
-
-```
-Terraform provisions:
-  → Kubernetes cluster (GKE/EKS/AKS/DOKS)
-  → Managed PostgreSQL
-  → Managed Redis
-  → S3-compatible storage
-
-Helm deploys to Kubernetes:
-  → Next.js app (stateless pods)
-  → Fastify API (stateless pods)
-  → BullMQ workers (stateless pods)
-  → pgBouncer (connection pooling)
-  → Prometheus + Grafana (monitoring)
+### Future Migration (Tailwind v4)
+```bash
+# When ready to migrate to Tailwind v4
+npm uninstall tailwindcss-animate
+npm install -D tw-animate-css
 ```
 
----
+## Alternatives Considered
 
-## Security Considerations
+| Category | Recommended | Alternative | Why Not Alternative |
+|----------|-------------|-------------|---------------------|
+| **URL State** | nuqs | Manual `useSearchParams` + `useRouter` | Too verbose, no type safety, easy to misuse (shallow routing, race conditions) |
+| **Data Tables** | @tanstack/react-table | Custom table logic | Complex edge cases (column resizing, virtualization) solved by TanStack |
+| **Charts** | recharts | Tremor | Tremor too opinionated, limits low-level customization, tightly coupled to Tailwind |
+| **Date Formatting** | date-fns | dayjs | date-fns has better tree-shaking, more functions, larger ecosystem |
+| **Input Masking** | react-imask | react-number-format | IMask has broader pattern support (dates, regex) |
+| **Toast** | sonner | react-hot-toast | Sonner has better shadcn integration, promise API, auto-theming |
 
-### Multi-Tenant Isolation
+## What NOT to Use
 
-| Layer | Mechanism |
-|-------|-----------|
-| **Auth** | Clerk organizations map to companies |
-| **Database** | PostgreSQL schemas, SET search_path per request |
-| **Middleware** | Fastify hooks validate company_id from JWT → set schema |
-| **Storage** | S3 bucket folders per company, presigned URLs with tenant check |
-| **API** | CASL checks: user.company_id matches resource.company_id |
+| Avoid | Why | Use Instead |
+|-------|-----|-------------|
+| **moment.js** | Deprecated, huge bundle size (70KB), mutable API causes bugs | date-fns (tree-shakable, immutable) |
+| **react-icons** | Imports all icon sets even if unused, bloats bundle | lucide-react (tree-shakable, shadcn default) |
+| **Custom form validation** | Reinventing the wheel, missing edge cases, no type safety | react-hook-form + zod |
+| **localStorage for theme** | Flash on page load, no SSR support, requires manual sync | next-themes (zero-flash, SSR-safe) |
+| **Tremor charts** | Opinionated design system, limits customization | recharts (more control) |
+| **Dynamic icon loading** | `icons[name]` pattern imports all icons, increases build time | Direct imports: `import { Icon } from 'lucide-react'` |
 
-### Zero Trust Implementation
+## Stack Patterns for This Project
 
-```typescript
-// Every API request:
-1. Clerk validates JWT (MFA, short-lived token)
-2. Extract user_id + company_id from token
-3. Fastify middleware: SET search_path = company_{id}
-4. CASL checks: user has permission for action on resource
-5. Execute query (automatically scoped to company schema)
+### Pattern 1: Server + Client Validation
+**Use for:** All forms (bid creation, change orders, payments)
+
+```tsx
+// schema.ts (shared)
+export const bidSchema = z.object({
+  amount: z.number().positive(),
+  projectId: z.string().uuid()
+})
+
+// client component
+const form = useForm({
+  resolver: zodResolver(bidSchema)
+})
+
+// server action
+export async function createBid(data: unknown) {
+  const validated = bidSchema.parse(data) // Same schema!
+  // ...
+}
 ```
 
----
+**Why:** Single source of truth. Client validation prevents bad UX, server validation prevents malicious data.
 
-## Performance Optimizations
+### Pattern 2: URL-Driven Filtering
+**Use for:** Budget tables, change order lists, payment grids
 
-### Database
+```tsx
+const [status, setStatus] = useQueryState('status', parseAsString.withDefault('all'))
+const [sort, setSort] = useQueryState('sort', parseAsString.withDefault('date'))
 
-- **Indexes:** Company-specific indexes in each schema (project dates, RFQ status)
-- **Connection pooling:** pgBouncer in transaction mode
-- **Read replicas:** For reporting/analytics (not in v1)
+// URL: /budgets?status=approved&sort=date
+// Shareable, bookmarkable, back-button works
+```
 
-### Caching
+**Why:** Enterprise apps need shareable filter states. URL state enables bookmarking, back button, deep linking.
 
-- **Redis layers:**
-  - Company settings (rarely change)
-  - User permissions (invalidate on role change)
-  - API rate limits (per company, per user)
+### Pattern 3: Responsive Modal/Drawer
+**Use for:** Change order details, document viewer, filter panels
 
-### Frontend
+```tsx
+// Desktop: Dialog, Mobile: Drawer
+const isMobile = useMediaQuery('(max-width: 768px)')
 
-- **React Query:** Stale-while-revalidate for project lists
-- **Optimistic updates:** Mark RFQ sent immediately, rollback if fails
-- **Server components:** Project dashboard data fetched on server
+{isMobile ? (
+  <Drawer>...</Drawer>
+) : (
+  <Dialog>...</Dialog>
+)}
+```
 
----
+**Why:** Procore-style density on desktop, mobile-friendly on tablets/phones.
 
-## Cost Optimization
+### Pattern 4: Optimistic Updates with Toast Feedback
+**Use for:** Any mutation (create, update, delete)
 
-### Infrastructure Costs
+```tsx
+const mutation = useMutation({
+  onMutate: async (newData) => {
+    toast.promise(mutation.mutateAsync(newData), {
+      loading: 'Saving...',
+      success: 'Saved!',
+      error: 'Failed to save'
+    })
+  }
+})
+```
 
-| Service | Provider | Est. Cost (100 companies) |
-|---------|----------|---------------------------|
-| Kubernetes | DigitalOcean | $200/mo (3 nodes) |
-| PostgreSQL | DO Managed DB | $60/mo (4GB) |
-| Redis | DO Managed | $15/mo (1GB) |
-| S3 Storage | Cloudflare R2 | ~$15/mo (100GB) |
-| **Total** | | **~$290/mo** |
+**Why:** Immediate feedback. Promise-based toasts show loading → success/error automatically.
 
-**vs AWS:** ~$500-700/mo for equivalent (EKS more expensive than DOKS)
+## Version Compatibility Matrix
 
-### SaaS Costs
+| Package | Version | Compatible With | Notes |
+|---------|---------|-----------------|-------|
+| next-themes | ^0.4.6 | Next.js 14.x, React 18.x | Works with App Router |
+| react-hook-form | ^7.71.1 | zod ^3.25 or ^4.x, @hookform/resolvers ^5.2 | v8 in beta (breaking changes) |
+| zod | ^4.3.5 | @hookform/resolvers ^5.2+ | v4 requires resolver 5.2+ |
+| @hookform/resolvers | ^5.2.2 | react-hook-form ^7.x, zod ^3.25+ or ^4.x | Auto-detects Zod v3 vs v4 |
+| nuqs | ^2.8.8 | Next.js 14.2+, React 18+ | Requires `NuqsAdapter` in layout |
+| @tanstack/react-table | ^8.21.3 | React 16.8, 17, 18, 19 | Headless, framework-agnostic |
+| date-fns | ^4.1.0 | date-fns-tz ^3.2.0 | v4 has breaking changes from v2 |
+| cmdk | ^1.1.1 | React 18+ | v1.0+ requires `<CommandList>` wrapper |
+| sonner | ^2.0.7 | next-themes (auto-theming) | Works without next-themes but no dark mode |
+| tailwindcss-animate | ^1.0.7 | Tailwind CSS 3.x | **Deprecated for Tailwind v4** → use tw-animate-css |
 
-| Service | Cost |
-|---------|------|
-| Clerk | $25/mo (free tier → 10k MAUs, then $0.02/MAU) |
-| OpenAI | ~$100-300/mo (depends on AI usage) |
-| Stripe | 2.9% + $0.30 per transaction |
-| SendGrid | Free tier → $20/mo (40k emails) |
+## Integration Architecture
 
----
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      Next.js 14 App Router                  │
+│                     (Existing Foundation)                   │
+└─────────────────────────────────────────────────────────────┘
+                              │
+        ┌─────────────────────┼─────────────────────┐
+        │                     │                     │
+┌───────▼────────┐   ┌────────▼────────┐   ┌───────▼────────┐
+│  Theme Layer   │   │  Form Layer     │   │  Data Layer    │
+│                │   │                 │   │                │
+│ next-themes    │   │ react-hook-form │   │ TanStack Table │
+│ (dark mode)    │   │ zod (validation)│   │ (tables)       │
+│                │   │ react-imask     │   │ recharts       │
+│                │   │ (input masks)   │   │ (charts)       │
+└────────────────┘   └─────────────────┘   └────────────────┘
+        │                     │                     │
+        └─────────────────────┼─────────────────────┘
+                              │
+        ┌─────────────────────┼─────────────────────┐
+        │                     │                     │
+┌───────▼────────┐   ┌────────▼────────┐   ┌───────▼────────┐
+│  UI Layer      │   │ Navigation      │   │  State Layer   │
+│                │   │                 │   │                │
+│ shadcn/ui      │   │ cmdk (search)   │   │ nuqs (URL)     │
+│ Radix UI       │   │ vaul (drawer)   │   │ React Query    │
+│ lucide-react   │   │ breadcrumbs     │   │ (existing)     │
+│ sonner (toast) │   │                 │   │                │
+└────────────────┘   └─────────────────┘   └────────────────┘
+        │                     │                     │
+        └─────────────────────┼─────────────────────┘
+                              │
+                ┌─────────────▼─────────────┐
+                │   Tailwind CSS 3.x        │
+                │   (Utility-first styling) │
+                └───────────────────────────┘
+                              │
+                ┌─────────────▼─────────────┐
+                │   tRPC + PostgreSQL       │
+                │   (Existing Backend)      │
+                └───────────────────────────┘
+```
 
-## Migration Paths
+**Key Insight:** All additions are NON-BREAKING. They layer on top of existing Next.js/Tailwind/shadcn foundation without requiring architectural changes.
 
-### If You Outgrow This Stack
+## Migration Strategy
 
-**PostgreSQL schemas → Separate databases:**
-- At 5000+ companies, consider sharding by company_id ranges
-- Tooling exists: Citus Data, PostgreSQL partitioning
+### Phase 1: Install Core Additions (Week 1)
+1. Install nuqs for URL state management
+2. Install @tanstack/react-table for data tables
+3. Add shadcn Drawer component
+4. Add react-imask for input masking
 
-**Kubernetes → Serverless:**
-- If workload becomes unpredictable, consider cloud functions for specific endpoints
-- Keep core on Kubernetes for cost predictability
+### Phase 2: Upgrade Dependencies (Week 2)
+1. Upgrade zod to v4
+2. Upgrade date-fns to v4
+3. Test form validation (zod v4 has type system changes)
+4. Test date formatting (date-fns v4 has API changes)
 
-**OpenAI → Fine-tuned model:**
-- After collecting construction document corpus, fine-tune for cost savings
-- Estimate: 6-12 months of data needed
-
----
-
-## Anti-Patterns to Avoid
-
-### Database
-
-**DON'T:** Use MongoDB for financial/project data
-- **WHY:** No schema isolation, weak consistency for money calculations, complex transactions
-
-**DON'T:** Premature database sharding
-- **WHY:** PostgreSQL schemas scale to thousands of tenants, sharding adds massive complexity
-
-### API Design
-
-**DON'T:** Mix tRPC and REST for internal APIs
-- **WHY:** Loses type safety benefits, confusing for team
-
-**DON'T:** Put business logic in Next.js API routes
-- **WHY:** Hard to test, hard to reuse, couples to Next.js
-
-### Multi-Tenancy
-
-**DON'T:** Trust client-provided company_id
-- **WHY:** Catastrophic data leakage, always derive from authenticated JWT
-
-**DON'T:** Share connection pools without SET search_path
-- **WHY:** Query in wrong schema = data leak
-
-### AI
-
-**DON'T:** Let AI generate SQL or database queries in v1
-- **WHY:** SQL injection risk, hard to validate, not needed for drafting
-
-**DON'T:** Stream AI responses without validation
-- **WHY:** AI can hallucinate incorrect project numbers, dates, amounts
-
----
-
-## Confidence Assessment
-
-| Category | Confidence | Notes |
-|----------|------------|-------|
-| **Backend framework** | MEDIUM | Fastify is solid choice but version/latest features unverified |
-| **Database** | HIGH | PostgreSQL schema isolation is proven pattern for this use case |
-| **Frontend** | MEDIUM | Next.js 14 is current but specific version features unverified |
-| **AI integration** | MEDIUM | OpenAI API is stable but Vercel AI SDK v3 details unverified |
-| **Auth** | MEDIUM | Clerk excellent for SaaS but pricing/current features unverified |
-| **Container stack** | MEDIUM | K8s + Helm + Terraform is standard but version specifics unverified |
-| **Integration APIs** | LOW | QuickBooks/Microsoft Graph API versions and features unverified |
-
----
-
-## Required Verification Before Implementation
-
-### High Priority (Verify First)
-
-1. **Drizzle ORM schema-per-tenant support:** Verify 0.29+ supports dynamic schema switching
-2. **Clerk multi-tenant pricing:** Check current pricing for expected user counts
-3. **Next.js 14 App Router stability:** Verify server components are production-ready
-4. **Vercel AI SDK:** Confirm streaming + OpenAI integration status
-5. **QuickBooks Online API:** Verify OAuth flow, webhook support, rate limits
-
-### Medium Priority (Verify During Phase Planning)
-
-1. PostgreSQL 16 schema limits (should handle 10k+ schemas but verify)
-2. BullMQ Redis requirements (connection pooling, cluster support)
-3. Kubernetes version compatibility with cloud providers
-4. Microsoft Graph API calendar write permissions (commercial tenant requirements)
-
-### Low Priority (Verify During Implementation)
-
-1. Specific library versions (update to latest stable at implementation time)
-2. Tailwind CSS v4 status (major version in progress as of Jan 2025)
-3. Testing library specifics (Vitest/Playwright latest features)
-
----
-
-## Next Steps for Roadmap
-
-### Phase 1 Should Include
-
-- **Backend:** Fastify + PostgreSQL schema setup + Clerk auth
-- **Frontend:** Next.js + shadcn/ui + basic multi-tenant UI
-- **Infrastructure:** Local Docker Compose (PostgreSQL + Redis)
-- **Proof of concept:** Schema isolation working, user can't see other company data
-
-### Phase 2 Should Add
-
-- **AI:** OpenAI integration for basic RFQ drafting
-- **Queue:** BullMQ for background jobs
-- **Storage:** S3-compatible document upload
-
-### Phase 3+ Should Add
-
-- **Integrations:** QuickBooks, calendar APIs
-- **Production infra:** Kubernetes + Terraform
-- **Monitoring:** Full observability stack
-
-### Deep Research Flags
-
-**Phases needing deeper research:**
-- QuickBooks integration (OAuth, webhooks, data model mapping)
-- Calendar bi-directional sync (conflict resolution, timezone handling)
-- Kubernetes security (network policies, pod security, secrets management)
-
-**Phases unlikely to need research:**
-- Basic CRUD APIs (standard patterns)
-- User auth (Clerk handles it)
-- Frontend forms (React Hook Form is straightforward)
-
----
+### Phase 3: Future (When Ready for Tailwind v4)
+1. Migrate tailwindcss-animate → tw-animate-css
+2. Update Tailwind config to v4 format
+3. Test animations
 
 ## Sources
 
-**LIMITATION:** This research was conducted without access to verification tools. All recommendations are based on training data current through January 2025.
+### High Confidence (Official Documentation)
+- [next-themes GitHub](https://github.com/pacocoursey/next-themes) — Dark mode implementation
+- [shadcn/ui Dark Mode Guide](https://ui.shadcn.com/docs/dark-mode/next) — Next.js integration
+- [react-hook-form Documentation](https://react-hook-form.com/docs/useform) — Form state management
+- [@hookform/resolvers GitHub](https://github.com/react-hook-form/resolvers) — Zod compatibility
+- [nuqs Official Docs](https://nuqs.dev/) — URL state management
+- [nuqs GitHub](https://github.com/47ng/nuqs) — Installation guide
+- [TanStack Table Docs](https://tanstack.com/table/latest) — Table library
+- [shadcn/ui Command](https://ui.shadcn.com/docs/components/radix/command) — cmdk integration
+- [shadcn/ui Drawer](https://ui.shadcn.com/docs/components/radix/drawer) — Vaul integration
+- [date-fns Official Docs](https://date-fns.org/) — Date formatting
+- [lucide-react Guide](https://lucide.dev/guide/packages/lucide-react) — Icon usage
+- [Class Variance Authority](https://cva.style/docs) — Component variants
+- [shadcn Tailwind v4 Migration](https://ui.shadcn.com/docs/tailwind-v4) — Animation migration
 
-**Required verification sources:**
-- npm registry for current versions: https://www.npmjs.com
-- PostgreSQL documentation: https://www.postgresql.org/docs/
-- Next.js documentation: https://nextjs.org/docs
-- Drizzle ORM documentation: https://orm.drizzle.team/docs/overview
-- Clerk documentation: https://clerk.com/docs
-- OpenAI API documentation: https://platform.openai.com/docs
-- QuickBooks Online API: https://developer.intuit.com/app/developer/qbo/docs/get-started
-- Microsoft Graph API: https://learn.microsoft.com/en-us/graph/
+### Medium Confidence (Community Resources, Web Search)
+- [Managing Search Parameters in Next.js with nuqs - LogRocket](https://blog.logrocket.com/managing-search-parameters-next-js-nuqs/) — nuqs patterns
+- [TanStack Table Guide - LogRocket](https://blog.logrocket.com/tanstack-table-formerly-react-table/) — Migration guide
+- [date-fns vs dayjs Comparison](https://www.dhiwise.com/post/date-fns-vs-dayjs-the-battle-of-javascript-date-libraries) — Library comparison
+- [Sonner Toast Notifications - Medium](https://medium.com/@rivainasution/shadcn-ui-react-series-part-19-sonner-modern-toast-notifications-done-right-903757c5681f) — Best practices
+- [React Hook Form with Zod - Medium](https://medium.com/@techwithtwin/handling-forms-in-next-js-with-react-hook-form-zod-and-server-actions-e148d4dc6dc1) — Server Actions integration
+- [react-imask Documentation](https://imask.js.org/) — Input masking patterns
+- [cn() Utility Function Explained](https://thinkthroo.com/blog/cn-utility-function-in-shadcn-ui-ui) — Tailwind class merging
 
-**Recommended validation approach:**
-1. Verify all version numbers against official registries
-2. Check official documentation for current best practices
-3. Review recent GitHub issues for multi-tenant patterns
-4. Validate cloud provider managed service offerings
-5. Confirm integration API capabilities and pricing
+### Version Information (npm/GitHub)
+- [next-themes npm](https://www.npmjs.com/package/next-themes) — v0.4.6
+- [nuqs npm](https://www.npmjs.com/package/nuqs) — v2.8.8
+- [cmdk npm](https://www.npmjs.com/package/cmdk) — v1.1.1
+- [@tanstack/react-table npm](https://www.npmjs.com/package/@tanstack/react-table) — v8.21.3
+- [Zod v4 Compatibility Issue](https://github.com/react-hook-form/react-hook-form/issues/12829) — resolver support
 
 ---
 
-**End of Stack Research**
+*Stack research for: Enterprise UI/UX Enhancement — Construction Management SaaS*
+*Researched: 2026-02-14*
+*Next Step: Feed into roadmap creation (phase structure, technology decisions)*

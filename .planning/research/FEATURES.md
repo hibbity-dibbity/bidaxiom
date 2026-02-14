@@ -1,255 +1,244 @@
-# Feature Landscape
+# Feature Research
 
-**Domain:** Construction SaaS (Commercial Contractors - GCs and Subcontractors)
-**Researched:** 2026-02-10
-**Confidence:** MEDIUM (based on training data - web verification tools unavailable)
+**Domain:** Enterprise Construction Management UI/UX
+**Researched:** 2026-02-14
+**Confidence:** MEDIUM
 
-## Table Stakes
+## Feature Landscape
 
-Features users expect. Missing = product feels incomplete.
+### Table Stakes (Users Expect These)
+
+Features users assume exist. Missing these = product feels incomplete.
 
 | Feature | Why Expected | Complexity | Notes |
 |---------|--------------|------------|-------|
-| **Project Management Core** |
-| Project creation and setup | Foundation for all other features | Low | Project name, location, type, dates, team |
-| Project dashboard | Central hub for project status | Medium | Shows budget, schedule, RFIs, submittals at-a-glance |
-| Document management | Construction generates massive paper trails | Medium | Folder structure, version control, permissions |
-| Drawing management | Plans are the source of truth | High | Version control, markup, sheet navigation critical |
-| **Financial Management** |
-| Budget tracking | Contractors live/die by budget control | High | Line-item detail, cost codes, variance tracking |
-| Change order management | Changes are inevitable in construction | High | Approval workflow, budget impact, tracking |
-| Pay application (G702/G703) | Industry-standard billing format | High | AIA forms, stored materials, retainage, lien waivers |
-| Cost codes (CSI divisions) | Standard categorization system | Medium | 16 or 50 division formats, custom codes |
-| Invoice tracking | Track what's owed/paid | Medium | AP/AR, aging reports |
-| Commitment tracking | Track subcontracts and POs | High | Budget vs committed vs actual |
-| **Bidding/Procurement** |
-| RFQ creation and distribution | Core pre-construction activity | Medium | Template-based, multi-sub distribution |
-| Bid collection and comparison | Evaluate competing bids | Medium | Side-by-side comparison, scope leveling |
-| Subcontractor directory | Maintain qualified sub database | Low | Contact info, trades, past performance |
-| Bid package management | Organize scope for bidding | Medium | Drawings, specs, addenda tracking |
-| **Communication** |
-| RFI management | Questions are constant on jobs | Medium | Numbered tracking, response workflow, closeout |
-| Submittal management | Product approval workflow | Medium | Spec section tracking, review workflow, status |
-| Email integration | Construction still runs on email | Medium | Two-way sync, associate to projects |
-| Team directory | Know who to contact | Low | Contact info, roles, companies |
-| **Compliance/Administration** |
-| User permissions/roles | Control who sees what | Medium | Company-level, project-level, feature-level |
-| Audit trails | Track who changed what | Medium | Financial transactions especially critical |
-| Lien waiver collection | Legal requirement for payment | Medium | Conditional/unconditional, tracking |
-| Certified payroll (Davis-Bacon) | Required for public/prevailing wage work | High | Complex compliance rules |
-| Contract management | Store and track agreements | Medium | Dates, values, parties, amendments |
+| **Unified Top Navigation** | All enterprise construction software (Procore, Buildertrend, Sage) uses persistent top bar for global actions | LOW | Logo, global search, notifications, user menu |
+| **Contextual Sidebar Navigation** | Procore NGX vertical navigation pane is standard; users expect module switching without page reload | MEDIUM | Must support project-level and company-level contexts |
+| **Global Search** | Users expect to search across projects, jobs, customers, documents from anywhere | MEDIUM | Job number, project name, customer name minimum; document content nice-to-have |
+| **Dashboard with KPIs** | 83% of reviewers rate centralized dashboards as critical; users expect at-a-glance project health | MEDIUM | Revenue, margin, active projects, upcoming tasks minimum |
+| **Multiple View Modes** | Procore, Buildertrend, ProjectManager all offer kanban, list, calendar views | MEDIUM | At minimum: kanban/pipeline, list/table, calendar |
+| **Document Management with Search** | 83% rate document management critical; unlimited storage + version control + global search expected | MEDIUM | Already have basic system; need enhanced search + version control UI |
+| **Mobile-Responsive Design** | Field teams expect mobile access; 2026 standard is iPad multi-column layouts | HIGH | Offline support, glove-friendly touch targets, one-handed operation |
+| **Form Standardization** | Users expect consistent phone (___-___-____), address (USPS standard), date formats across all forms | LOW | Use input masking + validation; reduces data entry errors |
+| **Role-Based Views** | Enterprise software serves multiple roles; users expect role-appropriate default views | MEDIUM | Already have RBAC; need UI to respect roles (PM vs field vs admin) |
+| **Bulk Edit Operations** | Data-dense enterprise UIs require bulk actions to avoid repetitive work | MEDIUM | Select multiple items, apply changes to all |
+| **Automated Reporting** | Users expect software to generate reports without manual data assembly | MEDIUM | Already have reporting; need auto-scheduling + templates |
+| **Real-Time Collaboration** | Field + office expect to see updates immediately; no refresh required | HIGH | WebSocket layer + optimistic updates |
 
-## Differentiators
+### Differentiators (Competitive Advantage)
 
-Features that set product apart. Not expected, but valued.
+Features that set the product apart. Not required, but valuable for solo operators.
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| **AI/Automation** |
-| AI-assisted document drafting | Saves hours on RFQ/email writing | High | Context-aware, learns project specifics |
-| Auto-extract cost codes from invoices | Eliminate manual data entry | High | OCR + classification, accuracy critical |
-| Predictive budget variance alerts | Proactive vs reactive management | High | ML-based, requires historical data |
-| Smart bid leveling | Auto-identify scope gaps in bids | High | NLP to compare inclusions/exclusions |
-| **Collaboration** |
-| JV bid sharing | Enable formal partnerships | Medium | Shared budgets, split responsibilities |
-| Real-time co-editing | Multiple users editing simultaneously | High | Conflict resolution, sync |
-| External client portals | Give owners view without full access | Medium | White-labeled, controlled visibility |
-| Subcontractor self-service | Subs update their own data | Low | Reduces GC admin burden |
-| **Financial Intelligence** |
-| Cash flow forecasting | Know when money in/out | High | Based on pay app schedule, payment terms |
-| Profit fade tracking | Early warning of margin erosion | Medium | Compare forecast to actual over time |
-| Real-time project financial dashboard | Live P&L by project | High | Requires integration of all financial data |
-| Multi-project portfolio view | See all projects in one view | Medium | Roll-up reporting, filtering |
-| **Integration Ecosystem** |
-| QuickBooks bidirectional sync | Eliminate double entry | High | Push/pull projects, invoices, bills |
-| Calendar integration (Google/Outlook) | Meetings in one place | Low | Read/write calendar events |
-| Banking integration (Plaid) | Auto-match payments | Medium | Connect bank feeds to pay apps |
-| Estimating software integration | Bring estimates into projects | Medium | Import line items, cost codes |
-| **Workflow Optimization** |
-| Custom approval workflows | Match company processes | High | Configurable stages, parallel/serial |
-| Template library | Standardize documents | Low | RFQs, contracts, checklists |
-| Bulk actions | Process multiple items at once | Low | Mass email, status updates |
-| Mobile-first field updates | Update from job site | High | Offline mode, photo sync |
-| **Pricing Model Innovation** |
-| Freemium for subcontractors | Grow user base, network effects | Medium | Limited features, upsell path |
-| Usage-based pricing | Pay for what you use | Medium | Track usage, billing complexity |
-| Volume discounts for multi-project | Incentivize larger customers | Low | Tiered pricing by project count |
+| **Guided Estimating Workflow** | Procore/Sage assume estimating expertise; solo operators need step-by-step guidance | MEDIUM | Wizard-style with CSI divisions, suggested line items, validation |
+| **Optional Spreadsheet Mode** | Power users want spreadsheet-style bulk entry after learning workflow | LOW | Toggle between guided and table view for estimates |
+| **Task + Pipeline Dashboard Widgets** | Solo operators juggle estimating, bidding, execution; combined view saves context switching | LOW | Pipeline = bid opportunities; Tasks = action items across projects |
+| **Smart Job Numbering** | Auto-generate job numbers with configurable patterns; reduces admin overhead | LOW | Already implemented in Phase 2; expose in UI prominently |
+| **Company Branding Throughout** | Solo operators want professional proposal output with their logo/colors | LOW | Logo upload + color picker; apply to reports, proposals, client portal |
+| **Dark Mode Support** | Solo operators work early/late; reduces eye strain | LOW | CSS variables + theme toggle; improves retention |
+| **Contextual Project Header** | Pin project name, job number, margin at top of all project pages; reduces navigation | LOW | Persistent header when in project context |
+| **Workflow Automation** | Solo operators need software to automate routine tasks (status updates, notifications) | MEDIUM | Start with: auto-update project status based on milestones |
+| **OCR for Invoice Processing** | Solo operators manually enter vendor invoices; OCR extracts line items | HIGH | Use third-party OCR API; validate + allow manual correction |
+| **Quick-Add from Anywhere** | Solo operators need to capture tasks/expenses immediately without navigation | LOW | Global keyboard shortcut or floating action button |
+| **Offline-First Field Mode** | Spotty connectivity on sites; field data entry must work offline + sync later | HIGH | IndexedDB + sync queue + conflict resolution |
+| **Financial Snapshot Widget** | Solo operators need cash position + AR aging visible without drilling into reports | LOW | Simple dashboard widget with drill-down |
 
-## Anti-Features
+### Anti-Features (Commonly Requested, Often Problematic)
 
-Features to explicitly NOT build.
+Features that seem good but create problems for solo operators.
 
-| Anti-Feature | Why Avoid | What to Do Instead |
-|--------------|-----------|-------------------|
-| CPM scheduling (Gantt charts) | Procore/Buildertrend own this, high complexity, v1 scope creep | Simple milestone tracking, integrate with P6/MS Project later |
-| Native mobile app | Expensive to maintain iOS/Android, PWA suffices for v1 | Responsive web app, offline PWA |
-| Time tracking/timesheets | Feature bloat, payroll complexity, compliance minefield | Focus on project financials, integrate with Procore/ADP if needed |
-| Equipment tracking | Niche need, hardware dependencies (GPS/IoT) | Let specialized tools handle this |
-| Safety management | Highly regulated, liability concerns, specialized domain | Basic incident logging only, defer full safety module |
-| Quality control/inspections | Procore's differentiator, complex workflows | Basic punch list, defer QA/QC checklists |
-| HR/payroll | Outside core competency, high compliance risk | Integration with QuickBooks/ADP |
-| Bid parsing/AI reading PDFs | Accuracy challenges, over-promising risk for v1 | Manual entry with smart templates, defer to v2 |
-| BIM/3D model viewing | Extremely complex, niche for commercial, heavy infra | Link to external BIM tools if needed |
-| Accounting general ledger | QuickBooks exists, don't compete | Integrate, don't replace |
-| CRM pipeline management | Procore upsell, pre-pre-construction bloat | Simple lead tracking if anything |
-| Warranty tracking | Post-construction, different user needs | Defer to v2+ if customer demand |
-| Inventory management | Operational complexity, not project-focused | Track commitments/POs, not warehouse stock |
+| Feature | Why Requested | Why Problematic | Alternative |
+|---------|---------------|-----------------|-------------|
+| **Multi-Company Accounting** | Enterprise platforms have it | Solo operators manage one company; adds UI complexity without value | Single company focus; use tenant isolation for multi-entity contractors |
+| **Asset Lifecycle Tracking** | "Procore has it" | Relevant for large GCs with equipment fleets; solo operators rent | Link to rental agreements in documents; don't build asset module |
+| **Capital Project Management** | Seen in CMiC/Sage 300 | Designed for developers managing construction + long-term operations; overkill for contractors | Standard project lifecycle (bid → execute → closeout) |
+| **BIM Integration** | Sounds cutting-edge | Solo operators rarely use BIM; file size + complexity issues | Support PDF/DWG uploads; skip native BIM viewer |
+| **Advanced Analytics** | "Data-driven decisions" | Solo operators need KPIs, not BI tools; slow down workflows | Pre-built dashboard widgets with 3-5 critical KPIs |
+| **Real-Time Everything** | "Feels modern" | WebSocket overhead for features that don't need it; polling adequate for most | Real-time only for: collaboration, notifications, dashboard updates |
+| **Customizable Everything** | "Enterprise expects flexibility" | Configuration complexity overwhelms solo operators | Opinionated defaults with minimal essential settings |
+| **Multi-Location Coordination** | Large contractors have it | Solo operators work locally; adds unnecessary coordination overhead | Single primary location; support job site addresses per project |
+| **Gantt Chart Scheduling** | Traditional PM software has it | Solo operators use simpler milestone + deadline approach | Kanban + calendar views; skip Gantt complexity |
 
 ## Feature Dependencies
 
 ```
-Project Creation
-  └─> Budget Setup
-       ├─> Cost Codes (required)
-       ├─> Change Orders (modifies budget)
-       └─> Commitments (subcontracts/POs against budget)
-            └─> Pay Applications (bill against commitments)
-                 └─> Lien Waivers (required for payment)
+[Global Search]
+    └──requires──> [Unified Top Navigation]
+    └──requires──> [Database Indexing]
 
-RFQ Creation
-  ├─> Subcontractor Directory (distribution list)
-  ├─> Bid Package Management (what to include)
-  └─> Cost Codes (for budget line items)
-       └─> Bid Collection (responses mapped to codes)
-            └─> Budget Setup (winning bids become budget)
+[Contextual Sidebar Navigation]
+    └──requires──> [Unified Top Navigation]
+    └──requires──> [Role-Based Views]
 
-JV Bid Sharing
-  ├─> RFQ Creation (what's being bid)
-  ├─> Budget Setup (shared cost allocation)
-  └─> User Permissions (JV partner access)
+[Dashboard with KPIs]
+    └──requires──> [Automated Reporting]
+    └──requires──> [Financial Snapshot Widget]
 
-AI Document Drafting
-  ├─> Project Context (what project, scope, history)
-  ├─> Template Library (starting structure)
-  └─> User Permissions (who can use AI)
+[Guided Estimating Workflow]
+    └──requires──> [Form Standardization]
+    └──requires──> [CSI Division Data]
+    └──enhances──> [Optional Spreadsheet Mode]
 
-QuickBooks Integration
-  ├─> Cost Codes (map to QB classes/accounts)
-  ├─> Budget Setup (projects → jobs)
-  └─> Pay Applications (invoices) / Commitments (bills)
+[Mobile-Responsive Design]
+    └──requires──> [Offline-First Field Mode]
+    └──requires──> [Bulk Edit Operations] (for field efficiency)
 
-Freemium Sub Accounts
-  ├─> User Permissions (restricted feature set)
-  ├─> RFQ Response (core free feature)
-  └─> Upgrade Path (paid sub features visible but locked)
+[Real-Time Collaboration]
+    └──requires──> [WebSocket Infrastructure]
+    └──enhances──> [Dashboard with KPIs]
+
+[Company Branding]
+    └──requires──> [Logo Upload]
+    └──enhances──> [Automated Reporting]
+
+[OCR Invoice Processing]
+    └──requires──> [Document Management]
+    └──enhances──> [Automated Reporting]
+
+[Workflow Automation]
+    └──conflicts──> [Over-Customization] (keep simple)
 ```
 
-## MVP Recommendation
+### Dependency Notes
 
-### Phase 1: Core Financial Lifecycle (Table Stakes)
-**Prioritize:**
-1. **Project creation and setup** - Foundation
-2. **Budget tracking with cost codes** - Core value prop
-3. **Change order management** - Budget modifications
-4. **Commitment tracking** - Subcontracts and POs
-5. **Pay application (G702/G703)** - Billing foundation
-6. **Basic document management** - Store contracts, invoices
-7. **User permissions** - Multi-company security
+- **Global Search requires Unified Top Navigation:** Search bar lives in top bar for global access; needs indexing layer for performance
+- **Contextual Sidebar requires Role-Based Views:** Sidebar content changes based on user role (PM sees different tools than field crew)
+- **Guided Estimating enhances Spreadsheet Mode:** Users start with guided workflow, graduate to bulk entry when comfortable
+- **Mobile-Responsive requires Offline-First:** Field teams work on sites with spotty connectivity; offline support is non-negotiable
+- **Real-Time Collaboration enhances Dashboard:** Live KPI updates improve situational awareness; not critical for all features
+- **Workflow Automation conflicts with Over-Customization:** Keep automation simple + opinionated; avoid "workflow builder" complexity trap
 
-**Rationale:** Smallest feature set that delivers "full project financial lifecycle" promise. Users can track a project from budget to payment.
+## MVP Definition
 
-### Phase 2: Bidding Workflow (Table Stakes + Differentiator)
-**Add:**
-1. **RFQ creation and distribution** - Core pre-construction
-2. **Bid collection and comparison** - Evaluate subs
-3. **Subcontractor directory** - Manage sub database
-4. **JV bid sharing** - Differentiator for partnerships
-5. **Freemium sub accounts** - Network effect growth
+### Launch With (v1) - Enterprise UI Redesign
 
-**Rationale:** Completes "RFQ/bidding workflow" promise. JV sharing is unique differentiator.
+Minimum viable product — what's needed for Procore-style experience.
 
-### Phase 3: AI-Enhanced Productivity (Differentiator)
-**Add:**
-1. **AI-assisted RFQ drafting** - Speed up bid packages
-2. **AI-assisted email writing** - Communication efficiency
-3. **AI-assisted report generation** - Executive summaries
+- [ ] **Unified Top Navigation** — Foundation for all other navigation features; users expect consistent global actions
+- [ ] **Contextual Sidebar Navigation** — Vertical nav is 2026 standard (Procore NGX); enables fast module switching
+- [ ] **Global Search (Basic)** — Search projects, jobs, customers; most-requested feature for efficiency
+- [ ] **Dashboard with KPIs** — Executives + PMs need at-a-glance project health; table stakes for enterprise
+- [ ] **Multiple View Modes (List + Kanban)** — Pipeline management requires kanban; power users need table view
+- [ ] **Form Standardization** — Consistent phone/address/date inputs reduce errors; foundational for data quality
+- [ ] **Contextual Project Header** — Solo operators context-switch frequently; persistent header reduces navigation
+- [ ] **Company Branding (Logo + Colors)** — Professional output critical for solo operator credibility
+- [ ] **Dark Mode Support** — Low complexity, high retention value for users working early/late
 
-**Rationale:** Leverage AI for competitive advantage once core workflows proven.
+### Add After Validation (v1.x)
 
-### Phase 4: Integration & Polish (Table Stakes)
-**Add:**
-1. **QuickBooks integration** - Eliminate double entry
-2. **Calendar integration** - Meeting coordination
-3. **Drawing management** - Plans and versions
-4. **RFI management** - Field questions
-5. **Submittal management** - Product approvals
+Features to add once core is working.
 
-**Rationale:** Rounds out table stakes, reduces friction with existing tools.
+- [ ] **Guided Estimating Workflow** — Trigger: User feedback on estimating pain points; differentiator for solo operators
+- [ ] **Optional Spreadsheet Mode** — Trigger: Users request faster estimate entry after learning workflow
+- [ ] **Bulk Edit Operations** — Trigger: Users report repetitive data entry; productivity multiplier
+- [ ] **Task + Pipeline Dashboard Widgets** — Trigger: Dashboard v1 validated; add role-specific widgets
+- [ ] **Workflow Automation (Basic)** — Trigger: Identify top 3 repetitive tasks from usage data
+- [ ] **Global Search (Enhanced)** — Trigger: Document search requested; add full-text document content indexing
+- [ ] **Mobile-Responsive Enhancements** — Trigger: Field team feedback; optimize touch targets, offline sync
+- [ ] **Financial Snapshot Widget** — Trigger: CFO/owner requests cash visibility; add AR aging + cash position
 
-### Defer to v2+
-- **CPM scheduling** - Integrate with P6/MS Project instead
-- **Native mobile app** - Use responsive PWA first, validate need
-- **Time tracking** - Out of scope, payroll complexity
-- **Equipment tracking** - Niche need, hardware required
-- **Safety management** - Specialized domain, liability
-- **Bid parsing AI** - Accuracy risk, defer until core solid
+### Future Consideration (v2+)
 
-### Feature Complexity vs Value
+Features to defer until product-market fit is established.
 
-| Tier | Features | Build Priority |
-|------|----------|----------------|
-| **High Value, Low Complexity** | Project setup, cost codes, sub directory, freemium accounts | **Build first** |
-| **High Value, Medium Complexity** | RFQ workflow, budget tracking, change orders, commitments, JV sharing | **Build second** |
-| **High Value, High Complexity** | Pay applications, AI drafting, QuickBooks sync, drawing management | **Build third** |
-| **Medium Value, High Complexity** | CPM scheduling, bid parsing, BIM viewing | **Defer or avoid** |
+- [ ] **Real-Time Collaboration** — Why defer: Requires WebSocket infrastructure + complexity; polling adequate initially
+- [ ] **Offline-First Field Mode** — Why defer: High complexity; validate field usage patterns first
+- [ ] **OCR Invoice Processing** — Why defer: Third-party API costs; validate invoice volume justifies automation
+- [ ] **Quick-Add from Anywhere** — Why defer: Nice-to-have; users can navigate to forms initially
+- [ ] **Calendar View** — Why defer: Kanban + list cover 80% of use cases; calendar is v2 polish
+- [ ] **Automated Report Scheduling** — Why defer: Manual reports adequate; add when usage patterns emerge
 
-## Market Positioning Notes
+## Feature Prioritization Matrix
 
-### What Makes This Product Different
+| Feature | User Value | Implementation Cost | Priority |
+|---------|------------|---------------------|----------|
+| Unified Top Navigation | HIGH | LOW | P1 |
+| Contextual Sidebar Navigation | HIGH | MEDIUM | P1 |
+| Global Search (Basic) | HIGH | MEDIUM | P1 |
+| Dashboard with KPIs | HIGH | MEDIUM | P1 |
+| Form Standardization | HIGH | LOW | P1 |
+| Company Branding | MEDIUM | LOW | P1 |
+| Dark Mode | MEDIUM | LOW | P1 |
+| Contextual Project Header | MEDIUM | LOW | P1 |
+| Multiple View Modes | HIGH | MEDIUM | P1 |
+| Guided Estimating Workflow | HIGH | MEDIUM | P2 |
+| Bulk Edit Operations | HIGH | MEDIUM | P2 |
+| Task + Pipeline Widgets | MEDIUM | LOW | P2 |
+| Financial Snapshot Widget | MEDIUM | LOW | P2 |
+| Workflow Automation | MEDIUM | MEDIUM | P2 |
+| Mobile-Responsive Enhancements | HIGH | MEDIUM | P2 |
+| Global Search (Enhanced) | MEDIUM | MEDIUM | P2 |
+| Real-Time Collaboration | MEDIUM | HIGH | P3 |
+| Offline-First Field Mode | HIGH | HIGH | P3 |
+| OCR Invoice Processing | MEDIUM | HIGH | P3 |
+| Quick-Add from Anywhere | LOW | LOW | P3 |
+| Calendar View | LOW | MEDIUM | P3 |
 
-1. **JV bid sharing** - Unique collaboration model not in Procore/Buildertrend
-2. **AI-assisted drafting** - Emerging category, early mover advantage
-3. **Freemium sub model** - Network effects, not common in construction SaaS
-4. **Focused financial lifecycle** - Not trying to be all things (no scheduling, time tracking, equipment)
+**Priority key:**
+- P1: Must have for launch — enterprise UI redesign incomplete without these
+- P2: Should have, add when possible — differentiators for solo operators
+- P3: Nice to have, future consideration — validate usage before building
 
-### What Makes This Product Viable
+## Competitor Feature Analysis
 
-1. **Table stakes covered** - Budget, change orders, pay apps, RFQs
-2. **Integrates with incumbents** - QuickBooks for accounting, not competing with ERP
-3. **Right-sized complexity** - Small/mid commercial, not enterprise or residential
-4. **Clear upgrade path** - Free subs → paid subs, basic GC → full GC
-
-### Competitive Landscape Gaps
-
-| Competitor | Strong At | Weak At |
-|------------|-----------|---------|
-| **Procore** | Enterprise features, scheduling, everything | Expensive, complex for small/mid, no freemium |
-| **Buildertrend** | Residential, client communication | Commercial workflows, weak financials |
-| **CoConstruct** | Residential custom homes, client selection | Not for commercial |
-| **Proest/On-Center** | Estimating, takeoff | Weak project management, no bidding collaboration |
-| **BuilderTrend Bidding** | Simple bid collection | No JV sharing, no AI, basic financials |
-
-**This product fits:** Commercial GC/sub market between Buildertrend (too residential) and Procore (too expensive/complex), with JV and AI differentiation.
-
-## Feature Validation Sources
-
-**CONFIDENCE: MEDIUM (training data only - web verification unavailable)**
-
-This research is based on:
-- Training data knowledge of Procore, Buildertrend, CoConstruct, Viewpoint, Sage, CMiC
-- Understanding of AIA contract documents (G702/G703)
-- Construction industry workflows (pre-construction through closeout)
-- CSI MasterFormat cost code standards
-
-**GAPS:**
-- Unable to verify 2026 current feature sets of competitors
-- Unable to verify latest AI/automation trends in construction SaaS
-- Unable to verify current pricing models and freemium adoption
-- Unable to verify recent JV collaboration tool adoption
-
-**RECOMMENDATION:**
-- Validate table stakes list with 3-5 target users (GCs and subs)
-- Demo Procore, Buildertrend, BuilderTrend Bidding to confirm competitive gaps
-- Survey target market on JV bid sharing need (is this real or assumed?)
-- Test AI drafting value prop with actual RFQ/email writing tasks
+| Feature | Procore | Buildertrend | Our Approach (Solo Operator Focus) |
+|---------|---------|--------------|-------------------------------------|
+| **Navigation** | NGX vertical sidebar + top bar | Intuitive but feature-rich | Copy Procore NGX pattern; simplify module list for solo operator |
+| **Dashboard** | Role-based hubs (2026); customizable widgets | Pipeline + daily logs | Opinionated widgets (KPI + tasks + pipeline); minimal customization |
+| **Estimating** | Assumes expertise; integrates with Esticom | Proposal builder with templates | Guided workflow (step-by-step) + spreadsheet mode toggle |
+| **Mobile** | Multi-column iPad layouts; offline support | Mobile-first; client portal app | Responsive web (no separate app); offline for critical field ops |
+| **Search** | Global search across modules | Search within tools | Global search (projects, jobs, customers, documents) from top bar |
+| **Branding** | Enterprise white-label options | Logo on proposals/invoices | Simple logo upload + color picker; apply to all output |
+| **Views** | NGX list views with filters, bulk actions | Kanban for sales, Gantt for schedule | Kanban (pipeline) + table (list) + calendar (v2); skip Gantt |
+| **Automation** | Workflow engine with conditions | Automated client updates, surveys | Start simple: auto-status updates, notification rules (v1.x) |
+| **Dark Mode** | Not standard (as of 2025) | Not mentioned | Built-in theme toggle; CSS variables for easy switching |
+| **Forms** | Standardized across modules | Rich forms with e-signatures | Input masking (phone, address); validation; e-signatures (v2) |
 
 ## Sources
 
-**NOTE:** Web search tools were unavailable during research. All findings based on training data knowledge (cutoff January 2025). Confidence level: MEDIUM.
+**Enterprise Construction Software UX:**
+- [Procore Navigation Patterns 2026](https://www.procore.com/whats-new)
+- [Procore NGX Design Enhancements](https://support.procore.com/product-releases/weekly-release-notes/august-2025)
+- [Enterprise UX Design Best Practices 2026](https://fuselabcreative.com/enterprise-ux-design-guide-2026-best-practices/)
+- [Enterprise Construction Management Software Guide](https://www.ingenious.build/blog-posts/enterprise-construction-management-software)
 
-Recommend validating with:
-- Procore official documentation (procore.com/products)
-- Buildertrend feature list (buildertrend.com/features)
-- AIA Contract Documents (aiacontracts.org)
-- CSI MasterFormat (csiresources.org)
-- Target user interviews (3-5 GCs, 3-5 subs in commercial construction)
+**Competitor Analysis:**
+- [Buildertrend vs Sage 300 Interface Comparison](https://www.selecthub.com/construction-management-software/buildertrend-vs-sage-300-construction/)
+- [Procore Software Overview 2026](https://www.softwareadvice.com/construction/procore-profile/)
+
+**Dashboard and KPIs:**
+- [Construction Dashboard Software with KPIs](https://anterratech.com/modules/dashboards/)
+- [Construction Project Performance Dashboard](https://www.simplekpi.com/KPI-Dashboard-Examples/construction-project-performance-dashboard-example)
+- [What Should Be In a Construction Project Dashboard](https://ciposoftware.com/2025/07/10/what-should-be-in-a-construction-project-dashboard/)
+
+**Estimating Workflows:**
+- [Construction Estimating Software vs Spreadsheets 2025](https://123worx.com/blog/construction-estimating-software-vs-spreadsheets/)
+- [Excel vs Estimating Software for Construction](https://www.rib-software.com/en/blogs/spreadsheets-vs-estimating-software)
+- [What Top Home Builders Look for in Estimating Software](https://buildertrend.com/blog/which-construction-estimating-software-to-use/)
+
+**Mobile and Field Operations:**
+- [Mobile-First Design for Construction Management Software](https://altersquare.medium.com/mobile-first-design-for-construction-management-software-field-usability-guide-3f52adf45b02)
+- [Construction Field Management Software Guide](https://struxhub.com/blog/best-guide-to-construction-field-management-software-how-to-choose-the-right-construction-site-operations-solutions/)
+
+**Data Entry and Efficiency:**
+- [Streamlining Construction Operations: Reducing Manual Data Entry](https://aedo.com/streamlining-construction-operations-an-operations-leaders-guide-on-ways-to-reduce-manual-data-entry-2/)
+- [Form Standardization: Phone Number Best Practices](https://designsystem.digital.gov/patterns/create-a-user-profile/phone-number/)
+- [Address Standardization Software](https://dataladder.com/address-standardization-software/)
+
+**Small Contractor Focus:**
+- [Construction Management Software for Small Businesses](https://buildern.com/resources/blog/construction-management-software-for-small-businesses/)
+- [Unlock Growth with Small Business Contractor Software](https://cmicglobal.com/resources/article/Empowering-Small-Businesses-with-Contractor-Software-What-to-Look-for)
+- [Construction Software Mistakes to Avoid](https://blog.constructiononline.com/construction-management-software-mistakes-investing-without-implementation)
+
+**Dark Mode and Branding:**
+- [Dark Mode for Enterprise UI Design](https://www.edl.dk/feed/how-to-design-a-dark-mode-friendly-colour-system-for-enterprise-ui)
+- [Implementing Dark Theme in Enterprise Web Applications](https://mehdisolhan.medium.com/implementing-dark-theme-in-enterprise-web-applications-6d5c2b63f998)
+
+**Task Management and Views:**
+- [Pipeline CRM Kanban View](https://pipelinecrm.com/features/kanban/)
+- [Best Kanban Software for Teams 2026](https://www.wrike.com/kanban-guide/kanban-tools-software/)
+
+---
+*Feature research for: Enterprise Construction Management UI/UX*
+*Researched: 2026-02-14*

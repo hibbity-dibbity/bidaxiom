@@ -1,446 +1,393 @@
 # Project Research Summary
 
-**Project:** Construction Management SaaS
-**Domain:** Multi-tenant commercial/industrial construction platform
-**Researched:** 2026-02-10
-**Confidence:** MEDIUM
+**Project:** Enterprise UI/UX Enhancement — Construction Management SaaS
+**Domain:** Construction Management Software (Multi-tenant B2B SaaS)
+**Researched:** 2026-02-14
+**Confidence:** HIGH (stack, features, UI/UX pitfalls), MEDIUM (architecture patterns)
 
 ## Executive Summary
 
-This is a multi-tenant construction management SaaS targeting commercial GCs and subcontractors, positioned between residential-focused tools like Buildertrend and enterprise solutions like Procore. The recommended approach leverages proven multi-tenant patterns (PostgreSQL schema-per-company isolation), modern TypeScript stack (Next.js + Fastify + Drizzle), and strategic differentiation through AI-assisted document drafting and JV bid sharing capabilities.
+This research covers transforming an existing Next.js 14 construction management SaaS from functional to enterprise-grade. The current stack (Next.js 14, Tailwind, shadcn/ui, tRPC, PostgreSQL multi-tenant) is already enterprise-ready — this redesign is about strategic additions, not replacements. Research shows the platform needs Procore-style navigation patterns, global search, standardized forms, and professional polish to compete in the commercial/industrial construction market targeting solo operators and small general contractors.
 
-The core architecture must prioritize tenant isolation from day one, as retrofitting multi-tenancy is catastrophic. The PostgreSQL schema-per-company pattern provides strong isolation while remaining manageable at scale (1000+ tenants), with clear migration path to Citus if needed. Cloud-agnostic infrastructure (Kubernetes, S3-compatible storage, open-source tooling) prevents vendor lock-in while maintaining deployment flexibility across AWS, GCP, Azure, or DigitalOcean.
+The recommended approach is UI/UX-first enhancement: unified top navigation, contextual sidebar, global search, dashboard with KPIs, dark mode, and company branding. All additions are non-breaking and layer on top of existing architecture. The existing schema-per-tenant multi-tenant architecture is sound, requiring no changes for UI improvements. Key risk: UI redesigns in construction software fail when they break muscle memory and learned workflows. Mitigation: preserve secondary navigation paths during transition, test with actual construction PMs, and provide gradual rollout.
 
-Critical risks center on data integrity in financial workflows (budget/change order/payment cascades), AI context isolation preventing cross-tenant data leakage, and connection pool exhaustion as tenant count scales. These require architectural decisions in Phase 1 (foundation) that cannot be changed later. The recommended phased approach builds authentication and tenant isolation first, then core financial workflows, followed by differentiating features (AI, JV collaboration), and finally external integrations.
+Critical finding: Most "enterprise UI" pitfalls are preventable with upfront design — dark mode FOUC, navigation state leaks, global search performance degradation, and form validation breaking existing data are the top four destroyers of trust. All require specific technical patterns that must be implemented from day one, not retrofitted.
 
 ## Key Findings
 
 ### Recommended Stack
 
-The stack prioritizes cloud-agnostic deployment, multi-tenant isolation, and rapid iteration velocity. Node.js/TypeScript provides the ecosystem needed for construction integrations (QuickBooks, calendar APIs), while PostgreSQL schema isolation delivers the exact tenant separation pattern required.
+**All required libraries are already installed.** The existing stack (Next.js 14, Tailwind, shadcn/ui, Clerk, tRPC, PostgreSQL) is enterprise-ready. Strategic additions needed:
 
-**Core technologies:**
-- **PostgreSQL 16+ with schema-per-tenant**: Native schema support provides strong isolation, JSONB for flexible construction data, proven at 1000+ tenant scale
-- **Fastify + TypeScript**: 3-4x faster than Express, built-in schema validation, excellent plugin architecture for tenant middleware
-- **Next.js 14 App Router**: Server components for performance, built-in API routes, optimal for SaaS marketing pages and application UI
-- **Drizzle ORM**: Lightweight with excellent TypeScript inference, supports dynamic schema switching crucial for multi-tenancy
-- **Clerk**: Zero Trust authentication with MFA out-of-box, handles multi-tenant organization/user relationships natively
-- **tRPC**: End-to-end type safety eliminates API drift, critical for fast iteration in monorepo structure
-- **Kubernetes + Terraform + Helm**: Cloud-agnostic orchestration works across all major clouds and on-prem, avoids vendor lock-in
-- **OpenAI API + Vercel AI SDK**: Best-in-class for business document generation, streaming responses, structured outputs for construction templates
+**Immediate additions (HIGH priority):**
+- **nuqs** (^2.8.8) — Type-safe URL state management for filters, sorting, pagination. Used by Sentry, Supabase, Vercel. Enables shareable filter states and deep linking.
+- **@tanstack/react-table** (^8.21.3) — Headless table library for budget tables, change order lists, payment grids. Industry-leading solution for data-heavy views.
+- **shadcn Drawer component** (via CLI) — Mobile-first drawer powered by vaul. Essential for responsive modal/drawer patterns.
+- **react-imask** (^7.6.1) — Input masking for currency, phone numbers, percentages. Reduces data entry errors.
 
-**Critical version requirements:**
-- Node.js 20 LTS (stability through April 2026)
-- PostgreSQL 16+ (improved schema management)
-- Next.js 14.x (stable App Router with server components)
+**Recommended upgrades:**
+- **zod** (^3.25.76 → ^4.3.5) — Latest features and type system improvements
+- **date-fns** (^2.30.0 → ^4.1.0) — Better tree-shaking and performance
+
+**Already installed (no action needed):**
+- next-themes (dark mode), react-hook-form (forms), cmdk (command palette), sonner (toasts), recharts (charts), lucide-react (icons)
+
+**Key insight:** This is an additive stack strategy. No replacements, no architectural changes. All new libraries integrate seamlessly with existing tRPC + PostgreSQL backend.
 
 ### Expected Features
 
-Research reveals a clear split between table stakes (features users expect from any construction SaaS), competitive differentiators, and anti-features to explicitly avoid.
+**Must have for v1 (table stakes — enterprise UI redesign incomplete without these):**
+- Unified Top Navigation — Foundation for all navigation; users expect consistent global actions
+- Contextual Sidebar Navigation — Procore NGX vertical nav is 2026 standard; enables fast module switching
+- Global Search (Basic) — Search projects, jobs, customers; most-requested efficiency feature
+- Dashboard with KPIs — Executives/PMs need at-a-glance project health
+- Multiple View Modes (List + Kanban) — Pipeline management requires kanban; power users need table view
+- Form Standardization — Consistent phone/address/date inputs reduce errors
+- Contextual Project Header — Persistent project context reduces navigation
+- Company Branding (Logo + Colors) — Professional output critical for solo operator credibility
+- Dark Mode Support — Low complexity, high retention value for users working early/late
 
-**Must have (table stakes):**
-- Project creation and budget tracking with cost codes (CSI divisions)
-- Change order management with approval workflows
-- Commitment tracking (subcontracts and POs against budget)
-- Pay application (G702/G703) with retainage and lien waivers
-- RFQ creation, distribution, and bid comparison
-- Document management with version control
-- User permissions (company-level, project-level, role-based)
-- Audit trails for financial transactions
+**Should have for v1.x (differentiators for solo operators):**
+- Guided Estimating Workflow — Solo operators need step-by-step guidance (Procore assumes expertise)
+- Optional Spreadsheet Mode — Power users want bulk entry after learning workflow
+- Bulk Edit Operations — Productivity multiplier for repetitive data entry
+- Task + Pipeline Dashboard Widgets — Combined view saves context switching
+- Workflow Automation (Basic) — Auto-update project status based on milestones
+- Global Search (Enhanced) — Add document content indexing
+- Mobile-Responsive Enhancements — Optimize touch targets, offline sync
+- Financial Snapshot Widget — Cash position + AR aging visible without drilling into reports
 
-**Should have (competitive differentiators):**
-- AI-assisted document drafting (RFQs, emails, reports) - saves hours, context-aware
-- JV bid sharing - enables formal partnerships, unique collaboration model
-- Freemium subcontractor accounts - network effects, viral growth
-- QuickBooks bidirectional sync - eliminate double entry
-- Calendar integration (Google/Outlook) - centralize meeting coordination
+**Defer to v2+ (future consideration):**
+- Real-Time Collaboration — Requires WebSocket infrastructure; polling adequate initially
+- Offline-First Field Mode — High complexity; validate field usage patterns first
+- OCR Invoice Processing — Third-party API costs; validate invoice volume justifies automation
+- Quick-Add from Anywhere — Nice-to-have; users can navigate to forms initially
+- Calendar View — Kanban + list cover 80% of use cases
 
-**Defer (v2+ or avoid):**
-- CPM scheduling/Gantt charts - Procore owns this, extreme complexity
-- Native mobile apps - responsive PWA sufficient for v1
-- Time tracking/payroll - feature bloat, compliance minefield
-- Equipment tracking - niche need, hardware dependencies
-- BIM/3D model viewing - extreme complexity, specialized tools exist
-- Bid parsing AI - accuracy challenges, over-promising risk for v1
+**Anti-features (commonly requested, often problematic for solo operators):**
+- Multi-Company Accounting, Asset Lifecycle Tracking, BIM Integration, Gantt Chart Scheduling — All add complexity without value for target market
 
 ### Architecture Approach
 
-The architecture uses layered services with strict tenant isolation enforced at multiple levels: API Gateway for rate limiting, Shared Services for authentication/authorization/tenant context, Application Services for business logic, and Data Layer with PostgreSQL schema isolation.
+**Existing architecture is sound.** Multi-tenant schema-per-tenant with PostgreSQL + Clerk auth + tRPC API is appropriate. UI redesign requires NO architectural changes. Research focused on multi-tenant patterns for reference, but UI enhancement is purely presentation layer.
 
-**Major components:**
-1. **Tenant Context Service** - Maps company_id from JWT to schema name, validates user access, sets database search_path. Every request flows through this middleware before any business logic.
-2. **Authorization Service (PBAC)** - Permission-based access control evaluates "can user X perform action Y on resource Z in company A?" Cached with invalidation on policy changes.
-3. **AI Drafting Engine** - Document generation with strict per-company context isolation. Vector embeddings filtered by company_id to prevent cross-tenant data leakage.
-4. **Connection Pool Manager** - Shared pool with dynamic search_path switching, avoids per-schema pool explosion. Critical for scaling past 100 tenants.
-5. **JV Collaboration Service** - Mediates cross-company access via explicit relationships stored in shared schema. No direct cross-schema joins.
-6. **Integration Service** - Async job queue for QuickBooks/calendar sync, OAuth tokens stored per company (encrypted in tenant schema).
+**Major components (existing):**
+1. **API Layer** — tRPC + Fastify, JWT verification, role-based access control (RBAC)
+2. **Data Layer** — PostgreSQL schema-per-tenant, connection pooling with search_path
+3. **Auth Layer** — Clerk v5 (compact JWT with org claims)
+4. **Frontend** — Next.js 14 App Router, React Query (tRPC), shadcn/ui
 
-**Key patterns:**
-- Schema-per-tenant (not DB-per-tenant, not shared-tables-with-tenant-id)
-- Tenant Context middleware on every request (validates JWT, sets search_path)
-- Authorization-first service methods (check permissions before querying data)
-- Service-layer mediation for cross-company features (no direct schema joins)
+**UI enhancement adds (presentation layer only):**
+1. **Theme Management** — next-themes with cookie-based storage (prevents FOUC)
+2. **Form Layer** — react-hook-form + zod for standardized validation
+3. **Data Tables** — TanStack Table for budget/change order grids
+4. **Navigation State** — nuqs for URL-based filters/sorting
+5. **Global Search** — cmdk command palette with debounced tRPC queries
+
+**Key pattern:** Server Components for data fetching, Client Components for interactivity. Keep layouts stateless (structural only). Move page-specific state to page components.
 
 ### Critical Pitfalls
 
-Research identified pitfalls that cause rewrites, security breaches, or major business disruption. These must be addressed in architectural decisions during foundation phases.
+**Top 5 UI/UX-specific pitfalls that destroy trust:**
 
-1. **Schema-per-tenant connection pool exhaustion** - At scale, hundreds of active tenants exhaust connection pools causing cascading failures. Prevention: PgBouncer from start, connection limits per tenant, monitor from day one. Must be designed in Phase 1.
+1. **Flash of Unstyled Content (FOUC) in Dark Mode**
+   - **Problem:** Users see brief flash of light theme before dark theme applies on page load
+   - **Prevention:** Use cookie-based theme storage (not localStorage), inject blocking script in `<head>` before styles load, use `next-themes` with `suppressHydrationWarning`
+   - **Phase impact:** Must be correct in Phase 11 (Enterprise UI/UX) from day one
 
-2. **AI training data contamination across tenants** - AI models trained on cross-tenant data leak Company A's bid strategies into Company B's suggestions. Prevention: Tenant_id filtering at data layer (not application), separate vector stores or strict namespaces, audit with red team tests. Must be designed in Phase 2 (AI foundation).
+2. **Layout State Persistence Breaking Navigation**
+   - **Problem:** Persistent layouts in App Router preserve React state between navigations; filters/search from one page appear on unrelated pages
+   - **Prevention:** Keep layouts stateless for structure only; move interactive state to page components; use URL parameters for filters
+   - **Phase impact:** Must audit all layout state before migration
 
-3. **Change order cascade breaking budget integrity** - Change orders affect budgets → commitments → payment apps → QuickBooks sync. One failed update causes permanent inconsistency. Prevention: Database transactions spanning workflow, event sourcing for budget history, idempotent operations. Must be designed in Phase 3 (financial workflows).
+3. **Global Search Performance Degradation**
+   - **Problem:** Naive implementation queries all tables on every keystroke without debouncing; slow responses, database load spikes
+   - **Prevention:** Debounce 300-500ms, use PostgreSQL full-text search indexes, limit scope to current project by default, configure React Query to avoid aggressive refetching
+   - **Phase impact:** Must include performance testing with realistic data (100+ projects, 5000+ documents)
 
-4. **RFQ/Bid data model assuming linear workflows** - Real bidding is messy: amendments, re-bids, withdrawals, JV ownership. Rigid model breaks. Prevention: Immutable RFQs with versioning, bid states (draft/submitted/withdrawn/awarded), many-to-many JV ownership. Must be correct in Phase 4 (bidding workflows).
+4. **Form Validation Migration Breaking Existing Data**
+   - **Problem:** Centralizing validation with stricter rules breaks existing forms that saved "invalid" data; users can't edit old records
+   - **Prevention:** Audit existing data before adding schemas, use schema versioning, test against production data samples, add data migration to normalize outliers
+   - **Phase impact:** Requires data audit and backward compatibility testing
 
-5. **Cost code configuration rigidity** - Hardcoding CSI MasterFormat breaks for different trades. Prevention: Configurable per company, hierarchical structure, trade-specific templates. Must be designed in Phase 1 (data model foundation).
+5. **Navigation Redesign Breaking User Workflows**
+   - **Problem:** Reorganizing navigation breaks muscle memory; construction users rely on speed and familiarity
+   - **Prevention:** Test with 3-5 actual construction PMs, preserve secondary navigation paths for 2-3 releases, add "Recently Viewed" and command palette, communicate changes 2+ weeks ahead
+   - **Phase impact:** Requires user testing, communication plan, gradual rollout strategy
 
-6. **Pay app approval workflow assuming single approver** - Real workflows require multi-party approval (PM, superintendent, owner, architect). Prevention: Configurable approval chains, parallel approvals, conditional states, role-based rules per project. Must be designed in Phase 3 (payment workflows).
-
-7. **Free tier becoming backdoor to paid data** - Free users invited as collaborators export paid company data. Prevention: Export restrictions by tier, JV sharing requires compatible tiers, audit cross-company access. Must be designed in Phase 5 (subscription management).
+**Additional critical pitfall (financial):**
+6. **Budget/Estimating Workflow Redesign Breaking Financial Calculations**
+   - **Prevention:** DO NOT change data model during UI redesign — only presentation layer. Use decimal.js for money calculations, never floating point. Test edge cases comprehensively.
 
 ## Implications for Roadmap
 
-Based on combined research, the roadmap should follow dependency order: Foundation (auth/tenant isolation) → Core Financial Workflows → Bidding Workflows → AI Enhancement → Integration & Polish. This order prevents costly refactoring and ensures security/data integrity from the start.
+Based on research, suggested phase structure for Enterprise UI/UX Enhancement:
 
-### Phase 1: Foundation & Multi-Tenant Infrastructure
-**Rationale:** All application features depend on authentication and tenant isolation. No point building Project API if it can't route to correct schema securely. Connection pooling strategy must be decided before first tenant, as retrofitting is catastrophic.
+### Phase 1: Navigation Foundation (Week 1)
+**Rationale:** Navigation is the skeleton of enterprise UI. Everything depends on this being correct. Top bar + sidebar establish the structure for all other features.
 
 **Delivers:**
-- User authentication with MFA (Clerk)
-- Tenant Context Service (JWT → schema mapping and validation)
-- Database schema structure (shared + per-company schemas)
-- Connection Pool Manager with search_path switching
-- Audit Service (basic event logging)
-- Authorization Service foundations (PBAC engine)
+- Unified top navigation with logo, global actions, notifications, user menu
+- Contextual sidebar navigation with project/company context switching
+- Route groups for layout organization (`(dashboard)`, `(auth)`, `(public)`)
+- Dark mode with FOUC prevention (cookie-based theme)
 
 **Addresses features:**
-- User permissions/roles (table stakes)
-- Audit trails (table stakes)
+- Unified Top Navigation (must-have)
+- Contextual Sidebar Navigation (must-have)
+- Dark Mode Support (must-have)
 
 **Avoids pitfalls:**
-- Connection pool exhaustion (design pooling strategy upfront)
-- Cost code configuration rigidity (design configurable from start)
-- Row-level security not enforced (implement database RLS policies)
+- Layout state persistence (keep layouts stateless from start)
+- Dark mode FOUC (cookie-based theme with blocking script)
+- Navigation routing conflicts (route group organization)
 
-**Needs research:** No - multi-tenant patterns are well-documented
+**Stack used:** next-themes, existing Next.js 14 App Router patterns
+
+**Research flag:** Standard patterns, no deeper research needed
 
 ---
 
-### Phase 2: Core Financial Lifecycle
-**Rationale:** Smallest feature set delivering "full project financial lifecycle" value. Establishes data integrity patterns before adding complexity. Financial workflows must use transactions and event sourcing from start, as retrofitting is extremely high-risk.
+### Phase 2: Global Search & Discovery (Week 1-2)
+**Rationale:** Search is the #1 requested efficiency feature. Needs navigation foundation in place (search bar lives in top bar). Must be performant from day one to avoid degradation pitfall.
 
 **Delivers:**
-- Project creation and setup (name, location, dates, team)
-- Budget tracking with configurable cost codes
-- Change order management with approval workflows
-- Commitment tracking (subcontracts and POs against budget)
-- Basic document management (contracts, invoices)
-- Financial reports (budget vs actual)
-
-**Uses stack:**
-- Drizzle ORM for type-safe queries
-- Fastify with tenant middleware
-- PostgreSQL with schema isolation
-
-**Implements architecture:**
-- Project API with authorization-first methods
-- Document Management API (metadata in schema, files in S3)
+- Global search command palette (Cmd+K) with cmdk
+- Search across projects, jobs, customers
+- Debounced API calls with React Query optimization
+- PostgreSQL full-text search indexes
 
 **Addresses features:**
-- Project management core (table stakes)
-- Budget tracking (table stakes)
-- Change order management (table stakes)
-- Commitment tracking (table stakes)
+- Global Search (Basic) (must-have)
 
 **Avoids pitfalls:**
-- Change order cascade breaking budget integrity (transactions spanning workflow)
-- Budget modifications after payment apps (lock with version history)
-- Hard-deletes instead of soft-deletes (implement deleted_at)
-- Inadequate search for large project counts (typeahead from start)
+- Global search performance degradation (debouncing, indexes, scope limiting)
+- React Query refetch loops (configure staleTime, refetchOnWindowFocus)
 
-**Needs research:** Moderate - validate CSI MasterFormat usage patterns among target contractors
+**Stack used:** cmdk (already installed), nuqs for search state in URL, PostgreSQL full-text indexes
+
+**Research flag:** Standard patterns, no deeper research needed
 
 ---
 
-### Phase 3: Payment Applications & Billing
-**Rationale:** Completes core financial cycle (budget → commitment → billing). Requires change order foundation from Phase 2. Pay app approval workflows are complex and cannot be simplified without breaking real-world usage.
+### Phase 3: Dashboard & KPIs (Week 2)
+**Rationale:** Dashboard provides at-a-glance project health. Depends on navigation (renders in main content area) but independent of search. Can be parallelized with Phase 2.
 
 **Delivers:**
-- Pay application (G702/G703 forms)
-- Multi-party approval workflows (configurable chains)
-- Retainage tracking
-- Lien waiver collection
-- Invoice tracking (AP/AR)
-- QuickBooks sync foundation (data model mapping)
-
-**Uses stack:**
-- BullMQ for async job queue (QB sync)
-- Redis for cache and queue backing
-- Zod for validating payment data
-
-**Implements architecture:**
-- Billing Service with async QB integration
-- Approval workflow engine (configurable stages)
+- Dashboard with KPI widgets (revenue, margin, active projects, tasks)
+- Role-based widget visibility
+- Recharts integration for visual KPIs
 
 **Addresses features:**
-- Pay application (table stakes)
-- Lien waiver collection (table stakes)
-- Invoice tracking (table stakes)
+- Dashboard with KPIs (must-have)
+- Task + Pipeline Dashboard Widgets (should-have)
 
 **Avoids pitfalls:**
-- Pay app approval assuming single approver (configurable chains from start)
-- QuickBooks sync as real-time operation (async queue with retry)
-- Missing audit trail for financial changes (immutable audit log)
+- None specific to dashboard; follows established patterns
 
-**Needs research:** Yes - QuickBooks Online API details (rate limits, OAuth flow, webhook reliability, data model mapping)
+**Stack used:** recharts (already installed), existing tRPC queries for data
+
+**Research flag:** Standard patterns, no deeper research needed
 
 ---
 
-### Phase 4: Bidding & Procurement Workflows
-**Rationale:** Pre-construction workflows depend on project and budget foundations. RFQ data model must support real-world messiness (amendments, re-bids, JV ownership) from start, as migrating bid data is high-risk.
+### Phase 4: Form Standardization (Week 2-3)
+**Rationale:** Forms are everywhere (projects, change orders, payments). Standardizing early prevents inconsistency. Requires data audit before adding strict validation.
 
 **Delivers:**
-- RFQ creation and distribution
-- Bid collection and comparison (side-by-side)
-- Subcontractor directory with qualified trades
-- Bid package management (drawings, specs, addenda)
-- JV bid sharing (cross-company collaboration)
-- Freemium subcontractor accounts
-
-**Uses stack:**
-- tRPC for type-safe bid submission API
-- Email integration (SendGrid for RFQ distribution)
-
-**Implements architecture:**
-- JV Collaboration Service (scoped cross-company access)
-- Billing integration (freemium vs paid tier controls)
+- Standardized input components (phone, address, date, currency)
+- react-hook-form + zod validation shared client/server
+- Input masking with react-imask
+- Data audit script to find outliers before strict validation
 
 **Addresses features:**
-- RFQ creation and distribution (table stakes)
-- Bid collection and comparison (table stakes)
-- Subcontractor directory (table stakes)
-- JV bid sharing (differentiator)
-- Freemium sub accounts (differentiator)
+- Form Standardization (must-have)
 
 **Avoids pitfalls:**
-- RFQ/Bid data model assuming linear workflows (immutable RFQs with versioning)
-- Not supporting re-bidding after no award (clone with amendments)
-- Bid deadline timezone confusion (UTC storage, display in project timezone)
-- Change order numbering conflicts (separate sequences for PCO/CO)
+- Form validation breaking existing data (data audit, schema versioning)
+- Known React Hook Form issue with form.reset() (use setValue instead)
 
-**Needs research:** Moderate - validate JV bid sharing workflows with target users (is this need real or assumed?)
+**Stack used:** react-hook-form (installed), zod (upgrade to v4), react-imask (add), @hookform/resolvers (installed)
+
+**Research flag:** Need to audit production data before deployment
 
 ---
 
-### Phase 5: AI-Enhanced Productivity
-**Rationale:** AI features require stable document and project APIs for context. Tenant isolation must be proven before AI accesses data, as cross-tenant contamination is catastrophic. Building AI foundation after core workflows are proven reduces risk.
+### Phase 5: Data Tables & Views (Week 3)
+**Rationale:** Budget tables, change order lists, payment grids need enterprise-grade sorting/filtering. Depends on forms (table cells use standardized inputs) and navigation (tables render in main content area).
 
 **Delivers:**
-- AI-assisted RFQ drafting (context-aware, learns project specifics)
-- AI-assisted email writing (communication efficiency)
-- AI-assisted report generation (executive summaries)
-- Template library for standardization
-
-**Uses stack:**
-- OpenAI API (GPT-4 Turbo)
-- Vercel AI SDK (streaming, retries)
-- Zod for validating AI outputs against required fields
-
-**Implements architecture:**
-- AI Drafting Engine with per-company context isolation
-- Vector DB with tenant-namespaced embeddings
+- TanStack Table integration for budget/change order/payment grids
+- List + Kanban view modes
+- URL-based filtering/sorting with nuqs
+- Bulk edit operations
 
 **Addresses features:**
-- AI-assisted document drafting (differentiator)
-- Template library (differentiator)
+- Multiple View Modes (must-have)
+- Bulk Edit Operations (should-have)
 
 **Avoids pitfalls:**
-- AI training data contamination across tenants (tenant_id filtering at data layer)
-- Hallucinated financial amounts (never let AI generate amounts without source)
-- Prompt injection via document content (separate system prompt from user content)
-- Caching AI responses across tenants (tenant_id in cache keys)
+- URL state breaking navigation (nuqs handles shallow routing correctly)
+- Component migration inconsistency (establish table patterns early)
 
-**Needs research:** Yes - AI model selection (cost/latency tradeoffs, data residency requirements, fine-tuning feasibility)
+**Stack used:** @tanstack/react-table (add), nuqs (add), existing shadcn/ui components
+
+**Research flag:** Standard patterns, no deeper research needed
 
 ---
 
-### Phase 6: Communication & Collaboration
-**Rationale:** Communication features enhance existing workflows but aren't blocking. Can be built once core financial and bidding workflows are stable.
+### Phase 6: Branding & Polish (Week 3-4)
+**Rationale:** Professional output (proposals, reports) requires company branding. Final polish phase ensures consistent component usage before launch.
 
 **Delivers:**
-- RFI management (numbered tracking, response workflow, closeout)
-- Submittal management (spec section tracking, review workflow)
-- Email integration (two-way sync, associate to projects)
-- Team directory with roles
-
-**Uses stack:**
-- Microsoft Graph API (Outlook/365 calendar)
-- Google Calendar API
-- Email webhooks for inbound processing
+- Company logo upload + color picker
+- Branding applied to reports, proposals, PDFs
+- Contextual project header (persistent project info)
+- Component library audit (ensure consistent shadcn/ui usage)
+- Visual regression testing
 
 **Addresses features:**
-- RFI management (table stakes)
-- Submittal management (table stakes)
-- Email integration (table stakes)
-- Team directory (table stakes)
+- Company Branding (must-have)
+- Contextual Project Header (must-have)
 
 **Avoids pitfalls:**
-- Email notifications becoming spam (digest by default, configurable)
-- Timezone confusion (UTC storage, display in user timezone)
+- Component migration creating inconsistent UI (audit all pages, visual regression tests)
+- URL structure changes breaking links (no URL changes in this phase, but verify)
 
-**Needs research:** Moderate - calendar bi-directional sync patterns (conflict resolution, timezone handling)
+**Stack used:** Existing Next.js patterns, shadcn/ui component audit
 
----
-
-### Phase 7: QuickBooks Integration & Drawing Management
-**Rationale:** Rounds out table stakes features. QuickBooks sync foundation built in Phase 3, this phase completes bi-directional sync. Drawing management deferred as it's complex and not blocking core workflows.
-
-**Delivers:**
-- QuickBooks bidirectional sync (projects, invoices, bills)
-- Calendar integration (read/write events)
-- Drawing management (plans, versions, sheet navigation)
-- Integration health monitoring
-
-**Uses stack:**
-- QuickBooks Online API (OAuth 2.0, webhooks)
-- BullMQ for integration jobs
-- S3 for drawing storage
-
-**Implements architecture:**
-- Integration Service OAuth token management
-- Webhook handlers with signature validation
-
-**Addresses features:**
-- QuickBooks integration (differentiator)
-- Calendar integration (differentiator)
-- Drawing management (table stakes)
-
-**Avoids pitfalls:**
-- QuickBooks token expiration handling (refresh before expiration, alert on failure)
-- Assuming QB data model matches internal (flexible mapping layer)
-- Document storage unlimited/cheap (presigned URLs, storage quotas by tier)
-
-**Needs research:** Yes - QuickBooks Online API details (already flagged in Phase 3)
+**Research flag:** Manual visual review required, no technical research needed
 
 ---
 
 ### Phase Ordering Rationale
 
-**Dependency-driven order:**
-- Phases 1-2 are foundation: cannot build features without auth/tenant isolation and core data models
-- Phase 3 completes financial cycle started in Phase 2
-- Phase 4 (bidding) depends on budget foundation but can proceed in parallel with Phase 3 after Phase 2
-- Phase 5 (AI) depends on document and project APIs from Phases 2-4
-- Phases 6-7 enhance core workflows but aren't blocking
+**Dependencies drive order:**
+1. Navigation foundation enables all other features (search bar, sidebar nav, main content area)
+2. Search/dashboard can be parallelized (both depend on navigation, not each other)
+3. Forms must come before data tables (tables use form inputs in cells)
+4. Branding/polish comes last (ensures consistency across all implemented features)
 
-**Pitfall avoidance:**
-- Multi-tenant isolation decisions in Phase 1 cannot be changed later (connection pooling, schema structure)
-- Financial workflow integrity in Phases 2-3 requires transactions and event sourcing from start
-- AI context isolation in Phase 5 must be designed before implementation, cannot be retrofitted
-- RFQ data model flexibility in Phase 4 critical before collecting real bid data
+**Complexity drives order:**
+- Start with structural changes (navigation, layouts)
+- Add interactive features (search, dashboard, forms)
+- End with polish (branding, visual audit)
 
 **Risk mitigation:**
-- Build authentication/security first (Phases 1-2)
-- Establish data integrity patterns early (Phase 2-3) before complexity grows
-- Prove tenant isolation before AI accesses data (Phase 5 after Phases 1-4)
-- External integrations last (Phase 7) to minimize dependency on third-party API stability
+- Early phases address critical pitfalls (FOUC, layout state, search performance)
+- Data audit happens before form validation (Phase 4)
+- Visual regression testing happens in final phase (Phase 6) to catch inconsistencies
+
+**Estimated timeline:** 3-4 weeks for full v1 enterprise UI redesign
 
 ### Research Flags
 
 **Phases needing deeper research during planning:**
+- **None** — All phases use well-documented patterns (Next.js App Router, shadcn/ui, TanStack libraries)
 
-- **Phase 3:** QuickBooks Online API - OAuth flows, webhook reliability, rate limits, data model mapping between internal projects and QB customers/jobs. Complex integration with limited documentation.
-
-- **Phase 4:** JV collaboration workflows - Need user validation that "JV bid sharing" solves real pain point. What does "scoped access" mean to users? Define data visibility rules with product/UX team before building.
-
-- **Phase 5:** AI model selection - Cost/latency tradeoffs between OpenAI API vs self-hosted LLMs. Data residency requirements for construction companies. Fine-tuning feasibility after collecting document corpus.
-
-- **Phase 6:** Calendar bi-directional sync - Conflict resolution patterns when multiple systems modify same event. Timezone handling for construction projects spanning time zones. Microsoft Graph API permissions for commercial tenants.
-
-- **Phase 7:** Drawing management - Construction-specific requirements for plan versioning, sheet navigation, markup workflows. Consider integration with existing tools (Bluebeam, PlanGrid) vs building native.
+**Phases requiring non-research validation:**
+- **Phase 4 (Forms):** Requires production data audit before deployment
+- **Phase 6 (Polish):** Requires manual visual review and user testing (not technical research)
 
 **Phases with standard patterns (skip research-phase):**
+- **All phases** — Next.js 14 App Router, shadcn/ui, TanStack ecosystem are mature with extensive documentation
 
-- **Phase 1:** Multi-tenant auth and database patterns are well-documented. Clerk documentation comprehensive. PostgreSQL schema isolation is proven approach.
-
-- **Phase 2:** CRUD APIs with authorization checks follow standard patterns. Financial transactions and audit logging are well-understood database patterns.
+**Phase-specific testing requirements:**
+- Phase 1: Test dark mode FOUC in incognito with hard refresh
+- Phase 2: Load test search with 100+ projects, 5000+ documents
+- Phase 4: Test validation against production data export
+- Phase 6: Visual regression test all pages across viewports
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | MEDIUM | Fastify/Next.js/PostgreSQL are solid choices, but specific version features and Drizzle multi-tenant support unverified without web access. Clerk pricing for expected user counts unknown. |
-| Features | MEDIUM | Table stakes list aligns with construction SaaS standards (AIA forms, cost codes, RFQs). JV bid sharing differentiation needs user validation. Competitive landscape (Procore, Buildertrend) based on training data, not 2026 current state. |
-| Architecture | MEDIUM | Multi-tenant schema-per-tenant pattern is proven for this use case (HIGH confidence). Construction-specific workflows and data models have LOW confidence without domain expert validation. JV collaboration UX unclear. |
-| Pitfalls | HIGH | Multi-tenant isolation pitfalls (connection pooling, AI contamination, tenant_id filtering) are well-documented risks with proven prevention strategies. Financial workflow integrity patterns are standard. Construction-specific pitfalls (RFQ amendments, cost code flexibility) based on general understanding. |
+| Stack | HIGH | All recommended libraries are official, mature, widely adopted. Version compatibility verified. |
+| Features | MEDIUM-HIGH | Based on construction software UX research (Procore, Buildertrend) and enterprise UI best practices. Solo operator focus is niche but well-reasoned. |
+| Architecture | HIGH | UI redesign requires no architecture changes. Existing multi-tenant schema-per-tenant is sound. Presentation layer additions are standard patterns. |
+| Pitfalls | HIGH | UI/UX pitfalls sourced from official Next.js App Router migration guides, library documentation, and construction software implementation case studies. |
 
-**Overall confidence:** MEDIUM
+**Overall confidence:** HIGH
 
 ### Gaps to Address
 
-Research was conducted without access to Context7 or WebSearch tools. All recommendations based on training data current through January 2025.
+**Data migration and validation:**
+- Need to audit production data before deploying strict form validation (Phase 4)
+- Unknown how many existing records would fail new validation schemas
+- **Mitigation:** Run audit script on production export before Phase 4; create data migration for outliers
 
-**Critical gaps requiring verification:**
+**User workflow disruption:**
+- Unknown which navigation changes will cause most friction for existing users
+- Need to test with actual construction PMs before deploying navigation redesign
+- **Mitigation:** User testing in Phase 1; preserve secondary navigation paths; gradual rollout
 
-- **Stack versions:** All version numbers (Node.js 20, PostgreSQL 16, Next.js 14, Drizzle 0.29+) should be verified against official registries before implementation. Drizzle dynamic schema switching support needs confirmation.
+**Performance at scale:**
+- Unknown actual search performance with customer's data volumes
+- Need to verify 100+ projects, 5000+ documents is representative
+- **Mitigation:** Load test in Phase 2 with realistic data; add indexes proactively
 
-- **Clerk pricing:** Current pricing model and costs for expected user counts (100-1000 MAUs) unknown. Could significantly impact unit economics.
+**Financial calculation risk:**
+- UI redesign MUST NOT change financial calculation logic
+- Need to verify no data model changes required for new UI
+- **Mitigation:** Explicit rule: Phase 1-6 are presentation layer ONLY; no data model changes
 
-- **QuickBooks API:** 2026 rate limits, webhook reliability, OAuth refresh flows unverified. This impacts Phase 3 design decisions.
-
-- **Construction workflows:** Data models for RFIs, submittals, change orders, and payment applications should be validated with 3-5 target users (GCs and subs) before locking schema design. AIA contract document requirements may have updated.
-
-- **CSI MasterFormat adoption:** Assumed as standard, but actual usage patterns among small-mid contractors unknown. Survey needed before deciding cost code structure.
-
-**Non-blocking gaps (verify during phase planning):**
-
-- AI model hosting costs and latency at scale (Phase 5)
-- Calendar API permissions for commercial Microsoft 365 tenants (Phase 6)
-- Drawing management feature depth vs integration approach (Phase 7)
-- Citus sharding threshold (estimate: 1K companies, needs load testing)
-
-**Actionable without verification:**
-
-- Multi-tenant isolation patterns (PostgreSQL RLS, tenant_id validation, schema-per-tenant)
-- Financial workflow integrity (database transactions, audit logging, event sourcing)
-- Authorization patterns (PBAC, JWT with short expiry, MFA)
-- AI context isolation (vector store namespacing, tenant_id filtering)
-- Cloud-agnostic infrastructure (Kubernetes, Terraform, S3-compatible storage)
+**Component migration completeness:**
+- Unknown extent of existing custom components that need shadcn/ui replacement
+- Risk of incomplete migration leaving hybrid UI
+- **Mitigation:** Component audit before Phase 1; establish "no new custom components" rule; visual regression testing in Phase 6
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- Multi-tenant SaaS architecture patterns (schema-per-tenant, connection pooling, tenant isolation)
-- PostgreSQL documentation (schema management, search_path, row-level security)
-- Authorization patterns (PBAC, Zero Trust, JWT best practices)
-- AI integration security (RAG patterns, context isolation, prompt injection prevention)
-- Database transaction patterns (event sourcing, audit logging, idempotency)
+
+**Stack research:**
+- [next-themes GitHub](https://github.com/pacocoursey/next-themes) — Dark mode implementation
+- [shadcn/ui Documentation](https://ui.shadcn.com/docs) — Component library patterns
+- [nuqs Official Docs](https://nuqs.dev/) — URL state management
+- [TanStack Table Docs](https://tanstack.com/table/latest) — Data table library
+- [react-hook-form Documentation](https://react-hook-form.com/docs) — Form state management
+- [Zod Documentation](https://zod.dev/) — Schema validation
+
+**Feature research:**
+- [Procore Navigation Patterns 2026](https://www.procore.com/whats-new) — Enterprise construction software UX
+- [Procore NGX Design Enhancements](https://support.procore.com/product-releases) — Industry standards
+- [Enterprise UX Design Best Practices 2026](https://fuselabcreative.com/enterprise-ux-design-guide-2026-best-practices/) — Enterprise UI patterns
+- [Construction Dashboard Software with KPIs](https://anterratech.com/modules/dashboards/) — Dashboard requirements
+
+**Pitfall research:**
+- [App Router Pitfalls: Common Next.js Mistakes](https://imidef.com/en/2026-02-11-app-router-pitfalls) — Next.js App Router patterns
+- [Next.js App Router Migration Guide](https://www.flightcontrol.dev/blog/nextjs-app-router-migration-the-good-bad-and-ugly) — Migration gotchas
+- [Fixing Dark Mode FOUC in Next.js](https://notanumber.in/blog/fixing-react-dark-mode-flickering) — FOUC prevention
+- [React Hook Form Issue #13110](https://github.com/react-hook-form/react-hook-form/issues/13110) — Known validation bug in Next.js 16
 
 ### Secondary (MEDIUM confidence)
-- Construction industry workflows (based on general construction software knowledge, not 2026-specific)
-- AIA contract documents (G702/G703 payment applications, standard forms)
-- CSI MasterFormat cost code standards
-- Technology stack recommendations (Node.js, TypeScript, Fastify, Next.js, Drizzle, Clerk)
-- Competitive landscape (Procore, Buildertrend, CoConstruct) - training data, not current state
+
+**Feature research:**
+- [Buildertrend vs Sage 300 Interface Comparison](https://www.selecthub.com/construction-management-software/buildertrend-vs-sage-300-construction/) — Competitor analysis
+- [Construction Estimating Software vs Spreadsheets](https://123worx.com/blog/construction-estimating-software-vs-spreadsheets/) — Estimating workflows
+- [Mobile-First Design for Construction Management](https://altersquare.medium.com/mobile-first-design-for-construction-management-software-field-usability-guide-3f52adf45b02) — Field operations
+
+**Pitfall research:**
+- [Pro Tips for Design System Migration](https://medium.com/@houhoucoop/pro-tips-for-ui-library-migration-in-large-projects-d54f0fbcd083) — Component migration patterns
+- [Navigation UX Best Practices for SaaS](https://www.pencilandpaper.io/articles/ux-pattern-analysis-navigation) — Navigation design
+- [SaaS Product Redesign: Avoiding User Disruptions](https://whatfix.com/blog/saas-product-redesign/) — Change management
 
 ### Tertiary (LOW confidence)
-- QuickBooks Online API specifics (rate limits, webhook reliability) - needs verification
-- Clerk pricing model (2026 current pricing unknown)
-- Construction-specific data model details (RFIs, submittals, change orders) - needs domain expert validation
-- JV collaboration UX patterns (needs product/UX research)
-- Drizzle ORM multi-tenant support (version 0.29+ capabilities unverified)
 
-**Verification recommended before implementation:**
-1. All version numbers against official npm/package registries
-2. Drizzle ORM schema-per-tenant support in version 0.29+
-3. Clerk current pricing for expected user scale
-4. QuickBooks Online API documentation (OAuth, webhooks, rate limits)
-5. Construction workflow validation with 3-5 target users (GCs and subs)
-6. CSI MasterFormat adoption patterns among small-mid contractors
-7. Competitive feature analysis (demo Procore, Buildertrend, BuilderTrend Bidding)
+**Architecture research:**
+- Multi-tenant SaaS architecture patterns — General patterns, not construction-specific
+- PostgreSQL schema-per-tenant patterns — Standard database patterns
+- Construction-specific workflows (RFIs, submittals) — Needs validation with actual contractors
+
+**Not verified (but flagged for validation):**
+- Actual construction PM workflow preferences for navigation
+- Solo operator pain points in estimating (guided workflow assumption)
+- Production data validation edge cases
 
 ---
 
-*Research completed: 2026-02-10*
-*Ready for roadmap: Yes*
+*Research completed: 2026-02-14*
+*Ready for roadmap: yes*
+*Recommended phases: 6 (3-4 weeks total)*
+*Research flags: None (all standard patterns)*
+*Validation required: Production data audit (Phase 4), User testing (Phase 1), Load testing (Phase 2)*
