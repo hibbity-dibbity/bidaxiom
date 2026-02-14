@@ -270,11 +270,12 @@ None yet.
 | 5 | Restore custom job numbering setup on company settings | 2026-02-14 | 0a9822a | [5-restore-custom-job-numbering-setup-on-co](./quick/5-restore-custom-job-numbering-setup-on-co/) |
 | 6 | Fix missing Phase 10 reporting tables and schema mismatches | 2026-02-14 | c0ed73d | [6-fix-missing-phase-10-reporting-tables-an](./quick/6-fix-missing-phase-10-reporting-tables-an/) |
 | 7 | Fix "Failed query: select ... from users" error at sign-in | 2026-02-14 | 2b307df | [7-fix-error-failed-query-select-id-email-e](./quick/7-fix-error-failed-query-select-id-email-e/) |
+| 8 | Fix "Failed to fetch" toaster notification on sign-in | 2026-02-14 | e9e2546 | [8-now-i-m-getting-a-toaster-notification-f](./quick/8-now-i-m-getting-a-toaster-notification-f/) |
 
 ## Session Continuity
 
 Last session: 2026-02-14 (Phase 12 - Custom Authentication Migration)
-Stopped at: Completed quick task 7: Auto-provision auth tables on server startup
+Stopped at: Completed quick task 8: Network error handling for sign-in page
 Resume file: None
 
 ---
