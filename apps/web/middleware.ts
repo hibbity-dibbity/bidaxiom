@@ -29,6 +29,12 @@ export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
   const session = await getIronSession<SessionData>(request, response, sessionOptions);
 
+  // Read theme cookie for FOUC prevention
+  const theme = request.cookies.get("theme")?.value;
+  if (theme && (theme === "dark" || theme === "light")) {
+    response.headers.set("x-theme", theme);
+  }
+
   // No authenticated user -> redirect to sign-in
   if (!session.userId) {
     const signInUrl = new URL("/sign-in", request.url);

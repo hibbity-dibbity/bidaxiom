@@ -7,6 +7,7 @@ import { trpc } from "@/lib/trpc";
 import { Toaster } from "@/components/ui/sonner";
 import { AbilityContext, defineAbilitiesFor } from "@/lib/abilities";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
+import { ThemeProvider } from "@/components/providers/theme-provider";
 import type { SessionData } from "@/lib/session";
 
 function TrpcAndAbilityProvider({ children }: { children: React.ReactNode }) {
@@ -72,8 +73,10 @@ export function Providers({
   initialSession: SessionData;
 }) {
   return (
-    <AuthProvider initialSession={initialSession}>
-      <TrpcAndAbilityProvider>{children}</TrpcAndAbilityProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider initialSession={initialSession}>
+        <TrpcAndAbilityProvider>{children}</TrpcAndAbilityProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
