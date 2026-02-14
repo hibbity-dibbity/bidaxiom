@@ -77,21 +77,9 @@ export const authRouter = router({
       await checkRegistrationRateLimit(ip);
 
       // Check if email already registered
-      let existing;
-      try {
-        console.log("Querying users table for email:", input.email.toLowerCase());
-        existing = await getAuthDb().query.users.findFirst({
-          where: eq(users.email, input.email.toLowerCase()),
-        });
-        console.log("Query successful, existing user:", existing);
-      } catch (error) {
-        console.error("Database query error - full details:");
-        console.error("Error object:", error);
-        console.error("Error message:", (error as any).message);
-        console.error("Error stack:", (error as any).stack);
-        console.error("Error cause:", (error as any).cause);
-        throw error;
-      }
+      const existing = await getAuthDb().query.users.findFirst({
+        where: eq(users.email, input.email.toLowerCase()),
+      });
 
       if (existing) {
         throw new TRPCError({

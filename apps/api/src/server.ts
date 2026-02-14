@@ -17,6 +17,7 @@ import { createContext } from "./trpc/context.js";
 import { webhookRoutes } from "./webhooks/routes.js";
 import { pool } from "./db/client.js";
 import { ensureBucket } from "./storage/client.js";
+import { provisionAuthTables } from "./tenant/provision.js";
 import { startQboSyncWorker } from "./integrations/quickbooks/sync/workers.js";
 import { startScheduledReportsWorker, scheduleNextReports } from "./jobs/scheduled-reports.js";
 // TODO: Uncomment when Plan 03 creates workers.ts
@@ -67,6 +68,15 @@ try {
   await ensureBucket();
 } catch (err) {
   console.warn("S3 bucket initialization failed (MinIO may not be running):", err);
+}
+
+// Ensure auth tables exist in public schema (idempotent - uses CREATE IF NOT EXISTS)
+try {
+  await provisionAuthTables(pool);
+} catch (err) {
+  console.error("Auth table provisioning failed:", err);
+  // This is fatal - auth won't work without these tables
+  process.exit(1);
 }
 
 // TODO: Seed report templates - requires public.report_templates table
