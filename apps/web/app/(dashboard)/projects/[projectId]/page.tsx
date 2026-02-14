@@ -210,32 +210,6 @@ export default function ProjectDashboardPage({
   const { data: retainage } = trpc.paymentApp.getRetainage.useQuery({ projectId });
   const { data: rfqs } = trpc.rfq.list.useQuery({ projectId });
 
-  // Debug: Log project and customer data
-  useEffect(() => {
-    if (project) {
-      console.log("🔍 Project Detail - Project data:", {
-        id: project.id,
-        name: project.name,
-        jobNumber: project.jobNumber,
-        hasJobNumber: !!project.jobNumber,
-        customerId: project.customerId
-      });
-
-      if (!project.jobNumber) {
-        console.warn("⚠️ Project has NO job number:", project.name);
-      }
-    }
-  }, [project]);
-
-  // Debug: Log customers data
-  useEffect(() => {
-    console.log("🔍 Customers data:", {
-      hasData: !!customersData,
-      itemsCount: customersData?.items?.length || 0,
-      items: customersData?.items || []
-    });
-  }, [customersData]);
-
   const updateProjectMutation = trpc.project.update.useMutation({
     onSuccess: () => {
       utils.project.getById.invalidate({ id: projectId });
@@ -1018,12 +992,20 @@ export default function ProjectDashboardPage({
                     <div className="flex gap-2">
                       <SearchableSelect
                         options={
-                          usersData?.items.map((user) => ({
-                            value: user.clerkUserId,
-                            label: user.firstName && user.lastName
-                              ? `${user.firstName} ${user.lastName} (${user.email})`
-                              : user.email,
-                          })) || []
+                          usersData?.items
+                            .filter((user) => {
+                              // Filter out users who are already team members
+                              const existingMemberIds = new Set(
+                                project?.teamMembers?.map((m: any) => m.userId) || []
+                              );
+                              return !existingMemberIds.has(user.userId);
+                            })
+                            .map((user) => ({
+                              value: user.userId,
+                              label: user.firstName && user.lastName
+                                ? `${user.firstName} ${user.lastName} (${user.email})`
+                                : user.email,
+                            })) || []
                         }
                         value={newMemberUserId}
                         onValueChange={setNewMemberUserId}
