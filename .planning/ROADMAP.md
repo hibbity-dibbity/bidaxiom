@@ -232,7 +232,7 @@ Plans:
 **Plans**: 5 plans across 3 waves
 
 Plans:
-- [ ] 11-01-PLAN.md — DB schema (3 calendar tables), shared types, CASL abilities (wave 1)
+- [x] 11-01-PLAN.md — DB schema (3 calendar tables), shared types, CASL abilities (wave 1)
 - [ ] 11-02-PLAN.md — Google and Microsoft OAuth modules, client factories, BullMQ queue (wave 1)
 - [ ] 11-03-PLAN.md — Sync workers, event mappers, webhook handlers (wave 2)
 - [ ] 11-04-PLAN.md — tRPC calendar router, webhook routes, OAuth callbacks, worker startup (wave 2)
@@ -275,9 +275,9 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 8. QuickBooks Integration | 5/5 | Complete | 2026-02-13 |
 | 9. Document Management Enhancement | 8/8 | Complete | 2026-02-13 |
 | 10. Reporting & Analytics | 5/5 | Complete | 2026-02-13 |
-| 11. Calendar Integration | 0/5 | Planned | - |
+| 11. Calendar Integration | 1/5 | In progress | - |
 | 12. Custom Authentication Migration | 0/TBD | Not started | - |
 
 ---
 *Roadmap created: 2026-02-10*
-*Last updated: 2026-02-13*
+*Last updated: 2026-02-14*
