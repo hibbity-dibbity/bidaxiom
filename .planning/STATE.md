@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-02-10)
 Phase: 12 of 12 (Custom Authentication Migration)
 Plan: 7 of 8 in current phase
 Status: In progress
-Last activity: 2026-02-14 - Completed quick task 1: Fix document upload error - Failed INSERT query
+Last activity: 2026-02-14 - Completed quick task 3: Move "Forgot password?" link below password input
 
 Progress: [█████████░] 97% (11.875 of 12 phases, 7 of 8 plans complete in current phase)
 
@@ -265,11 +265,12 @@ None yet.
 |---|-------------|------|--------|-----------|
 | 1 | Fix document upload error - Failed INSERT query | 2026-02-14 | ab98bd5 | [1-fix-document-upload-error-failed-insert-](./quick/1-fix-document-upload-error-failed-insert-/) |
 | 2 | Remove New Folder option from project documents | 2026-02-14 | f45dbba | [2-remove-new-folder-option-from-project-do](./quick/2-remove-new-folder-option-from-project-do/) |
+| 3 | Move "Forgot password?" link below password input | 2026-02-14 | 29f3360 | [3-move-forgot-password-link-below-password](./quick/3-move-forgot-password-link-below-password/) |
 
 ## Session Continuity
 
 Last session: 2026-02-14 (Phase 12 - Custom Authentication Migration)
-Stopped at: Completed quick task 2: Remove New Folder option from project documents
+Stopped at: Completed quick task 3: Move "Forgot password?" link below password input
 Resume file: None
 
 ---
