@@ -2,10 +2,10 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router } from "../trpc.js";
 import { protectedProcedure } from "../procedures.js";
-import { desc, like, or, eq } from "drizzle-orm";
+import { desc, like, or, eq, inArray } from "drizzle-orm";
 import { generateToken } from "../../auth/tokens.js";
 import { db as publicDb } from "../../db/client.js";
-import { organizationInvitations, organizations } from "../../db/schema/public.js";
+import { organizationInvitations, organizations, users } from "../../db/schema/public.js";
 
 /**
  * User management router.
@@ -47,7 +47,7 @@ export const userRouter = router({
 
       const whereClause = conditions.length > 0 ? conditions[0] : undefined;
 
-      const users = await db
+      const userProfiles = await db
         .select({
           id: schema.userProfiles.id,
           clerkUserId: schema.userProfiles.clerkUserId,
@@ -62,9 +62,46 @@ export const userRouter = router({
         .limit(input.limit)
         .offset(input.offset);
 
+      // Batch-lookup public users to get the actual users.id UUID
+      // The clerkUserId column contains either old Clerk IDs or new UUIDs (users.id)
+      const clerkUserIds = userProfiles.map(p => p.clerkUserId);
+
+      let publicUsers: Array<{ id: string; clerkUserId: string | null }> = [];
+      if (clerkUserIds.length > 0) {
+        publicUsers = await publicDb
+          .select({
+            id: users.id,
+            clerkUserId: users.clerkUserId,
+          })
+          .from(users)
+          .where(
+            or(
+              inArray(users.id, clerkUserIds),
+              inArray(users.clerkUserId, clerkUserIds.filter(id => id !== null))
+            )
+          );
+      }
+
+      // Build map: clerkUserId -> users.id
+      const userIdMap = new Map<string, string>();
+      for (const publicUser of publicUsers) {
+        // Match by users.id (for new users where clerkUserId stores users.id)
+        userIdMap.set(publicUser.id, publicUser.id);
+        // Match by users.clerkUserId (for old users with actual Clerk IDs)
+        if (publicUser.clerkUserId) {
+          userIdMap.set(publicUser.clerkUserId, publicUser.id);
+        }
+      }
+
+      // Map to include userId field
+      const mappedUsers = userProfiles.map(profile => ({
+        ...profile,
+        userId: userIdMap.get(profile.clerkUserId) || profile.clerkUserId,
+      }));
+
       return {
-        items: users,
-        total: users.length,
+        items: mappedUsers,
+        total: mappedUsers.length,
       };
     }),
 

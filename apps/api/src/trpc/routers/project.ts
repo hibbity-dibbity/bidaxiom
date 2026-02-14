@@ -17,6 +17,8 @@ import { createAuditLog } from "../../audit/logger.js";
 import { defineAbilitiesFor } from "../../auth/abilities.js";
 import { eq, desc, inArray, and, like, or } from "drizzle-orm";
 import { ForbiddenError } from "@casl/ability";
+import { db as publicDb } from "../../db/client.js";
+import { users } from "../../db/schema/public.js";
 
 /**
  * Load project-level abilities for the current user.
@@ -28,13 +30,32 @@ async function loadProjectAbilities(ctx: {
   orgRole: string | null;
 }) {
   // userId is guaranteed non-null by protectedProcedure
+  // Look up the user's Clerk ID from public.users table for backward compatibility
+  const [publicUser] = await publicDb
+    .select({
+      clerkUserId: users.clerkUserId,
+    })
+    .from(users)
+    .where(eq(users.id, ctx.userId))
+    .limit(1);
+
+  const clerkUserId = publicUser?.clerkUserId;
+
+  // Query memberships matching either the new UUID or old Clerk ID
   const memberships = await ctx.tenant.db
     .select({
       projectId: ctx.tenant.schema.projectTeamMembers.projectId,
       role: ctx.tenant.schema.projectTeamMembers.role,
     })
     .from(ctx.tenant.schema.projectTeamMembers)
-    .where(eq(ctx.tenant.schema.projectTeamMembers.userId, ctx.userId));
+    .where(
+      clerkUserId
+        ? or(
+            eq(ctx.tenant.schema.projectTeamMembers.userId, ctx.userId),
+            eq(ctx.tenant.schema.projectTeamMembers.userId, clerkUserId)
+          )
+        : eq(ctx.tenant.schema.projectTeamMembers.userId, ctx.userId)
+    );
 
   return defineAbilitiesFor(
     ctx.orgRole ?? "org:member",
@@ -518,12 +539,29 @@ export const projectRouter = router({
       // Check permission
       ForbiddenError.from(abilities).throwUnlessCan("manage", "ProjectTeam");
 
+      // Look up the user's Clerk ID to handle removing old team members
+      const [publicUser] = await publicDb
+        .select({
+          clerkUserId: users.clerkUserId,
+        })
+        .from(users)
+        .where(eq(users.id, input.userId))
+        .limit(1);
+
+      const clerkUserId = publicUser?.clerkUserId;
+
+      // Delete matching either UUID or Clerk ID
       await db
         .delete(schema.projectTeamMembers)
         .where(
           and(
             eq(schema.projectTeamMembers.projectId, input.projectId),
-            eq(schema.projectTeamMembers.userId, input.userId)
+            clerkUserId
+              ? or(
+                  eq(schema.projectTeamMembers.userId, input.userId),
+                  eq(schema.projectTeamMembers.userId, clerkUserId)
+                )
+              : eq(schema.projectTeamMembers.userId, input.userId)
           )
         );
 
