@@ -4,12 +4,15 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { companyConfigSchema } from "@construction/shared";
-import type { CompanyConfig } from "@construction/shared";
+import type { CompanyConfig, JobNumberSettings } from "@construction/shared";
+import { previewJobNumber, validateJobNumberTemplate } from "@construction/shared";
 import { trpc } from "@/lib/trpc";
 import { useAbilities } from "@/lib/abilities";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TradesCombobox } from "@/components/company/trades-combobox";
@@ -45,6 +48,12 @@ export default function CompanySettingsPage() {
         csiDivisions: [],
         customTrades: [],
       },
+      jobNumberSettings: {
+        enabled: false,
+        template: "{YYYY}-{NNN}",
+        nextSequenceNumber: 1,
+        lastGeneratedFormat: null,
+      },
     },
   });
 
@@ -54,6 +63,12 @@ export default function CompanySettingsPage() {
       form.reset({
         companyType: data.companyType as "gc_only" | "sub_only" | "both",
         tradesConfig: data.tradesConfig,
+        jobNumberSettings: data.jobNumberSettings ?? {
+          enabled: false,
+          template: "{YYYY}-{NNN}",
+          nextSequenceNumber: 1,
+          lastGeneratedFormat: null,
+        },
       });
     }
   }, [data, form]);
@@ -200,6 +215,99 @@ export default function CompanySettingsPage() {
                 form.setValue("tradesConfig.customTrades", value)
               }
             />
+          </div>
+        </Card>
+
+        {/* Job Numbering Section */}
+        <Card className="p-6">
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-lg font-semibold">Job Numbering</h2>
+              <p className="text-sm text-muted-foreground">
+                Configure automatic job number generation for new projects
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="job-numbering-enabled">Enable automatic job numbering</Label>
+                <p className="text-sm text-muted-foreground">
+                  Automatically assign job numbers to new projects
+                </p>
+              </div>
+              <Switch
+                id="job-numbering-enabled"
+                checked={form.watch("jobNumberSettings.enabled")}
+                onCheckedChange={(checked) =>
+                  form.setValue("jobNumberSettings.enabled", checked)
+                }
+                disabled={!canManage}
+              />
+            </div>
+
+            {form.watch("jobNumberSettings.enabled") ? (
+              <div className="space-y-4 pt-2">
+                <div>
+                  <Label htmlFor="job-number-template">Job Number Template</Label>
+                  <Input
+                    id="job-number-template"
+                    value={form.watch("jobNumberSettings.template")}
+                    onChange={(e) =>
+                      form.setValue("jobNumberSettings.template", e.target.value)
+                    }
+                    onBlur={(e) => {
+                      const template = e.target.value;
+                      if (!validateJobNumberTemplate(template)) {
+                        toast.error("Template must contain at least one sequence pattern (e.g., {NNN})");
+                      }
+                    }}
+                    disabled={!canManage}
+                    placeholder="{YYYY}-{NNN}"
+                    className="mt-2"
+                  />
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Available tokens: <code className="text-xs bg-muted px-1 py-0.5 rounded">{"{YYYY}"}</code> (year), <code className="text-xs bg-muted px-1 py-0.5 rounded">{"{YY}"}</code> (2-digit year), <code className="text-xs bg-muted px-1 py-0.5 rounded">{"{MM}"}</code> (month), <code className="text-xs bg-muted px-1 py-0.5 rounded">{"{DD}"}</code> (day), <code className="text-xs bg-muted px-1 py-0.5 rounded">{"{NNN...}"}</code> (sequence number)
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="next-sequence-number">Next Sequence Number</Label>
+                  <Input
+                    id="next-sequence-number"
+                    type="number"
+                    min={1}
+                    value={form.watch("jobNumberSettings.nextSequenceNumber")}
+                    onChange={(e) =>
+                      form.setValue("jobNumberSettings.nextSequenceNumber", parseInt(e.target.value, 10) || 1)
+                    }
+                    disabled={!canManage}
+                    className="mt-2"
+                  />
+                  <p className="text-sm text-muted-foreground mt-2">
+                    The starting sequence number for new job numbers
+                  </p>
+                </div>
+
+                <div>
+                  <Label>Preview</Label>
+                  <div className="mt-2 rounded-md bg-muted p-3">
+                    <p className="text-sm text-muted-foreground mb-1">
+                      Next job number will be:
+                    </p>
+                    <code className="text-lg font-mono font-semibold">
+                      {previewJobNumber(
+                        form.watch("jobNumberSettings.template"),
+                        form.watch("jobNumberSettings.nextSequenceNumber")
+                      )}
+                    </code>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Enable to automatically assign job numbers to new projects
+              </p>
+            )}
           </div>
         </Card>
 
