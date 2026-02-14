@@ -86,7 +86,16 @@ export default function SignInPage() {
       router.push(redirectUrl);
     },
     onError: (error) => {
-      toast.error(error.message || "Login failed");
+      // Detect network errors (API server unreachable)
+      const isNetworkError = error.message === "Failed to fetch" ||
+        error.message.includes("fetch") ||
+        error.cause?.code === "ECONNREFUSED";
+
+      if (isNetworkError) {
+        toast.error("Cannot connect to the server. Please ensure the API is running and try again.");
+      } else {
+        toast.error(error.message || "Login failed");
+      }
       setIsLoading(false);
     },
   });
@@ -120,7 +129,16 @@ export default function SignInPage() {
       router.push(redirectUrl);
     },
     onError: (error) => {
-      toast.error(error.message || "Invalid MFA code");
+      // Detect network errors (API server unreachable)
+      const isNetworkError = error.message === "Failed to fetch" ||
+        error.message.includes("fetch") ||
+        error.cause?.code === "ECONNREFUSED";
+
+      if (isNetworkError) {
+        toast.error("Cannot connect to the server. Please ensure the API is running and try again.");
+      } else {
+        toast.error(error.message || "Invalid MFA code");
+      }
       setIsLoading(false);
     },
   });
