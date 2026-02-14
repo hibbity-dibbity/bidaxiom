@@ -871,14 +871,14 @@ export default function ProjectDashboardPage({
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {retainage ? (
+            {retainage?.totals?.totalHeld ? (
               <>
                 <div className="text-2xl font-bold">
                   {new Intl.NumberFormat("en-US", {
                     style: "currency",
                     currency: "USD",
                     minimumFractionDigits: 0,
-                  }).format(Number(retainage.summary.totalHeld))}
+                  }).format(Number(retainage.totals.totalHeld))}
                 </div>
                 <p className="text-xs text-muted-foreground">Total held</p>
               </>

@@ -119,8 +119,8 @@ export function PaymentAppList({ projectId }: PaymentAppListProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {retainage
-                ? currencyFormatter.format(Number(retainage.summary.totalHeld))
+              {retainage?.totals?.totalHeld
+                ? currencyFormatter.format(Number(retainage.totals.totalHeld))
                 : "$0.00"}
             </div>
           </CardContent>
