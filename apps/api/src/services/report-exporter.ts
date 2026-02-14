@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
-import { unparse } from 'papaparse';
+import Papa from 'papaparse';
 import { generateReportPDF } from './pdf-generator.js';
 import { generateReportExcel } from './excel-generator.js';
 import type { ReportDefinition, ReportData } from '@construction/shared';
@@ -107,7 +107,7 @@ async function generateReportCSV(
   }));
 
   // Convert to CSV using papaparse
-  const csv = unparse({
+  const csv = Papa.unparse({
     fields: fields.map(f => f.label),
     data: reportData.rows.map(row =>
       fields.map(f => row[f.value] ?? '')
