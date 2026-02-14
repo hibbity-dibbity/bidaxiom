@@ -1,4 +1,4 @@
-import { PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { getStorageClient, getBucketName, buildStorageKey } from "./client.js";
 
@@ -52,4 +52,71 @@ export async function generateDownloadUrl(
   });
 
   return await getSignedUrl(s3, command, { expiresIn: 3600 }); // 1 hour
+}
+
+/**
+ * Generate a pre-signed URL for company logo upload.
+ * The URL expires in 15 minutes.
+ *
+ * @param tenantId - Tenant ID for storage key isolation
+ * @param fileExtension - File extension (png, jpg, svg, etc.)
+ * @returns uploadUrl (PUT to this URL), storageKey (save in DB)
+ */
+export async function generateLogoUploadUrl(
+  tenantId: string,
+  fileExtension: string
+): Promise<{ uploadUrl: string; storageKey: string }> {
+  const s3 = getStorageClient();
+  const bucket = getBucketName();
+  const storageKey = `tenants/${tenantId}/branding/logo.${fileExtension}`;
+
+  const command = new PutObjectCommand({
+    Bucket: bucket,
+    Key: storageKey,
+    ContentType: `image/${fileExtension === "svg" ? "svg+xml" : fileExtension}`,
+  });
+
+  const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 900 }); // 15 minutes
+
+  return { uploadUrl, storageKey };
+}
+
+/**
+ * Generate a pre-signed URL for logo download.
+ * The URL expires in 1 hour.
+ *
+ * @param storageKey - The S3 object key stored in company_profiles
+ * @returns downloadUrl (GET from this URL)
+ */
+export async function generateLogoDownloadUrl(
+  storageKey: string
+): Promise<string> {
+  const s3 = getStorageClient();
+  const bucket = getBucketName();
+
+  const command = new GetObjectCommand({
+    Bucket: bucket,
+    Key: storageKey,
+  });
+
+  return await getSignedUrl(s3, command, { expiresIn: 3600 }); // 1 hour
+}
+
+/**
+ * Delete logo from S3 storage.
+ *
+ * @param storageKey - The S3 object key to delete
+ */
+export async function deleteLogoFromStorage(
+  storageKey: string
+): Promise<void> {
+  const s3 = getStorageClient();
+  const bucket = getBucketName();
+
+  const command = new DeleteObjectCommand({
+    Bucket: bucket,
+    Key: storageKey,
+  });
+
+  await s3.send(command);
 }

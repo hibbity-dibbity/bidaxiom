@@ -6,7 +6,12 @@ import { companyConfigSchema, AuditAction } from "@construction/shared";
 import { asOfDate } from "../../lib/effective-dating.js";
 import { withAuditLog } from "../middleware/audit.js";
 import { requirePermission } from "../middleware/authorize.js";
-import { isNull, desc } from "drizzle-orm";
+import { isNull, desc, eq } from "drizzle-orm";
+import {
+  generateLogoUploadUrl,
+  generateLogoDownloadUrl,
+  deleteLogoFromStorage,
+} from "../../storage/presigned.js";
 
 /**
  * Company configuration router.
@@ -125,4 +130,117 @@ export const companyRouter = router({
 
     return history;
   }),
+
+  /**
+   * Upload company logo.
+   * Returns a pre-signed URL for client-side upload to S3.
+   *
+   * Business rules:
+   * - Only org:admin can upload logos
+   * - Supports common image formats (png, jpg, jpeg, svg, webp)
+   * - Storage key updated immediately to reserve the slot
+   */
+  uploadLogo: authorizedProcedure
+    .use(requirePermission("manage", "CompanySettings"))
+    .input(
+      z.object({
+        fileExtension: z.enum(["png", "jpg", "jpeg", "svg", "webp"]),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { uploadUrl, storageKey } = await generateLogoUploadUrl(
+        ctx.tenant.tenantId,
+        input.fileExtension
+      );
+
+      // Update company profile with new storage key
+      await ctx.tenant.db
+        .update(ctx.tenant.schema.companyProfiles)
+        .set({
+          logoStorageKey: storageKey,
+          updatedAt: new Date(),
+        })
+        .where(isNull(ctx.tenant.schema.companyProfiles.validTo));
+
+      return { uploadUrl, storageKey };
+    }),
+
+  /**
+   * Get company logo download URL.
+   * Returns a pre-signed URL for viewing the logo.
+   * Available to all organization members.
+   */
+  getLogo: protectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.tenant) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Tenant context missing",
+      });
+    }
+
+    const profile = await ctx.tenant.db
+      .select({
+        logoStorageKey: ctx.tenant.schema.companyProfiles.logoStorageKey,
+      })
+      .from(ctx.tenant.schema.companyProfiles)
+      .where(isNull(ctx.tenant.schema.companyProfiles.validTo))
+      .limit(1);
+
+    if (!profile[0]?.logoStorageKey) {
+      return { logoUrl: null };
+    }
+
+    const logoUrl = await generateLogoDownloadUrl(profile[0].logoStorageKey);
+    return { logoUrl };
+  }),
+
+  /**
+   * Delete company logo.
+   * Removes the logo from S3 and clears the database reference.
+   *
+   * Business rules:
+   * - Only org:admin can delete logos
+   * - Safe to call even if no logo exists
+   */
+  deleteLogo: authorizedProcedure
+    .use(requirePermission("manage", "CompanySettings"))
+    .mutation(async ({ ctx }) => {
+      if (!ctx.tenant) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const profile = await ctx.tenant.db
+        .select({
+          logoStorageKey: ctx.tenant.schema.companyProfiles.logoStorageKey,
+        })
+        .from(ctx.tenant.schema.companyProfiles)
+        .where(isNull(ctx.tenant.schema.companyProfiles.validTo))
+        .limit(1);
+
+      if (profile[0]?.logoStorageKey) {
+        // Delete from S3
+        await deleteLogoFromStorage(profile[0].logoStorageKey);
+
+        // Clear storage key in database
+        await ctx.tenant.db
+          .update(ctx.tenant.schema.companyProfiles)
+          .set({
+            logoStorageKey: null,
+            updatedAt: new Date(),
+          })
+          .where(isNull(ctx.tenant.schema.companyProfiles.validTo));
+      }
+
+      return { success: true };
+    }),
 });
