@@ -241,7 +241,7 @@ Plans:
 ### Phase 12: Custom Authentication Migration
 **Goal**: Replace Clerk with a custom-built authentication system to eliminate third-party dependency, reduce costs, and gain full control over auth flows
 **Depends on**: Phase 11 (all features complete before migration)
-**Requirements**: TBD during planning
+**Requirements**: AUTH-01 through AUTH-08 (derived from success criteria)
 **Success Criteria** (what must be TRUE):
   1. Custom JWT-based authentication replaces all Clerk auth flows (sign-in, sign-up, password reset)
   2. Custom MFA implementation (TOTP authenticator app) replaces Clerk MFA
@@ -251,17 +251,22 @@ Plans:
   6. Role-based access control continues to work identically (CASL integration preserved)
   7. Webhook-based tenant provisioning replaced with direct provisioning on org creation
   8. Zero Clerk dependencies remain in codebase
-**Plans**: TBD
+**Plans**: 8 plans across 5 waves
 
 Plans:
-- [ ] 12-01: TBD during planning
-- [ ] 12-02: TBD during planning
-- [ ] 12-03: TBD during planning
+- [ ] 12-01-PLAN.md — Auth schema (7 tables), dependencies install, JWT/password/MFA/token/rate-limit utility modules (wave 1)
+- [ ] 12-02-PLAN.md — Auth tRPC router (register, login, refresh, verify-email, reset-password, MFA setup/verify, org switch) + email service (wave 2)
+- [ ] 12-03-PLAN.md — Organization management tRPC router (create, invite, members, roles) with direct tenant provisioning (wave 2)
+- [ ] 12-04-PLAN.md — API auth switchover: replace Clerk JWT verification with custom JWT in context, procedures, tenant resolution (wave 3)
+- [ ] 12-05-PLAN.md — Frontend auth infrastructure: iron-session, AuthProvider, custom middleware, tRPC token forwarding (wave 3)
+- [ ] 12-06-PLAN.md — Frontend auth pages: sign-in, sign-up, verify-email, reset-password, MFA setup (wave 4)
+- [ ] 12-07-PLAN.md — Frontend dashboard components: company switcher, user menu, onboarding, members page (wave 4)
+- [ ] 12-08-PLAN.md — Clerk removal: uninstall dependencies, remove webhooks, cleanup, data migration script (wave 5)
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -276,7 +281,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 9. Document Management Enhancement | 8/8 | Complete | 2026-02-13 |
 | 10. Reporting & Analytics | 5/5 | Complete | 2026-02-13 |
 | 11. Calendar Integration | 1/5 | In progress | - |
-| 12. Custom Authentication Migration | 0/TBD | Not started | - |
+| 12. Custom Authentication Migration | 0/8 | Not started | - |
 
 ---
 *Roadmap created: 2026-02-10*
