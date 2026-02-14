@@ -1,4 +1,5 @@
 import { router } from "./trpc.js";
+import { authRouter } from "./routers/auth.js";
 import { healthRouter } from "./routers/health.js";
 import { tenantRouter } from "./routers/tenant.js";
 import { auditRouter } from "./routers/audit.js";
@@ -32,6 +33,7 @@ import { calendarRouter } from "./routers/calendar.js";
  * middleware for sensitive actions (financial changes, bid submissions, etc.)
  */
 export const appRouter = router({
+  auth: authRouter,
   health: healthRouter,
   tenant: tenantRouter,
   audit: auditRouter,
