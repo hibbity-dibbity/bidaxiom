@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-10)
 ## Current Position
 
 Phase: 11 of 12 (Calendar Integration)
-Plan: 4 of 5 in current phase
+Plan: 3 of 5 in current phase
 Status: In progress
-Last activity: 2026-02-14 — Completed 11-04-PLAN.md (Calendar tRPC Router and Webhook Routes)
+Last activity: 2026-02-14 — Completed 11-03-PLAN.md (Calendar Sync Engine)
 
-Progress: [████████░░] 94% (11 of 12 phases, 4 of 5 plans complete in current phase)
+Progress: [████████░░] 93% (11 of 12 phases, 3 of 5 plans complete in current phase)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 40
-- Average duration: 6.8 min
-- Total execution time: 4.7 hours
+- Total plans completed: 41
+- Average duration: 6.7 min
+- Total execution time: 4.8 hours
 
 **By Phase:**
 
@@ -36,10 +36,10 @@ Progress: [████████░░] 94% (11 of 12 phases, 4 of 5 plans co
 | 08 | 5 | 28 min | 5.6 min |
 | 09 | 7 | 45.5 min | 6.5 min |
 | 10 | 5 | 48.3 min | 9.7 min |
-| 11 | 4 | 11.4 min | 2.9 min |
+| 11 | 3 | 13 min | 4.3 min |
 
 **Recent Trend:**
-- Last 5 plans: 10-05 (16.2 min), 11-01 (3 min), 11-02 (4 min), 11-04 (4.4 min)
+- Last 5 plans: 10-04 (11.3 min), 10-05 (16.2 min), 11-01 (3 min), 11-02 (4 min), 11-03 (6 min)
 - Trend: Phase 10 reporting UI completed in 16.2 minutes, including 4-step wizard with drag-and-drop, recharts visualization, export/schedule dialogs, 7 system templates, and 6 full-featured pages.
 
 *Updated after each plan completion*
@@ -72,7 +72,8 @@ Progress: [████████░░] 94% (11 of 12 phases, 4 of 5 plans co
 | Phase 10-reporting-and-analytics P04 | 11.3 min | 2 tasks | 3 files |
 | Phase 10-reporting-and-analytics P05 | 16.2 min | 3 tasks | 16 files |
 | Phase 11-calendar-integration P01 | 3 min | 2 tasks | 7 files |
-| Phase 11-calendar-integration P04 | 4.4 min | 2 tasks | 4 files |
+| Phase 11-calendar-integration P02 | 4 min | 2 tasks | 6 files |
+| Phase 11-calendar-integration P03 | 6 min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -210,6 +211,9 @@ Recent decisions affecting current work:
 - [Phase 11-02]: MSAL account serialization for Microsoft OAuth - MSAL doesn't expose refresh tokens; we serialize account info and use acquireTokenSilent for token refresh
 - [Phase 11-02]: Calendar encryption reuses QBO module - Both integrations use same QBO_ENCRYPTION_KEY and AES-256-GCM pattern (rename env var in Phase 12)
 - [Phase 11-02]: Calendar sync queue reuses QBO Redis connection - Same Redis instance, different queue name ('calendar-sync' vs 'qbo-sync')
+- [Phase 11-03]: Worker accepts db/schema from tenant context - Follows Phase 8 QBO pattern for testability; sync functions are pure and don't depend on global state
+- [Phase 11-03]: 410 Gone error triggers automatic full sync retry - Expired sync tokens can't be refreshed; must clear and start fresh delta query without user intervention
+- [Phase 11-03]: Webhook renewal queued before expiry - Google channels expire in 7 days (renew at 6), Microsoft subscriptions in 3 days (renew at 2) to prevent missed events
 - [Phase 11-04]: Per-user ownership enforcement in tRPC - All calendar procedures filter by ctx.auth.userId to ensure users only manage their own connections
 - [Phase 11-04]: Protected procedures for OAuth callbacks - Uses protectedProcedure (not authorizedProcedure) since abilities may not be loaded during callback
 - [Phase 11-04]: Webhook handlers commented until Plan 03 - Routes are in place but handler imports commented out until sync workers are created
@@ -226,7 +230,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-14 (Phase 11 - Calendar Integration)
-Stopped at: Completed 11-04-PLAN.md (Calendar tRPC Router and Webhook Routes)
+Stopped at: Completed 11-03-PLAN.md (Calendar Sync Engine)
 Resume file: None
 
 ---
