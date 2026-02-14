@@ -8,6 +8,25 @@ A cloud-first, API-first construction SaaS platform for small-to-mid-sized comme
 
 A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
 
+## Current Milestone: v1.1 Enterprise UX Redesign
+
+**Goal:** Transform the UI/UX from functional MVP to enterprise-grade tool optimized for solo operators with Procore-style density, guided workflows, and modern navigation patterns.
+
+**Target features:**
+- Procore-style enterprise layout with higher data density and dark mode
+- Unified top bar + contextual collapsible sidebar navigation
+- Global search across jobs, projects, and customers
+- Form standardization (phone format, structured addresses, centralized validation)
+- Company logo upload and branding throughout platform
+- Dashboard redesign with KPI + task + pipeline widgets
+- Projects page redesigned as compact table with advanced filtering
+- Project detail persistent header with dynamic section loading
+- Guided estimate builder workflow (step-by-step default, optional spreadsheet mode)
+- Estimate lifecycle management (estimate → bid → award → active project)
+- Component library and reusable UI system
+- Clean routing with slug-safe URLs
+- SSO architecture (OAuth-ready for Google/Microsoft)
+
 ## Requirements
 
 ### Validated
@@ -98,4 +117,4 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 | Responsive web (no native mobile) for v1 | Faster to ship; field use works via mobile browser until usage patterns justify native | — Pending |
 
 ---
-*Last updated: 2025-02-10 after initialization*
+*Last updated: 2026-02-14 after starting milestone v1.1*
