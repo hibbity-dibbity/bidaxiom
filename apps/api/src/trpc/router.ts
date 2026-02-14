@@ -24,6 +24,7 @@ import { reportRouter } from "./routers/report.js";
 import { reportExportRouter } from "./routers/report-export.js";
 import { reportScheduleRouter } from "./routers/report-schedule.js";
 import { calendarRouter } from "./routers/calendar.js";
+import { organizationRouter } from "./routers/organization.js";
 
 /**
  * Root application router.
@@ -40,6 +41,7 @@ export const appRouter = router({
   company: companyRouter,
   customer: customerRouter,
   user: userRouter,
+  organization: organizationRouter,
   project: projectRouter,
   document: documentRouter,
   budget: budgetRouter,
