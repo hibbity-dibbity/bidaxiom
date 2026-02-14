@@ -254,14 +254,14 @@ Plans:
 **Plans**: 8 plans across 5 waves
 
 Plans:
-- [ ] 12-01-PLAN.md — Auth schema (7 tables), dependencies install, JWT/password/MFA/token/rate-limit utility modules (wave 1)
-- [ ] 12-02-PLAN.md — Auth tRPC router (register, login, refresh, verify-email, reset-password, MFA setup/verify, org switch) + email service (wave 2)
-- [ ] 12-03-PLAN.md — Organization management tRPC router (create, invite, members, roles) with direct tenant provisioning (wave 2)
-- [ ] 12-04-PLAN.md — API auth switchover: replace Clerk JWT verification with custom JWT in context, procedures, tenant resolution (wave 3)
-- [ ] 12-05-PLAN.md — Frontend auth infrastructure: iron-session, AuthProvider, custom middleware, tRPC token forwarding (wave 3)
-- [ ] 12-06-PLAN.md — Frontend auth pages: sign-in, sign-up, verify-email, reset-password, MFA setup (wave 4)
-- [ ] 12-07-PLAN.md — Frontend dashboard components: company switcher, user menu, onboarding, members page (wave 4)
-- [ ] 12-08-PLAN.md — Clerk removal: uninstall dependencies, remove webhooks, cleanup, data migration script (wave 5)
+- [x] 12-01-PLAN.md — Auth schema (7 tables), dependencies install, JWT/password/MFA/token/rate-limit utility modules (wave 1)
+- [x] 12-02-PLAN.md — Auth tRPC router (register, login, refresh, verify-email, reset-password, MFA setup/verify, org switch) + email service (wave 2)
+- [x] 12-03-PLAN.md — Organization management tRPC router (create, invite, members, roles) with direct tenant provisioning (wave 2)
+- [x] 12-04-PLAN.md — API auth switchover: replace Clerk JWT verification with custom JWT in context, procedures, tenant resolution (wave 3)
+- [x] 12-05-PLAN.md — Frontend auth infrastructure: iron-session, AuthProvider, custom middleware, tRPC token forwarding (wave 3)
+- [x] 12-06-PLAN.md — Frontend auth pages: sign-in, sign-up, verify-email, reset-password, MFA setup (wave 4)
+- [x] 12-07-PLAN.md — Frontend dashboard components: company switcher, user menu, onboarding, members page (wave 4)
+- [x] 12-08-PLAN.md — Clerk removal: uninstall dependencies, remove webhooks, cleanup, data migration script (wave 5)
 
 ## Progress
 
@@ -280,8 +280,8 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 8. QuickBooks Integration | 5/5 | Complete | 2026-02-13 |
 | 9. Document Management Enhancement | 8/8 | Complete | 2026-02-13 |
 | 10. Reporting & Analytics | 5/5 | Complete | 2026-02-13 |
-| 11. Calendar Integration | 1/5 | In progress | - |
-| 12. Custom Authentication Migration | 0/8 | Not started | - |
+| 11. Calendar Integration | 5/5 | Complete | 2026-02-14 |
+| 12. Custom Authentication Migration | 8/8 | Complete | 2026-02-14 |
 
 ---
 *Roadmap created: 2026-02-10*
