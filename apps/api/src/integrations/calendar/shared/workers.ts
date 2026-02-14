@@ -8,12 +8,12 @@ import { encryptToken } from './crypto.js';
 
 // Google imports
 import { refreshGoogleCalendarToken } from '../google/oauth.js';
-import { syncGoogleCalendar, pushEventToGoogle, updateGoogleEvent, deleteGoogleEvent } from '../google/sync.js';
+import { syncGoogleCalendar, pushEventToGoogle, updateGoogleEvent, deleteGoogleEvent, type GoogleSyncResult } from '../google/sync.js';
 import { setupGoogleWebhook, renewGoogleChannel } from '../google/webhooks.js';
 
 // Microsoft imports
 import { refreshMicrosoftCalendarToken } from '../microsoft/oauth.js';
-import { syncMicrosoftCalendar, pushEventToMicrosoft, updateMicrosoftEvent, deleteMicrosoftEvent } from '../microsoft/sync.js';
+import { syncMicrosoftCalendar, pushEventToMicrosoft, updateMicrosoftEvent, deleteMicrosoftEvent, type MicrosoftSyncResult } from '../microsoft/sync.js';
 import { setupMicrosoftWebhook, renewMicrosoftSubscription } from '../microsoft/webhooks.js';
 
 // Mappers
@@ -172,22 +172,33 @@ export function startCalendarSyncWorker(): Worker {
               .where(eq(schema.calendarConnections.id, connectionId));
 
             // Execute sync
-            let result;
+            let result: GoogleSyncResult | MicrosoftSyncResult;
             if (provider === 'google') {
-              result = await syncGoogleCalendar({ ...syncParams, connection: { ...syncParams.connection, syncToken: null } });
+              const googleResult = await syncGoogleCalendar({ ...syncParams, connection: { ...syncParams.connection, syncToken: null } });
+              result = googleResult;
+              // Update connection with new sync token (Google uses syncToken)
+              if (googleResult.newSyncToken) {
+                await db
+                  .update(schema.calendarConnections)
+                  .set({
+                    syncToken: googleResult.newSyncToken,
+                    lastSyncAt: new Date(),
+                  })
+                  .where(eq(schema.calendarConnections.id, connectionId));
+              }
             } else {
-              result = await syncMicrosoftCalendar({ ...syncParams, connection: { ...syncParams.connection, syncToken: null } });
-            }
-
-            // Update connection with new sync token
-            if (result.newSyncToken || result.newDeltaToken) {
-              await db
-                .update(schema.calendarConnections)
-                .set({
-                  syncToken: result.newSyncToken || result.newDeltaToken || null,
-                  lastSyncAt: new Date(),
-                })
-                .where(eq(schema.calendarConnections.id, connectionId));
+              const msResult = await syncMicrosoftCalendar({ ...syncParams, connection: { ...syncParams.connection, syncToken: null } });
+              result = msResult;
+              // Update connection with new delta token (Microsoft uses deltaToken)
+              if (msResult.newDeltaToken) {
+                await db
+                  .update(schema.calendarConnections)
+                  .set({
+                    syncToken: msResult.newDeltaToken,
+                    lastSyncAt: new Date(),
+                  })
+                  .where(eq(schema.calendarConnections.id, connectionId));
+              }
             }
 
             // Update sync state
@@ -213,22 +224,33 @@ export function startCalendarSyncWorker(): Worker {
               .where(eq(schema.calendarSyncState.calendarConnectionId, connectionId));
 
             // Execute sync (uses existing sync token)
-            let result;
+            let result: GoogleSyncResult | MicrosoftSyncResult;
             if (provider === 'google') {
-              result = await syncGoogleCalendar(syncParams);
+              const googleResult = await syncGoogleCalendar(syncParams);
+              result = googleResult;
+              // Update connection with new sync token (Google uses syncToken)
+              if (googleResult.newSyncToken) {
+                await db
+                  .update(schema.calendarConnections)
+                  .set({
+                    syncToken: googleResult.newSyncToken,
+                    lastSyncAt: new Date(),
+                  })
+                  .where(eq(schema.calendarConnections.id, connectionId));
+              }
             } else {
-              result = await syncMicrosoftCalendar(syncParams);
-            }
-
-            // Update connection with new sync token
-            if (result.newSyncToken || result.newDeltaToken) {
-              await db
-                .update(schema.calendarConnections)
-                .set({
-                  syncToken: result.newSyncToken || result.newDeltaToken || null,
-                  lastSyncAt: new Date(),
-                })
-                .where(eq(schema.calendarConnections.id, connectionId));
+              const msResult = await syncMicrosoftCalendar(syncParams);
+              result = msResult;
+              // Update connection with new delta token (Microsoft uses deltaToken)
+              if (msResult.newDeltaToken) {
+                await db
+                  .update(schema.calendarConnections)
+                  .set({
+                    syncToken: msResult.newDeltaToken,
+                    lastSyncAt: new Date(),
+                  })
+                  .where(eq(schema.calendarConnections.id, connectionId));
+              }
             }
 
             // Update sync state

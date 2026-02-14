@@ -1,6 +1,5 @@
 import type { FastifyInstance } from "fastify";
 import pg from "pg";
-import { handleClerkWebhook } from "./clerk.js";
 import { handleQboWebhook } from "../integrations/quickbooks/webhooks.js";
 import { calendarSyncQueue } from "../integrations/calendar/shared/queue.js";
 
@@ -9,6 +8,9 @@ import { calendarSyncQueue } from "../integrations/calendar/shared/queue.js";
  *
  * Registered via fastify.register() so the custom content-type parser
  * is scoped to this plugin and doesn't interfere with tRPC.
+ *
+ * Note: Clerk webhook removed in Phase 12 (custom auth migration).
+ * Organization lifecycle is now handled directly by the organization tRPC router.
  */
 async function webhookRoutes(
   fastify: FastifyInstance,
@@ -16,7 +18,7 @@ async function webhookRoutes(
 ): Promise<void> {
   const { pool } = opts;
 
-  // Custom parser: keep raw string body for svix signature verification.
+  // Custom parser: keep raw string body for webhook signature verification.
   // Scoped to this plugin — does NOT affect tRPC or other routes.
   fastify.addContentTypeParser(
     "application/json",
@@ -25,43 +27,6 @@ async function webhookRoutes(
       done(null, body);
     }
   );
-
-  /**
-   * POST /api/webhooks/clerk
-   *
-   * Receives Clerk webhook events for organization lifecycle.
-   * Body is raw string for svix signature verification.
-   */
-  fastify.post("/api/webhooks/clerk", async (request, reply) => {
-    try {
-      const body =
-        typeof request.body === "string"
-          ? request.body
-          : JSON.stringify(request.body);
-
-      const headers: Record<string, string> = {};
-      for (const [key, value] of Object.entries(request.headers)) {
-        if (typeof value === "string") {
-          headers[key] = value;
-        } else if (Array.isArray(value)) {
-          headers[key] = value[0];
-        }
-      }
-
-      const result = await handleClerkWebhook({ body, headers }, pool);
-      return reply.status(200).send(result);
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Unknown webhook error";
-
-      if (message.includes("Invalid webhook signature")) {
-        return reply.status(401).send({ error: "Invalid signature" });
-      }
-
-      console.error("Webhook processing error:", err);
-      return reply.status(500).send({ error: message });
-    }
-  });
 
   /**
    * POST /api/integrations/quickbooks/webhook
@@ -173,7 +138,7 @@ async function webhookRoutes(
   fastify.post("/api/webhooks/calendar/microsoft", async (request, reply) => {
     try {
       // Handle subscription validation (Microsoft sends validationToken on first setup)
-      const validationToken = request.query.validationToken as string | undefined;
+      const validationToken = (request.query as { validationToken?: string }).validationToken;
       if (validationToken) {
         return reply.status(200).type("text/plain").send(validationToken);
       }

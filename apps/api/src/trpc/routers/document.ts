@@ -568,8 +568,7 @@ export const documentRouter = router({
       // Generate pre-signed download URL
       const downloadUrl = await generateDownloadUrl(
         currentVersion.storageKey,
-        document.name,
-        document.contentType || undefined
+        document.name
       );
 
       return {

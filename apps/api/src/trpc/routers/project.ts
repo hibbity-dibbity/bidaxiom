@@ -82,6 +82,7 @@ export const projectRouter = router({
           .insert(schema.projects)
           .values({
             name: input.name,
+            customerId: input.customerId,
             description: input.description,
             location: input.location,
             projectType: input.projectType,

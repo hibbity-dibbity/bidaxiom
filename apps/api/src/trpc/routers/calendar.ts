@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router } from "../trpc.js";
-import { protectedProcedure } from "../procedures.js";
+import { protectedProcedure, authorizedProcedure } from "../procedures.js";
 import {
   getGoogleCalendarAuthUrl,
   handleGoogleCalendarCallback,
@@ -31,7 +31,7 @@ export const calendarRouter = router({
    * Get calendar authorization URL to initiate OAuth flow.
    * Per-user. Checks that no active connection exists for this provider.
    */
-  getAuthUrl: protectedProcedure
+  getAuthUrl: authorizedProcedure
     .input(
       z.object({
         provider: z.enum(["google", "microsoft"]),
@@ -39,14 +39,14 @@ export const calendarRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       // Runtime null checks for TypeScript
-      if (!ctx.tenant || !ctx.abilities || !ctx.userId) {
+      if (!ctx.tenant || !ctx.userId) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Tenant context missing",
         });
       }
 
-      const { tenant, abilities, userId } = ctx;
+      const { tenant, userId, abilities } = ctx;
       const { provider } = input;
 
       // Permission check - user must have manage Calendar permission
@@ -197,7 +197,7 @@ export const calendarRouter = router({
    * Disconnect calendar integration.
    * Per-user. Updates connection status to 'disconnected' and clears tokens.
    */
-  disconnect: protectedProcedure
+  disconnect: authorizedProcedure
     .input(
       z.object({
         connectionId: z.string().uuid(),
@@ -205,14 +205,14 @@ export const calendarRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       // Runtime null checks for TypeScript
-      if (!ctx.tenant || !ctx.abilities || !ctx.userId) {
+      if (!ctx.tenant || !ctx.userId) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Tenant context missing",
         });
       }
 
-      const { tenant, abilities, userId } = ctx;
+      const { tenant, userId, abilities } = ctx;
       const { connectionId } = input;
 
       // Permission check
@@ -284,16 +284,16 @@ export const calendarRouter = router({
    * Get calendar connections for current user.
    * Returns all connections with sync state.
    */
-  getConnections: protectedProcedure.query(async ({ ctx }) => {
+  getConnections: authorizedProcedure.query(async ({ ctx }) => {
     // Runtime null checks for TypeScript
-    if (!ctx.tenant || !ctx.abilities || !ctx.userId) {
+    if (!ctx.tenant || !ctx.userId) {
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: "Tenant context missing",
       });
     }
 
-    const { tenant, abilities, userId } = ctx;
+    const { tenant, userId, abilities } = ctx;
 
     // Permission check
     if (!abilities.can("read", "Calendar")) {
@@ -361,7 +361,7 @@ export const calendarRouter = router({
   /**
    * Get calendar events for a connection, optionally filtered by project.
    */
-  getEvents: protectedProcedure
+  getEvents: authorizedProcedure
     .input(
       z.object({
         connectionId: z.string().uuid(),
@@ -407,8 +407,15 @@ export const calendarRouter = router({
         });
       }
 
-      // Build query
-      const baseQuery = tenant.db
+      // Build query with optional project filter
+      const whereConditions = projectId
+        ? and(
+            eq(tenant.schema.calendarEvents.calendarConnectionId, connectionId),
+            eq(tenant.schema.calendarEvents.projectId, projectId)
+          )
+        : eq(tenant.schema.calendarEvents.calendarConnectionId, connectionId);
+
+      const events = await tenant.db
         .select({
           id: tenant.schema.calendarEvents.id,
           externalEventId: tenant.schema.calendarEvents.externalEventId,
@@ -425,19 +432,8 @@ export const calendarRouter = router({
           lastSyncedAt: tenant.schema.calendarEvents.lastSyncedAt,
         })
         .from(tenant.schema.calendarEvents)
-        .where(eq(tenant.schema.calendarEvents.calendarConnectionId, connectionId));
-
-      // Apply project filter if provided
-      const events = projectId
-        ? await baseQuery
-            .where(
-              and(
-                eq(tenant.schema.calendarEvents.calendarConnectionId, connectionId),
-                eq(tenant.schema.calendarEvents.projectId, projectId)
-              )
-            )
-            .orderBy(sql`${tenant.schema.calendarEvents.startDate} ASC`)
-        : await baseQuery.orderBy(sql`${tenant.schema.calendarEvents.startDate} ASC`);
+        .where(whereConditions)
+        .orderBy(sql`${tenant.schema.calendarEvents.startDate} ASC`);
 
       return events;
     }),
@@ -446,7 +442,7 @@ export const calendarRouter = router({
    * Sync a specific project's milestones to calendar.
    * Per-user. User must have read access to the project.
    */
-  syncProject: protectedProcedure
+  syncProject: authorizedProcedure
     .input(
       z.object({
         connectionId: z.string().uuid(),
@@ -455,14 +451,14 @@ export const calendarRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       // Runtime null checks for TypeScript
-      if (!ctx.tenant || !ctx.abilities || !ctx.userId) {
+      if (!ctx.tenant || !ctx.userId) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Tenant context missing",
         });
       }
 
-      const { tenant, abilities, userId } = ctx;
+      const { tenant, userId, abilities } = ctx;
       const { connectionId, projectId } = input;
 
       // Permission check
@@ -515,7 +511,7 @@ export const calendarRouter = router({
       // Queue push-event job
       await calendarSyncQueue.add("push-event", {
         tenantId: tenant.tenantId,
-        provider: connection[0].provider,
+        provider: connection[0].provider as "google" | "microsoft",
         connectionId,
         operation: "push-event",
         projectId,
@@ -528,7 +524,7 @@ export const calendarRouter = router({
   /**
    * Sync all projects the user is a team member of.
    */
-  syncAllProjects: protectedProcedure
+  syncAllProjects: authorizedProcedure
     .input(
       z.object({
         connectionId: z.string().uuid(),
@@ -536,14 +532,14 @@ export const calendarRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       // Runtime null checks for TypeScript
-      if (!ctx.tenant || !ctx.abilities || !ctx.userId) {
+      if (!ctx.tenant || !ctx.userId) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Tenant context missing",
         });
       }
 
-      const { tenant, abilities, userId } = ctx;
+      const { tenant, userId, abilities } = ctx;
       const { connectionId } = input;
 
       // Permission check
@@ -588,7 +584,7 @@ export const calendarRouter = router({
       for (const project of projects) {
         await calendarSyncQueue.add("push-event", {
           tenantId: tenant.tenantId,
-          provider: connection[0].provider,
+          provider: connection[0].provider as "google" | "microsoft",
           connectionId,
           operation: "push-event",
           projectId: project.projectId,
@@ -603,7 +599,7 @@ export const calendarRouter = router({
   /**
    * Trigger manual incremental sync for a connection.
    */
-  manualSync: protectedProcedure
+  manualSync: authorizedProcedure
     .input(
       z.object({
         connectionId: z.string().uuid(),
@@ -611,14 +607,14 @@ export const calendarRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       // Runtime null checks for TypeScript
-      if (!ctx.tenant || !ctx.abilities || !ctx.userId) {
+      if (!ctx.tenant || !ctx.userId) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Tenant context missing",
         });
       }
 
-      const { tenant, abilities, userId } = ctx;
+      const { tenant, userId, abilities } = ctx;
       const { connectionId } = input;
 
       // Permission check
@@ -655,7 +651,7 @@ export const calendarRouter = router({
       // Queue incremental-sync job
       await calendarSyncQueue.add("incremental-sync", {
         tenantId: tenant.tenantId,
-        provider: connection[0].provider,
+        provider: connection[0].provider as "google" | "microsoft",
         connectionId,
         operation: "incremental-sync",
         syncReason: "manual",
