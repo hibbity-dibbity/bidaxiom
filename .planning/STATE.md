@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-02-10)
 Phase: 12 of 12 (Custom Authentication Migration)
 Plan: 7 of 8 in current phase
 Status: In progress
-Last activity: 2026-02-14 - Completed quick task 6: Fix missing Phase 10 reporting tables and schema mismatches
+Last activity: 2026-02-14 - Completed quick task 7: Auto-provision auth tables on server startup
 
 Progress: [█████████░] 97% (11.875 of 12 phases, 7 of 8 plans complete in current phase)
 
