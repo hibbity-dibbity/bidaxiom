@@ -22,6 +22,7 @@ import { workflowRouter } from "./routers/workflow.js";
 import { reportRouter } from "./routers/report.js";
 import { reportExportRouter } from "./routers/report-export.js";
 import { reportScheduleRouter } from "./routers/report-schedule.js";
+import { calendarRouter } from "./routers/calendar.js";
 
 /**
  * Root application router.
@@ -54,6 +55,7 @@ export const appRouter = router({
   report: reportRouter,
   reportExport: reportExportRouter,
   reportSchedule: reportScheduleRouter,
+  calendar: calendarRouter,
 });
 
 /**
