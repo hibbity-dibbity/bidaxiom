@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import pg from "pg";
 import { handleClerkWebhook } from "./clerk.js";
 import { handleQboWebhook } from "../integrations/quickbooks/webhooks.js";
+import { calendarSyncQueue } from "../integrations/calendar/shared/queue.js";
 
 /**
  * Webhook routes Fastify plugin.
@@ -109,6 +110,142 @@ async function webhookRoutes(
     const frontendUrl = process.env.CORS_ORIGIN || "http://localhost:3000";
     return reply.redirect(
       `${frontendUrl}/settings/integrations/quickbooks/callback?code=${code}&realmId=${realmId}&state=${state}`
+    );
+  });
+
+  /**
+   * POST /api/webhooks/calendar/google
+   *
+   * Google Calendar push notification handler.
+   * Receives watch channel notifications when calendar events change.
+   */
+  fastify.post("/api/webhooks/calendar/google", async (request, reply) => {
+    try {
+      // Extract Google notification headers
+      const channelId = request.headers["x-goog-channel-id"] as string;
+      const resourceState = request.headers["x-goog-resource-state"] as string;
+      const channelToken = request.headers["x-goog-channel-token"] as string;
+
+      // If this is a sync message (channel setup confirmation), respond OK immediately
+      if (resourceState === "sync") {
+        return reply.status(200).send({ received: true });
+      }
+
+      // TODO: Once Plan 03 creates webhook handler, uncomment:
+      // const { handleGoogleWebhookNotification } = await import("../integrations/calendar/google/webhooks.js");
+      // const { shouldSync, connectionId, provider, tenantId } = await handleGoogleWebhookNotification({
+      //   channelId,
+      //   resourceState,
+      //   channelToken,
+      // });
+
+      // For now, log the webhook (will be replaced when handler is implemented)
+      console.log("Google Calendar webhook received:", {
+        channelId,
+        resourceState,
+        channelToken,
+      });
+
+      // TODO: Queue incremental sync if shouldSync
+      // if (shouldSync && connectionId && provider && tenantId) {
+      //   await calendarSyncQueue.add("incremental-sync", {
+      //     tenantId,
+      //     provider,
+      //     connectionId,
+      //     operation: "incremental-sync",
+      //     syncReason: "webhook",
+      //   });
+      // }
+
+      return reply.status(200).send({ received: true });
+    } catch (err) {
+      console.error("Google Calendar webhook error:", err);
+      return reply.status(500).send({ error: "Webhook processing failed" });
+    }
+  });
+
+  /**
+   * POST /api/webhooks/calendar/microsoft
+   *
+   * Microsoft Graph webhook handler.
+   * Receives subscription notifications when calendar events change.
+   */
+  fastify.post("/api/webhooks/calendar/microsoft", async (request, reply) => {
+    try {
+      // Handle subscription validation (Microsoft sends validationToken on first setup)
+      const validationToken = request.query.validationToken as string | undefined;
+      if (validationToken) {
+        return reply.status(200).type("text/plain").send(validationToken);
+      }
+
+      // Parse notification body
+      const body = typeof request.body === "string" ? JSON.parse(request.body) : request.body;
+      const notifications = (body as { value?: Array<any> }).value || [];
+
+      // TODO: Once Plan 03 creates webhook handler, uncomment:
+      // const { handleMicrosoftWebhookNotification } = await import("../integrations/calendar/microsoft/webhooks.js");
+      // for (const notification of notifications) {
+      //   const { shouldSync, connectionId, provider, tenantId } = await handleMicrosoftWebhookNotification(notification);
+      //   if (shouldSync && connectionId && provider && tenantId) {
+      //     await calendarSyncQueue.add("incremental-sync", {
+      //       tenantId,
+      //       provider,
+      //       connectionId,
+      //       operation: "incremental-sync",
+      //       syncReason: "webhook",
+      //     });
+      //   }
+      // }
+
+      // For now, log the webhook (will be replaced when handler is implemented)
+      console.log("Microsoft Calendar webhook received:", {
+        notificationCount: notifications.length,
+      });
+
+      // Microsoft expects 202 Accepted
+      return reply.status(202).send({ received: true });
+    } catch (err) {
+      console.error("Microsoft Calendar webhook error:", err);
+      return reply.status(500).send({ error: "Webhook processing failed" });
+    }
+  });
+
+  /**
+   * GET /api/integrations/calendar/google/callback
+   *
+   * Google Calendar OAuth 2.0 callback endpoint.
+   * Redirects to frontend with authorization code for tRPC token exchange.
+   */
+  fastify.get("/api/integrations/calendar/google/callback", async (request, reply) => {
+    const { code, scope, state } = request.query as {
+      code: string;
+      scope: string;
+      state: string;
+    };
+
+    // Redirect to frontend with params (frontend will call tRPC handleCallback)
+    const frontendUrl = process.env.CORS_ORIGIN || "http://localhost:3000";
+    return reply.redirect(
+      `${frontendUrl}/settings/integrations/calendar/callback?provider=google&code=${code}&state=${state}`
+    );
+  });
+
+  /**
+   * GET /api/integrations/calendar/microsoft/callback
+   *
+   * Microsoft Graph OAuth 2.0 callback endpoint.
+   * Redirects to frontend with authorization code for tRPC token exchange.
+   */
+  fastify.get("/api/integrations/calendar/microsoft/callback", async (request, reply) => {
+    const { code, state } = request.query as {
+      code: string;
+      state: string;
+    };
+
+    // Redirect to frontend with params (frontend will call tRPC handleCallback)
+    const frontendUrl = process.env.CORS_ORIGIN || "http://localhost:3000";
+    return reply.redirect(
+      `${frontendUrl}/settings/integrations/calendar/callback?provider=microsoft&code=${code}&state=${state}`
     );
   });
 }

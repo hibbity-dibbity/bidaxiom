@@ -19,6 +19,8 @@ import { pool } from "./db/client.js";
 import { ensureBucket } from "./storage/client.js";
 import { startQboSyncWorker } from "./integrations/quickbooks/sync/workers.js";
 import { startScheduledReportsWorker, scheduleNextReports } from "./jobs/scheduled-reports.js";
+// TODO: Uncomment when Plan 03 creates workers.ts
+// import { startCalendarSyncWorker, queueDailyCalendarSync } from "./integrations/calendar/shared/workers.js";
 import fs from "fs";
 import path from "path";
 import os from "os";
@@ -85,6 +87,15 @@ try {
   console.warn("QBO sync worker failed to start (Redis may not be running):", err);
 }
 
+// Start calendar sync worker (processes background calendar sync jobs)
+// TODO: Uncomment when Plan 03 creates workers.ts
+// try {
+//   startCalendarSyncWorker();
+//   console.log("Calendar sync worker started");
+// } catch (err) {
+//   console.warn("Calendar sync worker failed to start (Redis may not be running):", err);
+// }
+
 // Start scheduled reports worker
 try {
   startScheduledReportsWorker();
@@ -141,6 +152,16 @@ setInterval(async () => {
     console.error('Error during export cleanup:', error);
   }
 }, 6 * 60 * 60 * 1000);
+
+// Daily calendar sync fallback (ensures eventual consistency when webhooks miss)
+// TODO: Uncomment when Plan 03 creates workers.ts
+// setInterval(async () => {
+//   try {
+//     await queueDailyCalendarSync();
+//   } catch (error) {
+//     console.error('Error queuing daily calendar sync:', error);
+//   }
+// }, 24 * 60 * 60 * 1000); // Every 24 hours
 
 // Health check (non-tRPC, for load balancers)
 fastify.get("/health", async () => {
