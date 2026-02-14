@@ -101,6 +101,7 @@ export const companyRouter = router({
           .values({
             companyType: input.companyType,
             tradesConfig: input.tradesConfig,
+            jobNumberSettings: input.jobNumberSettings,
             validFrom: new Date(),
             createdBy: userId,
           })
