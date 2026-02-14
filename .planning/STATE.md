@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-10)
 ## Current Position
 
 Phase: 11 of 12 (Calendar Integration)
-Plan: 2 of 5 in current phase
+Plan: 4 of 5 in current phase
 Status: In progress
-Last activity: 2026-02-14 — Completed 11-02-PLAN.md (Calendar OAuth and Infrastructure)
+Last activity: 2026-02-14 — Completed 11-04-PLAN.md (Calendar tRPC Router and Webhook Routes)
 
-Progress: [████████░░] 93% (11 of 12 phases, 2 of 5 plans complete in current phase)
+Progress: [████████░░] 94% (11 of 12 phases, 4 of 5 plans complete in current phase)
 
 ## Performance Metrics
 
@@ -36,10 +36,10 @@ Progress: [████████░░] 93% (11 of 12 phases, 2 of 5 plans co
 | 08 | 5 | 28 min | 5.6 min |
 | 09 | 7 | 45.5 min | 6.5 min |
 | 10 | 5 | 48.3 min | 9.7 min |
-| 11 | 2 | 7 min | 3.5 min |
+| 11 | 4 | 11.4 min | 2.9 min |
 
 **Recent Trend:**
-- Last 5 plans: 10-04 (11.3 min), 10-05 (16.2 min), 11-01 (3 min), 11-02 (4 min)
+- Last 5 plans: 10-05 (16.2 min), 11-01 (3 min), 11-02 (4 min), 11-04 (4.4 min)
 - Trend: Phase 10 reporting UI completed in 16.2 minutes, including 4-step wizard with drag-and-drop, recharts visualization, export/schedule dialogs, 7 system templates, and 6 full-featured pages.
 
 *Updated after each plan completion*
@@ -72,6 +72,7 @@ Progress: [████████░░] 93% (11 of 12 phases, 2 of 5 plans co
 | Phase 10-reporting-and-analytics P04 | 11.3 min | 2 tasks | 3 files |
 | Phase 10-reporting-and-analytics P05 | 16.2 min | 3 tasks | 16 files |
 | Phase 11-calendar-integration P01 | 3 min | 2 tasks | 7 files |
+| Phase 11-calendar-integration P04 | 4.4 min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -209,6 +210,10 @@ Recent decisions affecting current work:
 - [Phase 11-02]: MSAL account serialization for Microsoft OAuth - MSAL doesn't expose refresh tokens; we serialize account info and use acquireTokenSilent for token refresh
 - [Phase 11-02]: Calendar encryption reuses QBO module - Both integrations use same QBO_ENCRYPTION_KEY and AES-256-GCM pattern (rename env var in Phase 12)
 - [Phase 11-02]: Calendar sync queue reuses QBO Redis connection - Same Redis instance, different queue name ('calendar-sync' vs 'qbo-sync')
+- [Phase 11-04]: Per-user ownership enforcement in tRPC - All calendar procedures filter by ctx.auth.userId to ensure users only manage their own connections
+- [Phase 11-04]: Protected procedures for OAuth callbacks - Uses protectedProcedure (not authorizedProcedure) since abilities may not be loaded during callback
+- [Phase 11-04]: Webhook handlers commented until Plan 03 - Routes are in place but handler imports commented out until sync workers are created
+- [Phase 11-04]: Daily sync fallback interval - 24-hour scheduled job ensures eventual consistency when webhook notifications fail
 
 ### Pending Todos
 
@@ -221,7 +226,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-14 (Phase 11 - Calendar Integration)
-Stopped at: Completed 11-02-PLAN.md (Calendar OAuth and Infrastructure)
+Stopped at: Completed 11-04-PLAN.md (Calendar tRPC Router and Webhook Routes)
 Resume file: None
 
 ---
