@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-10)
 ## Current Position
 
 Phase: 11 of 12 (Calendar Integration)
-Plan: 1 of 5 in current phase
+Plan: 2 of 5 in current phase
 Status: In progress
-Last activity: 2026-02-14 — Completed 11-01-PLAN.md (Calendar Foundation)
+Last activity: 2026-02-14 — Completed 11-02-PLAN.md (Calendar OAuth and Infrastructure)
 
-Progress: [████████░░] 93% (11 of 12 phases, 1 of 5 plans complete in current phase)
+Progress: [████████░░] 93% (11 of 12 phases, 2 of 5 plans complete in current phase)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 39
-- Average duration: 6.9 min
-- Total execution time: 4.6 hours
+- Total plans completed: 40
+- Average duration: 6.8 min
+- Total execution time: 4.7 hours
 
 **By Phase:**
 
@@ -36,10 +36,10 @@ Progress: [████████░░] 93% (11 of 12 phases, 1 of 5 plans co
 | 08 | 5 | 28 min | 5.6 min |
 | 09 | 7 | 45.5 min | 6.5 min |
 | 10 | 5 | 48.3 min | 9.7 min |
-| 11 | 1 | 3 min | 3 min |
+| 11 | 2 | 7 min | 3.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 10-03 (8 min), 10-04 (11.3 min), 10-05 (16.2 min), 11-01 (3 min)
+- Last 5 plans: 10-04 (11.3 min), 10-05 (16.2 min), 11-01 (3 min), 11-02 (4 min)
 - Trend: Phase 10 reporting UI completed in 16.2 minutes, including 4-step wizard with drag-and-drop, recharts visualization, export/schedule dialogs, 7 system templates, and 6 full-featured pages.
 
 *Updated after each plan completion*
@@ -206,6 +206,9 @@ Recent decisions affecting current work:
 - [Phase 11-01]: Per-user calendar connections (not per-company) - Each user connects their own Google/Outlook calendar via OAuth, userId field stores Clerk user ID
 - [Phase 11-01]: Encrypted refresh tokens using AES-256-GCM - Follows Phase 8 QBO pattern for secure long-lived token storage
 - [Phase 11-01]: Calendar subject added to CASL AppSubjects - Admin manages all, PM/Superintendent can manage their own calendars, others read-only
+- [Phase 11-02]: MSAL account serialization for Microsoft OAuth - MSAL doesn't expose refresh tokens; we serialize account info and use acquireTokenSilent for token refresh
+- [Phase 11-02]: Calendar encryption reuses QBO module - Both integrations use same QBO_ENCRYPTION_KEY and AES-256-GCM pattern (rename env var in Phase 12)
+- [Phase 11-02]: Calendar sync queue reuses QBO Redis connection - Same Redis instance, different queue name ('calendar-sync' vs 'qbo-sync')
 
 ### Pending Todos
 
@@ -218,7 +221,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-14 (Phase 11 - Calendar Integration)
-Stopped at: Completed 11-01-PLAN.md (Calendar Foundation)
+Stopped at: Completed 11-02-PLAN.md (Calendar OAuth and Infrastructure)
 Resume file: None
 
 ---

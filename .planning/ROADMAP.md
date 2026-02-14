@@ -233,7 +233,7 @@ Plans:
 
 Plans:
 - [x] 11-01-PLAN.md — DB schema (3 calendar tables), shared types, CASL abilities (wave 1)
-- [ ] 11-02-PLAN.md — Google and Microsoft OAuth modules, client factories, BullMQ queue (wave 1)
+- [x] 11-02-PLAN.md — Google and Microsoft OAuth modules, client factories, BullMQ queue (wave 1)
 - [ ] 11-03-PLAN.md — Sync workers, event mappers, webhook handlers (wave 2)
 - [ ] 11-04-PLAN.md — tRPC calendar router, webhook routes, OAuth callbacks, worker startup (wave 2)
 - [ ] 11-05-PLAN.md — Frontend: calendar connection cards, sync status, OAuth callback, project sync (wave 3)
