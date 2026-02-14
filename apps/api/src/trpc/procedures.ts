@@ -1,5 +1,8 @@
 import { TRPCError } from "@trpc/server";
+import { eq } from "drizzle-orm";
 import { middleware, publicProcedure } from "./trpc.js";
+import { db as publicDb } from "../db/client.js";
+import { users } from "../db/schema/public.js";
 
 /**
  * Middleware: require authenticated user.
@@ -47,6 +50,44 @@ const requireTenant = middleware(async ({ ctx, next }) => {
       code: "FORBIDDEN",
       message: "No active organization. Please select or create a company.",
     });
+  }
+
+  // Lazy-sync user profile: ensure the current user has a profile in the tenant schema.
+  // This replaces webhook-based sync.
+  if (ctx.userId) {
+    try {
+      const { db, schema } = ctx.tenant;
+      const existing = await db
+        .select({ id: schema.userProfiles.id })
+        .from(schema.userProfiles)
+        .where(eq(schema.userProfiles.clerkUserId, ctx.userId))
+        .limit(1);
+
+      if (existing.length === 0) {
+        // Query our own users table instead of Clerk API
+        const userRecord = await publicDb
+          .select({
+            email: users.email,
+            firstName: users.firstName,
+            lastName: users.lastName
+          })
+          .from(users)
+          .where(eq(users.id, ctx.userId))
+          .limit(1);
+
+        if (userRecord.length > 0) {
+          await db.insert(schema.userProfiles).values({
+            clerkUserId: ctx.userId, // Legacy column name; stores our user ID now
+            email: userRecord[0].email,
+            firstName: userRecord[0].firstName,
+            lastName: userRecord[0].lastName,
+            role: "member",
+          });
+        }
+      }
+    } catch {
+      // Non-fatal: profile sync failure shouldn't block the request
+    }
   }
 
   return next({

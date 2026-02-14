@@ -2,9 +2,11 @@ import { z } from "zod";
 
 const envSchema = z.object({
   DATABASE_URL: z.string().url("DATABASE_URL must be a valid URL"),
-  CLERK_SECRET_KEY: z.string().min(1, "CLERK_SECRET_KEY is required"),
-  CLERK_PUBLISHABLE_KEY: z.string().min(1, "CLERK_PUBLISHABLE_KEY is required"),
-  CLERK_WEBHOOK_SECRET: z.string().optional(),
+  JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters"),
+  JWT_REFRESH_SECRET: z.string().min(32, "JWT_REFRESH_SECRET must be at least 32 characters"),
+  SESSION_SECRET: z.string().min(32, "SESSION_SECRET must be at least 32 characters"),
+  RESEND_API_KEY: z.string().optional(),
+  NEXT_PUBLIC_APP_URL: z.string().optional().default("http://localhost:3000"),
   REDIS_URL: z.string().optional().default("redis://localhost:6379"),
   API_PORT: z.coerce.number().optional().default(3001),
   NODE_ENV: z

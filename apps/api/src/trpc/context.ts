@@ -1,4 +1,4 @@
-import { verifyToken } from "@clerk/backend";
+import { verifyAccessToken } from "../auth/jwt.js";
 import { buildTenantContext, type RequestTenantContext } from "../tenant/context.js";
 
 /**
@@ -11,19 +11,21 @@ export interface Context {
   orgRole: string | null;
   hasMfa: boolean;
   tenant: RequestTenantContext | null;
+  ip?: string;
 }
 
 interface CreateContextOpts {
   req: { headers: Record<string, string | string[] | undefined> };
+  ip?: string; // Client IP for rate limiting
 }
 
 /**
  * Create tRPC context from the incoming request.
  *
  * CRITICAL: Auth is verified HERE at the data access layer.
- * This prevents CVE-2025-29927 middleware bypass attacks.
- * Even if Next.js middleware is bypassed, tRPC context
- * independently verifies the Clerk token.
+ * This prevents middleware bypass attacks. Even if Next.js
+ * middleware is bypassed, tRPC context independently verifies
+ * the JWT token.
  */
 export async function createContext(
   opts: CreateContextOpts
@@ -33,6 +35,15 @@ export async function createContext(
   const authHeader = Array.isArray(rawAuth) ? rawAuth[0] : rawAuth;
   const token = authHeader?.replace("Bearer ", "");
 
+  // Extract IP for rate limiting (from opts or headers)
+  const ip = opts.ip ||
+    (Array.isArray(opts.req.headers["x-forwarded-for"])
+      ? opts.req.headers["x-forwarded-for"][0]
+      : opts.req.headers["x-forwarded-for"]) ||
+    (Array.isArray(opts.req.headers["x-real-ip"])
+      ? opts.req.headers["x-real-ip"][0]
+      : opts.req.headers["x-real-ip"]);
+
   // No token = unauthenticated
   if (!token) {
     return {
@@ -41,32 +52,18 @@ export async function createContext(
       orgRole: null,
       hasMfa: false,
       tenant: null,
+      ip,
     };
   }
 
   try {
-    // Verify Clerk JWT independently of middleware
-    const clerkSecretKey = process.env.CLERK_SECRET_KEY;
-    if (!clerkSecretKey) {
-      throw new Error("CLERK_SECRET_KEY not configured");
-    }
+    // Verify custom JWT token
+    const payload = await verifyAccessToken(token);
 
-    const verified = await verifyToken(token, {
-      secretKey: clerkSecretKey,
-    });
-
-    const userId = verified.sub;
-    const claims = verified as Record<string, unknown>;
-
-    // Clerk v5+ uses compact JWT claims: org data under `o` key
-    // Clerk v4 used top-level `org_id` / `org_role`
-    const orgClaims = claims.o as { id?: string; rol?: string } | undefined;
-    const orgId = orgClaims?.id ?? (claims.org_id as string | undefined);
-    // Compact JWT uses short role names ("admin"), normalize to "org:admin" format
-    const rawRole = orgClaims?.rol ?? (claims.org_role as string | undefined);
-    const orgRole = rawRole && !rawRole.startsWith("org:") ? `org:${rawRole}` : rawRole;
-    const hasMfa =
-      ((verified as Record<string, unknown>).isMfa as boolean) ?? false;
+    const userId = payload.userId;
+    const orgId = payload.orgId;
+    const orgRole = payload.orgRole;
+    const hasMfa = payload.hasMfa;
 
     // No active organization — return partial context
     if (!orgId) {
@@ -76,6 +73,7 @@ export async function createContext(
         orgRole: orgRole ?? null,
         hasMfa,
         tenant: null,
+        ip,
       };
     }
 
@@ -88,6 +86,7 @@ export async function createContext(
         orgRole: orgRole ?? null,
         hasMfa,
         tenant,
+        ip,
       };
     } catch (err) {
       // Tenant not provisioned yet — return context without tenant
@@ -98,6 +97,7 @@ export async function createContext(
         orgRole: orgRole ?? null,
         hasMfa,
         tenant: null,
+        ip,
       };
     }
   } catch (err) {
@@ -109,6 +109,7 @@ export async function createContext(
       orgRole: null,
       hasMfa: false,
       tenant: null,
+      ip,
     };
   }
 }

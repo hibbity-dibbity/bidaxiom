@@ -5,7 +5,7 @@ import { router } from "../trpc.js";
 import { authProcedure, protectedProcedure } from "../procedures.js";
 import { db } from "../../db/client.js";
 import { tenants, userCompanyMappings } from "../../db/schema/public.js";
-import { resolveTenant } from "../../tenant/resolve.js";
+import { resolveTenantByOrgId } from "../../tenant/resolve.js";
 
 export const tenantRouter = router({
   /**
@@ -44,14 +44,13 @@ export const tenantRouter = router({
    * Validate that the user can switch to a given organization.
    * Uses authProcedure because the user is switching FROM their current org.
    *
-   * NOTE: The actual org switch happens on Clerk side via OrganizationSwitcher.
-   * This endpoint provides server-side validation.
+   * NOTE: Supports both custom org IDs and legacy Clerk org IDs.
    */
   switch: authProcedure
     .input(z.object({ orgId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      // Resolve the target org
-      const tenant = await resolveTenant(input.orgId);
+      // Resolve the target org (supports both custom and legacy Clerk org IDs)
+      const tenant = await resolveTenantByOrgId(input.orgId);
       if (!tenant) {
         throw new TRPCError({
           code: "NOT_FOUND",

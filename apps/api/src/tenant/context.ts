@@ -1,4 +1,4 @@
-import { resolveTenant } from "./resolve.js";
+import { resolveTenantByOrgId } from "./resolve.js";
 import { createTenantDb } from "../db/client.js";
 import type { TenantSchema } from "../db/schema/tenant.js";
 
@@ -19,25 +19,25 @@ export interface RequestTenantContext {
 }
 
 /**
- * Build a request-scoped tenant context from Clerk session data.
+ * Build a request-scoped tenant context from authenticated session data.
  *
  * SECURITY: Tenant ID is NEVER derived from frontend request.
- * It is always resolved from the authenticated Clerk session's org ID.
+ * It is always resolved from the authenticated session's org ID.
  *
- * @param clerkOrgId - From authenticated Clerk session (not from request params)
- * @param clerkUserId - From authenticated Clerk session
+ * @param orgId - From authenticated session (custom org ID or legacy Clerk org ID)
+ * @param userId - From authenticated session (custom user ID or legacy Clerk user ID)
  * @returns Full tenant context with scoped DB client
  * @throws Error with code TENANT_NOT_FOUND if org has no provisioned schema
  */
 export async function buildTenantContext(
-  clerkOrgId: string,
-  clerkUserId: string
+  orgId: string,
+  userId: string
 ): Promise<RequestTenantContext> {
-  const tenant = await resolveTenant(clerkOrgId);
+  const tenant = await resolveTenantByOrgId(orgId);
 
   if (!tenant) {
     const error = new Error(
-      `Tenant not found for org ${clerkOrgId}. Schema may not be provisioned yet.`
+      `Tenant not found for org ${orgId}. Schema may not be provisioned yet.`
     );
     (error as Error & { code: string }).code = "TENANT_NOT_FOUND";
     throw error;
@@ -49,7 +49,7 @@ export async function buildTenantContext(
     tenantId: tenant.id,
     schemaName: tenant.schemaName,
     companyName: tenant.name,
-    userId: clerkUserId,
+    userId,
     db: tenantDb.db,
     schema: {
       schema: tenantDb.schema,

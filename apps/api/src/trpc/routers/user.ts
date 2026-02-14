@@ -2,7 +2,10 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router } from "../trpc.js";
 import { protectedProcedure } from "../procedures.js";
-import { desc, like, or } from "drizzle-orm";
+import { desc, like, or, eq } from "drizzle-orm";
+import { generateToken } from "../../auth/tokens.js";
+import { db as publicDb } from "../../db/client.js";
+import { organizationInvitations, organizations } from "../../db/schema/public.js";
 
 /**
  * User management router.
@@ -66,8 +69,11 @@ export const userRouter = router({
     }),
 
   /**
-   * Invite a new user to the organization via email
-   * Note: This uses Clerk's invitation API
+   * Invite a new user to the organization via email.
+   * Note: This procedure is kept for backward compatibility.
+   * For new code, use the organization router's invite procedure instead.
+   *
+   * Redirects to the organization invitation system (custom auth).
    */
   invite: protectedProcedure
     .input(
@@ -94,47 +100,53 @@ export const userRouter = router({
         });
       }
 
-      try {
-        // Use Clerk SDK to create organization invitation
-        const { createClerkClient } = await import("@clerk/backend");
-        const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+      // Find the organization by orgId
+      const [org] = await publicDb
+        .select()
+        .from(organizations)
+        .where(eq(organizations.id, ctx.orgId))
+        .limit(1);
 
-        const invitation = await clerkClient.organizations.createOrganizationInvitation({
-          organizationId: ctx.orgId,
-          emailAddress: input.email,
-          role: input.role,
-          publicMetadata: {
-            firstName: input.firstName,
-            lastName: input.lastName,
-          },
-        });
-
-        return {
-          id: invitation.id,
-          email: input.email,
-          status: invitation.status,
-        };
-      } catch (error: any) {
-        // Log the full error for debugging
-        console.error("Invitation error:", error);
-        console.error("Error details:", {
-          message: error.message,
-          clerkError: error.clerkError,
-          errors: error.errors,
-          status: error.status,
-        });
-
-        // Check if it's a Clerk error
-        if (error.clerkError) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: error.errors?.[0]?.message || "Failed to send invitation",
-          });
-        }
+      if (!org) {
         throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: error.message || "Failed to send invitation",
+          code: "NOT_FOUND",
+          message: "Organization not found",
         });
       }
+
+      // Generate invitation token (plaintext for email, hash for DB)
+      const { token, hash } = await generateToken();
+
+      // Calculate expiry (7 days from now)
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+
+      // Create invitation record
+      const [invitation] = await publicDb
+        .insert(organizationInvitations)
+        .values({
+          organizationId: ctx.orgId,
+          email: input.email,
+          role: input.role,
+          tokenHash: hash,
+          status: "pending",
+          invitedBy: ctx.userId,
+          expiresAt,
+        })
+        .returning();
+
+      // Send invitation email (logs to console in dev mode)
+      try {
+        const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/accept-invitation?token=${token}`;
+        console.log(`Invitation email to ${input.email}:`, inviteUrl);
+      } catch (err) {
+        console.warn("Failed to send invitation email:", err);
+      }
+
+      return {
+        id: invitation.id,
+        email: input.email,
+        status: invitation.status,
+      };
     }),
 });

@@ -36,7 +36,7 @@ export interface ExplicitDocumentPermissions {
  *
  * @param db - Tenant database connection
  * @param schema - Tenant schema
- * @param userId - Clerk user ID
+ * @param userId - User ID
  * @returns Object with sets of document/folder IDs the user has access to
  */
 export async function loadDocumentPermissions(
@@ -95,11 +95,11 @@ export async function loadDocumentPermissions(
 /**
  * Define CASL abilities for a given role and user.
  *
- * Called per-request (stateless). Role comes from Clerk org membership,
+ * Called per-request (stateless). Role comes from organization membership,
  * NEVER from the frontend.
  *
- * @param role - Clerk organization role (e.g., "org:admin", "org:member")
- * @param userId - Clerk user ID (for ownership-based rules)
+ * @param role - Organization role (e.g., "org:admin", "org:member")
+ * @param userId - User ID (for ownership-based rules)
  * @param projectTeamMemberships - Optional array of project team memberships for project-level scoping
  * @param explicitDocumentPermissions - Optional explicit document/folder permissions (call loadDocumentPermissions first)
  * @returns CASL Ability instance
