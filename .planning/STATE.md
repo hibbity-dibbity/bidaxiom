@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-02-10)
 Phase: 12 of 12 (Custom Authentication Migration)
 Plan: 7 of 8 in current phase
 Status: In progress
-Last activity: 2026-02-14 — Completed 12-07-PLAN.md (Replace Dashboard Clerk UI Components)
+Last activity: 2026-02-14 - Completed quick task 1: Fix document upload error - Failed INSERT query
 
 Progress: [█████████░] 97% (11.875 of 12 phases, 7 of 8 plans complete in current phase)
 
@@ -258,6 +258,12 @@ None yet.
 ### Blockers/Concerns
 
 - Clerk webhook secret is still placeholder (`whsec_xxx`). Tenant auto-provisioning via webhooks won't work until configured with real secret from Clerk dashboard.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 1 | Fix document upload error - Failed INSERT query | 2026-02-14 | ab98bd5 | [1-fix-document-upload-error-failed-insert-](./quick/1-fix-document-upload-error-failed-insert-/) |
 
 ## Session Continuity
 
