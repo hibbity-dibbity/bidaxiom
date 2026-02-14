@@ -294,7 +294,15 @@ Plans:
   4. User can toggle dark mode from Account Settings with FOUC prevention via cookie-based theme storage
   5. Company logo displays in top navigation, sidebar (collapsed and expanded), and sign-in page
   6. Layout uses Procore-style compact spacing with sharp corners, consistent typography, and subtle construction accent color
-**Plans**: Not yet planned
+**Plans**: 6 plans in 3 waves
+
+Plans:
+- [ ] 13-01-PLAN.md — Dark mode with cookie-based FOUC prevention (wave 1)
+- [ ] 13-02-PLAN.md — Company branding backend (logo upload schema, S3, tRPC) (wave 1)
+- [ ] 13-03-PLAN.md — Global search command palette with ⌘K shortcut (wave 2)
+- [ ] 13-04-PLAN.md — Navigation enhancement (contextual sidebar, URL state, persistent collapse) (wave 2)
+- [ ] 13-05-PLAN.md — Procore-style design system (compact spacing, sharp corners, typography, accent) (wave 3)
+- [ ] 13-06-PLAN.md — Company branding UI integration (logo display, upload UI) (wave 3)
 
 ### Phase 14: Form Standardization & Validation
 **Goal**: All forms use standardized inputs with centralized validation that is backward compatible with existing data
