@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2026-02-10)
 
 ## Current Position
 
-Phase: 11 of 12 (Calendar Integration)
-Plan: 5 of 5 in current phase
+Phase: 12 of 12 (Custom Authentication Migration)
+Plan: 1 of 5 in current phase
 Status: In progress
-Last activity: 2026-02-14 — Completed 11-05-PLAN.md (Calendar Integration Frontend UI)
+Last activity: 2026-02-14 — Completed 12-01-PLAN.md (Custom Authentication Foundation)
 
-Progress: [█████████░] 94% (11 of 12 phases, 5 of 5 plans complete in current phase)
+Progress: [█████████░] 95% (11.2 of 12 phases, 1 of 5 plans complete in current phase)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 43
-- Average duration: 6.6 min
-- Total execution time: 4.9 hours
+- Total plans completed: 44
+- Average duration: 6.5 min
+- Total execution time: 4.97 hours
 
 **By Phase:**
 
@@ -37,10 +37,11 @@ Progress: [█████████░] 94% (11 of 12 phases, 5 of 5 plans co
 | 09 | 7 | 45.5 min | 6.5 min |
 | 10 | 5 | 48.3 min | 9.7 min |
 | 11 | 5 | 23 min | 4.6 min |
+| 12 | 1 | 4 min | 4 min |
 
 **Recent Trend:**
-- Last 5 plans: 11-01 (3 min), 11-02 (4 min), 11-03 (6 min), 11-04 (4.4 min), 11-05 (5 min)
-- Trend: Phase 10 reporting UI completed in 16.2 minutes, including 4-step wizard with drag-and-drop, recharts visualization, export/schedule dialogs, 7 system templates, and 6 full-featured pages.
+- Last 5 plans: 11-02 (4 min), 11-03 (6 min), 11-04 (4.4 min), 11-05 (5 min), 12-01 (4 min)
+- Trend: Phase 12 authentication foundation complete with JWT, Argon2id, TOTP MFA, and Redis rate limiting in 4 minutes.
 
 *Updated after each plan completion*
 | Phase 06 P02 | 8 | 2 tasks | 5 files |
@@ -76,6 +77,7 @@ Progress: [█████████░] 94% (11 of 12 phases, 5 of 5 plans co
 | Phase 11-calendar-integration P03 | 6 min | 2 tasks | 7 files |
 | Phase 11-calendar-integration P04 | 4.4 min | 2 tasks | 4 files |
 | Phase 11-calendar-integration P05 | 5 min | 2 tasks | 5 files |
+| Phase 12-custom-authentication-migration P01 | 4 min | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -220,6 +222,12 @@ Recent decisions affecting current work:
 - [Phase 11-04]: Protected procedures for OAuth callbacks - Uses protectedProcedure (not authorizedProcedure) since abilities may not be loaded during callback
 - [Phase 11-04]: Webhook handlers commented until Plan 03 - Routes are in place but handler imports commented out until sync workers are created
 - [Phase 11-04]: Daily sync fallback interval - 24-hour scheduled job ensures eventual consistency when webhook notifications fail
+- [Phase 12-01]: jose over jsonwebtoken for JWT - ESM-native, Edge-compatible, no algorithm confusion CVEs
+- [Phase 12-01]: Argon2id over bcrypt for new passwords - OWASP recommended, 19 MiB memory cost prevents GPU attacks
+- [Phase 12-01]: bcrypt verification support for Clerk migration - verify existing hashes, rehash to Argon2id on login
+- [Phase 12-01]: otpauth over speakeasy for TOTP - Active maintenance (speakeasy unmaintained 7+ years)
+- [Phase 12-01]: SHA-256 for tokens, Argon2id for passwords - High-entropy random tokens don't need slow hashing
+- [Phase 12-01]: Redis rate limiting with fail-open - Non-fatal when Redis unavailable (logs warning, allows request)
 
 ### Pending Todos
 
@@ -231,8 +239,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-14 (Phase 11 - Calendar Integration)
-Stopped at: Completed 11-05-PLAN.md (Calendar Integration Frontend UI)
+Last session: 2026-02-14 (Phase 12 - Custom Authentication Migration)
+Stopped at: Completed 12-01-PLAN.md (Custom Authentication Foundation)
 Resume file: None
 
 ---
