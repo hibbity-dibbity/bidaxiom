@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-10)
 ## Current Position
 
 Phase: 12 of 12 (Custom Authentication Migration)
-Plan: 1 of 5 in current phase
+Plan: 2 of 5 in current phase
 Status: In progress
-Last activity: 2026-02-14 — Completed 12-01-PLAN.md (Custom Authentication Foundation)
+Last activity: 2026-02-14 — Completed 12-02-PLAN.md (Auth API and Email Service)
 
-Progress: [█████████░] 95% (11.2 of 12 phases, 1 of 5 plans complete in current phase)
+Progress: [█████████░] 96% (11.4 of 12 phases, 2 of 5 plans complete in current phase)
 
 ## Performance Metrics
 
@@ -40,8 +40,8 @@ Progress: [█████████░] 95% (11.2 of 12 phases, 1 of 5 plans 
 | 12 | 1 | 4 min | 4 min |
 
 **Recent Trend:**
-- Last 5 plans: 11-02 (4 min), 11-03 (6 min), 11-04 (4.4 min), 11-05 (5 min), 12-01 (4 min)
-- Trend: Phase 12 authentication foundation complete with JWT, Argon2id, TOTP MFA, and Redis rate limiting in 4 minutes.
+- Last 5 plans: 11-03 (6 min), 11-04 (4.4 min), 11-05 (5 min), 12-01 (4 min), 12-02 (3 min)
+- Trend: Phase 12 auth API with complete registration, login, token refresh, email verification, password reset, and MFA flows in 3 minutes.
 
 *Updated after each plan completion*
 | Phase 06 P02 | 8 | 2 tasks | 5 files |
@@ -78,6 +78,8 @@ Progress: [█████████░] 95% (11.2 of 12 phases, 1 of 5 plans 
 | Phase 11-calendar-integration P04 | 4.4 min | 2 tasks | 4 files |
 | Phase 11-calendar-integration P05 | 5 min | 2 tasks | 5 files |
 | Phase 12-custom-authentication-migration P01 | 4 min | 2 tasks | 12 files |
+| Phase 12-custom-authentication-migration P02 | 3 min | 2 tasks | 3 files |
+| Phase 12-custom-authentication-migration P02 | 3 min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -228,6 +230,8 @@ Recent decisions affecting current work:
 - [Phase 12-01]: otpauth over speakeasy for TOTP - Active maintenance (speakeasy unmaintained 7+ years)
 - [Phase 12-01]: SHA-256 for tokens, Argon2id for passwords - High-entropy random tokens don't need slow hashing
 - [Phase 12-01]: Redis rate limiting with fail-open - Non-fatal when Redis unavailable (logs warning, allows request)
+- [Phase 12-02]: Resend for email delivery with console fallback in dev mode — Allows development without email service configuration
+- [Phase 12-02]: Manual access token verification for auth protected endpoints — Existing protectedProcedure uses Clerk - manual verification bridge until Plan 03
 
 ### Pending Todos
 
@@ -240,7 +244,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-14 (Phase 12 - Custom Authentication Migration)
-Stopped at: Completed 12-01-PLAN.md (Custom Authentication Foundation)
+Stopped at: Completed 12-02-PLAN.md (Auth API and Email Service)
 Resume file: None
 
 ---
