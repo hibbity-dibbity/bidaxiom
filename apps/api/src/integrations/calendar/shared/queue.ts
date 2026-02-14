@@ -1,6 +1,9 @@
 import { Queue } from 'bullmq';
 import { redisConnection } from '../../quickbooks/queue.js';  // Reuse same Redis config
 
+// Re-export for worker
+export { redisConnection };
+
 export interface CalendarSyncJobData {
   tenantId: string;
   provider: 'google' | 'microsoft';
