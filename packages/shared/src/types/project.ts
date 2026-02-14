@@ -4,7 +4,7 @@ import {
   uploadVersionSchema as uploadVersionSchemaBase,
   createFolderSchema as createFolderSchemaBase,
   presignedUrlSchema as presignedUrlSchemaBase,
-} from "./document.js";
+} from "./document";
 
 // Project type enum
 export const projectTypeEnum = z.enum(["commercial", "residential", "infrastructure", "industrial"]);
