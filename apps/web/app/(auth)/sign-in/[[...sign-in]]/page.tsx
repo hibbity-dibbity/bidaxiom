@@ -211,15 +211,7 @@ export default function SignInPage() {
             )}
           </div>
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">Password</Label>
-              <Link
-                href="/reset-password"
-                className="text-sm text-muted-foreground hover:text-primary"
-              >
-                Forgot password?
-              </Link>
-            </div>
+            <Label htmlFor="password">Password</Label>
             <Input
               id="password"
               type="password"
@@ -230,6 +222,12 @@ export default function SignInPage() {
             {loginErrors.password && (
               <p className="text-sm text-destructive">{loginErrors.password.message}</p>
             )}
+            <Link
+              href="/reset-password"
+              className="text-sm text-muted-foreground hover:text-primary"
+            >
+              Forgot password?
+            </Link>
           </div>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
