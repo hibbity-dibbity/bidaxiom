@@ -264,11 +264,12 @@ None yet.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 1 | Fix document upload error - Failed INSERT query | 2026-02-14 | ab98bd5 | [1-fix-document-upload-error-failed-insert-](./quick/1-fix-document-upload-error-failed-insert-/) |
+| 2 | Remove New Folder option from project documents | 2026-02-14 | f45dbba | [2-remove-new-folder-option-from-project-do](./quick/2-remove-new-folder-option-from-project-do/) |
 
 ## Session Continuity
 
 Last session: 2026-02-14 (Phase 12 - Custom Authentication Migration)
-Stopped at: Completed 12-07-PLAN.md (Replace Dashboard Clerk UI Components)
+Stopped at: Completed quick task 2: Remove New Folder option from project documents
 Resume file: None
 
 ---
