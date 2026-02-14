@@ -29,4 +29,6 @@ export {
   type QboSyncNotification,
 } from "./quickbooks";
 
-export * from "./document.js";
+export * from "./document";
+
+export * from "./calendar";
