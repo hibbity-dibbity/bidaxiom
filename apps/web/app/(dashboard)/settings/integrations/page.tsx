@@ -4,24 +4,34 @@ import { Loader2, AlertCircle } from "lucide-react";
 import { QboConnectionCard } from "@/components/integrations/qbo-connection-card";
 import { QboSyncStatus } from "@/components/integrations/qbo-sync-status";
 import { QboSyncNotifications } from "@/components/integrations/qbo-sync-notifications";
+import { CalendarConnectionCard } from "@/components/integrations/calendar-connection-card";
+import { CalendarProjectSync } from "@/components/integrations/calendar-project-sync";
 import { trpc } from "@/lib/trpc";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
 
 /**
  * Integrations settings page.
- * Shows QuickBooks connection management and sync status.
+ * Shows QuickBooks and Calendar connection management.
  */
 export default function IntegrationsPage() {
-  const { data: status, isLoading, error } = trpc.quickbooks.getStatus.useQuery(
+  const { data: qboStatus, isLoading: qboLoading, error: qboError } = trpc.quickbooks.getStatus.useQuery(
     undefined,
     {
       refetchInterval: 5000, // Poll every 5 seconds for near-real-time updates
     }
   );
 
-  // Type guard to check if status is connected
-  const isConnected = (
-    s: typeof status
+  const { data: calendarConnections, isLoading: calendarLoading, error: calendarError } = trpc.calendar.getConnections.useQuery(
+    undefined,
+    {
+      refetchInterval: 5000, // Poll every 5 seconds for near-real-time updates
+    }
+  );
+
+  // Type guard to check if QBO status is connected
+  const isQboConnected = (
+    s: typeof qboStatus
   ): s is {
     connected: true;
     connection: {
@@ -45,7 +55,12 @@ export default function IntegrationsPage() {
     return s?.connected === true && "connection" in s;
   };
 
-  if (isLoading) {
+  // Find active calendar connection for project sync section
+  const activeCalendarConnection = calendarConnections?.find(
+    (conn) => conn.status === "active"
+  );
+
+  if (qboLoading || calendarLoading) {
     return (
       <div className="space-y-8">
         <div>
@@ -61,7 +76,10 @@ export default function IntegrationsPage() {
     );
   }
 
-  if (error) {
+  // Show individual errors for each integration
+  const hasError = qboError || calendarError;
+
+  if (hasError && !qboStatus && !calendarConnections) {
     return (
       <div className="space-y-8">
         <div>
@@ -70,11 +88,20 @@ export default function IntegrationsPage() {
             Connect external services to your account
           </p>
         </div>
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error loading integrations</AlertTitle>
-          <AlertDescription>{error.message}</AlertDescription>
-        </Alert>
+        {qboError && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error loading QuickBooks integration</AlertTitle>
+            <AlertDescription>{qboError.message}</AlertDescription>
+          </Alert>
+        )}
+        {calendarError && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error loading Calendar integration</AlertTitle>
+            <AlertDescription>{calendarError.message}</AlertDescription>
+          </Alert>
+        )}
       </div>
     );
   }
@@ -88,54 +115,113 @@ export default function IntegrationsPage() {
         </p>
       </div>
 
-      <div className="space-y-6">
-        {/* QuickBooks Connection Card */}
-        <QboConnectionCard
-          connection={
-            isConnected(status)
-              ? {
-                  connected: true as const,
-                  realmId: status.connection.realmId,
-                  companyName: status.connection.companyName,
-                  environment: status.connection.environment,
-                  status: status.connection.status,
-                  connectedAt: undefined, // Not returned from API
-                  refreshTokenExpiresAt: status.connection.refreshTokenExpiresAt
-                    ? new Date(status.connection.refreshTokenExpiresAt)
-                    : undefined,
-                  lastSyncAt: status.connection.lastSyncAt
-                    ? new Date(status.connection.lastSyncAt)
-                    : undefined,
-                  errorMessage: undefined, // Not returned from API
-                }
-              : { connected: false as const }
-          }
-        />
+      <div className="space-y-8">
+        {/* QuickBooks Section */}
+        <section>
+          <h2 className="text-xl font-semibold mb-4">QuickBooks Online</h2>
+          <div className="space-y-6">
+            {qboError ? (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error loading QuickBooks</AlertTitle>
+                <AlertDescription>{qboError.message}</AlertDescription>
+              </Alert>
+            ) : (
+              <>
+                <QboConnectionCard
+                  connection={
+                    isQboConnected(qboStatus)
+                      ? {
+                          connected: true as const,
+                          realmId: qboStatus.connection.realmId,
+                          companyName: qboStatus.connection.companyName,
+                          environment: qboStatus.connection.environment,
+                          status: qboStatus.connection.status,
+                          connectedAt: undefined, // Not returned from API
+                          refreshTokenExpiresAt: qboStatus.connection
+                            .refreshTokenExpiresAt
+                            ? new Date(qboStatus.connection.refreshTokenExpiresAt)
+                            : undefined,
+                          lastSyncAt: qboStatus.connection.lastSyncAt
+                            ? new Date(qboStatus.connection.lastSyncAt)
+                            : undefined,
+                          errorMessage: undefined, // Not returned from API
+                        }
+                      : { connected: false as const }
+                  }
+                />
 
-        {/* Sync Notifications (only shown if connected) */}
-        {isConnected(status) && (
-          <>
-            <QboSyncNotifications />
+                {/* Sync Notifications (only shown if connected) */}
+                {isQboConnected(qboStatus) && (
+                  <>
+                    <QboSyncNotifications />
 
-            {/* Sync Status Table */}
-            {status.syncStates.length > 0 && (
-              <QboSyncStatus
-                syncStates={status.syncStates.map((state) => ({
-                  ...state,
-                  syncStatus: state.syncStatus as
-                    | "synced"
-                    | "syncing"
-                    | "pending"
-                    | "error"
-                    | "conflict",
-                  lastSuccessfulSync: state.lastSuccessfulSync
-                    ? new Date(state.lastSuccessfulSync)
-                    : null,
-                }))}
-              />
+                    {/* Sync Status Table */}
+                    {qboStatus.syncStates.length > 0 && (
+                      <QboSyncStatus
+                        syncStates={qboStatus.syncStates.map((state) => ({
+                          ...state,
+                          syncStatus: state.syncStatus as
+                            | "synced"
+                            | "syncing"
+                            | "pending"
+                            | "error"
+                            | "conflict",
+                          lastSuccessfulSync: state.lastSuccessfulSync
+                            ? new Date(state.lastSuccessfulSync)
+                            : null,
+                        }))}
+                      />
+                    )}
+                  </>
+                )}
+              </>
             )}
-          </>
-        )}
+          </div>
+        </section>
+
+        <Separator />
+
+        {/* Calendar Section */}
+        <section>
+          <h2 className="text-xl font-semibold mb-4">Calendar Integration</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Connect your Google Calendar or Microsoft Outlook to sync project
+            milestones and deadlines.
+          </p>
+
+          {calendarError ? (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error loading Calendar connections</AlertTitle>
+              <AlertDescription>{calendarError.message}</AlertDescription>
+            </Alert>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                {/* Google Calendar card */}
+                <CalendarConnectionCard
+                  provider="google"
+                  connection={calendarConnections?.find(
+                    (c) => c.provider === "google"
+                  )}
+                />
+                {/* Microsoft Outlook card */}
+                <CalendarConnectionCard
+                  provider="microsoft"
+                  connection={calendarConnections?.find(
+                    (c) => c.provider === "microsoft"
+                  )}
+                />
+              </div>
+
+              {/* If any connection is active, show project sync controls */}
+              {activeCalendarConnection && (
+                <CalendarProjectSync connectionId={activeCalendarConnection.id} />
+              )}
+            </div>
+          )}
+        </section>
       </div>
     </div>
   );

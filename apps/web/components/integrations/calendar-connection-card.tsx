@@ -26,27 +26,25 @@ import {
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
-type CalendarConnection = {
-  id: string;
-  status: string;
-  providerEmail: string | null;
-  calendarId: string;
-  lastSyncAt: string | null;
-  webhookExpiresAt: string | null;
-  errorMessage: string | null;
-  syncState: {
-    syncStatus: string;
-    syncedEventCount: number;
-    errorCount: number;
-    lastFullSyncAt: string | null;
-    lastIncrementalSyncAt: string | null;
-    lastError: string | null;
-  } | null;
-};
-
 interface CalendarConnectionCardProps {
   provider: "google" | "microsoft";
-  connection?: CalendarConnection;
+  connection?: {
+    id: string;
+    status: string;
+    providerEmail: string | null;
+    calendarId: string;
+    lastSyncAt: string | null;
+    webhookExpiresAt: string | null;
+    errorMessage: string | null;
+    syncState: {
+      syncStatus: string | null;
+      syncedEventCount: number | null;
+      errorCount: number | null;
+      lastFullSyncAt: string | null;
+      lastIncrementalSyncAt: string | null;
+      lastError: string | null;
+    };
+  };
 }
 
 export function CalendarConnectionCard({
@@ -163,7 +161,7 @@ export function CalendarConnectionCard({
   };
 
   const getSyncStatusBadge = () => {
-    if (!connection?.syncState) return null;
+    if (!connection?.syncState?.syncStatus) return null;
 
     const status = connection.syncState.syncStatus;
     switch (status) {
@@ -245,7 +243,7 @@ export function CalendarConnectionCard({
                   {getSyncStatusBadge()}
                 </div>
               )}
-              {connection.syncState && connection.syncState.syncedEventCount > 0 && (
+              {connection.syncState && (connection.syncState.syncedEventCount ?? 0) > 0 && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Events Synced:</span>
                   <span>{connection.syncState.syncedEventCount}</span>
