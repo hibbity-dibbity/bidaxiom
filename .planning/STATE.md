@@ -269,11 +269,12 @@ None yet.
 | 4 | Restore team member dropdown with existing roles | 2026-02-14 | f1c0f34 | [4-restore-team-member-dropdown-with-existi](./quick/4-restore-team-member-dropdown-with-existi/) |
 | 5 | Restore custom job numbering setup on company settings | 2026-02-14 | 0a9822a | [5-restore-custom-job-numbering-setup-on-co](./quick/5-restore-custom-job-numbering-setup-on-co/) |
 | 6 | Fix missing Phase 10 reporting tables and schema mismatches | 2026-02-14 | c0ed73d | [6-fix-missing-phase-10-reporting-tables-an](./quick/6-fix-missing-phase-10-reporting-tables-an/) |
+| 7 | Fix "Failed query: select ... from users" error at sign-in | 2026-02-14 | 2b307df | [7-fix-error-failed-query-select-id-email-e](./quick/7-fix-error-failed-query-select-id-email-e/) |
 
 ## Session Continuity
 
 Last session: 2026-02-14 (Phase 12 - Custom Authentication Migration)
-Stopped at: Completed quick task 6: Fix missing Phase 10 reporting tables and schema mismatches
+Stopped at: Completed quick task 7: Auto-provision auth tables on server startup
 Resume file: None
 
 ---
