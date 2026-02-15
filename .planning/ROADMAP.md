@@ -294,15 +294,18 @@ Plans:
   4. User can toggle dark mode from Account Settings with FOUC prevention via cookie-based theme storage
   5. Company logo displays in top navigation, sidebar (collapsed and expanded), and sign-in page
   6. Layout uses Procore-style compact spacing with sharp corners, consistent typography, and subtle construction accent color
-**Plans**: 6 plans in 3 waves
+**Plans**: 9 plans (6 original + 3 gap closure)
 
 Plans:
-- [ ] 13-01-PLAN.md — Dark mode with cookie-based FOUC prevention (wave 1)
-- [ ] 13-02-PLAN.md — Company branding backend (logo upload schema, S3, tRPC) (wave 1)
-- [ ] 13-03-PLAN.md — Global search command palette with ⌘K shortcut (wave 2)
-- [ ] 13-04-PLAN.md — Navigation enhancement (contextual sidebar, URL state, persistent collapse) (wave 2)
-- [ ] 13-05-PLAN.md — Procore-style design system (compact spacing, sharp corners, typography, accent) (wave 3)
-- [ ] 13-06-PLAN.md — Company branding UI integration (logo display, upload UI) (wave 3)
+- [x] 13-01-PLAN.md — Dark mode with cookie-based FOUC prevention (wave 1)
+- [x] 13-02-PLAN.md — Company branding backend (logo upload schema, S3, tRPC) (wave 1)
+- [x] 13-03-PLAN.md — Global search command palette with ⌘K shortcut (wave 2)
+- [x] 13-04-PLAN.md — Navigation enhancement (contextual sidebar, URL state, persistent collapse) (wave 2)
+- [x] 13-05-PLAN.md — Procore-style design system (compact spacing, sharp corners, typography, accent) (wave 3)
+- [x] 13-06-PLAN.md — Company branding UI integration (logo display, upload UI) (wave 3)
+- [ ] 13-07-PLAN.md — Gap closure: Fix search layout shift and no results bug (wave 1)
+- [ ] 13-08-PLAN.md — Gap closure: Fix sidebar collapse glitch (wave 1)
+- [ ] 13-09-PLAN.md — Gap closure: Fix logo upload database column mismatch (wave 1)
 
 ### Phase 14: Form Standardization & Validation
 **Goal**: All forms use standardized inputs with centralized validation that is backward compatible with existing data
@@ -403,7 +406,7 @@ v1.1: Phases 13-19 (in progress)
 | 11. Calendar Integration | 5/5 | Complete | 2026-02-14 |
 | 12. Custom Authentication Migration | 8/8 | Complete | 2026-02-14 |
 | **v1.1 Phases (Enterprise UX Redesign)** |
-| 13. Navigation & Theme Foundation | 0/TBD | Pending | - |
+| 13. Navigation & Theme Foundation | 6/9 | Gap Closure | - |
 | 14. Form Standardization & Validation | 0/TBD | Pending | - |
 | 15. Dashboard Redesign | 0/TBD | Pending | - |
 | 16. Projects Interface Redesign | 0/TBD | Pending | - |
@@ -413,4 +416,4 @@ v1.1: Phases 13-19 (in progress)
 
 ---
 *Roadmap created: 2026-02-10 (v1.0)*
-*Last updated: 2026-02-14 (v1.1 phases added)*
+*Last updated: 2026-02-15 (Phase 13 gap closure plans added)*
