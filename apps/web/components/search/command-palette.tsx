@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, createContext, useContext } from "react";
 import { useRouter } from "next/navigation";
-import { Search, FileText, User } from "lucide-react";
+import { Search, FileText, User, Loader2 } from "lucide-react";
 import {
   CommandDialog,
   CommandEmpty,
@@ -91,11 +91,23 @@ function CommandPalette({ open, setOpen }: CommandPaletteProps) {
         onValueChange={setQuery}
       />
       <CommandList>
-        {isLoading && debouncedQuery && (
-          <div className="py-6 text-center text-sm">Searching...</div>
+        {!debouncedQuery && (
+          <CommandEmpty>Start typing to search...</CommandEmpty>
         )}
-        {!isLoading && debouncedQuery && results?.length === 0 && (
-          <CommandEmpty>No results found.</CommandEmpty>
+        {debouncedQuery && (
+          <>
+            {isLoading && (
+              <div className="py-6 text-center text-sm">
+                <div className="flex items-center justify-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Searching...</span>
+                </div>
+              </div>
+            )}
+            {!isLoading && (!results || results.length === 0) && (
+              <CommandEmpty>No results found.</CommandEmpty>
+            )}
+          </>
         )}
         {results && results.length > 0 && (
           <>
