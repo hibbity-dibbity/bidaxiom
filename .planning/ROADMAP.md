@@ -340,7 +340,14 @@ Plans:
   3. Activity feed is removed from dashboard (moved to Settings)
   4. Invite Team Members widget is removed from dashboard
   5. All "Coming in Phase X" placeholders are replaced with functional widgets or removed
-**Plans**: Not yet planned
+**Plans**: 5 plans across 3 waves
+
+Plans:
+- [ ] 15-01-PLAN.md — Dashboard tRPC router with 10 aggregation endpoints (wave 1)
+- [ ] 15-02-PLAN.md — Activity feed move to Settings + Activity Log page (wave 1)
+- [ ] 15-03-PLAN.md — KPI card component + user-level widgets (wave 2)
+- [ ] 15-04-PLAN.md — Company-level widgets (7 widgets) (wave 2)
+- [ ] 15-05-PLAN.md — Dashboard page assembly + visual verification (wave 3)
 
 ### Phase 16: Projects Interface Redesign
 **Goal**: Projects page displays compact table with advanced filtering and project detail uses persistent header with slug-safe URLs
@@ -419,7 +426,7 @@ v1.1: Phases 13-19 (in progress)
 | **v1.1 Phases (Enterprise UX Redesign)** |
 | 13. Navigation & Theme Foundation | 9/10 | UAT Gap Closure | - |
 | 14. Form Standardization & Validation | 5/8 | UAT Gap Closure | - |
-| 15. Dashboard Redesign | 0/TBD | Pending | - |
+| 15. Dashboard Redesign | 0/5 | Planned | - |
 | 16. Projects Interface Redesign | 0/TBD | Pending | - |
 | 17. Estimating Workflow - Setup & Core | 0/TBD | Pending | - |
 | 18. Estimating Workflow - Lifecycle & Conversion | 0/TBD | Pending | - |
