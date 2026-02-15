@@ -3,6 +3,7 @@ import { getSessionFromRequest, setSessionCookie } from "@/lib/session";
 
 export async function POST(request: Request) {
   const { organizationId } = await request.json();
+  console.log("[switch-org] Received organizationId:", organizationId);
 
   // Get current session to preserve existing data
   const currentSession = await getSessionFromRequest(request);
@@ -15,10 +16,11 @@ export async function POST(request: Request) {
   // Call API to switch org
   const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
-  // tRPC batch format for Fastify adapter
-  const payload = { "0": { json: { organizationId } } };
+  // Try non-batch single procedure call format
+  const payload = { organizationId };
+  console.log("[switch-org] Calling backend with payload:", JSON.stringify(payload));
 
-  const response = await fetch(`${API_URL}/trpc/auth.switchOrganization?batch=1`, {
+  const response = await fetch(`${API_URL}/trpc/auth.switchOrganization`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -36,9 +38,8 @@ export async function POST(request: Request) {
   const data = await response.json();
   console.log("[switch-org] Backend response:", JSON.stringify(data));
 
-  // Batch format: response is array with single element
-  const batchResult = data[0];
-  const result = batchResult?.result?.data?.json;
+  // Non-batch format: response has result.data
+  const result = data?.result?.data;
   console.log("[switch-org] Parsed result:", JSON.stringify(result));
 
   if (result) {
