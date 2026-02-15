@@ -118,7 +118,12 @@ export function createTenantSchema(schemaName: string) {
     contactName: text("contact_name").notNull(), // Primary contact person
     phone: text("phone"),
     email: text("email"),
-    address: text("address"),
+    address: text("address"), // Legacy field - will be cleared by migration
+    street1: text("street1"),
+    street2: text("street2"),
+    city: text("city"),
+    state: text("state"), // 2-char US state abbreviation
+    zip: text("zip"),
     createdBy: text("created_by").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
@@ -134,7 +139,12 @@ export function createTenantSchema(schemaName: string) {
     jobNumber: text("job_number"), // Nullable, unique constraint via partial index
     customerId: uuid("customer_id").notNull().references(() => customers.id, { onDelete: "restrict" }),
     description: text("description"),
-    location: text("location"),
+    location: text("location"), // Legacy field - will be cleared by migration
+    street1: text("street1"),
+    street2: text("street2"),
+    city: text("city"),
+    state: text("state"), // 2-char US state abbreviation
+    zip: text("zip"),
     projectType: text("project_type").notNull(), // commercial, residential, infrastructure, industrial
     status: text("status").notNull().default("active"), // active, on_hold, completed, archived
     startDate: timestamp("start_date", { withTimezone: true }),
@@ -660,7 +670,12 @@ export function createTenantSchema(schemaName: string) {
     contactName: text("contact_name"),
     contactEmail: text("contact_email"),
     contactPhone: text("contact_phone"),
-    address: text("address"),
+    address: text("address"), // Legacy field - will be cleared by migration
+    street1: text("street1"),
+    street2: text("street2"),
+    city: text("city"),
+    state: text("state"), // 2-char US state abbreviation
+    zip: text("zip"),
     trades: jsonb("trades").notNull().default([]).$type<number[]>(),
     notes: text("notes"),
     status: text("status").notNull().default("active"), // active, inactive, blacklisted
