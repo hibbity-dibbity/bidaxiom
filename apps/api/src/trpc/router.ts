@@ -5,6 +5,7 @@ import { tenantRouter } from "./routers/tenant.js";
 import { auditRouter } from "./routers/audit.js";
 import { companyRouter } from "./routers/company.js";
 import { customerRouter } from "./routers/customer.js";
+import { dashboardRouter } from "./routers/dashboard.js";
 import { userRouter } from "./routers/user.js";
 import { projectRouter } from "./routers/project.js";
 import { documentRouter } from "./routers/document.js";
@@ -41,6 +42,7 @@ export const appRouter = router({
   audit: auditRouter,
   company: companyRouter,
   customer: customerRouter,
+  dashboard: dashboardRouter,
   user: userRouter,
   organization: organizationRouter,
   project: projectRouter,
