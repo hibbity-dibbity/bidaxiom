@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
+import { useEffect, useRef } from "react";
 import {
   FolderKanban,
   Gavel,
@@ -21,13 +22,32 @@ import { trpc } from "@/lib/trpc";
  * Uses custom auth context instead of Clerk hooks.
  */
 export default function DashboardPage() {
-  const { orgName } = useAuth();
+  const { orgId, orgName, switchOrg } = useAuth();
   const companyName = orgName || "Your Company";
+  const hasSwitched = useRef(false);
 
   // Fetch real audit summary data
   const auditSummary = trpc.audit.summary.useQuery(undefined, {
     retry: false,
   });
+
+  // Fetch organizations for safety net
+  const { data: organizations } = trpc.organization.list.useQuery(undefined, {
+    retry: false,
+  });
+
+  // Safety net: If session has no org but user has orgs, auto-activate the first one
+  useEffect(() => {
+    if (
+      !hasSwitched.current &&
+      !orgId &&
+      organizations &&
+      organizations.length > 0
+    ) {
+      hasSwitched.current = true;
+      switchOrg(organizations[0].id);
+    }
+  }, [orgId, organizations, switchOrg]);
 
   return (
     <div className="space-y-8">
