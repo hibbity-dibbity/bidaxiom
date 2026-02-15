@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-14)
 ## Current Position
 
 Phase: Phase 16 - Projects Interface Redesign
-Plan: 6 of TBD complete
+Plan: 7 of TBD complete
 Status: In Progress
-Last activity: 2026-02-15 - Completed 16-06-PLAN.md (Section Navigation Performance Optimization)
+Last activity: 2026-02-15 - Completed 16-07-PLAN.md (Component Navigation URL Migration)
 
-Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [█████████░] 90% (Phase 13 complete, Phase 14 6/8 plans, Phase 15 5/5 plans complete, Phase 16 6/? plans complete)
+Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [█████████░] 90% (Phase 13 complete, Phase 14 6/8 plans, Phase 15 5/5 plans complete, Phase 16 7/? plans complete)
 
 ## Performance Metrics
 
@@ -41,11 +41,11 @@ Progress: v1.0: [██████████] 100% complete (12 phases) | v1.
 | 13 | 11 | 24 min | 2.2 min |
 | 14 | 6 | 24.2 min | 4.0 min |
 | 15 | 5 | 12.5 min | 2.5 min |
-| 16 | 6 | 58 min | 9.7 min |
+| 16 | 7 | 63.2 min | 9.0 min |
 
 **Recent Trend:**
-- Last 5 plans: 16-02 (6 min), 16-03 (1 min), 16-04 (5 min), 16-05 (38 min), 16-06 (2 min)
-- Trend: Phase 16 in progress, 6/? plans complete, averaging 9.7 min.
+- Last 5 plans: 16-03 (1 min), 16-04 (5 min), 16-05 (38 min), 16-06 (2 min), 16-07 (5.2 min)
+- Trend: Phase 16 in progress, 7/? plans complete, averaging 9.0 min.
 
 *Updated after each plan completion*
 | Phase 06 P02 | 8 | 2 tasks | 5 files |
@@ -113,6 +113,7 @@ Progress: v1.0: [██████████] 100% complete (12 phases) | v1.
 | Phase 16-projects-interface-redesign P04 | 5 min | 2 tasks | 4 files |
 | Phase 16-projects-interface-redesign P05 | 38 min | 2 tasks | 19 files |
 | Phase 16-projects-interface-redesign P06 | 2 min | 2 tasks | 3 files |
+| Phase 16-projects-interface-redesign P07 | 5.2 min | 2 tasks | 16 files |
 
 ## Accumulated Context
 
@@ -308,6 +309,7 @@ Recent decisions affecting current work:
 - [Phase 16-06]: Progressive loading pattern — Page structure renders immediately with inline skeletons per section instead of full-page blocking skeleton
 - [Phase 16-06]: PlaceholderData for stale-while-revalidate — Shows previously loaded data during background revalidation to prevent "-- " flashes in overview page
 - [Phase 16-06]: Hover-based query prefetching — Tab onMouseEnter triggers prefetch of section queries 200-500ms before click for instant perceived navigation
+- [Phase 16-07]: Dual-prop pattern for navigation — Components accept both projectId (for tRPC queries requiring UUID) and projectSlug (for navigation URLs) to maintain API compatibility while enabling slug-based routing
 
 ### Pending Todos
 
@@ -337,8 +339,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-15 (Phase 16 Plan 06)
-Stopped at: Completed 16-06-PLAN.md (Section Navigation Performance Optimization)
+Last session: 2026-02-15 (Phase 16 Plan 07)
+Stopped at: Completed 16-07-PLAN.md (Component Navigation URL Migration)
 Resume file: None
 
 ---
