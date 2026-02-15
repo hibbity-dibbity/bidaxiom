@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { AbilityContext, defineAbilitiesFor } from "@/lib/abilities";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import type { SessionData } from "@/lib/session";
 
 function TrpcAndAbilityProvider({ children }: { children: React.ReactNode }) {
@@ -74,9 +75,11 @@ export function Providers({
 }) {
   return (
     <ThemeProvider>
-      <AuthProvider initialSession={initialSession}>
-        <TrpcAndAbilityProvider>{children}</TrpcAndAbilityProvider>
-      </AuthProvider>
+      <NuqsAdapter>
+        <AuthProvider initialSession={initialSession}>
+          <TrpcAndAbilityProvider>{children}</TrpcAndAbilityProvider>
+        </AuthProvider>
+      </NuqsAdapter>
     </ThemeProvider>
   );
 }
