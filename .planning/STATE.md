@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-02-14)
 Phase: Phase 15 - Dashboard Redesign
 Plan: 1 of 5 complete
 Status: In Progress
-Last activity: 2026-02-15 - Completed 15-02-PLAN.md (Move Activity Feed to Settings)
+Last activity: 2026-02-15 - Completed 15-01-PLAN.md (Dashboard Backend API)
 
 Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [████████░░] 80% (Phase 13 complete, Phase 14 6/8 plans, Phase 15 1/5 plans)
 
@@ -21,7 +21,7 @@ Progress: v1.0: [██████████] 100% complete (12 phases) | v1.
 **Velocity:**
 - Total plans completed: 63
 - Average duration: 5.0 min
-- Total execution time: 5.96 hours
+- Total execution time: 6.01 hours
 
 **By Phase:**
 
@@ -40,11 +40,11 @@ Progress: v1.0: [██████████] 100% complete (12 phases) | v1.
 | 12 | 7 | 37.2 min | 5.3 min |
 | 13 | 11 | 24 min | 2.2 min |
 | 14 | 6 | 24.2 min | 4.0 min |
-| 15 | 1 | 2 min | 2 min |
+| 15 | 1 | 3 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 14-03 (4 min), 14-04 (4 min), 14-05 (5 min), 14-06 (2 min), 15-02 (2 min)
-- Trend: Phase 15 started at 2 min (1/5 complete).
+- Last 5 plans: 14-04 (4 min), 14-05 (5 min), 14-06 (2 min), 15-01 (3 min)
+- Trend: Phase 15 started at 3 min (1/5 complete).
 
 *Updated after each plan completion*
 | Phase 06 P02 | 8 | 2 tasks | 5 files |
@@ -102,7 +102,7 @@ Progress: v1.0: [██████████] 100% complete (12 phases) | v1.
 | Phase 14-form-standardization-and-validation P04 | 4 min | 2 tasks | 4 files |
 | Phase 14-form-standardization-and-validation P05 | 5 min | 2 tasks | 1 file |
 | Phase 14-form-standardization-and-validation P06 | 2 min | 1 task | 2 files |
-| Phase 15 P02 | 2 | 2 tasks | 2 files |
+| Phase 15-dashboard-redesign P01 | 3 min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -285,6 +285,10 @@ Recent decisions affecting current work:
 - [Phase 14-03]: Lien waiver state detection uses project.state directly instead of regex parsing project.location — More reliable and faster than string matching
 - [Phase 14-03]: Project list search updated to search across structured fields (street1, city, state) instead of legacy location — Enables more granular location-based filtering
 - [Phase 14-05]: Multiple independent React Hook Form instances in same component — Project form has separate `form` for project data and `customerForm` for inline customer dialog, each with independent validation; Dialog renders via portal so no nesting conflict
+- [Phase 15-01]: protectedProcedure for dashboard (not authorizedProcedure) — Dashboard is read-only and scoped by tenant context; no CASL permission checks needed
+- [Phase 15-01]: SQL aggregation at database level — All KPI queries use COUNT/SUM in PostgreSQL instead of fetching records and counting client-side for performance
+- [Phase 15-01]: User-scoped vs company-scoped queries — User-scoped filter via projectTeamMembers JOIN; company-scoped rely on tenant schema isolation only
+- [Phase 15-01]: Backlog calculation formula — Sum of approved/executed commitments minus sum of completed work from payment applications for active projects
 
 ### Pending Todos
 
@@ -314,8 +318,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-15 (Phase 15 Plan 02)
-Stopped at: Completed 15-02-PLAN.md (Move Activity Feed to Settings)
+Last session: 2026-02-15 (Phase 15 Plan 01)
+Stopped at: Completed 15-01-PLAN.md (Dashboard Backend API)
 Resume file: None
 
 ---
