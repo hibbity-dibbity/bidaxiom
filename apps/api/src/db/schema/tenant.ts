@@ -137,6 +137,7 @@ export function createTenantSchema(schemaName: string) {
     id: uuid("id").primaryKey().defaultRandom(),
     name: text("name").notNull(),
     jobNumber: text("job_number"), // Nullable, unique constraint via partial index
+    slug: text("slug"),  // URL-safe slug: {jobnumber}-{projectname}
     customerId: uuid("customer_id").notNull().references(() => customers.id, { onDelete: "restrict" }),
     description: text("description"),
     location: text("location"), // Legacy field - will be cleared by migration
