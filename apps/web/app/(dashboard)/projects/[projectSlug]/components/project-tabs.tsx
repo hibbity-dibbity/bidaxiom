@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { trpc } from "@/lib/trpc";
 
 interface ProjectTabsProps {
   projectSlug: string;
@@ -22,6 +23,78 @@ const sections = [
 
 export function ProjectTabs({ projectSlug }: ProjectTabsProps) {
   const pathname = usePathname();
+  const utils = trpc.useUtils();
+
+  // Get project ID from cached getBySlug query
+  const { data: project } = trpc.project.getBySlug.useQuery({ slug: projectSlug });
+  const projectId = project?.id;
+
+  // Prefetch handlers for each section
+  const prefetchOverview = () => {
+    if (!projectId) return;
+    utils.budget.getProjectSummary.prefetch({ projectId });
+    utils.changeOrder.list.prefetch({ projectId });
+    utils.paymentApp.getSummary.prefetch({ projectId });
+    utils.sov.list.prefetch({ projectId });
+    utils.paymentApp.getRetainage.prefetch({ projectId });
+    utils.rfq.list.prefetch({ projectId });
+  };
+
+  const prefetchDocuments = () => {
+    if (!projectId) return;
+    utils.document.list.prefetch({ projectId, folderId: null });
+  };
+
+  const prefetchBudget = () => {
+    if (!projectId) return;
+    utils.budget.getProjectSummary.prefetch({ projectId });
+    utils.budget.getVarianceAlerts.prefetch({ projectId });
+    utils.budget.getForecast.prefetch({ projectId });
+  };
+
+  const prefetchCommitments = () => {
+    if (!projectId) return;
+    utils.commitment.list.prefetch({ projectId });
+  };
+
+  const prefetchChangeOrders = () => {
+    if (!projectId) return;
+    utils.changeOrder.list.prefetch({ projectId });
+  };
+
+  const prefetchSOV = () => {
+    if (!projectId) return;
+    utils.sov.list.prefetch({ projectId });
+  };
+
+  const prefetchPaymentApps = () => {
+    if (!projectId) return;
+    utils.paymentApp.list.prefetch({ projectId });
+  };
+
+  const prefetchInvoices = () => {
+    if (!projectId) return;
+    utils.invoice.getARSummary.prefetch({ projectId });
+    utils.invoice.getAPSummary.prefetch({ projectId });
+  };
+
+  const prefetchRFQs = () => {
+    if (!projectId) return;
+    utils.rfq.list.prefetch({ projectId });
+  };
+
+  // Map sections to their prefetch handlers
+  const sectionPrefetchMap: Record<string, () => void> = {
+    "": prefetchOverview,
+    "/documents": prefetchDocuments,
+    "/budget": prefetchBudget,
+    "/commitments": prefetchCommitments,
+    "/change-orders": prefetchChangeOrders,
+    "/sov": prefetchSOV,
+    "/payment-apps": prefetchPaymentApps,
+    "/invoices": prefetchInvoices,
+    "/rfqs": prefetchRFQs,
+  };
 
   return (
     <nav className="border-b">
@@ -35,11 +108,14 @@ export function ProjectTabs({ projectSlug }: ProjectTabsProps) {
               ? pathname === fullHref
               : pathname.startsWith(fullHref);
 
+          const prefetchHandler = sectionPrefetchMap[section.href];
+
           return (
             <Link
               key={section.name}
               href={fullHref}
               scroll={false}
+              onMouseEnter={prefetchHandler}
               className={cn(
                 "py-3 text-sm border-b-2 whitespace-nowrap transition-colors",
                 isActive
