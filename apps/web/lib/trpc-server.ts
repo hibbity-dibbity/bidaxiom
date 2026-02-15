@@ -9,15 +9,23 @@ import type { AppRouter } from "../../../api/src/trpc/router";
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 export function createServerTRPCClient(token?: string) {
+  const headers = token
+    ? {
+        Authorization: `Bearer ${token}`,
+      }
+    : undefined;
+
+  console.log("[trpc-server] Creating client with headers:", {
+    hasToken: !!token,
+    tokenPreview: token ? `${token.substring(0, 20)}...` : 'none',
+    headers,
+  });
+
   return createTRPCProxyClient<AppRouter>({
     links: [
       httpBatchLink({
         url: `${API_URL}/trpc`,
-        headers: token
-          ? {
-              Authorization: `Bearer ${token}`,
-            }
-          : undefined,
+        headers,
       }),
     ],
   });

@@ -10,6 +10,13 @@ export async function POST(request: Request) {
   const currentSession = await getSessionFromRequest(request);
   const token = currentSession.accessToken;
 
+  console.log("[switch-org] Session data:", {
+    hasToken: !!token,
+    tokenLength: token?.length,
+    userId: currentSession.userId,
+    orgId: currentSession.orgId,
+  });
+
   if (!token) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
