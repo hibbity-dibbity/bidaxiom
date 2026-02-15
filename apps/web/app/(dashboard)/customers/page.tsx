@@ -400,7 +400,7 @@ export default function CustomersPage() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>Email *</FormLabel>
                       <FormControl>
                         <Input type="email" placeholder="john@example.com" {...field} />
                       </FormControl>
@@ -411,7 +411,7 @@ export default function CustomersPage() {
               </div>
 
               <div className="space-y-2">
-                <FormLabel>Address</FormLabel>
+                <h4 className="text-sm font-medium">Address</h4>
                 <AddressInput form={form} prefix="address" />
               </div>
 
@@ -487,7 +487,7 @@ export default function CustomersPage() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>Email *</FormLabel>
                       <FormControl>
                         <Input type="email" placeholder="john@example.com" {...field} />
                       </FormControl>
@@ -498,7 +498,7 @@ export default function CustomersPage() {
               </div>
 
               <div className="space-y-2">
-                <FormLabel>Address</FormLabel>
+                <h4 className="text-sm font-medium">Address</h4>
                 <AddressInput form={form} prefix="address" />
               </div>
 

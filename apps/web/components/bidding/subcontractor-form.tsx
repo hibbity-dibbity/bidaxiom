@@ -162,7 +162,7 @@ export function SubcontractorForm({ mode, defaultValues, onSuccess }: Subcontrac
               name="contactEmail"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Contact Email</FormLabel>
+                  <FormLabel>Contact Email *</FormLabel>
                   <FormControl>
                     <Input type="email" placeholder="john@abcplumbing.com" {...field} />
                   </FormControl>
@@ -187,12 +187,12 @@ export function SubcontractorForm({ mode, defaultValues, onSuccess }: Subcontrac
           </div>
 
           <div className="space-y-2">
-            <FormLabel>Address</FormLabel>
+            <h4 className="text-sm font-medium">Address</h4>
             <AddressInput form={form} prefix="address" />
           </div>
 
           <div className="space-y-2">
-            <FormLabel>Trades (CSI Divisions) *</FormLabel>
+            <h4 className="text-sm font-medium">Trades (CSI Divisions) *</h4>
             <div className="border rounded-md p-4 max-h-64 overflow-y-auto space-y-2">
               {CSI_DIVISIONS.map((division) => (
                 <div key={division.number} className="flex items-center space-x-2">
