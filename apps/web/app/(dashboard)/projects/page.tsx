@@ -69,7 +69,7 @@ export default function ProjectsPage() {
         data={data?.items || []}
         isLoading={isLoading}
         total={data?.total || 0}
-        currentPage={filters.page ?? 1}
+        page={filters.page ?? 1}
         pageSize={pageSize}
         onPageChange={handlePageChange}
       />
