@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { useQueryStates, parseAsString, parseAsStringEnum, parseAsInteger } from "nuqs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,27 +26,25 @@ interface User {
   email: string;
 }
 
+// Filter state type matching what nuqs returns
+export type FilterState = {
+  search: string | null;
+  customer: string | null;
+  status: string | null;  // nuqs returns string, not the specific enum
+  assignedUser: string | null;
+  startDateFrom: string | null;
+  startDateTo: string | null;
+  page: number;
+};
+
 interface ProjectsFiltersProps {
   customers: Customer[];
   users: User[];
+  filters: FilterState;
+  setFilters: (filters: Partial<FilterState>) => void;
 }
 
-export function ProjectsFilters({ customers, users }: ProjectsFiltersProps) {
-  // Define filter state with nuqs
-  const [filters, setFilters] = useQueryStates(
-    {
-      search: parseAsString,
-      customer: parseAsString,
-      status: parseAsStringEnum(["active", "on_hold", "completed", "archived"]),
-      assignedUser: parseAsString,
-      startDateFrom: parseAsString,
-      startDateTo: parseAsString,
-      page: parseAsInteger.withDefault(1),
-    },
-    {
-      history: "push",
-    }
-  );
+export function ProjectsFilters({ customers, users, filters, setFilters }: ProjectsFiltersProps) {
 
   // Local state for search input (debounced)
   const [searchInput, setSearchInput] = React.useState(filters.search || "");
@@ -59,7 +56,7 @@ export function ProjectsFilters({ customers, users }: ProjectsFiltersProps) {
       search: debouncedSearch || null,
       page: 1, // Reset to page 1 when search changes
     });
-  }, [debouncedSearch]);
+  }, [debouncedSearch, setFilters]);
 
   // Check if any filters are active
   const hasActiveFilters =
@@ -207,14 +204,3 @@ export function ProjectsFilters({ customers, users }: ProjectsFiltersProps) {
     </div>
   );
 }
-
-// Export filter state type for use in page component
-export type FilterState = {
-  search: string | null;
-  customer: string | null;
-  status: "active" | "on_hold" | "completed" | "archived" | null;
-  assignedUser: string | null;
-  startDateFrom: string | null;
-  startDateTo: string | null;
-  page: number;
-};

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useQueryStates, parseAsString, parseAsInteger, parseAsStringEnum } from "nuqs";
 import { ProjectsTable } from "./components/projects-table";
-import { ProjectsFilters } from "./components/projects-filters";
+import { ProjectsFilters, type FilterState } from "./components/projects-filters";
 
 export default function ProjectsPage() {
   // Set up filter state using nuqs
