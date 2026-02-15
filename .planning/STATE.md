@@ -268,6 +268,8 @@ Recent decisions affecting current work:
 - [Phase 13-07]: Fixed-height loading state prevents search layout shift — Using py-6 padding with centered flexbox maintains consistent height while showing spinner, prevents visual bounce during typing
 - [Phase 13-08]: Remove open from sidebar restoration effect dependencies — Having open in deps caused feedback loop during state transitions, creating visual bounce; useRef guard ensures one-time restoration
 - [Phase 13-09]: Migration script pattern follows Phase 8 QBO migration: dotenv config, pool.query, active tenant iteration — Retroactive schema changes use migrate-phase{N}-{feature}.ts with column existence checks for idempotency
+- [Quick-11]: Session update before redirect for state-changing operations — After org creation, call /api/auth/switch-org to update iron-session cookie before redirecting to ensure session context is current
+- [Quick-11]: Dashboard safety net for stale sessions — Check if session has no org but user has organizations, auto-activate first org to handle edge cases (browser back, cookie expiry, race conditions)
 
 ### Pending Todos
 
@@ -291,11 +293,12 @@ None yet.
 | 8 | Fix "Failed to fetch" toaster notification on sign-in | 2026-02-14 | e9e2546 | [8-now-i-m-getting-a-toaster-notification-f](./quick/8-now-i-m-getting-a-toaster-notification-f/) |
 | 9 | Restore admin role after account deletion and recreation | 2026-02-14 | 2645d7d | [9-my-user-account-is-no-longer-an-admin-of](./quick/9-my-user-account-is-no-longer-an-admin-of/) |
 | 10 | Fix global search returning no results | 2026-02-15 | 4ff6f8e | [10-global-search-returns-no-results-debug-b](./quick/10-global-search-returns-no-results-debug-b/) |
+| 11 | Fix organization not loading as active after creation | 2026-02-15 | ce0d778 | [11-organization-not-loading-as-active-top-n](./quick/11-organization-not-loading-as-active-top-n/) |
 
 ## Session Continuity
 
-Last session: 2026-02-15 (Quick Task 10)
-Stopped at: Completed quick-10 (Global Search Fix)
+Last session: 2026-02-15 (Quick Task 11)
+Stopped at: Completed quick-11 (Organization Not Loading as Active Fix)
 Resume file: None
 
 ---
