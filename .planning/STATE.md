@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-14)
 ## Current Position
 
 Phase: Phase 14 - Form Standardization & Validation
-Plan: 2 of 5 complete
+Plan: 3 of 5 complete
 Status: In progress
-Last activity: 2026-02-15 - Completed 14-02-PLAN.md (Database Schema and Validation Updates)
+Last activity: 2026-02-15 - Completed 14-03-PLAN.md (Router Updates for Structured Addresses)
 
-Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [█████████░] 90% (Phase 13 complete, Phase 14: 2/5 complete)
+Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [█████████░] 90% (Phase 13 complete, Phase 14: 3/5 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 57
-- Average duration: 5.5 min
-- Total execution time: 5.66 hours
+- Total plans completed: 58
+- Average duration: 5.4 min
+- Total execution time: 5.73 hours
 
 **By Phase:**
 
@@ -39,11 +39,11 @@ Progress: v1.0: [██████████] 100% complete (12 phases) | v1.
 | 11 | 5 | 23 min | 4.6 min |
 | 12 | 7 | 37.2 min | 5.3 min |
 | 13 | 11 | 24 min | 2.2 min |
-| 14 | 1 | 3.7 min | 3.7 min |
+| 14 | 3 | 11.7 min | 3.9 min |
 
 **Recent Trend:**
-- Last 5 plans: 13-07 (2 min), 13-08 (1.5 min), 13-09 (2 min), 13-11 (1 min), 14-01 (3.7 min)
-- Trend: Phase 14 started with 3.7 min first plan.
+- Last 5 plans: 13-09 (2 min), 13-11 (1 min), 14-01 (3.7 min), 14-02 (4 min), 14-03 (4 min)
+- Trend: Phase 14 consistent around 4 min per plan.
 
 *Updated after each plan completion*
 | Phase 06 P02 | 8 | 2 tasks | 5 files |
@@ -97,6 +97,7 @@ Progress: v1.0: [██████████] 100% complete (12 phases) | v1.
 | Phase 13-navigation-and-theme-foundation P11 | 1 min | 2 tasks | 1 file |
 | Phase 14-form-standardization-and-validation P01 | 3.7 min | 2 tasks | 8 files |
 | Phase 14-form-standardization-and-validation P02 | 4 min | 2 tasks | 5 files |
+| Phase 14-form-standardization-and-validation P03 | 4 min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -276,6 +277,8 @@ Recent decisions affecting current work:
 - [Quick-11]: Dashboard safety net for stale sessions — Check if session has no org but user has organizations, auto-activate first org to handle edge cases (browser back, cookie expiry, race conditions)
 - [Phase 14]: Keep legacy columns (address, location, phone, contactPhone) in schema to avoid breaking existing code - migration NULLs them out, Plan 03-04 will update router/form code
 - [Phase 14]: User chose to DELETE existing freeform phone/address/location data instead of attempting migration to structured format
+- [Phase 14-03]: Lien waiver state detection uses project.state directly instead of regex parsing project.location — More reliable and faster than string matching
+- [Phase 14-03]: Project list search updated to search across structured fields (street1, city, state) instead of legacy location — Enables more granular location-based filtering
 
 ### Pending Todos
 
@@ -305,8 +308,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-15 (Phase 14 Plan 01)
-Stopped at: Completed 14-01-PLAN.md
+Last session: 2026-02-15 (Phase 14 Plan 03)
+Stopped at: Completed 14-03-PLAN.md
 Resume file: None
 
 ---
