@@ -701,37 +701,17 @@ export const authRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      // Manually verify access token
-      console.log("[switchOrg] Context:", {
-        hasReq: !!(ctx as any).req,
-        hasHeaders: !!(ctx as any).req?.headers,
-        authHeader: (ctx as any).req?.headers?.["authorization"],
-        allHeaders: Object.keys((ctx as any).req?.headers || {}),
-      });
-
-      const authHeader = (ctx as any).req?.headers?.["authorization"];
-      const accessToken = authHeader?.replace("Bearer ", "");
-
-      if (!accessToken) {
+      // Use userId from context (already verified by createContext)
+      if (!ctx.userId) {
         throw new TRPCError({
           code: "UNAUTHORIZED",
           message: "Authentication required",
         });
       }
 
-      let payload;
-      try {
-        payload = await verifyAccessToken(accessToken);
-      } catch {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "Invalid access token",
-        });
-      }
-
       // Get user
       const user = await getAuthDb().query.users.findFirst({
-        where: eq(users.id, payload.userId),
+        where: eq(users.id, ctx.userId),
       });
 
       if (!user) {
