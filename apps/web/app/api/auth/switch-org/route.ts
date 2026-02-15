@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { setActiveOrg } from "@/lib/auth";
+import { getSession } from "@/lib/session";
 
 export async function POST(request: Request) {
   const { organizationId } = await request.json();
@@ -40,9 +40,17 @@ export async function POST(request: Request) {
   console.log("[DEBUG ORG-FLOW] 3e. Parsed tRPC batch result:", JSON.stringify(result));
 
   if (result) {
-    console.log("[DEBUG ORG-FLOW] 3f. Calling setActiveOrg with org:", JSON.stringify(result.org), "accessToken length:", result.accessToken?.length);
-    await setActiveOrg(result.org, result.accessToken);
-    console.log("[DEBUG ORG-FLOW] 3g. setActiveOrg completed successfully");
+    console.log("[DEBUG ORG-FLOW] 3f. Updating session with org:", JSON.stringify(result.org), "accessToken length:", result.accessToken?.length);
+
+    // Update session directly in this API route context (not via server action)
+    const session = await getSession();
+    session.orgId = result.org.id;
+    session.orgRole = result.org.role;
+    session.orgName = result.org.name;
+    session.accessToken = result.accessToken;
+    await session.save();
+
+    console.log("[DEBUG ORG-FLOW] 3g. Session updated and saved - orgId:", session.orgId, "orgName:", session.orgName);
     return NextResponse.json({ org: result.org });
   }
 
