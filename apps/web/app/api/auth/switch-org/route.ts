@@ -16,8 +16,8 @@ export async function POST(request: Request) {
   // Call API to switch org
   const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
-  // Try non-batch single procedure call format
-  const payload = { organizationId };
+  // tRPC HTTP format requires wrapping in "json" key
+  const payload = { json: { organizationId } };
   console.log("[switch-org] Calling backend with payload:", JSON.stringify(payload));
 
   const response = await fetch(`${API_URL}/trpc/auth.switchOrganization`, {
