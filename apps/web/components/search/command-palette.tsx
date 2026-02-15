@@ -70,7 +70,6 @@ function CommandPalette({ open, setOpen }: CommandPaletteProps) {
     { query: debouncedQuery, limit: 10 },
     {
       enabled: debouncedQuery.length > 0,
-      keepPreviousData: true,
     }
   );
 
@@ -84,7 +83,7 @@ function CommandPalette({ open, setOpen }: CommandPaletteProps) {
   );
 
   return (
-    <CommandDialog open={open} onOpenChange={setOpen}>
+    <CommandDialog open={open} onOpenChange={setOpen} shouldFilter={false}>
       <CommandInput
         placeholder="Search projects, customers, jobs..."
         value={query}
@@ -117,7 +116,7 @@ function CommandPalette({ open, setOpen }: CommandPaletteProps) {
                 .map((result) => (
                   <CommandItem
                     key={result.id}
-                    value={result.id}
+                    value={result.title}
                     onSelect={() => handleSelect(result.url)}
                   >
                     <FileText className="mr-2 h-4 w-4" />
@@ -138,7 +137,7 @@ function CommandPalette({ open, setOpen }: CommandPaletteProps) {
                 .map((result) => (
                   <CommandItem
                     key={result.id}
-                    value={result.id}
+                    value={result.title}
                     onSelect={() => handleSelect(result.url)}
                   >
                     <User className="mr-2 h-4 w-4" />
