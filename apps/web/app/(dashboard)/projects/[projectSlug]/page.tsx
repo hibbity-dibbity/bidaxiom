@@ -202,12 +202,48 @@ export default function ProjectOverviewPage({
   const { data: companyProfile } = trpc.company.getCurrent.useQuery();
   const { data: customersData } = trpc.customer.list.useQuery({ limit: 100, offset: 0 });
   const { data: usersData } = trpc.user.list.useQuery({ limit: 100, offset: 0 });
-  const { data: budgetSummary } = trpc.budget.getProjectSummary.useQuery({ projectId }, { enabled: !!projectId });
-  const { data: changeOrders } = trpc.changeOrder.list.useQuery({ projectId }, { enabled: !!projectId });
-  const { data: paymentAppSummary } = trpc.paymentApp.getSummary.useQuery({ projectId }, { enabled: !!projectId });
-  const { data: sovItems } = trpc.sov.list.useQuery({ projectId }, { enabled: !!projectId });
-  const { data: retainage } = trpc.paymentApp.getRetainage.useQuery({ projectId }, { enabled: !!projectId });
-  const { data: rfqs } = trpc.rfq.list.useQuery({ projectId }, { enabled: !!projectId });
+  const { data: budgetSummary } = trpc.budget.getProjectSummary.useQuery(
+    { projectId },
+    {
+      enabled: !!projectId,
+      placeholderData: (previousData) => previousData,
+    }
+  );
+  const { data: changeOrders } = trpc.changeOrder.list.useQuery(
+    { projectId },
+    {
+      enabled: !!projectId,
+      placeholderData: (previousData) => previousData,
+    }
+  );
+  const { data: paymentAppSummary } = trpc.paymentApp.getSummary.useQuery(
+    { projectId },
+    {
+      enabled: !!projectId,
+      placeholderData: (previousData) => previousData,
+    }
+  );
+  const { data: sovItems } = trpc.sov.list.useQuery(
+    { projectId },
+    {
+      enabled: !!projectId,
+      placeholderData: (previousData) => previousData,
+    }
+  );
+  const { data: retainage } = trpc.paymentApp.getRetainage.useQuery(
+    { projectId },
+    {
+      enabled: !!projectId,
+      placeholderData: (previousData) => previousData,
+    }
+  );
+  const { data: rfqs } = trpc.rfq.list.useQuery(
+    { projectId },
+    {
+      enabled: !!projectId,
+      placeholderData: (previousData) => previousData,
+    }
+  );
 
   const updateProjectMutation = trpc.project.update.useMutation({
     onSuccess: () => {

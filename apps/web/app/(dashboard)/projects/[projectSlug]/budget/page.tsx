@@ -34,23 +34,8 @@ export default function BudgetDashboardPage({
   const criticalAlerts = alerts?.filter((a) => a.severity === "critical") || [];
   const warningAlerts = alerts?.filter((a) => a.severity === "warning") || [];
 
-  // Loading state
-  if (summaryLoading || !summary) {
-    return (
-      <div className="container mx-auto py-6 space-y-6">
-        <Skeleton className="h-12 w-64" />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-32" />
-          ))}
-        </div>
-        <Skeleton className="h-96" />
-      </div>
-    );
-  }
-
-  // Empty state
-  if (summary.lineItemCount === 0) {
+  // Empty state - show only when data is loaded and empty
+  if (!summaryLoading && summary?.lineItemCount === 0) {
     return (
       <div className="container mx-auto py-6 space-y-6">
         <Card>
@@ -98,10 +83,20 @@ export default function BudgetDashboardPage({
       </div>
 
       {/* Summary Cards */}
-      <BudgetSummaryCards summary={summary} />
+      {summaryLoading || !summary ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-32" />
+          ))}
+        </div>
+      ) : (
+        <BudgetSummaryCards summary={summary} />
+      )}
 
       {/* Variance Alerts */}
-      {(criticalAlerts.length > 0 || warningAlerts.length > 0) && (
+      {alertsLoading ? (
+        <Skeleton className="h-24" />
+      ) : (criticalAlerts.length > 0 || warningAlerts.length > 0) ? (
         <div className="space-y-3">
           {criticalAlerts.length > 0 && (
             <Alert variant="destructive">
@@ -124,10 +119,12 @@ export default function BudgetDashboardPage({
             </Alert>
           )}
         </div>
-      )}
+      ) : null}
 
       {/* Variance Chart */}
-      {alerts && alerts.length > 0 && (
+      {alertsLoading ? (
+        <Skeleton className="h-96" />
+      ) : alerts && alerts.length > 0 ? (
         <Card>
           <CardHeader>
             <CardTitle>Budget vs Committed by Cost Code</CardTitle>
@@ -136,10 +133,12 @@ export default function BudgetDashboardPage({
             <BudgetVarianceChart data={alerts} />
           </CardContent>
         </Card>
-      )}
+      ) : null}
 
       {/* Forecast Metrics */}
-      {forecast && (
+      {forecastLoading ? (
+        <Skeleton className="h-64" />
+      ) : forecast ? (
         <Card>
           <CardHeader>
             <CardTitle>Earned Value Management (EVM) Metrics</CardTitle>
@@ -148,7 +147,7 @@ export default function BudgetDashboardPage({
             <ForecastMetrics metrics={forecast} />
           </CardContent>
         </Card>
-      )}
+      ) : null}
     </div>
   );
 }
