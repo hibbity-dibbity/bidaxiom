@@ -134,7 +134,12 @@ export const customerRouter = router({
           contactName: input.contactName,
           phone: input.phone || null,
           email: input.email || null,
-          address: input.address || null,
+          address: null, // Legacy column - no longer used
+          street1: input.address?.street1 || null,
+          street2: input.address?.street2 || null,
+          city: input.address?.city || null,
+          state: input.address?.state || null,
+          zip: input.address?.zipCode || null,
           createdBy: userId,
         })
         .returning();
@@ -192,7 +197,15 @@ export const customerRouter = router({
       if (input.contactName !== undefined) updateValues.contactName = input.contactName;
       if (input.phone !== undefined) updateValues.phone = input.phone;
       if (input.email !== undefined) updateValues.email = input.email;
-      if (input.address !== undefined) updateValues.address = input.address;
+      if (input.address !== undefined) {
+        // Map structured address to DB columns
+        updateValues.address = null; // Legacy column - no longer used
+        updateValues.street1 = input.address.street1 || null;
+        updateValues.street2 = input.address.street2 || null;
+        updateValues.city = input.address.city || null;
+        updateValues.state = input.address.state || null;
+        updateValues.zip = input.address.zipCode || null;
+      }
 
       const [updated] = await db
         .update(schema.customers)

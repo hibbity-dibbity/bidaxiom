@@ -48,7 +48,12 @@ export const subcontractorRouter = router({
           contactName: input.contactName ?? null,
           contactEmail: input.contactEmail ?? null,
           contactPhone: input.contactPhone ?? null,
-          address: input.address ?? null,
+          address: null, // Legacy column - no longer used
+          street1: input.address?.street1 || null,
+          street2: input.address?.street2 || null,
+          city: input.address?.city || null,
+          state: input.address?.state || null,
+          zip: input.address?.zipCode || null,
           trades: input.trades,
           notes: input.notes ?? null,
           status: "active",
@@ -266,7 +271,13 @@ export const subcontractorRouter = router({
       }
 
       if (input.address !== undefined) {
-        updateValues.address = input.address;
+        // Map structured address to DB columns
+        updateValues.address = null; // Legacy column - no longer used
+        updateValues.street1 = input.address.street1 || null;
+        updateValues.street2 = input.address.street2 || null;
+        updateValues.city = input.address.city || null;
+        updateValues.state = input.address.state || null;
+        updateValues.zip = input.address.zipCode || null;
       }
 
       if (input.trades !== undefined) {
