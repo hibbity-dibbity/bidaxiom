@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
-import slug from "slug";
 import type { ProjectStatus } from "@construction/shared";
 
 // Type for project data from API
@@ -11,6 +10,7 @@ interface Project {
   id: string;
   jobNumber: string | null;
   name: string;
+  slug: string;
   customerName: string | null;
   status: ProjectStatus;
   startDate: string | null;
@@ -23,13 +23,6 @@ const statusColors: Record<ProjectStatus, string> = {
   completed: "bg-blue-500/10 text-blue-700 border-blue-200",
   archived: "bg-gray-500/10 text-gray-700 border-gray-200",
 };
-
-// Helper to generate slug for project detail links
-function getProjectSlug(project: Project): string {
-  const jobPart = project.jobNumber || "project";
-  const namePart = project.name;
-  return slug(`${jobPart}-${namePart}`);
-}
 
 export const columns: ColumnDef<Project>[] = [
   {
@@ -51,10 +44,9 @@ export const columns: ColumnDef<Project>[] = [
     size: 300,
     cell: ({ row }) => {
       const project = row.original;
-      const projectSlug = getProjectSlug(project);
       return (
         <Link
-          href={`/projects/${projectSlug}`}
+          href={`/projects/${project.slug}`}
           className="font-semibold text-sm hover:underline"
         >
           {project.name}

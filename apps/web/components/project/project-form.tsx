@@ -237,7 +237,7 @@ export function ProjectForm() {
     onSuccess: (data) => {
       utils.project.list.invalidate();
       toast.success("Project created successfully");
-      router.push(`/projects/${data.id}`);
+      router.push(`/projects/${data.slug}`);
     },
     onError: (error) => {
       toast.error(error.message || "Failed to create project");
