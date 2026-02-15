@@ -702,6 +702,13 @@ export const authRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       // Manually verify access token
+      console.log("[switchOrg] Context:", {
+        hasReq: !!(ctx as any).req,
+        hasHeaders: !!(ctx as any).req?.headers,
+        authHeader: (ctx as any).req?.headers?.["authorization"],
+        allHeaders: Object.keys((ctx as any).req?.headers || {}),
+      });
+
       const authHeader = (ctx as any).req?.headers?.["authorization"];
       const accessToken = authHeader?.replace("Bearer ", "");
 
