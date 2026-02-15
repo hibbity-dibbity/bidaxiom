@@ -4,6 +4,21 @@
 
 @layer base {
   :root {
+    /* Spacing tokens - compact for data density */
+    --spacing-compact-xs: 0.25rem; /* 4px */
+    --spacing-compact-sm: 0.5rem;  /* 8px */
+    --spacing-compact-md: 0.75rem; /* 12px */
+    --spacing-compact-lg: 1rem;    /* 16px */
+    --spacing-compact-xl: 1.5rem;  /* 24px */
+
+    /* Border radius - sharp corners (Procore style) */
+    --radius: 0.25rem; /* Minimal rounding (4px), was 0.5rem */
+
+    /* Construction accent - subtle professional orange */
+    --accent-construction: 25 95% 53%; /* HSL: warm orange */
+    --accent-construction-foreground: 0 0% 100%;
+
+    /* Base theme colors (light mode) */
     --background: 0 0% 100%;
     --foreground: 240 10% 3.9%;
     --card: 0 0% 100%;
@@ -23,7 +38,8 @@
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
     --ring: 240 5.9% 10%;
-    --radius: 0.5rem;
+
+    /* Sidebar tokens */
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 240 5.9% 10%;
@@ -32,9 +48,22 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Typography scale */
+    --font-size-xs: 0.75rem;   /* 12px */
+    --font-size-sm: 0.875rem;  /* 14px */
+    --font-size-base: 1rem;    /* 16px */
+    --font-size-lg: 1.125rem;  /* 18px */
+    --font-size-xl: 1.25rem;   /* 20px */
+    --font-size-2xl: 1.5rem;   /* 24px */
   }
 
   .dark {
+    /* Construction accent - brighter in dark mode */
+    --accent-construction: 25 95% 58%;
+    --accent-construction-foreground: 0 0% 100%;
+
+    /* Base theme colors (dark mode) */
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
     --card: 240 10% 3.9%;
@@ -54,6 +83,8 @@
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
+
+    /* Sidebar tokens (dark mode) */
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
