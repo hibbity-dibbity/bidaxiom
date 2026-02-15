@@ -11,6 +11,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { SidebarNav } from "./sidebar-nav";
+import { CompanyLogo } from "@/components/branding/company-logo";
 
 const STORAGE_KEY = "sidebar-collapsed";
 
@@ -47,13 +48,8 @@ export function AppSidebar() {
   return (
     <ShadcnSidebar collapsible="icon">
       <SidebarHeader className="border-b px-2 py-3">
-        <div className="flex items-center gap-2 px-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold text-sm">
-            CS
-          </div>
-          <span className="font-semibold text-sm group-data-[collapsible=icon]:hidden">
-            ConstructionSaaS
-          </span>
+        <div className="px-2">
+          <CompanyLogo variant="sidebar" />
         </div>
       </SidebarHeader>
 

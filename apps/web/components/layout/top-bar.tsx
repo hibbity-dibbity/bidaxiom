@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { CompanySwitcher } from "./company-switcher";
 import { UserMenu } from "./user-menu";
+import { CompanyLogo } from "@/components/branding/company-logo";
 
 /**
  * Top bar with sidebar trigger, search, company switcher, and user menu.
@@ -14,8 +15,9 @@ import { UserMenu } from "./user-menu";
 export function TopBar({ onSearchOpen }: { onSearchOpen?: () => void }) {
   return (
     <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4">
-      {/* Left: Sidebar trigger */}
+      {/* Left: Logo, Sidebar trigger */}
       <div className="flex items-center gap-2 flex-1">
+        <CompanyLogo variant="topbar" showName={false} />
         <SidebarTrigger className="-ml-1" />
       </div>
 
