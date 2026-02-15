@@ -90,6 +90,7 @@ Progress: v1.0: [██████████] 100% complete (12 phases) | v1.
 | Phase 13-navigation-and-theme-foundation P03 | 9 min | 2 tasks | 8 files |
 | Phase 13-navigation-and-theme-foundation P05 | 2 min | 2 tasks | 3 files |
 | Phase 13-navigation-and-theme-foundation P06 | 2.5 min | 2 tasks | 6 files |
+| Phase 13-navigation-and-theme-foundation P07 | 2 min | 1 task | 1 file |
 | Phase 13-navigation-and-theme-foundation P08 | 1.5 min | 1 task | 1 file |
 | Phase 13-navigation-and-theme-foundation P09 | 2 min | 1 task | 1 file |
 
@@ -264,6 +265,7 @@ Recent decisions affecting current work:
 - [Phase 13-03]: ILIKE pattern matching without full-text search indexes — Phase 13 is foundation, start simple; ILIKE with LIMIT fast for <10k records, add GIN indexes in Phase 19 if needed
 - [Phase 13-03]: 300ms debounce delay for search input — Balances responsive UI with reduced backend load, prevents query spam during fast typing
 - [Phase 13-03]: Dual API support (SearchProvider + StandaloneCommandPalette) — SearchProvider used by app-shell for TopBar integration, StandaloneCommandPalette in root layout for global keyboard shortcut
+- [Phase 13-07]: Fixed-height loading state prevents search layout shift — Using py-6 padding with centered flexbox maintains consistent height while showing spinner, prevents visual bounce during typing
 - [Phase 13-08]: Remove open from sidebar restoration effect dependencies — Having open in deps caused feedback loop during state transitions, creating visual bounce; useRef guard ensures one-time restoration
 - [Phase 13-09]: Migration script pattern follows Phase 8 QBO migration: dotenv config, pool.query, active tenant iteration — Retroactive schema changes use migrate-phase{N}-{feature}.ts with column existence checks for idempotency
 
