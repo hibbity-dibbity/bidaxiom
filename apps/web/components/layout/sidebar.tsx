@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   Sidebar as ShadcnSidebar,
   SidebarContent,
@@ -7,19 +8,42 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { SidebarNav } from "./sidebar-nav";
 
+const STORAGE_KEY = "sidebar-collapsed";
+
 /**
- * Collapsible left sidebar.
+ * Collapsible left sidebar with persistent collapse state.
  * Per locked decision: "Collapses to icon-only mode for more workspace"
  *
  * Uses shadcn Sidebar with collapsible="icon" variant:
  * - Expanded: shows icon + text labels
  * - Collapsed: icon-only mode
  * - Mobile: hidden, accessible via hamburger (SidebarTrigger)
+ * - Persists collapse state via localStorage
  */
 export function AppSidebar() {
+  const { setOpen, open } = useSidebar();
+  const [mounted, setMounted] = useState(false);
+
+  // Restore collapse state from localStorage on mount
+  useEffect(() => {
+    setMounted(true);
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored !== null) {
+      setOpen(stored === "true");
+    }
+  }, [setOpen]);
+
+  // Persist collapse state changes
+  useEffect(() => {
+    if (mounted) {
+      localStorage.setItem(STORAGE_KEY, String(open));
+    }
+  }, [open, mounted]);
+
   return (
     <ShadcnSidebar collapsible="icon">
       <SidebarHeader className="border-b px-2 py-3">
