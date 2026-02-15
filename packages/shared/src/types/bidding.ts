@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { phoneSchema, addressSchema } from "../schemas/common";
 
 /**
  * RFQ status enum
@@ -141,8 +142,13 @@ export const createSubcontractorSchema = z.object({
   companyName: z.string().min(1).max(200),
   contactName: z.string().optional(),
   contactEmail: z.string().email().optional(),
-  contactPhone: z.string().optional(),
-  address: z.string().optional(),
+  contactPhone: phoneSchema,
+  address: addressSchema.optional(),
+  street1: z.string().max(200).optional(),
+  street2: z.string().max(200).optional(),
+  city: z.string().max(100).optional(),
+  state: z.string().length(2).optional(),
+  zip: z.string().max(10).optional(),
   trades: z.array(z.number().int()),
   notes: z.string().optional(),
 });
@@ -157,8 +163,13 @@ export const updateSubcontractorSchema = z.object({
   companyName: z.string().min(1).max(200).optional(),
   contactName: z.string().nullable().optional(),
   contactEmail: z.string().email().nullable().optional(),
-  contactPhone: z.string().nullable().optional(),
-  address: z.string().nullable().optional(),
+  contactPhone: phoneSchema,
+  address: addressSchema.optional(),
+  street1: z.string().max(200).nullable().optional(),
+  street2: z.string().max(200).nullable().optional(),
+  city: z.string().max(100).nullable().optional(),
+  state: z.string().length(2).nullable().optional(),
+  zip: z.string().max(10).nullable().optional(),
   trades: z.array(z.number().int()).optional(),
   notes: z.string().nullable().optional(),
   status: subcontractorStatusEnum.optional(),

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { phoneSchema, addressSchema } from "../schemas/common";
 
 /**
  * Customer creation schema
@@ -8,9 +9,14 @@ import { z } from "zod";
 export const createCustomerSchema = z.object({
   companyName: z.string().max(200).optional(),
   contactName: z.string().min(1).max(200),
-  phone: z.string().max(50).optional(),
+  phone: phoneSchema,
   email: z.string().email().max(200).optional(),
-  address: z.string().max(500).optional(),
+  address: addressSchema.optional(),
+  street1: z.string().max(200).optional(),
+  street2: z.string().max(200).optional(),
+  city: z.string().max(100).optional(),
+  state: z.string().length(2).optional(),
+  zip: z.string().max(10).optional(),
 });
 
 /**
@@ -21,9 +27,14 @@ export const updateCustomerSchema = z.object({
   id: z.string().uuid(),
   companyName: z.string().max(200).nullable().optional(),
   contactName: z.string().min(1).max(200).optional(),
-  phone: z.string().max(50).nullable().optional(),
+  phone: phoneSchema,
   email: z.string().email().max(200).nullable().optional(),
-  address: z.string().max(500).nullable().optional(),
+  address: addressSchema.optional(),
+  street1: z.string().max(200).nullable().optional(),
+  street2: z.string().max(200).nullable().optional(),
+  city: z.string().max(100).nullable().optional(),
+  state: z.string().length(2).nullable().optional(),
+  zip: z.string().max(10).nullable().optional(),
 });
 
 /**
@@ -36,6 +47,11 @@ export type Customer = {
   phone: string | null;
   email: string | null;
   address: string | null;
+  street1: string | null;
+  street2: string | null;
+  city: string | null;
+  state: string | null;
+  zip: string | null;
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { addressSchema } from "../schemas/common";
 import {
   createDocumentSchema as createDocumentSchemaBase,
   uploadVersionSchema as uploadVersionSchemaBase,
@@ -42,7 +43,12 @@ export const createProjectSchema = z.object({
   jobNumber: z.string().max(50).optional(), // Manual override during creation
   customerId: z.string().uuid(), // Required - every project must have a customer
   description: z.string().max(2000).optional(),
-  location: z.string().max(500).optional(),
+  location: addressSchema.optional(),
+  street1: z.string().max(200).optional(),
+  street2: z.string().max(200).optional(),
+  city: z.string().max(100).optional(),
+  state: z.string().length(2).optional(),
+  zip: z.string().max(10).optional(),
   projectType: projectTypeEnum,
   startDate: z.string().datetime().optional(),
   endDate: z.string().datetime().optional(),
@@ -58,7 +64,12 @@ export const updateProjectSchema = z.object({
   jobNumber: z.string().max(50).nullable().optional(), // Can update or clear
   customerId: z.string().uuid().optional(), // Can change customer
   description: z.string().max(2000).optional(),
-  location: z.string().max(500).optional(),
+  location: addressSchema.optional(),
+  street1: z.string().max(200).nullable().optional(),
+  street2: z.string().max(200).nullable().optional(),
+  city: z.string().max(100).nullable().optional(),
+  state: z.string().length(2).nullable().optional(),
+  zip: z.string().max(10).nullable().optional(),
   projectType: projectTypeEnum.optional(),
   status: projectStatusEnum.optional(),
   startDate: z.string().datetime().nullable().optional(),
