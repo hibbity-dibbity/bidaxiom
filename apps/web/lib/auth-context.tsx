@@ -38,7 +38,6 @@ export function AuthProvider({
   const [isLoaded, setIsLoaded] = useState(true); // Already loaded from server
 
   const switchOrg = useCallback(async (orgId: string) => {
-    console.log("[DEBUG ORG-FLOW] SWITCH-ORG (context) called for orgId:", orgId);
     // Call the API to switch org and get new token
     // Then update session via server action
     try {
@@ -49,7 +48,6 @@ export function AuthProvider({
       });
       if (response.ok) {
         const data = await response.json();
-        console.log("[DEBUG ORG-FLOW] SWITCH-ORG (context) response ok, data:", data);
         setSession(prev => ({
           ...prev,
           orgId: data.org.id,
@@ -60,7 +58,6 @@ export function AuthProvider({
         window.location.reload();
       }
     } catch (err) {
-      console.log("[DEBUG ORG-FLOW] SWITCH-ORG (context) ERROR:", err);
       console.error("Failed to switch org:", err);
     }
   }, []);

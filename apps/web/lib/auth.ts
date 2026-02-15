@@ -111,15 +111,12 @@ export async function logout() {
  * Update the active organization in session.
  */
 export async function setActiveOrg(org: { id: string; name: string; role: string }, accessToken: string) {
-  console.log("[DEBUG ORG-FLOW] 4a. setActiveOrg called - org:", JSON.stringify(org), "accessToken length:", accessToken?.length);
   const session = await getSession();
   session.orgId = org.id;
   session.orgRole = org.role;
   session.orgName = org.name;
   session.accessToken = accessToken;
-  console.log("[DEBUG ORG-FLOW] 4b. Session fields set - orgId:", session.orgId, "orgRole:", session.orgRole, "orgName:", session.orgName);
   await session.save();
-  console.log("[DEBUG ORG-FLOW] 4c. session.save() completed");
 }
 
 /**
@@ -127,7 +124,6 @@ export async function setActiveOrg(org: { id: string; name: string; role: string
  */
 export async function getSessionData(): Promise<SessionData> {
   const session = await getSession();
-  console.log("[DEBUG ORG-FLOW] 6. getSessionData returning - userId:", session.userId, "orgId:", session.orgId, "orgName:", session.orgName);
   return {
     userId: session.userId,
     orgId: session.orgId,

@@ -18,7 +18,6 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const initialSession = await getSessionData();
-  console.log("[DEBUG ORG-FLOW] 7. RootLayout getSessionData - userId:", initialSession.userId, "orgId:", initialSession.orgId, "orgName:", initialSession.orgName);
 
   return (
     <html lang="en" suppressHydrationWarning>

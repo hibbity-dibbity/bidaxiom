@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import {
   FolderKanban,
   Gavel,
@@ -16,17 +16,16 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 
 /**
  * Company dashboard landing page.
  * Uses custom auth context instead of Clerk hooks.
  */
 export default function DashboardPage() {
-  const { orgId, orgName, switchOrg } = useAuth();
+  const { orgId, orgName } = useAuth();
   const companyName = orgName || "Your Company";
-  const hasSwitched = useRef(false);
-
-  console.log("[DEBUG ORG-FLOW] 8. Dashboard render - orgId:", orgId, "orgName:", orgName);
+  const [isActivating, setIsActivating] = useState(false);
 
   // Fetch real audit summary data
   const auditSummary = trpc.audit.summary.useQuery(undefined, {
@@ -40,18 +39,31 @@ export default function DashboardPage() {
 
   // Safety net: If session has no org but user has orgs, auto-activate the first one
   useEffect(() => {
-    if (
-      !hasSwitched.current &&
-      !orgId &&
-      organizations &&
-      organizations.length > 0
-    ) {
-      console.log("[DEBUG ORG-FLOW] 9a. Safety net triggered - orgId is null, organizations:", organizations?.length, "switching to:", organizations?.[0]?.id);
-      hasSwitched.current = true;
-      switchOrg(organizations[0].id);
-      console.log("[DEBUG ORG-FLOW] 9b. Safety net switchOrg called");
+    if (!isActivating && !orgId && organizations && organizations.length > 0) {
+      setIsActivating(true);
+
+      // Call switch-org directly and reload
+      fetch("/api/auth/switch-org", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ organizationId: organizations[0].id }),
+      })
+        .then(async (response) => {
+          if (response.ok) {
+            window.location.reload();
+          } else {
+            const errorData = await response.json().catch(() => null);
+            toast.error(errorData?.error || "Failed to activate organization. Please refresh the page.");
+            setIsActivating(false);
+          }
+        })
+        .catch((error) => {
+          console.error("Failed to activate organization:", error);
+          toast.error("Failed to activate organization. Please refresh the page or log out and back in.");
+          setIsActivating(false);
+        });
     }
-  }, [orgId, organizations, switchOrg]);
+  }, [orgId, organizations, isActivating]);
 
   return (
     <div className="space-y-8">
