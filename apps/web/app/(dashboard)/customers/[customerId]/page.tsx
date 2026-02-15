@@ -56,6 +56,16 @@ export default function CustomerDetailPage({
 
   const displayName = customer.companyName || customer.contactName;
 
+  const formatAddress = (): string => {
+    const parts = [
+      customer.street1,
+      customer.street2,
+      customer.city,
+      [customer.state, customer.zip].filter(Boolean).join(" "),
+    ].filter(Boolean);
+    return parts.join("\n");
+  };
+
   return (
     <div className="space-y-6">
       {/* Breadcrumb */}
@@ -113,14 +123,14 @@ export default function CustomerDetailPage({
           </Card>
         )}
 
-        {customer.address && (
+        {customer.street1 && (
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Address</CardTitle>
               <MapPin className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-sm">{customer.address}</div>
+              <div className="text-sm whitespace-pre-line">{formatAddress()}</div>
             </CardContent>
           </Card>
         )}
