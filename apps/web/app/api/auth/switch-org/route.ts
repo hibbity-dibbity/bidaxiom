@@ -28,14 +28,18 @@ export async function POST(request: Request) {
   });
 
   if (!response.ok) {
+    const errorText = await response.text();
+    console.error("[switch-org] Backend error:", response.status, errorText);
     return NextResponse.json({ error: "Failed to switch org" }, { status: 400 });
   }
 
   const data = await response.json();
+  console.log("[switch-org] Backend response:", JSON.stringify(data));
 
   // Batch format: response is array with single element
   const batchResult = data[0];
   const result = batchResult?.result?.data?.json;
+  console.log("[switch-org] Parsed result:", JSON.stringify(result));
 
   if (result) {
     // Build complete updated session data
