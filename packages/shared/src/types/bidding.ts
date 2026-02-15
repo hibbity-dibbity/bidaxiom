@@ -141,7 +141,7 @@ export type UpdateBidVersion = z.infer<typeof updateBidVersionSchema>;
 export const createSubcontractorSchema = z.object({
   companyName: z.string().min(1).max(200),
   contactName: z.string().optional(),
-  contactEmail: z.string().email().optional(),
+  contactEmail: z.string().email(),
   contactPhone: phoneSchema,
   address: addressSchema.optional(),
   street1: z.string().max(200).optional(),
@@ -162,7 +162,7 @@ export const updateSubcontractorSchema = z.object({
   id: z.string().uuid(),
   companyName: z.string().min(1).max(200).optional(),
   contactName: z.string().nullable().optional(),
-  contactEmail: z.string().email().nullable().optional(),
+  contactEmail: z.string().email().optional(),
   contactPhone: phoneSchema,
   address: addressSchema.optional(),
   street1: z.string().max(200).nullable().optional(),
