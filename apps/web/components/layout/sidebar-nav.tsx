@@ -3,14 +3,15 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import {
-  LayoutDashboard,
+  Home,
   FolderKanban,
-  Users,
-  Gavel,
   DollarSign,
   FileText,
-  Settings,
+  Users,
   HardHat,
+  Settings,
+  BarChart,
+  Briefcase,
 } from "lucide-react";
 import {
   SidebarMenu,
@@ -18,89 +19,55 @@ import {
   SidebarMenuButton,
 } from "@/components/ui/sidebar";
 
-const navItems = [
-  {
-    label: "Dashboard",
-    href: "/",
-    icon: LayoutDashboard,
-    active: true,
-  },
-  {
-    label: "Projects",
-    href: "/projects",
-    icon: FolderKanban,
-    active: true,
-  },
-  {
-    label: "Customers",
-    href: "/customers",
-    icon: Users,
-    active: true,
-  },
-  {
-    label: "Subcontractors",
-    href: "/subcontractors",
-    icon: HardHat,
-    active: true,
-  },
-  {
-    label: "Bidding",
-    href: "/bids",
-    icon: Gavel,
-    active: false,
-  },
-  {
-    label: "Financials",
-    href: "/financials",
-    icon: DollarSign,
-    active: false,
-  },
-  {
-    label: "Documents",
-    href: "/documents",
-    icon: FileText,
-    active: false,
-  },
-  {
-    label: "Settings",
-    href: "/settings",
-    icon: Settings,
-    active: true,
-  },
+const mainNav = [
+  { href: "/", label: "Dashboard", icon: Home },
+  { href: "/projects", label: "Projects", icon: FolderKanban },
+  { href: "/customers", label: "Customers", icon: Users },
+  { href: "/subcontractors", label: "Subcontractors", icon: HardHat },
+  { href: "/bids", label: "Bidding", icon: Briefcase },
+  { href: "/financials", label: "Financials", icon: DollarSign },
+  { href: "/documents", label: "Documents", icon: FileText },
+  { href: "/reports", label: "Reports", icon: BarChart },
+  { href: "/settings", label: "Settings", icon: Settings },
+];
+
+// Contextual nav items shown when viewing a project
+const projectNav = [
+  { href: "/overview", label: "Overview", icon: Home },
+  { href: "/budget", label: "Budget", icon: DollarSign },
+  { href: "/change-orders", label: "Change Orders", icon: FileText },
+  { href: "/documents", label: "Documents", icon: FileText },
 ];
 
 export function SidebarNav() {
   const pathname = usePathname();
 
+  // Detect if we're viewing a project detail page
+  const isProjectPage = pathname?.startsWith("/projects/") && pathname !== "/projects";
+
+  // Extract project ID from URL if on project page
+  const projectId = isProjectPage ? pathname?.split("/")[2] : null;
+
+  // Use contextual nav when viewing project, main nav otherwise
+  const navItems = isProjectPage
+    ? projectNav.map((item) => ({
+        ...item,
+        href: `/projects/${projectId}${item.href}`,
+      }))
+    : mainNav;
+
   return (
     <SidebarMenu>
       {navItems.map((item) => {
-        const isActive =
-          item.href === "/"
-            ? pathname === "/"
-            : pathname.startsWith(item.href);
+        const Icon = item.icon;
+        const isActive = pathname === item.href;
 
         return (
           <SidebarMenuItem key={item.href}>
-            <SidebarMenuButton
-              asChild
-              isActive={isActive}
-              tooltip={item.label}
-            >
-              <Link
-                href={item.active ? item.href : "#"}
-                className={!item.active ? "opacity-50 cursor-not-allowed" : ""}
-                onClick={
-                  !item.active ? (e) => e.preventDefault() : undefined
-                }
-              >
-                <item.icon className="h-4 w-4" />
+            <SidebarMenuButton asChild isActive={isActive}>
+              <Link href={item.href}>
+                <Icon className="h-4 w-4" />
                 <span>{item.label}</span>
-                {!item.active && (
-                  <span className="ml-auto text-xs text-muted-foreground">
-                    Soon
-                  </span>
-                )}
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
