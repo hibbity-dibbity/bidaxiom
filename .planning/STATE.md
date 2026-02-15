@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-14)
 ## Current Position
 
 Phase: Phase 14 - Form Standardization & Validation
-Plan: 1 of 5 complete
+Plan: 2 of 5 complete
 Status: In progress
-Last activity: 2026-02-15 - Completed 14-01-PLAN.md (Form Standardization Foundation)
+Last activity: 2026-02-15 - Completed 14-02-PLAN.md (Database Schema and Validation Updates)
 
-Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [█████████░] 88% (Phase 13 complete, Phase 14: 1/5 complete)
+Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [█████████░] 90% (Phase 13 complete, Phase 14: 2/5 complete)
 
 ## Performance Metrics
 
@@ -96,6 +96,7 @@ Progress: v1.0: [██████████] 100% complete (12 phases) | v1.
 | Phase 13-navigation-and-theme-foundation P09 | 2 min | 1 task | 1 file |
 | Phase 13-navigation-and-theme-foundation P11 | 1 min | 2 tasks | 1 file |
 | Phase 14-form-standardization-and-validation P01 | 3.7 min | 2 tasks | 8 files |
+| Phase 14-form-standardization-and-validation P02 | 4 min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -273,6 +274,8 @@ Recent decisions affecting current work:
 - [Phase 13-09]: Migration script pattern follows Phase 8 QBO migration: dotenv config, pool.query, active tenant iteration — Retroactive schema changes use migrate-phase{N}-{feature}.ts with column existence checks for idempotency
 - [Quick-11]: Session update before redirect for state-changing operations — After org creation, call /api/auth/switch-org to update iron-session cookie before redirecting to ensure session context is current
 - [Quick-11]: Dashboard safety net for stale sessions — Check if session has no org but user has organizations, auto-activate first org to handle edge cases (browser back, cookie expiry, race conditions)
+- [Phase 14]: Keep legacy columns (address, location, phone, contactPhone) in schema to avoid breaking existing code - migration NULLs them out, Plan 03-04 will update router/form code
+- [Phase 14]: User chose to DELETE existing freeform phone/address/location data instead of attempting migration to structured format
 
 ### Pending Todos
 
