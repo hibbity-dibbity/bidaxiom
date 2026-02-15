@@ -36,7 +36,8 @@ import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 
 interface CreateWorkflowDialogProps {
-  projectId: string;
+  projectId: string;        // For tRPC queries
+  projectSlug: string;      // For navigation
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -50,6 +51,7 @@ interface ApprovalStep {
 
 export function CreateWorkflowDialog({
   projectId,
+  projectSlug,
   open,
   onOpenChange,
 }: CreateWorkflowDialogProps) {
@@ -86,7 +88,7 @@ export function CreateWorkflowDialog({
       resetForm();
       onOpenChange(false);
       // Navigate to workflow detail page
-      router.push(`/projects/${projectId}/workflows/${workflow.id}`);
+      router.push(`/projects/${projectSlug}/workflows/${workflow.id}`);
     },
     onError: (error) => {
       toast.error(error.message || "Failed to create workflow");

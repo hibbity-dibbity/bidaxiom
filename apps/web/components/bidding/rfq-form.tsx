@@ -21,7 +21,8 @@ import {
 } from "@/components/ui/tooltip";
 
 interface RfqFormProps {
-  projectId: string;
+  projectId: string;        // For tRPC queries
+  projectSlug: string;      // For navigation
 }
 
 const CSI_DIVISION_OPTIONS = [
@@ -127,7 +128,7 @@ const CSI_DIVISION_OPTIONS = [
   },
 ];
 
-export function RfqForm({ projectId }: RfqFormProps) {
+export function RfqForm({ projectId, projectSlug }: RfqFormProps) {
   const router = useRouter();
   const utils = trpc.useUtils();
   const [selectedTrades, setSelectedTrades] = useState<number[]>([]);
@@ -148,7 +149,7 @@ export function RfqForm({ projectId }: RfqFormProps) {
     onSuccess: (data) => {
       utils.rfq.list.invalidate({ projectId });
       toast.success("RFQ created successfully");
-      router.push(`/projects/${projectId}/rfqs/${data.id}`);
+      router.push(`/projects/${projectSlug}/rfqs/${data.id}`);
     },
     onError: (error) => {
       toast.error(error.message || "Failed to create RFQ");

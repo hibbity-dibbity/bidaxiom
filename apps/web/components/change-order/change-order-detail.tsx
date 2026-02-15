@@ -43,7 +43,8 @@ import type { ChangeOrderStatus, ChangeOrderType } from "@construction/shared";
 
 interface ChangeOrderDetailProps {
   changeOrderId: string;
-  projectId: string;
+  projectId: string;        // For tRPC queries
+  projectSlug: string;      // For navigation
 }
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
@@ -67,7 +68,7 @@ const typeColors: Record<ChangeOrderType, string> = {
   subcontractor: "bg-purple-500",
 };
 
-export function ChangeOrderDetail({ changeOrderId, projectId }: ChangeOrderDetailProps) {
+export function ChangeOrderDetail({ changeOrderId, projectId, projectSlug }: ChangeOrderDetailProps) {
   const router = useRouter();
   const utils = trpc.useUtils();
   const [voidDialogOpen, setVoidDialogOpen] = useState(false);
@@ -99,7 +100,7 @@ export function ChangeOrderDetail({ changeOrderId, projectId }: ChangeOrderDetai
   const deleteMutation = trpc.changeOrder.delete.useMutation({
     onSuccess: () => {
       toast.success("Change order deleted");
-      router.push(`/projects/${projectId}/change-orders`);
+      router.push(`/projects/${projectSlug}/change-orders`);
     },
     onError: (error) => {
       toast.error(error.message || "Failed to delete change order");
@@ -222,7 +223,7 @@ export function ChangeOrderDetail({ changeOrderId, projectId }: ChangeOrderDetai
       {/* Back button */}
       <Button
         variant="ghost"
-        onClick={() => router.push(`/projects/${projectId}/change-orders`)}
+        onClick={() => router.push(`/projects/${projectSlug}/change-orders`)}
       >
         <ArrowLeft className="h-4 w-4 mr-2" />
         Back to Change Orders

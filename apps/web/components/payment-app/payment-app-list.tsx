@@ -25,7 +25,8 @@ import { Plus, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface PaymentAppListProps {
-  projectId: string;
+  projectId: string;        // For tRPC queries
+  projectSlug: string;      // For navigation
 }
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
@@ -43,7 +44,7 @@ const statusColors: Record<string, string> = {
   paid: "bg-blue-500/10 text-blue-700 border-blue-200",
 };
 
-export function PaymentAppList({ projectId }: PaymentAppListProps) {
+export function PaymentAppList({ projectId, projectSlug }: PaymentAppListProps) {
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const { data: paymentApps, isLoading } = trpc.paymentApp.list.useQuery({
@@ -148,7 +149,7 @@ export function PaymentAppList({ projectId }: PaymentAppListProps) {
 
         {hasSovItems ? (
           <Button asChild>
-            <Link href={`/projects/${projectId}/payment-apps/new`}>
+            <Link href={`/projects/${projectSlug}/payment-apps/new`}>
               <Plus className="mr-2 h-4 w-4" />
               New Payment Application
             </Link>
@@ -172,7 +173,7 @@ export function PaymentAppList({ projectId }: PaymentAppListProps) {
           <AlertDescription>
             You must set up a Schedule of Values before creating payment applications.{" "}
             <Link
-              href={`/projects/${projectId}/sov`}
+              href={`/projects/${projectSlug}/sov`}
               className="font-medium underline underline-offset-4"
             >
               Set up SOV
@@ -222,7 +223,7 @@ export function PaymentAppList({ projectId }: PaymentAppListProps) {
                     </TableCell>
                     <TableCell>
                       <Button variant="outline" size="sm" asChild>
-                        <Link href={`/projects/${projectId}/payment-apps/${app.id}`}>
+                        <Link href={`/projects/${projectSlug}/payment-apps/${app.id}`}>
                           View
                         </Link>
                       </Button>

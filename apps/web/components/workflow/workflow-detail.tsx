@@ -32,7 +32,8 @@ import Link from "next/link";
 
 interface WorkflowDetailProps {
   workflowId: string;
-  projectId: string;
+  projectId: string;        // For tRPC queries
+  projectSlug: string;      // For navigation
 }
 
 const statusColors = {
@@ -62,7 +63,7 @@ const priorityColors = {
   urgent: "destructive",
 } as const;
 
-export function WorkflowDetail({ workflowId, projectId }: WorkflowDetailProps) {
+export function WorkflowDetail({ workflowId, projectId, projectSlug }: WorkflowDetailProps) {
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
   const [selectedApprovalId, setSelectedApprovalId] = useState<string | null>(null);
   const [approvalAction, setApprovalAction] = useState<"approve" | "reject">("approve");
@@ -209,7 +210,7 @@ export function WorkflowDetail({ workflowId, projectId }: WorkflowDetailProps) {
             <div>
               <h3 className="font-semibold mb-2">Document</h3>
               <Link
-                href={`/projects/${projectId}/documents`}
+                href={`/projects/${projectSlug}/documents`}
                 className="text-primary hover:underline flex items-center gap-2"
               >
                 <FileText className="h-4 w-4" />

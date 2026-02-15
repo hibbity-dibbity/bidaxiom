@@ -26,7 +26,8 @@ import { CreateWorkflowDialog } from "./create-workflow-dialog";
 import { useRouter } from "next/navigation";
 
 interface WorkflowListProps {
-  projectId: string;
+  projectId: string;        // For tRPC queries
+  projectSlug: string;      // For navigation
 }
 
 const workflowTypeLabels = {
@@ -62,7 +63,7 @@ const priorityColors = {
   urgent: "destructive",
 } as const;
 
-export function WorkflowList({ projectId }: WorkflowListProps) {
+export function WorkflowList({ projectId, projectSlug }: WorkflowListProps) {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [typeFilter, setTypeFilter] = useState<string | undefined>();
   const [statusFilter, setStatusFilter] = useState<string | undefined>();
@@ -75,7 +76,7 @@ export function WorkflowList({ projectId }: WorkflowListProps) {
   });
 
   const handleRowClick = (workflowId: string) => {
-    router.push(`/projects/${projectId}/workflows/${workflowId}`);
+    router.push(`/projects/${projectSlug}/workflows/${workflowId}`);
   };
 
   return (
@@ -210,6 +211,7 @@ export function WorkflowList({ projectId }: WorkflowListProps) {
 
       <CreateWorkflowDialog
         projectId={projectId}
+        projectSlug={projectSlug}
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
       />

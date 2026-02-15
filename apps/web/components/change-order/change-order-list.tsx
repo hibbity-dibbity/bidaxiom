@@ -17,7 +17,8 @@ import { Plus } from "lucide-react";
 import type { ChangeOrderStatus, ChangeOrderType } from "@construction/shared";
 
 interface ChangeOrderListProps {
-  projectId: string;
+  projectId: string;        // For tRPC queries
+  projectSlug: string;      // For navigation
 }
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
@@ -47,7 +48,7 @@ const typeLabels: Record<ChangeOrderType, string> = {
   subcontractor: "Subcontractor",
 };
 
-export function ChangeOrderList({ projectId }: ChangeOrderListProps) {
+export function ChangeOrderList({ projectId, projectSlug }: ChangeOrderListProps) {
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
@@ -59,11 +60,11 @@ export function ChangeOrderList({ projectId }: ChangeOrderListProps) {
   });
 
   const handleNavigateToDetail = (changeOrderId: string) => {
-    router.push(`/projects/${projectId}/change-orders/${changeOrderId}`);
+    router.push(`/projects/${projectSlug}/change-orders/${changeOrderId}`);
   };
 
   const handleNavigateToNew = () => {
-    router.push(`/projects/${projectId}/change-orders/new`);
+    router.push(`/projects/${projectSlug}/change-orders/new`);
   };
 
   const getChangeOrderNumber = (co: any) => {

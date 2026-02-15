@@ -25,7 +25,8 @@ import { Plus, Trash2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
 interface ChangeOrderFormProps {
-  projectId: string;
+  projectId: string;        // For tRPC queries
+  projectSlug: string;      // For navigation
 }
 
 type ChangeOrderFormData = z.infer<typeof createChangeOrderSchema>;
@@ -36,7 +37,7 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 2,
 });
 
-export function ChangeOrderForm({ projectId }: ChangeOrderFormProps) {
+export function ChangeOrderForm({ projectId, projectSlug }: ChangeOrderFormProps) {
   const router = useRouter();
   const utils = trpc.useUtils();
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -88,7 +89,7 @@ export function ChangeOrderForm({ projectId }: ChangeOrderFormProps) {
     onSuccess: (data) => {
       utils.changeOrder.list.invalidate({ projectId });
       toast.success("Change order created successfully");
-      router.push(`/projects/${projectId}/change-orders/${data.changeOrder.id}`);
+      router.push(`/projects/${projectSlug}/change-orders/${data.changeOrder.id}`);
     },
     onError: (error) => {
       toast.error(error.message || "Failed to create change order");
@@ -122,7 +123,7 @@ export function ChangeOrderForm({ projectId }: ChangeOrderFormProps) {
   };
 
   const handleBack = () => {
-    router.push(`/projects/${projectId}/change-orders`);
+    router.push(`/projects/${projectSlug}/change-orders`);
   };
 
   const canProceedStep1 = selectedType !== undefined;

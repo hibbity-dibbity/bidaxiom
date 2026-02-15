@@ -40,7 +40,8 @@ import type { LevelingCategory } from "@construction/shared";
 
 interface BidComparisonTableProps {
   rfqId: string;
-  projectId: string;
+  projectId: string;        // For tRPC queries
+  projectSlug: string;      // For navigation
 }
 
 const levelingCategories: Record<LevelingCategory, { label: string; color: string }> = {
@@ -50,7 +51,7 @@ const levelingCategories: Record<LevelingCategory, { label: string; color: strin
   risk: { label: "Risk", color: "bg-yellow-500/10 text-yellow-700" },
 };
 
-export function BidComparisonTable({ rfqId, projectId }: BidComparisonTableProps) {
+export function BidComparisonTable({ rfqId, projectId, projectSlug }: BidComparisonTableProps) {
   const router = useRouter();
   const utils = trpc.useUtils();
   const [expandedBids, setExpandedBids] = useState<Set<string>>(new Set());
@@ -84,7 +85,7 @@ export function BidComparisonTable({ rfqId, projectId }: BidComparisonTableProps
       utils.rfq.getById.invalidate({ id: rfqId });
       toast.success("Bid awarded successfully");
       setAwardDialogOpen(false);
-      router.push(`/projects/${projectId}/rfqs/${rfqId}`);
+      router.push(`/projects/${projectSlug}/rfqs/${rfqId}`);
     },
     onError: (error) => {
       toast.error(error.message || "Failed to award bid");
