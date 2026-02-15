@@ -1,5 +1,5 @@
 ---
-status: complete
+status: diagnosed
 phase: 14-form-standardization-and-validation
 source:
   - 14-01-SUMMARY.md
@@ -86,7 +86,13 @@ skipped: 3
   reason: "User reported: failed, error: Unhandled Runtime Error Error: useFormField should be used within <FormField> Source components\ui\form.tsx (48:11) @ useFormField"
   severity: blocker
   test: 1
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "Standalone <FormLabel>Address</FormLabel> used outside FormField wrapper. FormLabel internally calls useFormField() which requires FormField context. Working project-form.tsx uses <h4 className='text-sm font-medium'>Address</h4> instead."
+  artifacts:
+    - path: "apps/web/app/(dashboard)/customers/page.tsx"
+      issue: "Lines 414 and 501 use standalone FormLabel for Address section"
+    - path: "apps/web/components/bidding/subcontractor-form.tsx"
+      issue: "Line 190 uses standalone FormLabel for Address section"
+  missing:
+    - "Replace FormLabel with regular heading (h4 or Label primitive) in customer dialogs"
+    - "Replace FormLabel with regular heading (h4 or Label primitive) in subcontractor form"
+  debug_session: ".planning/debug/phase14-useformfield-error.md"
