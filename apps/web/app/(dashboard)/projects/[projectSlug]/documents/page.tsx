@@ -363,7 +363,7 @@ export default function ProjectDocumentsPage({
 
         {/* Workflows Tab */}
         <TabsContent value="workflows">
-          <WorkflowList projectId={projectId!} />
+          <WorkflowList projectId={projectId!} projectSlug={project.slug} />
         </TabsContent>
       </Tabs>
 

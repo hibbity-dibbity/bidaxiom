@@ -39,7 +39,7 @@ export default function PaymentAppsPage({
         </p>
       </div>
 
-      <PaymentAppList projectId={projectId} />
+      <PaymentAppList projectId={projectId} projectSlug={project.slug} />
     </div>
   );
 }

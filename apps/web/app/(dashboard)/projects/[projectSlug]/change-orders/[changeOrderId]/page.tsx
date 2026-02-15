@@ -18,5 +18,5 @@ export default function ChangeOrderDetailPage({
     return null; // Layout handles loading/error states
   }
 
-  return <ChangeOrderDetail changeOrderId={changeOrderId} projectId={projectId} />;
+  return <ChangeOrderDetail changeOrderId={changeOrderId} projectId={projectId} projectSlug={project.slug} />;
 }
