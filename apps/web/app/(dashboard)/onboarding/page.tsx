@@ -30,10 +30,30 @@ export default function OnboardingPage() {
   );
 
   const createOrgMutation = trpc.organization.create.useMutation({
-    onSuccess: () => {
+    onSuccess: async (data) => {
       toast.success("Company created successfully!");
-      // Reload to trigger auth context update and redirect
-      window.location.href = "/";
+
+      // Update session with newly created org before redirecting
+      try {
+        const response = await fetch("/api/auth/switch-org", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ organizationId: data.id }),
+        });
+
+        if (response.ok) {
+          // Session updated successfully, redirect to dashboard
+          window.location.href = "/";
+        } else {
+          // Session update failed, but redirect anyway (safety net in dashboard will catch it)
+          console.error("Failed to update session, but redirecting anyway");
+          window.location.href = "/";
+        }
+      } catch (error) {
+        // Network error, but redirect anyway (safety net in dashboard will catch it)
+        console.error("Error updating session:", error);
+        window.location.href = "/";
+      }
     },
     onError: (error) => {
       toast.error(error.message || "Failed to create company");
