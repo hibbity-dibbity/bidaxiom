@@ -291,10 +291,12 @@ export async function provisionTenantSchema(
           trades_config JSONB NOT NULL DEFAULT '{"csiDivisions":[],"customTrades":[]}'::jsonb,
           job_number_settings JSONB DEFAULT '{"enabled":false,"template":"{YYYY}-{NNN}","nextSequenceNumber":1,"lastGeneratedFormat":null}'::jsonb,
           retainage_config JSONB DEFAULT '{"defaultRate":10,"progressiveRates":[],"releaseConditions":{"substantialCompletion":true,"punchListComplete":false,"finalAcceptance":false,"lienWaiversRequired":true}}'::jsonb,
+          logo_storage_key TEXT,
           valid_from TIMESTAMPTZ NOT NULL DEFAULT NOW(),
           valid_to TIMESTAMPTZ,
           created_by TEXT NOT NULL,
-          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
       `);
 
@@ -1432,6 +1434,16 @@ export async function provisionTenantSchema(
          RETURNING id, schema_name, clerk_org_id, name, status`,
         [schemaName, orgId, orgName]
       );
+
+      // Insert initial company_profiles row
+      // Uses a placeholder user ID - will be updated when org is created
+      await client.query(`
+        INSERT INTO "${schemaName}".company_profiles (
+          company_type,
+          created_by
+        ) VALUES ('general_contractor', 'system')
+        ON CONFLICT DO NOTHING
+      `);
 
       await client.query("COMMIT");
 

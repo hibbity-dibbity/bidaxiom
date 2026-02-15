@@ -4,18 +4,10 @@ import { createServerTRPCClient } from "@/lib/trpc-server";
 
 export async function POST(request: Request) {
   const { organizationId } = await request.json();
-  console.log("[switch-org] Received organizationId:", organizationId);
 
   // Get current session to preserve existing data
   const currentSession = await getSessionFromRequest(request);
   const token = currentSession.accessToken;
-
-  console.log("[switch-org] Session data:", {
-    hasToken: !!token,
-    tokenLength: token?.length,
-    userId: currentSession.userId,
-    orgId: currentSession.orgId,
-  });
 
   if (!token) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -24,10 +16,8 @@ export async function POST(request: Request) {
   try {
     // Use server-side tRPC client instead of raw fetch
     const trpc = createServerTRPCClient(token);
-    console.log("[switch-org] Calling backend via tRPC client");
 
     const result = await trpc.auth.switchOrganization.mutate({ organizationId });
-    console.log("[switch-org] Backend response:", JSON.stringify(result));
 
     // Build complete updated session data
     const updatedSession = {

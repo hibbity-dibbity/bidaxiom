@@ -15,12 +15,6 @@ export function createServerTRPCClient(token?: string) {
       }
     : undefined;
 
-  console.log("[trpc-server] Creating client with headers:", {
-    hasToken: !!token,
-    tokenPreview: token ? `${token.substring(0, 20)}...` : 'none',
-    headers,
-  });
-
   return createTRPCProxyClient<AppRouter>({
     links: [
       httpLink({
