@@ -105,7 +105,12 @@ export const projectRouter = router({
             name: input.name,
             customerId: input.customerId,
             description: input.description,
-            location: input.location,
+            location: null, // Legacy column - no longer used
+            street1: input.location?.street1 || null,
+            street2: input.location?.street2 || null,
+            city: input.location?.city || null,
+            state: input.location?.state || null,
+            zip: input.location?.zipCode || null,
             projectType: input.projectType,
             startDate: input.startDate ? new Date(input.startDate) : null,
             endDate: input.endDate ? new Date(input.endDate) : null,
@@ -222,7 +227,9 @@ export const projectRouter = router({
         conditions.push(
           or(
             like(schema.projects.name, `%${input.search}%`),
-            like(schema.projects.location, `%${input.search}%`)
+            like(schema.projects.street1, `%${input.search}%`),
+            like(schema.projects.city, `%${input.search}%`),
+            like(schema.projects.state, `%${input.search}%`)
           )
         );
       }
@@ -380,7 +387,15 @@ export const projectRouter = router({
 
       if (input.name !== undefined) updateValues.name = input.name;
       if (input.description !== undefined) updateValues.description = input.description;
-      if (input.location !== undefined) updateValues.location = input.location;
+      if (input.location !== undefined) {
+        // Map structured location to DB columns
+        updateValues.location = null; // Legacy column - no longer used
+        updateValues.street1 = input.location.street1 || null;
+        updateValues.street2 = input.location.street2 || null;
+        updateValues.city = input.location.city || null;
+        updateValues.state = input.location.state || null;
+        updateValues.zip = input.location.zipCode || null;
+      }
       if (input.projectType !== undefined) updateValues.projectType = input.projectType;
       if (input.status !== undefined) updateValues.status = input.status;
       if (input.startDate !== undefined)

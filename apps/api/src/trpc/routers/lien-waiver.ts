@@ -67,7 +67,7 @@ export const lienWaiverRouter = router({
 
       // Validate project exists
       const project = await db
-        .select({ id: schema.projects.id, location: schema.projects.location })
+        .select({ id: schema.projects.id, state: schema.projects.state })
         .from(schema.projects)
         .where(eq(schema.projects.id, input.projectId))
         .limit(1);
@@ -104,12 +104,10 @@ export const lienWaiverRouter = router({
       let requiresNotarization = input.requiresNotarization;
       let usesStatutoryForm = input.usesStatutoryForm;
 
-      // Extract state from project location (assuming format like "City, STATE" or just "STATE")
-      const projectLocation = project[0].location || "";
-      const stateMatch = projectLocation.match(/\b([A-Z]{2})\b/);
+      // Get state from structured field
+      const state = project[0].state;
 
-      if (stateMatch) {
-        const state = stateMatch[1];
+      if (state) {
         const stateReqs = STATE_LIEN_WAIVER_REQUIREMENTS[state];
 
         if (stateReqs) {
@@ -580,9 +578,9 @@ export const lienWaiverRouter = router({
       // Check permission
       ForbiddenError.from(abilities).throwUnlessCan("read", "LienWaiver");
 
-      // Get project location
+      // Get project state
       const [project] = await db
-        .select({ location: schema.projects.location })
+        .select({ state: schema.projects.state })
         .from(schema.projects)
         .where(eq(schema.projects.id, input.projectId))
         .limit(1);
@@ -594,15 +592,13 @@ export const lienWaiverRouter = router({
         });
       }
 
-      // Extract state from location
-      const projectLocation = project.location || "";
-      const stateMatch = projectLocation.match(/\b([A-Z]{2})\b/);
+      // Get state from structured field
+      const state = project.state;
 
-      if (!stateMatch) {
-        return null; // No state found in location
+      if (!state) {
+        return null; // No state found in project
       }
 
-      const state = stateMatch[1];
       const stateReqs = STATE_LIEN_WAIVER_REQUIREMENTS[state];
 
       if (!stateReqs) {
