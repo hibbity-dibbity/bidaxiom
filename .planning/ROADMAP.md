@@ -318,7 +318,7 @@ Plans:
   3. Form validation rules are centralized in reusable Zod schemas shared between client and server
   4. Form validation errors display consistently across all forms
   5. Existing data validation is backward compatible and does not break historical records
-**Plans**: 6 plans (5 original + 1 gap closure)
+**Plans**: 8 plans (5 original + 3 gap closure)
 
 Plans:
 - [x] 14-01-PLAN.md — Shared schemas (phone, address), US states constant, PhoneInput and AddressInput components (wave 1)
@@ -327,6 +327,8 @@ Plans:
 - [x] 14-04-PLAN.md — Customer page and subcontractor form updates with PhoneInput and AddressInput (wave 4)
 - [x] 14-05-PLAN.md — Project form update with structured location and inline customer dialog (wave 4)
 - [ ] 14-06-PLAN.md — UAT gap closure: Fix useFormField error in customer and subcontractor forms (wave 1)
+- [ ] 14-07-PLAN.md — UAT gap closure: Make email field required with proper validation (wave 1)
+- [ ] 14-08-PLAN.md — UAT gap closure: Fix state field to accept empty input (wave 1)
 
 ### Phase 15: Dashboard Redesign
 **Goal**: Dashboard displays user-level and company-level KPI widgets with task and pipeline visibility
@@ -416,7 +418,7 @@ v1.1: Phases 13-19 (in progress)
 | 12. Custom Authentication Migration | 8/8 | Complete | 2026-02-14 |
 | **v1.1 Phases (Enterprise UX Redesign)** |
 | 13. Navigation & Theme Foundation | 9/10 | UAT Gap Closure | - |
-| 14. Form Standardization & Validation | 5/6 | UAT Gap Closure | - |
+| 14. Form Standardization & Validation | 5/8 | UAT Gap Closure | - |
 | 15. Dashboard Redesign | 0/TBD | Pending | - |
 | 16. Projects Interface Redesign | 0/TBD | Pending | - |
 | 17. Estimating Workflow - Setup & Core | 0/TBD | Pending | - |
@@ -425,4 +427,4 @@ v1.1: Phases 13-19 (in progress)
 
 ---
 *Roadmap created: 2026-02-10 (v1.0)*
-*Last updated: 2026-02-15 (Phase 14 UAT gap closure - 14-06-PLAN.md created)*
+*Last updated: 2026-02-15 (Phase 14 UAT gap closure - 14-08-PLAN.md created)*
