@@ -98,21 +98,75 @@ skipped: 3
   debug_session: ".planning/debug/phase14-useformfield-error.md"
 
 - truth: "Email field is marked as required and validates email format"
-  status: reported
+  status: diagnosed
   reason: "User reported: Email address on add customer/subcontractor forms is showing 'invalid email' if left blank, but the field is not marked as required like Contact Name is. I would like to mark email field as required."
   severity: minor
   test: "manual"
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "Email fields use z.string().email().optional() pattern. Zod's .email() validator validates format even on empty strings when .optional() is present. An empty string is not a valid email format, causing 'invalid email' error. The field appears optional in the UI (no asterisk), but fails validation when left blank."
+  artifacts:
+    - path: "packages/shared/src/types/customer.ts"
+      issue: "Lines 13 and 31 use email: z.string().email().max(200).optional()"
+    - path: "packages/shared/src/types/bidding.ts"
+      issue: "Lines 144 and 165 use contactEmail: z.string().email().optional()"
+    - path: "apps/web/app/(dashboard)/customers/page.tsx"
+      issue: "Lines 403 and 490 need asterisk on email labels to indicate required"
+    - path: "apps/web/components/bidding/subcontractor-form.tsx"
+      issue: "Line 165 needs asterisk on contactEmail label to indicate required"
+  missing:
+    - "Remove .optional() from email fields in customer and bidding schemas"
+    - "Add asterisk (*) to email labels in customer and subcontractor forms"
+  debug_session: ".planning/debug/phase14-email-required.md"
 
 - truth: "State field accepts empty input without validation errors"
-  status: reported
+  status: diagnosed
   reason: "User reported: State field in add customer and other address forms when left blank gives an error 'string must contain exactly 2 characters'. This field should also accept an empty input (I do not want this field required)."
   severity: major
   test: "manual"
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "Schema validation mismatch. The state field uses z.string().length(2).optional() which only accepts undefined or 2-char strings. However, the AddressInput Select component passes empty string '' when no selection is made (line 88: value={field.value || ''}). Empty string fails the length(2) validation, causing the error."
+  artifacts:
+    - path: "packages/shared/src/schemas/common.ts"
+      issue: "Line 29 uses state: z.string().length(2).optional() which doesn't accept empty strings"
+    - path: "apps/web/components/ui/address-input.tsx"
+      issue: "Line 88 converts undefined to empty string: value={field.value || ''}"
+  missing:
+    - "Update state field validation to use .refine() pattern like phoneSchema"
+    - "Change to: z.string().optional().refine((val) => !val || val === '' || val.length === 2, { message: 'State must be a 2-letter abbreviation' })"
+  debug_session: ".planning/debug/resolved/phase14-state-optional.md"
+
+## Re-Verification (Gap Closure)
+
+**Date:** 2026-02-15T16:00:00Z
+**Plans executed:** 14-06, 14-07, 14-08
+
+### Gap Closure Tests
+
+**Gap 1: FormLabel Context Error**
+- Status: ✓ VERIFIED
+- Test: Customer and subcontractor forms open without errors
+- Result: Forms render correctly, Address headings display properly
+
+**Gap 2: Email Field Required**
+- Status: ✓ VERIFIED  
+- Test: Email field shows asterisk, blank submission shows "Required" error
+- Result: Validation works correctly, email is now required
+
+**Gap 3: State Field Optional**
+- Status: ✓ VERIFIED
+- Test: State field accepts empty input without validation error
+- Result: Form submits successfully with empty state field
+
+### Issues Found During Verification
+
+**Schema Validation Bug** (severity: blocker)
+- Issue: "Expected string, received object" error when saving customer/subcontractor
+- Root cause: Duplicate address fields in schemas (nested + flat)
+- Fixed: Removed `address: addressSchema.optional()` from customer.ts and bidding.ts
+- Commit: 8d99316
+- Verified: ✓ Forms now save successfully
+
+### Summary
+
+- All 3 gap closures verified and working
+- 1 additional bug found and fixed during verification
+- Phase 14 is now fully functional
+- Ready for production use
