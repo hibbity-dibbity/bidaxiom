@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-14)
 ## Current Position
 
 Phase: Phase 16 - Projects Interface Redesign
-Plan: 5 of TBD complete
+Plan: 6 of TBD complete
 Status: In Progress
-Last activity: 2026-02-15 - Completed 16-05-PLAN.md (Section Page Routing Migration)
+Last activity: 2026-02-15 - Completed 16-06-PLAN.md (Section Navigation Performance Optimization)
 
-Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [█████████░] 90% (Phase 13 complete, Phase 14 6/8 plans, Phase 15 5/5 plans complete, Phase 16 5/? plans complete)
+Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [█████████░] 90% (Phase 13 complete, Phase 14 6/8 plans, Phase 15 5/5 plans complete, Phase 16 6/? plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 69
-- Average duration: 5.5 min
-- Total execution time: 7.0 hours
+- Total plans completed: 70
+- Average duration: 5.4 min
+- Total execution time: 7.1 hours
 
 **By Phase:**
 
@@ -41,11 +41,11 @@ Progress: v1.0: [██████████] 100% complete (12 phases) | v1.
 | 13 | 11 | 24 min | 2.2 min |
 | 14 | 6 | 24.2 min | 4.0 min |
 | 15 | 5 | 12.5 min | 2.5 min |
-| 16 | 5 | 56 min | 11.2 min |
+| 16 | 6 | 58 min | 9.7 min |
 
 **Recent Trend:**
-- Last 5 plans: 16-01 (6 min), 16-02 (6 min), 16-03 (1 min), 16-04 (5 min), 16-05 (38 min)
-- Trend: Phase 16 in progress, 5/? plans complete, averaging 11.2 min.
+- Last 5 plans: 16-02 (6 min), 16-03 (1 min), 16-04 (5 min), 16-05 (38 min), 16-06 (2 min)
+- Trend: Phase 16 in progress, 6/? plans complete, averaging 9.7 min.
 
 *Updated after each plan completion*
 | Phase 06 P02 | 8 | 2 tasks | 5 files |
@@ -112,6 +112,7 @@ Progress: v1.0: [██████████] 100% complete (12 phases) | v1.
 | Phase 16-projects-interface-redesign P03 | 1 min | 1 task | 1 file |
 | Phase 16-projects-interface-redesign P04 | 5 min | 2 tasks | 4 files |
 | Phase 16-projects-interface-redesign P05 | 38 min | 2 tasks | 19 files |
+| Phase 16-projects-interface-redesign P06 | 2 min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -304,6 +305,9 @@ Recent decisions affecting current work:
 - [Phase 15-05]: Responsive grid sizing by widget type — User widgets in 3s, company count widgets in 4s, financial widgets in 3s for optimal desktop layout
 - [Phase 15-05]: Compact density spacing (space-y-6) — Procore-style tight spacing between sections for data-first design
 - [Phase 15-05]: Activity feed moved to Settings — Dashboard no longer contains activity feed; accessed via Settings > Activity Log card
+- [Phase 16-06]: Progressive loading pattern — Page structure renders immediately with inline skeletons per section instead of full-page blocking skeleton
+- [Phase 16-06]: PlaceholderData for stale-while-revalidate — Shows previously loaded data during background revalidation to prevent "-- " flashes in overview page
+- [Phase 16-06]: Hover-based query prefetching — Tab onMouseEnter triggers prefetch of section queries 200-500ms before click for instant perceived navigation
 
 ### Pending Todos
 
@@ -333,8 +337,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-15 (Phase 16 Plan 05)
-Stopped at: Completed 16-05-PLAN.md (Section Page Routing Migration)
+Last session: 2026-02-15 (Phase 16 Plan 06)
+Stopped at: Completed 16-06-PLAN.md (Section Navigation Performance Optimization)
 Resume file: None
 
 ---
