@@ -86,11 +86,23 @@ skipped: 0
 ## Gaps
 
 - truth: "Escape key closes the command palette with a single press"
-  status: failed
+  status: resolved
   reason: "User reported: Ctrl+K opens search successfully, it takes two escape clicks to close it. I've tested multiple times with the same result."
   severity: minor
   test: 3
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "Two separate command palette instances are being rendered and both open when Ctrl+K is pressed: (1) SearchProvider in app-shell for TopBar button click, and (2) StandaloneCommandPalette in root layout for global keyboard shortcut. Both listen to Ctrl+K event, causing both dialogs to open simultaneously. First Escape closes one dialog (background opacity changes), second Escape closes the other. Clicking the search button only opens one dialog (no double-escape issue)."
+  artifacts:
+    - path: "apps/web/components/layout/app-shell.tsx"
+      issue: "SearchProvider renders CommandPalette with Ctrl+K listener"
+    - path: "apps/web/app/layout.tsx"
+      issue: "StandaloneCommandPalette also renders with Ctrl+K listener - FIXED"
+    - path: "apps/web/components/search/command-palette.tsx"
+      issue: "Both SearchProvider and StandaloneCommandPalette render separate CommandPalette instances - FIXED"
+  resolution:
+    - "Removed StandaloneCommandPalette from root layout (apps/web/app/layout.tsx)"
+    - "SearchProvider CommandPalette now solely handles both button clicks AND keyboard shortcuts"
+    - "Verified only ONE keyboard event listener exists for Ctrl+K"
+  fix_plan: "13-11-PLAN.md"
+  fixed_in_commit: "219a37c"
+  verified_by_user: true
+  debug_session: ".planning/debug/resolved/command-palette-double-escape.md"
