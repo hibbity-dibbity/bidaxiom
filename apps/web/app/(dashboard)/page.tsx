@@ -26,6 +26,8 @@ export default function DashboardPage() {
   const companyName = orgName || "Your Company";
   const hasSwitched = useRef(false);
 
+  console.log("[DEBUG ORG-FLOW] 8. Dashboard render - orgId:", orgId, "orgName:", orgName);
+
   // Fetch real audit summary data
   const auditSummary = trpc.audit.summary.useQuery(undefined, {
     retry: false,
@@ -44,8 +46,10 @@ export default function DashboardPage() {
       organizations &&
       organizations.length > 0
     ) {
+      console.log("[DEBUG ORG-FLOW] 9a. Safety net triggered - orgId is null, organizations:", organizations?.length, "switching to:", organizations?.[0]?.id);
       hasSwitched.current = true;
       switchOrg(organizations[0].id);
+      console.log("[DEBUG ORG-FLOW] 9b. Safety net switchOrg called");
     }
   }, [orgId, organizations, switchOrg]);
 

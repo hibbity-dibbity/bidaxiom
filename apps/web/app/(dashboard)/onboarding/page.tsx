@@ -31,26 +31,34 @@ export default function OnboardingPage() {
 
   const createOrgMutation = trpc.organization.create.useMutation({
     onSuccess: async (data) => {
+      console.log("[DEBUG ORG-FLOW] 1. Org created successfully, data:", JSON.stringify(data));
       toast.success("Company created successfully!");
 
       // Update session with newly created org before redirecting
       try {
+        console.log("[DEBUG ORG-FLOW] 2. Calling /api/auth/switch-org with organizationId:", data.id);
         const response = await fetch("/api/auth/switch-org", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ organizationId: data.id }),
         });
+        console.log("[DEBUG ORG-FLOW] 5a. switch-org response status:", response.status, "ok:", response.ok);
 
         if (response.ok) {
           // Session updated successfully, redirect to dashboard
+          const responseData = await response.clone().json();
+          console.log("[DEBUG ORG-FLOW] 5b. switch-org succeeded, response body:", responseData, "- redirecting to /");
           window.location.href = "/";
         } else {
           // Session update failed, but redirect anyway (safety net in dashboard will catch it)
+          const responseText = await response.clone().text();
+          console.log("[DEBUG ORG-FLOW] 5c. ERROR: switch-org failed, status:", response.status, "body:", responseText);
           console.error("Failed to update session, but redirecting anyway");
           window.location.href = "/";
         }
       } catch (error) {
         // Network error, but redirect anyway (safety net in dashboard will catch it)
+        console.log("[DEBUG ORG-FLOW] 5d. ERROR: switch-org fetch threw:", error);
         console.error("Error updating session:", error);
         window.location.href = "/";
       }
