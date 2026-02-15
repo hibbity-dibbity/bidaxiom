@@ -8,7 +8,7 @@ source:
   - 14-04-SUMMARY.md
   - 14-05-SUMMARY.md
 started: 2026-02-15T14:45:00Z
-updated: 2026-02-15T15:05:00Z
+updated: 2026-02-15T15:30:00Z
 ---
 
 ## Current Test
@@ -75,7 +75,7 @@ result: pass
 
 total: 11
 passed: 5
-issues: 1
+issues: 3
 pending: 0
 skipped: 3
 
@@ -96,3 +96,23 @@ skipped: 3
     - "Replace FormLabel with regular heading (h4 or Label primitive) in customer dialogs"
     - "Replace FormLabel with regular heading (h4 or Label primitive) in subcontractor form"
   debug_session: ".planning/debug/phase14-useformfield-error.md"
+
+- truth: "Email field is marked as required and validates email format"
+  status: reported
+  reason: "User reported: Email address on add customer/subcontractor forms is showing 'invalid email' if left blank, but the field is not marked as required like Contact Name is. I would like to mark email field as required."
+  severity: minor
+  test: "manual"
+  root_cause: ""
+  artifacts: []
+  missing: []
+  debug_session: ""
+
+- truth: "State field accepts empty input without validation errors"
+  status: reported
+  reason: "User reported: State field in add customer and other address forms when left blank gives an error 'string must contain exactly 2 characters'. This field should also accept an empty input (I do not want this field required)."
+  severity: major
+  test: "manual"
+  root_cause: ""
+  artifacts: []
+  missing: []
+  debug_session: ""
