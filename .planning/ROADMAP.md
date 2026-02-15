@@ -360,7 +360,14 @@ Plans:
   4. Project detail page displays persistent header with Job #, Project Name, Status, Customer Name (linked), Address, Key Metrics
   5. Project detail page header never reloads when navigating between sections
   6. Project sections load dynamically below persistent header without navigating to new pages
-**Plans**: Not yet planned
+**Plans**: 5 plans across 3 waves
+
+Plans:
+- [ ] 16-01-PLAN.md — Backend: slug column, slug utility, migration, enhanced list API with advanced filters and getBySlug (wave 1)
+- [ ] 16-02-PLAN.md — Frontend setup: install dependencies, NuqsAdapter, TanStack Table components, filter bar (wave 1)
+- [ ] 16-03-PLAN.md — Projects list page: compose table + filters with tRPC integration (wave 2)
+- [ ] 16-04-PLAN.md — Project detail: persistent layout, ProjectHeader, ProjectTabs, overview page (wave 2)
+- [ ] 16-05-PLAN.md — Section migration: move all section pages from [projectId] to [projectSlug], update links (wave 3)
 
 ### Phase 17: Estimating Workflow - Setup & Core
 **Goal**: User can create estimates using guided step-by-step workflow with cost code templates, labor rates, and SOV builder
@@ -427,11 +434,11 @@ v1.1: Phases 13-19 (in progress)
 | 13. Navigation & Theme Foundation | 9/10 | UAT Gap Closure | - |
 | 14. Form Standardization & Validation | 5/8 | UAT Gap Closure | - |
 | 15. Dashboard Redesign | 0/5 | Planned | - |
-| 16. Projects Interface Redesign | 0/TBD | Pending | - |
+| 16. Projects Interface Redesign | 0/5 | Planned | - |
 | 17. Estimating Workflow - Setup & Core | 0/TBD | Pending | - |
 | 18. Estimating Workflow - Lifecycle & Conversion | 0/TBD | Pending | - |
 | 19. Component Library & Architecture | 0/TBD | Pending | - |
 
 ---
 *Roadmap created: 2026-02-10 (v1.0)*
-*Last updated: 2026-02-15 (Phase 14 UAT gap closure - 14-08-PLAN.md created)*
+*Last updated: 2026-02-15 (Phase 16 planned - 5 plans across 3 waves)*
