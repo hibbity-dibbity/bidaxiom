@@ -318,14 +318,14 @@ Plans:
   3. Form validation rules are centralized in reusable Zod schemas shared between client and server
   4. Form validation errors display consistently across all forms
   5. Existing data validation is backward compatible and does not break historical records
-**Plans**: 5 plans across 3 waves
+**Plans**: 5 plans across 4 waves
 
 Plans:
-- [ ] 14-01-PLAN.md — Shared schemas (phone, address), US states constant, PhoneInput and AddressInput components (wave 1)
-- [ ] 14-02-PLAN.md — Database migration (structured address columns, delete existing data), Drizzle schema and shared type updates (wave 2)
-- [ ] 14-03-PLAN.md — tRPC router updates (customer, subcontractor, project) for structured addresses (wave 2)
-- [ ] 14-04-PLAN.md — Customer page and subcontractor form updates with PhoneInput and AddressInput (wave 3)
-- [ ] 14-05-PLAN.md — Project form update with structured location and inline customer dialog (wave 3)
+- [x] 14-01-PLAN.md — Shared schemas (phone, address), US states constant, PhoneInput and AddressInput components (wave 1)
+- [x] 14-02-PLAN.md — Database migration (structured address columns, delete existing data), Drizzle schema and shared type updates (wave 2)
+- [x] 14-03-PLAN.md — tRPC router updates (customer, subcontractor, project) for structured addresses (wave 3)
+- [x] 14-04-PLAN.md — Customer page and subcontractor form updates with PhoneInput and AddressInput (wave 4)
+- [x] 14-05-PLAN.md — Project form update with structured location and inline customer dialog (wave 4)
 
 ### Phase 15: Dashboard Redesign
 **Goal**: Dashboard displays user-level and company-level KPI widgets with task and pipeline visibility
@@ -415,7 +415,7 @@ v1.1: Phases 13-19 (in progress)
 | 12. Custom Authentication Migration | 8/8 | Complete | 2026-02-14 |
 | **v1.1 Phases (Enterprise UX Redesign)** |
 | 13. Navigation & Theme Foundation | 9/10 | UAT Gap Closure | - |
-| 14. Form Standardization & Validation | 0/5 | Planned | - |
+| 14. Form Standardization & Validation | 5/5 | Complete | 2026-02-15 |
 | 15. Dashboard Redesign | 0/TBD | Pending | - |
 | 16. Projects Interface Redesign | 0/TBD | Pending | - |
 | 17. Estimating Workflow - Setup & Core | 0/TBD | Pending | - |
@@ -424,4 +424,4 @@ v1.1: Phases 13-19 (in progress)
 
 ---
 *Roadmap created: 2026-02-10 (v1.0)*
-*Last updated: 2026-02-14 (Phase 14 planned with 5 plans)*
+*Last updated: 2026-02-15 (Phase 14 complete - 5/5 plans executed)*
