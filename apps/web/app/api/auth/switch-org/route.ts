@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionFromRequest, setSessionCookie } from "@/lib/session";
+import { createServerTRPCClient } from "@/lib/trpc-server";
 
 export async function POST(request: Request) {
   const { organizationId } = await request.json();
@@ -13,36 +14,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  // Call API to switch org
-  const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+  try {
+    // Use server-side tRPC client instead of raw fetch
+    const trpc = createServerTRPCClient(token);
+    console.log("[switch-org] Calling backend via tRPC client");
 
-  // tRPC HTTP format requires wrapping in "json" key
-  const payload = { json: { organizationId } };
-  console.log("[switch-org] Calling backend with payload:", JSON.stringify(payload));
+    const result = await trpc.auth.switchOrganization.mutate({ organizationId });
+    console.log("[switch-org] Backend response:", JSON.stringify(result));
 
-  const response = await fetch(`${API_URL}/trpc/auth.switchOrganization`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("[switch-org] Backend error:", response.status, errorText);
-    return NextResponse.json({ error: "Failed to switch org" }, { status: 400 });
-  }
-
-  const data = await response.json();
-  console.log("[switch-org] Backend response:", JSON.stringify(data));
-
-  // Non-batch format: response has result.data
-  const result = data?.result?.data;
-  console.log("[switch-org] Parsed result:", JSON.stringify(result));
-
-  if (result) {
     // Build complete updated session data
     const updatedSession = {
       ...currentSession,
@@ -57,7 +36,11 @@ export async function POST(request: Request) {
     await setSessionCookie(res, updatedSession);
 
     return res;
+  } catch (error: any) {
+    console.error("[switch-org] Backend error:", error);
+    return NextResponse.json(
+      { error: error.message || "Failed to switch org" },
+      { status: 400 }
+    );
   }
-
-  return NextResponse.json({ error: "Invalid response" }, { status: 400 });
 }
