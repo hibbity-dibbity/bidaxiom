@@ -32,3 +32,5 @@ export {
 export * from "./document";
 
 export * from "./calendar";
+
+export * from "./search";

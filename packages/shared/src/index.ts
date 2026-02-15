@@ -230,3 +230,9 @@ export {
   updateReportScheduleSchema,
   type UpdateReportSchedule,
 } from "./types/reporting";
+
+export {
+  searchResultSchema,
+  type SearchResult,
+  globalSearchInputSchema,
+} from "./types/search";
