@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-14)
 ## Current Position
 
 Phase: Phase 13 - Navigation & Theme Foundation
-Plan: 02 of 06 complete
+Plan: 04 of 06 complete
 Status: In progress
-Last activity: 2026-02-14 - Completed 13-02 (Company Logo Backend)
+Last activity: 2026-02-14 - Completed 13-04 (Contextual Sidebar & Search)
 
-Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [███░░░░░░░] 33% (2/6 plans in Phase 13)
+Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [██████░░░░] 67% (4/6 plans in Phase 13)
 
 ## Performance Metrics
 
@@ -87,6 +87,7 @@ Progress: v1.0: [██████████] 100% complete (12 phases) | v1.
 | Phase 12-custom-authentication-migration P06 | 8 min | 2 tasks | 7 files |
 | Phase 13-navigation-and-theme-foundation P01 | 2 min | 2 tasks | 5 files |
 | Phase 13-navigation-and-theme-foundation P02 | 3 min | 2 tasks | 4 files |
+| Phase 13-navigation-and-theme-foundation P04 | 2 min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -256,6 +257,10 @@ Recent decisions affecting current work:
 - [Phase 13-01]: Cookie-based theme storage over localStorage — Prevents FOUC by ensuring server-rendered HTML matches client hydration from first paint
 - [Phase 13-01]: ThemeProvider wraps entire app before AuthProvider — Theme must be applied before any content renders
 - [Phase 13-01]: Mounted state check in ThemeToggle — Prevents hydration mismatch during next-themes initialization
+- [Phase 13-04]: localStorage for sidebar collapse state — Client-side preference only, doesn't affect SSR, no FOUC concern, faster than cookie parsing
+- [Phase 13-04]: Contextual navigation pattern — Project detail pages show project-specific nav (Overview, Budget, Change Orders, Documents), main pages show global nav
+- [Phase 13-04]: SearchProvider context pattern — Enables TopBar search button and Cmd+K keyboard shortcut to trigger same command palette
+- [Phase 13-04]: nuqs for URL state management — Enables shareable/bookmarkable navigation states, shallow routing prevents full page navigation
 
 ### Pending Todos
 
@@ -281,7 +286,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-14 (Phase 13 Execution)
-Stopped at: Completed 13-02-PLAN.md (Company Logo Backend)
+Stopped at: Completed 13-04-PLAN.md (Contextual Sidebar & Search)
 Resume file: None
 
 ---
