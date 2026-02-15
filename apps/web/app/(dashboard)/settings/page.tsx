@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Users, Building2, Plug } from "lucide-react";
+import { Users, Building2, Plug, Activity } from "lucide-react";
 
 /**
  * Settings landing page.
@@ -54,6 +54,19 @@ export default function SettingsPage() {
           </div>
           <p className="text-sm text-muted-foreground">
             Connect external services like QuickBooks Online
+          </p>
+        </Link>
+
+        <Link
+          href="/settings/activity"
+          className="rounded-lg border bg-card p-6 hover:shadow-sm transition-shadow"
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <Activity className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold">Activity Log</h2>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            View recent activity across your organization
           </p>
         </Link>
       </div>
