@@ -294,11 +294,12 @@ None yet.
 | 9 | Restore admin role after account deletion and recreation | 2026-02-14 | 2645d7d | [9-my-user-account-is-no-longer-an-admin-of](./quick/9-my-user-account-is-no-longer-an-admin-of/) |
 | 10 | Fix global search returning no results | 2026-02-15 | 4ff6f8e | [10-global-search-returns-no-results-debug-b](./quick/10-global-search-returns-no-results-debug-b/) |
 | 11 | Fix organization not loading as active after creation | 2026-02-15 | ce0d778 | [11-organization-not-loading-as-active-top-n](./quick/11-organization-not-loading-as-active-top-n/) |
+| 12 | Add debug logging to organization loading flow | 2026-02-14 | 68257dd | [12-add-debug-logging-to-organization-loadin](./quick/12-add-debug-logging-to-organization-loadin/) |
 
 ## Session Continuity
 
-Last session: 2026-02-15 (Quick Task 11)
-Stopped at: Completed quick-11 (Organization Not Loading as Active Fix)
+Last session: 2026-02-14 (Quick Task 12)
+Stopped at: Completed quick-12 (Add Debug Logging to Organization Loading Flow)
 Resume file: None
 
 ---
