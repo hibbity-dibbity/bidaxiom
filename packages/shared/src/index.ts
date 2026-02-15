@@ -37,6 +37,7 @@ export {
   projectPhaseSchema,
   createProjectSchema,
   updateProjectSchema,
+  listProjectsSchema,
   DEFAULT_PROJECT_FOLDERS,
   DEFAULT_PROJECT_PHASES,
 } from "./types/project";

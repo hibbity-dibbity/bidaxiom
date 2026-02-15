@@ -77,6 +77,20 @@ export const updateProjectSchema = z.object({
   costCodes: z.array(z.number().int().min(0).max(49)).optional(),
 });
 
+// List projects input schema with advanced filters
+export const listProjectsSchema = z.object({
+  status: projectStatusEnum.optional(),
+  search: z.string().optional(),
+  customerId: z.string().uuid().optional(),
+  assignedUserId: z.string().optional(),
+  startDateFrom: z.string().datetime().optional(),
+  startDateTo: z.string().datetime().optional(),
+  sortBy: z.enum(['name', 'jobNumber', 'status', 'createdAt', 'startDate']).default('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+  limit: z.number().int().positive().max(100).default(50),
+  offset: z.number().int().min(0).default(0),
+});
+
 // Re-export document schemas from document.ts for backward compatibility
 export const createDocumentSchema = createDocumentSchemaBase;
 export const uploadVersionSchema = uploadVersionSchemaBase;

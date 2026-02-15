@@ -9,16 +9,18 @@ import {
   projectPhaseSchema,
   projectRoleEnum,
   projectStatusEnum,
+  listProjectsSchema,
   DEFAULT_PROJECT_FOLDERS,
   DEFAULT_PROJECT_PHASES,
   AuditAction,
 } from "@construction/shared";
 import { createAuditLog } from "../../audit/logger.js";
 import { defineAbilitiesFor } from "../../auth/abilities.js";
-import { eq, desc, inArray, and, like, or } from "drizzle-orm";
+import { eq, desc, inArray, and, like, or, asc, count, sql, gte, lte } from "drizzle-orm";
 import { ForbiddenError } from "@casl/ability";
 import { db as publicDb } from "../../db/client.js";
 import { users } from "../../db/schema/public.js";
+import { generateUniqueProjectSlug } from "../../utils/slug.js";
 
 /**
  * Load project-level abilities for the current user.
@@ -96,6 +98,14 @@ export const projectRouter = router({
       const { db, schema } = ctx.tenant;
       const userId = ctx.userId;
 
+      // Generate unique slug before creating project
+      const projectSlug = await generateUniqueProjectSlug(
+        input.jobNumber || null,
+        input.name,
+        db,
+        schema
+      );
+
       // Transaction: create project + team + folders + phases atomically
       const project = await db.transaction(async (tx) => {
         // Insert project
@@ -103,6 +113,8 @@ export const projectRouter = router({
           .insert(schema.projects)
           .values({
             name: input.name,
+            jobNumber: input.jobNumber || null,
+            slug: projectSlug,
             customerId: input.customerId,
             description: input.description,
             location: null, // Legacy column - no longer used
@@ -193,14 +205,7 @@ export const projectRouter = router({
    * Other roles see only projects they're assigned to.
    */
   list: protectedProcedure
-    .input(
-      z.object({
-        status: projectStatusEnum.optional(),
-        search: z.string().optional(),
-        limit: z.number().int().positive().max(100).default(50),
-        offset: z.number().int().min(0).default(0),
-      })
-    )
+    .input(listProjectsSchema)
     .query(async ({ ctx, input }) => {
       if (!ctx.tenant || !ctx.userId) {
         throw new TRPCError({
@@ -234,6 +239,18 @@ export const projectRouter = router({
         );
       }
 
+      if (input.customerId) {
+        conditions.push(eq(schema.projects.customerId, input.customerId));
+      }
+
+      if (input.startDateFrom) {
+        conditions.push(gte(schema.projects.startDate, new Date(input.startDateFrom)));
+      }
+
+      if (input.startDateTo) {
+        conditions.push(lte(schema.projects.startDate, new Date(input.startDateTo)));
+      }
+
       // For non-admins: filter to only projects they're team members of
       if (ctx.orgRole !== "org:admin") {
         const userMemberships = await db
@@ -251,25 +268,79 @@ export const projectRouter = router({
         conditions.push(inArray(schema.projects.id, projectIds));
       }
 
+      // Filter by assigned user (if provided)
+      if (input.assignedUserId) {
+        const assignedProjectIds = await db
+          .select({ projectId: schema.projectTeamMembers.projectId })
+          .from(schema.projectTeamMembers)
+          .where(eq(schema.projectTeamMembers.userId, input.assignedUserId));
+
+        const projectIds = assignedProjectIds.map((m) => m.projectId);
+
+        if (projectIds.length === 0) {
+          // No projects for this user
+          return { items: [], total: 0 };
+        }
+
+        conditions.push(inArray(schema.projects.id, projectIds));
+      }
+
       const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
+      // Determine sort order
+      const sortColumn = {
+        name: schema.projects.name,
+        jobNumber: schema.projects.jobNumber,
+        status: schema.projects.status,
+        createdAt: schema.projects.createdAt,
+        startDate: schema.projects.startDate,
+      }[input.sortBy];
+
+      const orderByClause = input.sortOrder === 'asc' ? asc(sortColumn) : desc(sortColumn);
+
+      // Query with customer join
       const [items, totalResult] = await Promise.all([
         db
-          .select()
+          .select({
+            id: schema.projects.id,
+            name: schema.projects.name,
+            jobNumber: schema.projects.jobNumber,
+            slug: schema.projects.slug,
+            customerId: schema.projects.customerId,
+            customerName: sql<string>`COALESCE(${schema.customers.companyName}, ${schema.customers.contactName})`,
+            description: schema.projects.description,
+            location: schema.projects.location,
+            street1: schema.projects.street1,
+            street2: schema.projects.street2,
+            city: schema.projects.city,
+            state: schema.projects.state,
+            zip: schema.projects.zip,
+            projectType: schema.projects.projectType,
+            status: schema.projects.status,
+            startDate: schema.projects.startDate,
+            endDate: schema.projects.endDate,
+            budget: schema.projects.budget,
+            costCodes: schema.projects.costCodes,
+            metadata: schema.projects.metadata,
+            createdBy: schema.projects.createdBy,
+            createdAt: schema.projects.createdAt,
+            updatedAt: schema.projects.updatedAt,
+          })
           .from(schema.projects)
+          .leftJoin(schema.customers, eq(schema.projects.customerId, schema.customers.id))
           .where(whereClause)
-          .orderBy(desc(schema.projects.createdAt))
+          .orderBy(orderByClause)
           .limit(input.limit)
           .offset(input.offset),
         db
-          .select({ count: schema.projects.id })
+          .select({ count: count() })
           .from(schema.projects)
           .where(whereClause),
       ]);
 
       return {
         items,
-        total: totalResult.length,
+        total: totalResult[0]?.count ?? 0,
       };
     }),
 
@@ -343,6 +414,83 @@ export const projectRouter = router({
     }),
 
   /**
+   * Get project by slug with team members, phases, and customer details.
+   */
+  getBySlug: protectedProcedure
+    .input(z.object({ slug: z.string().min(1) }))
+    .query(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+      const abilities = await loadProjectAbilities({
+        tenant: ctx.tenant,
+        userId: ctx.userId,
+        orgRole: ctx.orgRole,
+      });
+
+      // Query project
+      const [project] = await db
+        .select()
+        .from(schema.projects)
+        .where(eq(schema.projects.slug, input.slug))
+        .limit(1);
+
+      if (!project) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Project not found",
+        });
+      }
+
+      // Check permission
+      ForbiddenError.from(abilities).throwUnlessCan("read", "Project");
+
+      // Query team members with user profiles
+      const teamMembers = await db
+        .select({
+          id: schema.projectTeamMembers.id,
+          userId: schema.projectTeamMembers.userId,
+          role: schema.projectTeamMembers.role,
+          assignedAt: schema.projectTeamMembers.assignedAt,
+          email: schema.userProfiles.email,
+          firstName: schema.userProfiles.firstName,
+          lastName: schema.userProfiles.lastName,
+        })
+        .from(schema.projectTeamMembers)
+        .leftJoin(
+          schema.userProfiles,
+          eq(schema.projectTeamMembers.userId, schema.userProfiles.clerkUserId)
+        )
+        .where(eq(schema.projectTeamMembers.projectId, project.id));
+
+      // Query phases
+      const phases = await db
+        .select()
+        .from(schema.projectPhases)
+        .where(eq(schema.projectPhases.projectId, project.id))
+        .orderBy(schema.projectPhases.orderIndex);
+
+      // Query customer details
+      const [customer] = await db
+        .select()
+        .from(schema.customers)
+        .where(eq(schema.customers.id, project.customerId))
+        .limit(1);
+
+      return {
+        ...project,
+        teamMembers,
+        phases,
+        customer: customer || null,
+      };
+    }),
+
+  /**
    * Update project fields.
    */
   update: protectedProcedure
@@ -386,6 +534,7 @@ export const projectRouter = router({
       };
 
       if (input.name !== undefined) updateValues.name = input.name;
+      if (input.jobNumber !== undefined) updateValues.jobNumber = input.jobNumber;
       if (input.description !== undefined) updateValues.description = input.description;
       if (input.location !== undefined) {
         // Map structured location to DB columns
@@ -403,6 +552,20 @@ export const projectRouter = router({
       if (input.endDate !== undefined)
         updateValues.endDate = input.endDate ? new Date(input.endDate) : null;
       if (input.costCodes !== undefined) updateValues.costCodes = input.costCodes;
+
+      // Regenerate slug if name or jobNumber changed
+      if (input.name !== undefined || input.jobNumber !== undefined) {
+        const newName = input.name ?? existingProject.name;
+        const newJobNumber = input.jobNumber !== undefined ? input.jobNumber : existingProject.jobNumber;
+
+        updateValues.slug = await generateUniqueProjectSlug(
+          newJobNumber,
+          newName,
+          db,
+          schema,
+          input.id
+        );
+      }
 
       const [updated] = await db
         .update(schema.projects)
