@@ -214,13 +214,20 @@ export default function SubcontractorDetailPage({ params }: { params: { subId: s
               </div>
             )}
 
-            {subcontractor.address && (
+            {subcontractor.street1 && (
               <div className="flex items-start gap-3">
                 <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
                 <div>
                   <p className="text-sm font-medium">Address</p>
                   <p className="text-sm text-muted-foreground whitespace-pre-line">
-                    {subcontractor.address}
+                    {[
+                      subcontractor.street1,
+                      subcontractor.street2,
+                      subcontractor.city,
+                      [subcontractor.state, subcontractor.zip].filter(Boolean).join(" "),
+                    ]
+                      .filter(Boolean)
+                      .join("\n")}
                   </p>
                 </div>
               </div>
@@ -280,7 +287,11 @@ export default function SubcontractorDetailPage({ params }: { params: { subId: s
               contactName: subcontractor.contactName,
               contactEmail: subcontractor.contactEmail,
               contactPhone: subcontractor.contactPhone,
-              address: subcontractor.address,
+              street1: subcontractor.street1,
+              street2: subcontractor.street2,
+              city: subcontractor.city,
+              state: subcontractor.state,
+              zip: subcontractor.zip,
               trades: subcontractor.trades,
               notes: subcontractor.notes,
             }}
