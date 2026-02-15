@@ -36,7 +36,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 13: Navigation & Theme Foundation** - Unified top bar, contextual sidebar, dark mode with FOUC prevention, company branding
 - [ ] **Phase 14: Form Standardization & Validation** - Standardized inputs (phone, address, date), centralized Zod schemas, backward compatible validation
 - [ ] **Phase 15: Dashboard Redesign** - KPI widgets (user-level and company-level), task management, pipeline visibility
-- [ ] **Phase 16: Projects Interface Redesign** - Compact table view, advanced filtering (nuqs), slug-safe URLs, persistent header
+- [x] **Phase 16: Projects Interface Redesign** - Compact table view, advanced filtering (nuqs), slug-safe URLs, persistent header (completed 2026-02-15)
 - [ ] **Phase 17: Estimating Workflow - Setup & Core** - Guided step-by-step builder, cost code templates, labor rates, SOV builder
 - [ ] **Phase 18: Estimating Workflow - Lifecycle & Conversion** - Bid generation, submission, won/lost tracking, conversion to active project
 - [ ] **Phase 19: Component Library & Architecture** - Reusable UI system, clean routing, dynamic content loading, architectural polish
@@ -434,7 +434,7 @@ v1.1: Phases 13-19 (in progress)
 | 13. Navigation & Theme Foundation | 9/10 | UAT Gap Closure | - |
 | 14. Form Standardization & Validation | 5/8 | UAT Gap Closure | - |
 | 15. Dashboard Redesign | 0/5 | Planned | - |
-| 16. Projects Interface Redesign | 0/5 | Planned | - |
+| 16. Projects Interface Redesign | 0/5 | Complete    | 2026-02-15 |
 | 17. Estimating Workflow - Setup & Core | 0/TBD | Pending | - |
 | 18. Estimating Workflow - Lifecycle & Conversion | 0/TBD | Pending | - |
 | 19. Component Library & Architecture | 0/TBD | Pending | - |
