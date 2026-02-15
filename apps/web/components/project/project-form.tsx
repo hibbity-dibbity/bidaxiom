@@ -4,12 +4,14 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createProjectSchema, DEFAULT_PROJECT_PHASES, previewJobNumber } from "@construction/shared";
+import { createProjectSchema, DEFAULT_PROJECT_PHASES, previewJobNumber, createCustomerSchema } from "@construction/shared";
 import { z } from "zod";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { PhoneInput } from "@/components/ui/phone-input";
+import { AddressInput } from "@/components/ui/address-input";
 import {
   Select,
   SelectContent,
@@ -166,13 +168,6 @@ export function ProjectForm() {
   const utils = trpc.useUtils();
   const [manualJobNumber, setManualJobNumber] = useState(false);
   const [addCustomerOpen, setAddCustomerOpen] = useState(false);
-  const [newCustomer, setNewCustomer] = useState({
-    companyName: "",
-    contactName: "",
-    phone: "",
-    email: "",
-    address: "",
-  });
 
   // Fetch company profile for job number settings
   const { data: companyProfile } = trpc.company.getCurrent.useQuery();
@@ -183,13 +178,25 @@ export function ProjectForm() {
   const { data: customersData } = trpc.customer.list.useQuery({ limit: 100, offset: 0 });
   const customers = customersData?.items || [];
 
+  // Separate form instance for customer dialog
+  const customerForm = useForm({
+    resolver: zodResolver(createCustomerSchema),
+    defaultValues: {
+      companyName: "",
+      contactName: "",
+      phone: "",
+      email: "",
+      address: { street1: "", street2: "", city: "", state: "", zipCode: "" },
+    },
+  });
+
   const createCustomerMutation = trpc.customer.create.useMutation({
     onSuccess: (data) => {
       utils.customer.list.invalidate();
       form.setValue("customerId", data.id);
       toast.success("Customer created");
       setAddCustomerOpen(false);
-      setNewCustomer({ companyName: "", contactName: "", phone: "", email: "", address: "" });
+      customerForm.reset();
     },
     onError: (error) => {
       toast.error(error.message || "Failed to create customer");
@@ -203,7 +210,7 @@ export function ProjectForm() {
       jobNumber: undefined,
       customerId: "",
       description: "",
-      location: "",
+      location: { street1: "", street2: "", city: "", state: "", zipCode: "" },
       projectType: "commercial",
       startDate: undefined,
       endDate: undefined,
@@ -319,19 +326,10 @@ export function ProjectForm() {
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="location"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Location</FormLabel>
-                  <FormControl>
-                    <Input placeholder="123 Main St, City, State" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium">Location</h4>
+              <AddressInput form={form} prefix="location" />
+            </div>
 
             <FormField
               control={form.control}
@@ -711,7 +709,10 @@ export function ProjectForm() {
       </form>
 
       {/* Add Customer Dialog */}
-      <Dialog open={addCustomerOpen} onOpenChange={setAddCustomerOpen}>
+      <Dialog open={addCustomerOpen} onOpenChange={(open) => {
+        setAddCustomerOpen(open);
+        if (!open) customerForm.reset();
+      }}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Add Customer</DialogTitle>
@@ -719,84 +720,88 @@ export function ProjectForm() {
               Create a new customer record
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="company">Company Name (Optional)</Label>
-              <Input
-                id="company"
-                value={newCustomer.companyName}
-                onChange={(e) => setNewCustomer({ ...newCustomer, companyName: e.target.value })}
-                placeholder="ABC Construction Inc."
+          <Form {...customerForm}>
+            <form onSubmit={customerForm.handleSubmit((data) => createCustomerMutation.mutate(data))} className="space-y-4 py-4">
+              <FormField
+                control={customerForm.control}
+                name="companyName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Company Name (Optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="ABC Construction Inc." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="contact">Contact Name *</Label>
-              <Input
-                id="contact"
-                value={newCustomer.contactName}
-                onChange={(e) => setNewCustomer({ ...newCustomer, contactName: e.target.value })}
-                placeholder="John Doe"
+              <FormField
+                control={customerForm.control}
+                name="contactName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Contact Name *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="John Doe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  value={newCustomer.phone}
-                  onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
-                  placeholder="(555) 123-4567"
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={customerForm.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone</FormLabel>
+                      <FormControl>
+                        <PhoneInput placeholder="(555) 123-4567" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={customerForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="john@example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={newCustomer.email}
-                  onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
-                  placeholder="john@example.com"
-                />
+                <h4 className="text-sm font-medium">Address</h4>
+                <AddressInput form={customerForm} prefix="address" />
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
-              <Textarea
-                id="address"
-                value={newCustomer.address}
-                onChange={(e) => setNewCustomer({ ...newCustomer, address: e.target.value })}
-                placeholder="123 Main St, City, State, ZIP"
-                rows={3}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setAddCustomerOpen(false);
-                setNewCustomer({ companyName: "", contactName: "", phone: "", email: "", address: "" });
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                if (!newCustomer.contactName.trim()) {
-                  toast.error("Contact name is required");
-                  return;
-                }
-                createCustomerMutation.mutate(newCustomer);
-              }}
-              disabled={createCustomerMutation.isPending}
-            >
-              {createCustomerMutation.isPending ? "Creating..." : "Create Customer"}
-            </Button>
-          </DialogFooter>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setAddCustomerOpen(false);
+                    customerForm.reset();
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={createCustomerMutation.isPending}>
+                  {createCustomerMutation.isPending ? "Creating..." : "Create Customer"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
     </Form>
