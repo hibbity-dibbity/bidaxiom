@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   Sidebar as ShadcnSidebar,
   SidebarContent,
@@ -28,19 +28,25 @@ const STORAGE_KEY = "sidebar-collapsed";
 export function AppSidebar() {
   const { setOpen, open } = useSidebar();
   const [mounted, setMounted] = useState(false);
+  const initializedRef = useRef(false);
 
-  // Restore collapse state from localStorage on mount
+  // Restore collapse state from localStorage on mount (runs once)
   useEffect(() => {
     setMounted(true);
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored !== null) {
-      setOpen(stored === "true");
+    if (!initializedRef.current) {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored !== null) {
+        const shouldBeOpen = stored === "true";
+        setOpen(shouldBeOpen);
+      }
+      initializedRef.current = true;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setOpen]);
 
-  // Persist collapse state changes
+  // Persist collapse state changes (only after initialization)
   useEffect(() => {
-    if (mounted) {
+    if (mounted && initializedRef.current) {
       localStorage.setItem(STORAGE_KEY, String(open));
     }
   }, [open, mounted]);
