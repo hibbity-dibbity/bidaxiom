@@ -60,12 +60,37 @@ const config: Config = {
   				'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
   				border: 'hsl(var(--sidebar-border))',
   				ring: 'hsl(var(--sidebar-ring))'
+  			},
+  			// Construction accent color
+  			construction: {
+  				DEFAULT: 'hsl(var(--accent-construction))',
+  				foreground: 'hsl(var(--accent-construction-foreground))'
   			}
   		},
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
-  			sm: 'calc(var(--radius) - 4px)'
+  			sm: 'calc(var(--radius) - 4px)',
+  			// Sharp radius utilities
+  			sharp: '0',
+  			'sharp-sm': '2px',
+  		},
+  		// Compact spacing utilities
+  		spacing: {
+  			'compact-xs': 'var(--spacing-compact-xs)',
+  			'compact-sm': 'var(--spacing-compact-sm)',
+  			'compact-md': 'var(--spacing-compact-md)',
+  			'compact-lg': 'var(--spacing-compact-lg)',
+  			'compact-xl': 'var(--spacing-compact-xl)',
+  		},
+  		// Typography size utilities
+  		fontSize: {
+  			'xs': 'var(--font-size-xs)',
+  			'sm': 'var(--font-size-sm)',
+  			'base': 'var(--font-size-base)',
+  			'lg': 'var(--font-size-lg)',
+  			'xl': 'var(--font-size-xl)',
+  			'2xl': 'var(--font-size-2xl)',
   		},
   		keyframes: {
   			'accordion-down': {
