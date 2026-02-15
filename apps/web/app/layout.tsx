@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Providers } from "./providers";
 import { getSessionData } from "@/lib/auth";
+import { StandaloneCommandPalette } from "@/components/search/command-palette";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -21,7 +22,10 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans antialiased`}>
-        <Providers initialSession={initialSession}>{children}</Providers>
+        <Providers initialSession={initialSession}>
+          {children}
+          <StandaloneCommandPalette />
+        </Providers>
       </body>
     </html>
   );

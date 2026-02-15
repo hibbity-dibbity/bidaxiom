@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, createContext, useContext } from "react";
+import { useEffect, useState, useCallback, createContext, useContext } from "react";
 import { useRouter } from "next/navigation";
+import { Search, FileText, User } from "lucide-react";
 import {
   CommandDialog,
   CommandEmpty,
@@ -10,17 +11,8 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import {
-  Home,
-  FolderKanban,
-  Users,
-  HardHat,
-  Settings,
-  FileText,
-  DollarSign,
-  BarChart,
-  Briefcase,
-} from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { useDebounce } from "@/hooks/use-debounce";
 
 const SearchContext = createContext<{
   open: boolean;
@@ -32,13 +24,13 @@ export function useSearch() {
 }
 
 /**
- * Command palette for global search and navigation.
- * Triggered by Cmd+K keyboard shortcut or search button in top bar.
+ * SearchProvider wraps the command palette with context for external control.
+ * Used by app-shell to allow TopBar to open the search palette.
  */
 export function SearchProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
 
-  // Listen for Cmd+K keyboard shortcut
+  // Global keyboard shortcut (Cmd+K or Ctrl+K)
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
@@ -64,46 +56,117 @@ interface CommandPaletteProps {
   setOpen: (open: boolean) => void;
 }
 
+/**
+ * CommandPalette component with global search functionality.
+ * Can be used standalone or via SearchProvider for context-based control.
+ */
 function CommandPalette({ open, setOpen }: CommandPaletteProps) {
   const router = useRouter();
+  const [query, setQuery] = useState("");
+  const debouncedQuery = useDebounce(query, 300); // 300ms debounce
 
-  const navigationItems = [
-    { label: "Dashboard", href: "/", icon: Home },
-    { label: "Projects", href: "/projects", icon: FolderKanban },
-    { label: "Customers", href: "/customers", icon: Users },
-    { label: "Subcontractors", href: "/subcontractors", icon: HardHat },
-    { label: "Bidding", href: "/bids", icon: Briefcase },
-    { label: "Financials", href: "/financials", icon: DollarSign },
-    { label: "Documents", href: "/documents", icon: FileText },
-    { label: "Reports", href: "/reports", icon: BarChart },
-    { label: "Settings", href: "/settings", icon: Settings },
-  ];
+  // Search query (only runs when debounced query changes)
+  const { data: results, isLoading } = trpc.search.global.useQuery(
+    { query: debouncedQuery, limit: 10 },
+    {
+      enabled: debouncedQuery.length > 0,
+      keepPreviousData: true,
+    }
+  );
 
-  const handleSelect = (href: string) => {
-    setOpen(false);
-    router.push(href);
-  };
+  const handleSelect = useCallback(
+    (url: string) => {
+      setOpen(false);
+      setQuery("");
+      router.push(url);
+    },
+    [router]
+  );
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
-      <CommandInput placeholder="Search or navigate..." />
+      <CommandInput
+        placeholder="Search projects, customers, jobs..."
+        value={query}
+        onValueChange={setQuery}
+      />
       <CommandList>
-        <CommandEmpty>No results found.</CommandEmpty>
-        <CommandGroup heading="Navigation">
-          {navigationItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <CommandItem
-                key={item.href}
-                onSelect={() => handleSelect(item.href)}
-              >
-                <Icon className="mr-2 h-4 w-4" />
-                <span>{item.label}</span>
-              </CommandItem>
-            );
-          })}
-        </CommandGroup>
+        {isLoading && debouncedQuery && (
+          <div className="py-6 text-center text-sm">Searching...</div>
+        )}
+        {!isLoading && debouncedQuery && results?.length === 0 && (
+          <CommandEmpty>No results found.</CommandEmpty>
+        )}
+        {results && results.length > 0 && (
+          <>
+            <CommandGroup heading="Projects">
+              {results
+                .filter((r) => r.type === "project")
+                .map((result) => (
+                  <CommandItem
+                    key={result.id}
+                    value={result.id}
+                    onSelect={() => handleSelect(result.url)}
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    <div className="flex flex-col">
+                      <span>{result.title}</span>
+                      {result.subtitle && (
+                        <span className="text-xs text-muted-foreground">
+                          {result.subtitle}
+                        </span>
+                      )}
+                    </div>
+                  </CommandItem>
+                ))}
+            </CommandGroup>
+            <CommandGroup heading="Customers">
+              {results
+                .filter((r) => r.type === "customer")
+                .map((result) => (
+                  <CommandItem
+                    key={result.id}
+                    value={result.id}
+                    onSelect={() => handleSelect(result.url)}
+                  >
+                    <User className="mr-2 h-4 w-4" />
+                    <div className="flex flex-col">
+                      <span>{result.title}</span>
+                      {result.subtitle && (
+                        <span className="text-xs text-muted-foreground">
+                          {result.subtitle}
+                        </span>
+                      )}
+                    </div>
+                  </CommandItem>
+                ))}
+            </CommandGroup>
+          </>
+        )}
       </CommandList>
     </CommandDialog>
   );
+}
+
+/**
+ * Standalone CommandPalette that manages its own open state.
+ * Use this version when you don't need SearchProvider context.
+ */
+export function StandaloneCommandPalette() {
+  const [open, setOpen] = useState(false);
+
+  // Global keyboard shortcut (Cmd+K or Ctrl+K)
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setOpen((open) => !open);
+      }
+    };
+
+    document.addEventListener("keydown", down);
+    return () => document.removeEventListener("keydown", down);
+  }, []);
+
+  return <CommandPalette open={open} setOpen={setOpen} />;
 }
