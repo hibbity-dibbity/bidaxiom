@@ -57,7 +57,7 @@ export default function NewEstimatePage({
   const createMutation = trpc.estimates.create.useMutation({
     onSuccess: (data) => {
       toast.success("Estimate created successfully");
-      router.push(`/projects/${projectSlug}/estimates/${data.id}/workflow`);
+      router.push(`/projects/${projectSlug}/estimates/${data.slug}/workflow`);
     },
     onError: (error) => {
       toast.error("Failed to create estimate", {

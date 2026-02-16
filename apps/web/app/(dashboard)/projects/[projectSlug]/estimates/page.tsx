@@ -126,7 +126,7 @@ export default function EstimatesPage({
                 <TableCell>{format(new Date(estimate.createdAt), "MMM d, yyyy")}</TableCell>
                 <TableCell>
                   <Button variant="ghost" size="sm" asChild>
-                    <Link href={`/projects/${projectSlug}/estimates/${estimate.id}`}>
+                    <Link href={`/projects/${projectSlug}/estimates/${estimate.slug}`}>
                       View
                     </Link>
                   </Button>
