@@ -89,7 +89,8 @@ export function createTenantDb(schemaName: string) {
   const tenantSchema = getTenantSchema(schemaName);
 
   // Use same pool but queries will reference tenant-specific schema tables
-  const tenantDb = drizzle(getPool());
+  // Pass schema to enable Drizzle query API (db.query.tableName.findFirst())
+  const tenantDb = drizzle(getPool(), { schema: tenantSchema });
 
   return {
     db: tenantDb,
