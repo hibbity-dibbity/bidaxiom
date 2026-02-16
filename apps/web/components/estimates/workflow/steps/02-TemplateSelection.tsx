@@ -23,14 +23,12 @@ export function TemplateSelectionStep({ estimateId }: TemplateSelectionStepProps
   // Load available templates
   const { data: costCodeTemplates, isLoading: templatesLoading } =
     trpc.estimateTemplates.listCostCodeTemplates.useQuery({
-      limit: 50,
-      offset: 0,
+      scope: "all",
     });
 
   const { data: laborRateTemplates, isLoading: laborLoading } =
     trpc.estimateTemplates.listLaborRateTemplates.useQuery({
-      limit: 50,
-      offset: 0,
+      scope: "all",
     });
 
   // Apply cost code template mutation
@@ -70,7 +68,7 @@ export function TemplateSelectionStep({ estimateId }: TemplateSelectionStepProps
               <Skeleton key={i} className="h-32 w-full" />
             ))}
           </div>
-        ) : !costCodeTemplates || costCodeTemplates.items.length === 0 ? (
+        ) : !costCodeTemplates || costCodeTemplates.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-8">
               <FileText className="h-12 w-12 text-muted-foreground mb-3" />
@@ -81,7 +79,7 @@ export function TemplateSelectionStep({ estimateId }: TemplateSelectionStepProps
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {costCodeTemplates.items.map((template) => {
+            {costCodeTemplates.map((template) => {
               const isApplied = estimate?.appliedTemplateId === template.id;
 
               return (
@@ -128,7 +126,7 @@ export function TemplateSelectionStep({ estimateId }: TemplateSelectionStepProps
               <Skeleton key={i} className="h-32 w-full" />
             ))}
           </div>
-        ) : !laborRateTemplates || laborRateTemplates.items.length === 0 ? (
+        ) : !laborRateTemplates || laborRateTemplates.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-8">
               <FileText className="h-12 w-12 text-muted-foreground mb-3" />
@@ -139,7 +137,7 @@ export function TemplateSelectionStep({ estimateId }: TemplateSelectionStepProps
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {laborRateTemplates.items.map((template) => (
+            {laborRateTemplates.map((template) => (
               <Card key={template.id}>
                 <CardHeader>
                   <CardTitle className="text-base">{template.name}</CardTitle>
