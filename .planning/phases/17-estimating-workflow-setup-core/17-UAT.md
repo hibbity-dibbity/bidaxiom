@@ -1,9 +1,9 @@
 ---
-status: complete
+status: resolved
 phase: 17-estimating-workflow-setup-core
 source: 17-02-SUMMARY.md, 17-05-SUMMARY.md, 17-06-SUMMARY.md, 17-07-SUMMARY.md
 started: 2026-02-16T04:30:00Z
-updated: 2026-02-16T05:00:00Z
+updated: 2026-02-16T08:30:00Z
 retested: 2026-02-16T04:45:00Z
 ---
 
@@ -100,7 +100,7 @@ skipped: 1
 ## Gaps
 
 - truth: "User can create estimate and navigate to workflow page"
-  status: failed
+  status: resolved
   reason: "User reported: Failed. There is no link to Estimates onthe Project Detail page. I can navigate manually to /projects/{slug}/estimates. I can click New Estimate and fill out the estimate info. When I click Start Estimating I get the following error: Failed query: insert into \"tenant_vpa_g9edvkmrj3ao2oebusov\".\"estimates\" (\"id\", \"project_id\", \"name\", \"description\", \"status\", \"project_type\", \"applied_cost_code_template_id\", \"applied_labor_rate_template_id\", \"overhead_type\", \"overhead_value\", \"markup_base\", \"direct_costs\", \"overhead_amount\", \"markup_amount\", \"total_cost\", \"current_version\", \"submitted_at\", \"accepted_at\", \"created_by\", \"created_at\", \"updated_at\") values (default, $1, $2, default, $3, $4, default, default, default, default, default, default, default, default, default, $5, default, default, $6, default, default) returning \"id\", \"project_id\", \"name\", \"description\", \"status\", \"project_type\", \"applied_cost_code_template_id\", \"applied_labor_rate_template_id\", \"overhead_type\", \"overhead_value\", \"markup_base\", \"direct_costs\", \"overhead_amount\", \"markup_amount\", \"total_cost\", \"current_version\", \"submitted_at\", \"accepted_at\", \"created_by\", \"created_at\", \"updated_at\" params: a17fb662-9a2b-440c-b4c0-374877bd92bf,Base Bid Option A,draft,commercial,1,edd55e62-309c-4ce0-9315-cb3c2066cb91"
   severity: blocker
   test: 1
@@ -117,7 +117,7 @@ skipped: 1
   debug_session: ".planning/debug/phase17-estimate-creation-fails.md"
 
 - truth: "Step 2 navigation works without errors"
-  status: failed
+  status: resolved
   reason: "User reported: After I clicked step 2 I get the following error and now I cannot open the /estimates page any longer: Unhandled Runtime Error TypeError: (0 , _construction_shared__WEBPACK_IMPORTED_MODULE_7__.formatCurrency) is not a function Source app\\(dashboard)\\projects\\[projectSlug]\\estimates\\page.tsx (124:35)"
   severity: blocker
   test: 4
@@ -131,7 +131,7 @@ skipped: 1
   debug_session: ".planning/debug/resolved/formatcurrency-import-error.md"
 
 - truth: "Template selection step loads without errors"
-  status: failed
+  status: resolved
   reason: "User reported: Still getting error when trying to create or edit estimates: Unhandled Runtime Error TypeError: Cannot read properties of undefined (reading 'length') Source components\\estimates\\workflow\\steps\\02-TemplateSelection.tsx (73:59)"
   severity: blocker
   test: 4
@@ -143,7 +143,7 @@ skipped: 1
   debug_session: ".planning/debug/resolved/template-selection-crash.md"
 
 - truth: "Users can skip template selection when no templates are available"
-  status: failed
+  status: resolved
   reason: "User reported: Fail. No templates available and no skip or continue option (step 3 is locked)"
   severity: major
   test: 6
