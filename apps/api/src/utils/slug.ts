@@ -3,7 +3,57 @@ import { eq, and, ne } from "drizzle-orm";
 import type { TenantSchema } from "../db/schema/tenant.js";
 
 /**
+ * Generate URL-safe slug from identifier and name
+ * Examples:
+ *   - Project: "24001" + "Main Street Renovation" → "24001-main-street-renovation"
+ *   - Customer: "CUST-123" + "ABC Construction" → "cust-123-abc-construction"
+ *   - Estimate: "EST-24001" + "Main Street Estimate" → "est-24001-main-street-estimate"
+ */
+export function generateSlug(identifier: string, name: string): string {
+  const slugIdentifier = slug(identifier, { lower: true });
+  const slugName = slug(name, { lower: true });
+  return `${slugIdentifier}-${slugName}`;
+}
+
+/**
+ * Parse slug back to identifier
+ * Examples:
+ *   - "24001-main-street-renovation" → "24001"
+ *   - "cust-123-abc-construction" → "cust-123"
+ *   - "est-24001-main-street-estimate" → "est-24001"
+ *
+ * Note: parseSlug returns slug-safe identifier, not original.
+ * Use for database lookup, not display.
+ */
+export function parseSlug(fullSlug: string): string {
+  // Split on first dash after identifier
+  // Identifier is typically numeric (projects) or prefix-numeric (customers/estimates)
+  const parts = fullSlug.split("-");
+
+  // Project pattern: "24001-..." (numeric identifier)
+  if (/^\d+$/.test(parts[0])) {
+    return parts[0];
+  }
+
+  // Customer/Estimate pattern: "cust-123-..." or "est-24001-..."
+  if (parts.length >= 2 && /^[a-z]+$/.test(parts[0]) && /^\d+$/.test(parts[1])) {
+    return `${parts[0]}-${parts[1]}`;
+  }
+
+  // Fallback: return first part
+  return parts[0];
+}
+
+/**
+ * Validate slug format
+ */
+export function isValidSlug(slug: string): boolean {
+  return /^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug);
+}
+
+/**
  * Generate a URL-safe slug from job number and project name.
+ * Backward compatibility wrapper for generateSlug.
  *
  * @param jobNumber - The project's job number (nullable)
  * @param projectName - The project name
@@ -14,9 +64,11 @@ import type { TenantSchema } from "../db/schema/tenant.js";
  * generateProjectSlug(null, "New Warehouse") => "new-warehouse"
  */
 export function generateProjectSlug(jobNumber: string | null, projectName: string): string {
-  const parts = jobNumber ? [jobNumber, projectName] : [projectName];
-  const combined = parts.join("-");
-  return slug(combined, { lower: true });
+  if (jobNumber) {
+    return generateSlug(jobNumber, projectName);
+  }
+  const slugName = slug(projectName, { lower: true });
+  return slugName;
 }
 
 /**
