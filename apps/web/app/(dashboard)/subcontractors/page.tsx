@@ -171,7 +171,7 @@ export default function SubcontractorsPage() {
                 <TableRow
                   key={sub.id}
                   className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => router.push(`/subcontractors/${sub.id}`)}
+                  onClick={() => router.push(`/subcontractors/${sub.slug}`)}
                 >
                   <TableCell className="font-medium">{sub.companyName}</TableCell>
                   <TableCell>{sub.contactName || "-"}</TableCell>
