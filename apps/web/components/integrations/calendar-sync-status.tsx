@@ -2,7 +2,7 @@
 
 import { Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/shared/status-badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 type SyncState = {
@@ -30,27 +30,20 @@ export function CalendarSyncStatus({ syncState }: CalendarSyncStatusProps) {
   const getSyncStatusBadge = () => {
     switch (syncState.syncStatus) {
       case "idle":
-        return <Badge variant="outline">Idle</Badge>;
+        return <StatusBadge variant="draft">Idle</StatusBadge>;
       case "syncing":
         return (
-          <Badge
-            variant="outline"
-            className="bg-blue-100 text-blue-800 border-blue-300"
-          >
+          <StatusBadge variant="pending">
             <Loader2 className="mr-1 h-3 w-3 animate-spin" />
             Syncing...
-          </Badge>
+          </StatusBadge>
         );
       case "synced":
-        return (
-          <Badge className="bg-green-100 text-green-800 border-green-300">
-            Synced
-          </Badge>
-        );
+        return <StatusBadge variant="active">Synced</StatusBadge>;
       case "error":
-        return <Badge variant="destructive">Error</Badge>;
+        return <StatusBadge variant="error">Error</StatusBadge>;
       default:
-        return <Badge variant="outline">{syncState.syncStatus}</Badge>;
+        return <StatusBadge variant="draft">{syncState.syncStatus}</StatusBadge>;
     }
   };
 

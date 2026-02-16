@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -67,26 +67,22 @@ export function QboSyncStatus({ syncStates }: QboSyncStatusProps) {
   const getStatusBadge = (status: SyncState["syncStatus"]) => {
     switch (status) {
       case "synced":
-        return <Badge className="bg-green-100 text-green-800 border-green-300">Synced</Badge>;
+        return <StatusBadge variant="active">Synced</StatusBadge>;
       case "syncing":
         return (
-          <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">
+          <StatusBadge variant="pending">
             <Loader2 className="mr-1 h-3 w-3 animate-spin" />
             Syncing...
-          </Badge>
+          </StatusBadge>
         );
       case "pending":
-        return <Badge variant="outline">Pending</Badge>;
+        return <StatusBadge variant="pending">Pending</StatusBadge>;
       case "error":
-        return <Badge variant="destructive">Error</Badge>;
+        return <StatusBadge variant="error">Error</StatusBadge>;
       case "conflict":
-        return (
-          <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">
-            Conflict
-          </Badge>
-        );
+        return <StatusBadge variant="warning">Conflict</StatusBadge>;
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return <StatusBadge variant="draft">{status}</StatusBadge>;
     }
   };
 
