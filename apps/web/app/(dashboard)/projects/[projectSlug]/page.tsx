@@ -583,7 +583,7 @@ export default function ProjectOverviewPage({
                 <CardDescription>Details about the project customer</CardDescription>
               </div>
               <Button variant="outline" size="sm" asChild>
-                <Link href={`/customers/${project.customer.id}`}>
+                <Link href={`/customers/${project.customer.slug || project.customer.id}`}>
                   View Customer Portal
                 </Link>
               </Button>
