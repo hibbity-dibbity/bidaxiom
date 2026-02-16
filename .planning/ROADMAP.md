@@ -380,7 +380,7 @@ Plans:
   4. User can switch to spreadsheet-style estimating grid mode via Account Settings preference
   5. Spreadsheet mode allows bulk entry of estimate line items
   6. User can convert completed estimate to budget with one click
-**Plans**: Not yet planned
+**Plans**: 6 plans across 4 waves
 
 ### Phase 18: Estimating Workflow - Lifecycle & Conversion
 **Goal**: User can generate bids from estimates, submit, track won/lost, and convert to active projects
@@ -442,3 +442,11 @@ v1.1: Phases 13-19 (in progress)
 ---
 *Roadmap created: 2026-02-10 (v1.0)*
 *Last updated: 2026-02-15 (Phase 16 planned - 5 plans across 3 waves)*
+
+Plans:
+- [ ] 17-01-PLAN.md — Database schema (estimates, templates, SOV versioning), shared types, Zod schemas (wave 1)
+- [ ] 17-02-PLAN.md — Estimates router with CRUD, calculation engine, versioning (wave 2)
+- [ ] 17-03-PLAN.md — Templates router for cost code and labor rate templates (wave 2)
+- [ ] 17-04-PLAN.md — SOV router with generation, adjustment, versioning (wave 2)
+- [ ] 17-05-PLAN.md — Workflow UI foundation (sidebar, auto-save, steps 1-2-5) (wave 3)
+- [ ] 17-06-PLAN.md — Line items table, labor rates UI, SOV builder (steps 3-4-6) (wave 4)
