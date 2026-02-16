@@ -98,14 +98,89 @@ The current implementation follows traditional construction software patterns:
 
 ### 4. Templates as Dropdowns (Not Separate Step)
 **Current:** Step 2 - dedicated page for template selection
-**Proposed:** Dropdowns at top of page
-- Cost Code Template: [Select ▼]
-- Labor Rate Template: [Select ▼]
+**Proposed:** More granular template application
 
-**Benefits:**
-- Instant application
-- No separate navigation
-- Can change templates without losing work
+#### Cost Code Templates
+Simple - can be single dropdown at top:
+- Cost Code Template: [Select ▼] (applies to whole estimate)
+
+#### Labor Rate Templates - NEEDS DISCUSSION
+
+**Problem:** Single labor rate template dropdown is too simplistic.
+
+**Real-world scenarios requiring different labor rates:**
+1. **Trade-specific rates**
+   - Electrician: $85/hr
+   - Carpenter: $65/hr
+   - Laborer: $45/hr
+
+2. **Union vs Non-Union**
+   - Union framing crew: $75/hr
+   - Non-union framing crew: $55/hr
+
+3. **Geographic/Regional**
+   - City prevailing wage: $95/hr
+   - Rural standard rate: $65/hr
+
+4. **Direct vs Subcontracted**
+   - Own crew labor: $60/hr + burden
+   - Subcontractor labor: Built into sub price
+
+5. **Overtime/Premium**
+   - Regular time: $60/hr
+   - Weekend/overtime: $90/hr
+
+**Proposed Solutions (Pick One or Hybrid):**
+
+**Option A: Per-Line-Item Selection**
+```
+| CSI Code | Description        | Qty | Unit | Labor Rate    | Rate | Total |
+|----------|-------------------|-----|------|---------------|------|-------|
+| 0310     | Concrete labor    | 40  | hr   | [Union ▼]     | $85  | $3400 |
+| 0610     | Rough carpentry   | 80  | hr   | [Standard ▼]  | $65  | $5200 |
+| 1620     | Electrical        | 60  | hr   | [Licensed ▼]  | $95  | $5700 |
+```
+- Most flexible
+- Most clicks/selections
+- Best for mixed labor types
+
+**Option B: Per-CSI-Division Selection**
+```
+┌─ Division 03 - Concrete ─────────────────────────┐
+│  Labor Rate: [Union Concrete ▼]                  │
+│  Line Item 1: Foundation labor (uses rate above) │
+│  Line Item 2: Slab labor (uses rate above)       │
+│  Subtotal: $X,XXX                                 │
+└───────────────────────────────────────────────────┘
+```
+- Less granular than per-line
+- Assumes entire division uses same rate
+- Fewer selections needed
+
+**Option C: Hybrid (Recommended)**
+```
+┌─ Division 03 - Concrete ─────────────────────────┐
+│  Default Labor Rate: [Union Concrete ▼]          │
+│  ┌─────────────────────────────────────────────┐ │
+│  │ Line 1: Foundation (uses default) $85/hr   │ │
+│  │ Line 2: Slab (override) [Non-Union ▼] $65  │ │
+│  │ Line 3: Finish (uses default) $85/hr       │ │
+│  └─────────────────────────────────────────────┘ │
+└───────────────────────────────────────────────────┘
+```
+- Division-level default for speed
+- Line-item override when needed
+- Balance of flexibility and convenience
+
+**Question for Design Phase:**
+- How common is mixed labor within a CSI division?
+- Does user typically have 1-2 rates per project or dozens?
+- Should labor rate be tied to cost code or independent?
+
+**Default Behavior:**
+- If labor rate template selected at top → applies as default to all labor-type line items
+- User can override at division or line level as needed
+- Non-labor items (materials, equipment) ignore labor rate
 
 ---
 
@@ -198,6 +273,52 @@ This redesign could be split into:
 - More development work, but safer
 
 **Recommendation:** Option 2 - Add single-page mode as alternative, keep wizard for users who prefer it
+
+---
+
+## Design Decisions Needed
+
+### 🔴 CRITICAL: Labor Rate Template Granularity
+
+**Must decide before implementation begins.**
+
+**Question:** How should labor rate templates be applied?
+- [ ] **Option A:** Per-line-item dropdown (most flexible, most clicks)
+- [ ] **Option B:** Per-CSI-division dropdown (less flexible, fewer clicks)
+- [ ] **Option C:** Division default + line override (hybrid - recommended)
+
+**Discussion Points:**
+1. How many different labor rates does a typical estimate use?
+   - Single project with 1-2 rates total?
+   - Mixed crews with 5-10 different rates?
+   - Every line item potentially different?
+
+2. Are labor rates typically grouped by CSI division?
+   - Division 03 (Concrete) → always Union rate?
+   - Division 06 (Carpentry) → always Standard rate?
+   - Or is it more mixed within divisions?
+
+3. Should labor rate be:
+   - **Tied to cost code?** (e.g., CSI 0310 always uses "Concrete Labor" rate)
+   - **Independent selection?** (user picks rate per line regardless of code)
+   - **Hybrid?** (default from code, can override)
+
+4. What about non-labor line items?
+   - Materials, equipment, subcontractor work
+   - Should these rows even show labor rate field?
+   - Or show as "N/A" / disabled?
+
+**Impact on Implementation:**
+- Affects database schema (labor rate per line? per estimate? per division?)
+- Affects UI complexity (more dropdowns vs cleaner interface)
+- Affects auto-save strategy (more granular changes to track)
+
+**Recommendation:**
+Start with **Option C (Hybrid)** as it balances speed and flexibility:
+- Template dropdown at top applies default to all labor items
+- Division-level override available
+- Line-item override for edge cases
+- Most efficient for common use case (few rates) while supporting complex scenarios
 
 ---
 
