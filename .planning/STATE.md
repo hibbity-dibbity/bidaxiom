@@ -38,7 +38,7 @@ Progress: v1.0: [██████████] 100% complete (12 phases) | v1.
 | 10 | 5 | 48.3 min | 9.7 min |
 | 11 | 5 | 23 min | 4.6 min |
 | 12 | 7 | 37.2 min | 5.3 min |
-| 13 | 12 | 26 min | 2.2 min |
+| 13 | 11 | 24 min | 2.2 min |
 | 14 | 6 | 24.2 min | 4.0 min |
 | 15 | 5 | 12.5 min | 2.5 min |
 | 16 | 7 | 63.2 min | 9.0 min |

@@ -294,7 +294,7 @@ Plans:
   4. User can toggle dark mode from Account Settings with FOUC prevention via cookie-based theme storage
   5. Company logo displays in top navigation, sidebar (collapsed and expanded), and sign-in page
   6. Layout uses Procore-style compact spacing with sharp corners, consistent typography, and subtle construction accent color
-**Plans**: 10 plans (6 original + 4 gap closure)
+**Plans**: 11 plans (6 original + 5 gap closure)
 
 Plans:
 - [x] 13-01-PLAN.md — Dark mode with cookie-based FOUC prevention (wave 1)
@@ -306,7 +306,8 @@ Plans:
 - [x] 13-07-PLAN.md — Gap closure: Fix search layout shift and no results bug (wave 1)
 - [x] 13-08-PLAN.md — Gap closure: Fix sidebar collapse glitch (wave 1)
 - [x] 13-09-PLAN.md — Gap closure: Fix logo upload database column mismatch (wave 1)
-- [ ] 13-10-PLAN.md — UAT gap closure: Fix command palette double-Escape bug (wave 1)
+- [x] 13-10-PLAN.md — UAT gap closure: Fix command palette double-Escape bug (wave 1)
+- [x] 13-11-PLAN.md — UAT gap closure: Remove duplicate command palette instances (wave 1)
 
 ### Phase 14: Form Standardization & Validation
 **Goal**: All forms use standardized inputs with centralized validation that is backward compatible with existing data
@@ -452,12 +453,12 @@ v1.1: Phases 13-19 (in progress)
 | 11. Calendar Integration | 5/5 | Complete | 2026-02-14 |
 | 12. Custom Authentication Migration | 8/8 | Complete | 2026-02-14 |
 | **v1.1 Phases (Enterprise UX Redesign)** |
-| 13. Navigation & Theme Foundation | 9/10 | UAT Gap Closure | - |
+| 13. Navigation & Theme Foundation | 11/11 | Complete | 2026-02-16 |
 | 14. Form Standardization & Validation | 5/8 | UAT Gap Closure | - |
 | 15. Dashboard Redesign | 0/5 | Planned | - |
 | 16. Projects Interface Redesign | 7/7 | Complete | 2026-02-15 |
 | 17. Estimating Workflow - Setup & Core | 11/11 | Complete | 2026-02-16 |
-| 18. Estimating Workflow - Lifecycle & Conversion | 0/4 | Complete    | 2026-02-16 |
+| 18. Estimating Workflow - Lifecycle & Conversion | 4/4 | Complete | 2026-02-16 |
 | 19. Component Library & Architecture | 0/TBD | Pending | - |
 
 ---
