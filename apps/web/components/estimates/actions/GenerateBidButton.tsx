@@ -13,7 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import type { ButtonProps } from "@/components/ui/button";
 
 interface GenerateBidButtonProps {
@@ -25,24 +25,16 @@ interface GenerateBidButtonProps {
 export function GenerateBidButton({ estimateId, onSuccess, variant = "outline" }: GenerateBidButtonProps) {
   const [open, setOpen] = useState(false);
   const [bidName, setBidName] = useState("");
-  const { toast } = useToast();
 
   const generateBid = trpc.estimates.generateBid.useMutation({
     onSuccess: () => {
-      toast({
-        title: "Bid generated",
-        description: "Your bid has been created successfully.",
-      });
+      toast.success("Bid generated successfully");
       setOpen(false);
       setBidName("");
       onSuccess?.();
     },
     onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error(error.message || "Failed to generate bid");
     },
   });
 

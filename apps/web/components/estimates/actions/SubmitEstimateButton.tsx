@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import type { ButtonProps } from "@/components/ui/button";
 
 interface SubmitEstimateButtonProps {
@@ -12,22 +12,13 @@ interface SubmitEstimateButtonProps {
 }
 
 export function SubmitEstimateButton({ estimateId, onSuccess, variant = "default" }: SubmitEstimateButtonProps) {
-  const { toast } = useToast();
-
   const submitEstimate = trpc.estimates.submitEstimate.useMutation({
     onSuccess: () => {
-      toast({
-        title: "Estimate submitted",
-        description: "Your estimate has been submitted for approval.",
-      });
+      toast.success("Estimate submitted for approval");
       onSuccess?.();
     },
     onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error(error.message || "Failed to submit estimate");
     },
   });
 

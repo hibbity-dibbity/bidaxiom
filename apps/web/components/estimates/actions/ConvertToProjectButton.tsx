@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import type { ButtonProps } from "@/components/ui/button";
 
 interface ConvertToProjectButtonProps {
@@ -19,25 +19,17 @@ export function ConvertToProjectButton({
   onSuccess,
   variant = "default"
 }: ConvertToProjectButtonProps) {
-  const { toast } = useToast();
   const router = useRouter();
 
   const convertToProject = trpc.estimates.convertToProject.useMutation({
     onSuccess: (data) => {
-      toast({
-        title: "Project activated",
-        description: `Budget created with ${data.budgetLineItemsCreated} line items.`,
-      });
+      toast.success(`Project activated with ${data.budgetLineItemsCreated} budget line items`);
       onSuccess?.();
       // Navigate to project budget page
       router.push(`/projects/${projectId}/budget`);
     },
     onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error(error.message || "Failed to convert estimate to project");
     },
   });
 
