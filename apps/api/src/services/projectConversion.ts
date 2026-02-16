@@ -59,7 +59,21 @@ export async function convertEstimateToProject(
     });
   }
 
-  // 4. Transaction: update estimate, update project, create budget
+  // 4. Get project slug for navigation
+  const [project] = await db
+    .select({ slug: schema.projects.slug })
+    .from(schema.projects)
+    .where(eq(schema.projects.id, estimate.projectId))
+    .limit(1);
+
+  if (!project || !project.slug) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Project slug not found",
+    });
+  }
+
+  // 5. Transaction: update estimate, update project, create budget
   return await db.transaction(async (tx) => {
     // Update estimate status to under_contract
     await tx.update(schema.estimates)
@@ -93,6 +107,7 @@ export async function convertEstimateToProject(
 
     return {
       projectId: estimate.projectId,
+      projectSlug: project.slug,
       budgetLineItemsCreated: budgetLineItems.length,
     };
   });
