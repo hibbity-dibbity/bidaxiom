@@ -62,7 +62,6 @@ export function NextStepsPanel({ estimateId, status, projectId, onActionComplete
             <div className="flex gap-2">
               <ConvertToProjectButton
                 estimateId={estimateId}
-                projectId={projectId}
                 onSuccess={onActionComplete}
                 variant="default"
               />
