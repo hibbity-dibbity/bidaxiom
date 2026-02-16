@@ -360,14 +360,16 @@ Plans:
   4. Project detail page displays persistent header with Job #, Project Name, Status, Customer Name (linked), Address, Key Metrics
   5. Project detail page header never reloads when navigating between sections
   6. Project sections load dynamically below persistent header without navigating to new pages
-**Plans**: 5 plans across 3 waves
+**Plans**: 7 plans (5 original + 2 gap closure)
 
 Plans:
-- [ ] 16-01-PLAN.md — Backend: slug column, slug utility, migration, enhanced list API with advanced filters and getBySlug (wave 1)
-- [ ] 16-02-PLAN.md — Frontend setup: install dependencies, NuqsAdapter, TanStack Table components, filter bar (wave 1)
-- [ ] 16-03-PLAN.md — Projects list page: compose table + filters with tRPC integration (wave 2)
-- [ ] 16-04-PLAN.md — Project detail: persistent layout, ProjectHeader, ProjectTabs, overview page (wave 2)
-- [ ] 16-05-PLAN.md — Section migration: move all section pages from [projectId] to [projectSlug], update links (wave 3)
+- [x] 16-01-PLAN.md — Backend: slug column, slug utility, migration, enhanced list API with advanced filters and getBySlug (wave 1)
+- [x] 16-02-PLAN.md — Frontend setup: install dependencies, NuqsAdapter, TanStack Table components, filter bar (wave 1)
+- [x] 16-03-PLAN.md — Projects list page: compose table + filters with tRPC integration (wave 2)
+- [x] 16-04-PLAN.md — Project detail: persistent layout, ProjectHeader, ProjectTabs, overview page (wave 2)
+- [x] 16-05-PLAN.md — Section migration: move all section pages from [projectId] to [projectSlug], update links (wave 3)
+- [x] 16-06-PLAN.md — Gap closure: Migrate project overview to progressive loading with inline skeletons (wave 1)
+- [x] 16-07-PLAN.md — Gap closure: Update all components to dual-prop pattern (projectId + projectSlug) (wave 1)
 
 ### Phase 17: Estimating Workflow - Setup & Core
 **Goal**: User can create estimates using guided step-by-step workflow with cost code templates, labor rates, and SOV builder
@@ -380,7 +382,20 @@ Plans:
   4. User can switch to spreadsheet-style estimating grid mode via Account Settings preference
   5. Spreadsheet mode allows bulk entry of estimate line items
   6. User can convert completed estimate to budget with one click
-**Plans**: 6 plans across 4 waves
+**Plans**: 11 plans (9 original + 2 gap closure)
+
+Plans:
+- [x] 17-01-PLAN.md — Database schema (estimates, templates, SOV versioning), shared types, Zod schemas (wave 1)
+- [x] 17-02-PLAN.md — Estimates router with CRUD, calculation engine, versioning (wave 2)
+- [x] 17-03-PLAN.md — Templates router for cost code and labor rate templates (wave 2)
+- [x] 17-04-PLAN.md — SOV router with generation, adjustment, versioning (wave 2)
+- [x] 17-05-PLAN.md — Workflow UI foundation (sidebar, auto-save, steps 1-2-5) (wave 3)
+- [x] 17-06-PLAN.md — Line items table, labor rates UI, SOV builder (steps 3-4-6) (wave 4)
+- [x] 17-07-PLAN.md — Gap closure: Integrate WorkflowStepContainer router pattern (wave 1)
+- [x] 17-08-PLAN.md — Gap closure: Fix margin indicator color-coding logic (wave 1)
+- [x] 17-09-PLAN.md — Gap closure: Add template selection skip option (wave 1)
+- [x] 17-10-PLAN.md — Gap closure: Fix line item creation validation error (wave 1)
+- [ ] 17-11-PLAN.md — UAT gap closure: Fix CSI dropdown, NaN margin, and Step 6 navigation (wave 1)
 
 ### Phase 18: Estimating Workflow - Lifecycle & Conversion
 **Goal**: User can generate bids from estimates, submit, track won/lost, and convert to active projects
@@ -434,19 +449,11 @@ v1.1: Phases 13-19 (in progress)
 | 13. Navigation & Theme Foundation | 9/10 | UAT Gap Closure | - |
 | 14. Form Standardization & Validation | 5/8 | UAT Gap Closure | - |
 | 15. Dashboard Redesign | 0/5 | Planned | - |
-| 16. Projects Interface Redesign | 0/5 | Complete    | 2026-02-15 |
-| 17. Estimating Workflow - Setup & Core | 0/TBD | Complete    | 2026-02-16 |
+| 16. Projects Interface Redesign | 7/7 | Complete | 2026-02-15 |
+| 17. Estimating Workflow - Setup & Core | 10/11 | UAT Gap Closure | 2026-02-16 |
 | 18. Estimating Workflow - Lifecycle & Conversion | 0/TBD | Pending | - |
 | 19. Component Library & Architecture | 0/TBD | Pending | - |
 
 ---
 *Roadmap created: 2026-02-10 (v1.0)*
-*Last updated: 2026-02-15 (Phase 16 planned - 5 plans across 3 waves)*
-
-Plans:
-- [ ] 17-01-PLAN.md — Database schema (estimates, templates, SOV versioning), shared types, Zod schemas (wave 1)
-- [ ] 17-02-PLAN.md — Estimates router with CRUD, calculation engine, versioning (wave 2)
-- [ ] 17-03-PLAN.md — Templates router for cost code and labor rate templates (wave 2)
-- [ ] 17-04-PLAN.md — SOV router with generation, adjustment, versioning (wave 2)
-- [ ] 17-05-PLAN.md — Workflow UI foundation (sidebar, auto-save, steps 1-2-5) (wave 3)
-- [ ] 17-06-PLAN.md — Line items table, labor rates UI, SOV builder (steps 3-4-6) (wave 4)
+*Last updated: 2026-02-16 (Phase 17 gap closure - added Plan 17-11)*
