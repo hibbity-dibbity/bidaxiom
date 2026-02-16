@@ -15,12 +15,9 @@ export async function generateBidFromEstimate(
 ) {
   const { db, schema } = ctx.tenant;
 
-  // 1. Get estimate with line items
+  // 1. Get estimate
   const estimate = await db.query.estimates.findFirst({
     where: eq(schema.estimates.id, input.estimateId),
-    with: {
-      lineItems: true,
-    },
   });
 
   if (!estimate) {
@@ -30,6 +27,12 @@ export async function generateBidFromEstimate(
     });
   }
 
+  // 2. Get estimate line items separately (no relations defined in schema)
+  const lineItems = await db
+    .select()
+    .from(schema.estimateLineItems)
+    .where(eq(schema.estimateLineItems.estimateId, input.estimateId));
+
   if (estimate.status !== "draft" && estimate.status !== "submitted") {
     throw new TRPCError({
       code: "BAD_REQUEST",
@@ -37,7 +40,7 @@ export async function generateBidFromEstimate(
     });
   }
 
-  // 2. Create bid with immutable snapshot in transaction
+  // 3. Create bid with immutable snapshot in transaction
   return await db.transaction(async (tx) => {
     const [bid] = await tx.insert(schema.bids).values({
       estimateId: input.estimateId,
@@ -52,12 +55,12 @@ export async function generateBidFromEstimate(
       notes: `Generated from estimate: ${estimate.name}`,
     }).returning();
 
-    // 3. Create bid version with snapshot
+    // 4. Create bid version with snapshot
     const [bidVersion] = await tx.insert(schema.bidVersions).values({
       bidId: bid.id,
       versionNumber: 1,
       totalAmount: estimate.totalCost,
-      lineItems: estimate.lineItems.map(item => ({
+      lineItems: lineItems.map(item => ({
         description: item.description,
         quantity: Number(item.quantity),
         unitPrice: Number(item.unitCost),
@@ -67,12 +70,12 @@ export async function generateBidFromEstimate(
       createdBy: input.userId,
     }).returning();
 
-    // 4. Update bid with current version
+    // 5. Update bid with current version
     await tx.update(schema.bids)
       .set({ currentVersionId: bidVersion.id })
       .where(eq(schema.bids.id, bid.id));
 
-    // 5. Link estimate to bid
+    // 6. Link estimate to bid
     await tx.update(schema.estimates)
       .set({ linkedBidId: bid.id })
       .where(eq(schema.estimates.id, input.estimateId));
