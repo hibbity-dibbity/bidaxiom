@@ -260,3 +260,5 @@ export {
 
 export * from "./schemas/index";
 export * from "./constants/index";
+
+export { formatCurrency } from "./utils/currency";

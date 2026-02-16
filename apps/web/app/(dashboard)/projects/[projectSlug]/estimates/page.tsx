@@ -121,7 +121,7 @@ export default function EstimatesPage({
                   </span>
                 </TableCell>
                 <TableCell className="text-right">
-                  {formatCurrency(estimate.totalCost || 0)}
+                  {formatCurrency(parseFloat(estimate.totalCost || "0"))}
                 </TableCell>
                 <TableCell>{format(new Date(estimate.createdAt), "MMM d, yyyy")}</TableCell>
                 <TableCell>
