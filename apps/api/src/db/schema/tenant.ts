@@ -748,7 +748,8 @@ export function createTenantSchema(schemaName: string) {
    */
   const bids = schema.table("bids", {
     id: uuid("id").primaryKey().defaultRandom(),
-    rfqId: uuid("rfq_id").notNull().references(() => rfqs.id, { onDelete: "cascade" }),
+    rfqId: uuid("rfq_id").references(() => rfqs.id, { onDelete: "cascade" }), // Nullable - supports estimate-based bids
+    projectId: uuid("project_id").references(() => projects.id, { onDelete: "cascade" }), // Required for all bids
     invitationId: uuid("invitation_id").references(() => rfqInvitations.id, { onDelete: "set null" }),
     subcontractorId: uuid("subcontractor_id").references(() => subcontractorDirectory.id, { onDelete: "set null" }),
     bidderCompanyName: text("bidder_company_name").notNull(),
