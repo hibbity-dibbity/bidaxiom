@@ -21,9 +21,9 @@ import { pool } from "../client.js";
 async function migratePhase18Schema() {
   console.log("Starting Phase 18 schema migration...\n");
 
-  // Get all active tenants from public.organizations (not tenants table)
+  // Get all active tenants from public.tenants table
   const result = await pool.query(
-    "SELECT schema_name FROM public.organizations WHERE status = 'active'"
+    "SELECT schema_name FROM public.tenants WHERE status = 'active'"
   );
 
   console.log(`Found ${result.rows.length} active tenant(s)\n`);

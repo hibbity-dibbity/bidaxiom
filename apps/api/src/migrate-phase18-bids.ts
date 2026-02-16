@@ -21,7 +21,7 @@ console.log("---");
 
 // Get all active tenant schemas
 const tenants = await pool.query(
-  "SELECT schema_name FROM tenants WHERE status = 'active'"
+  "SELECT schema_name FROM public.tenants WHERE status = 'active'"
 );
 
 let successCount = 0;
