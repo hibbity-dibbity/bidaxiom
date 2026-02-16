@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-14)
 ## Current Position
 
 Phase: Phase 17 - Estimating Workflow Setup Core
-Plan: 5 of TBD complete
+Plan: 6 of TBD complete
 Status: In Progress
-Last activity: 2026-02-15 - Completed 17-05-PLAN.md (Guided Estimate Workflow UI)
+Last activity: 2026-02-16 - Completed 17-06-PLAN.md (Line Items Table and SOV Builder)
 
-Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [█████████░] 91% (Phase 13 complete, Phase 14 6/8 plans, Phase 15 5/5 plans complete, Phase 16 7/7 plans complete, Phase 17 5/? plans complete)
+Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [█████████░] 92% (Phase 13 complete, Phase 14 6/8 plans, Phase 15 5/5 plans complete, Phase 16 7/7 plans complete, Phase 17 6/? plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 75
+- Total plans completed: 76
 - Average duration: 5.3 min
-- Total execution time: 7.6 hours
+- Total execution time: 7.7 hours
 
 **By Phase:**
 
@@ -42,11 +42,11 @@ Progress: v1.0: [██████████] 100% complete (12 phases) | v1.
 | 14 | 6 | 24.2 min | 4.0 min |
 | 15 | 5 | 12.5 min | 2.5 min |
 | 16 | 7 | 63.2 min | 9.0 min |
-| 17 | 5 | 31 min | 6.2 min |
+| 17 | 6 | 37 min | 6.2 min |
 
 **Recent Trend:**
-- Last 5 plans: 17-01 (4 min), 17-02 (6 min), 17-03 (4 min), 17-04 (8 min), 17-05 (5 min)
-- Trend: Phase 17 in progress, 5/? plans complete, averaging 6.2 min.
+- Last 5 plans: 17-02 (6 min), 17-03 (4 min), 17-04 (8 min), 17-05 (5 min), 17-06 (6 min)
+- Trend: Phase 17 in progress, 6/? plans complete, averaging 6.2 min.
 
 *Updated after each plan completion*
 | Phase 06 P02 | 8 | 2 tasks | 5 files |
@@ -120,6 +120,7 @@ Progress: v1.0: [██████████] 100% complete (12 phases) | v1.
 | Phase 17-estimating-workflow-setup-core P03 | 4 min | 2 tasks | 4 files |
 | Phase 17-estimating-workflow-setup-core P04 | 8 min | 2 tasks | 8 files |
 | Phase 17-estimating-workflow-setup-core P05 | 5 min | 2 tasks | 12 files |
+| Phase 17-estimating-workflow-setup-core P06 | 6 min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -325,6 +326,10 @@ Recent decisions affecting current work:
 - [Phase 17-05]: Step unlocking based on minimal data completion — Name + projectType unlocks step 2, template application unlocks step 3 (better UX than requiring all fields)
 - [Phase 17-05]: React Query mutation tracking prevents concurrent saves — useIsMutating > 0 check prevents save conflicts, never save while another save is in progress
 - [Phase 17-05]: Partial state persistence (estimateId + currentStep only) — formData comes from server (source of truth), only UI state needs localStorage persistence
+- [Phase 17-06]: TanStack Table for inline editing — Industry-standard table library with excellent TypeScript support and flexible cell editing patterns
+- [Phase 17-06]: Auto-save on blur without debouncing — Simpler than debounced typing, prevents data loss, matches user expectation of "edit then click away"
+- [Phase 17-06]: Color-coded margin indicators — Red < 10%, yellow 10-20%, green >= 20% based on construction industry norms
+- [Phase 17-06]: $1.00 SOV variance tolerance — Allows for rounding differences while ensuring accuracy for financial compliance
 
 ### Pending Todos
 
@@ -355,10 +360,10 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-15 (Phase 17 Plan 05)
-Stopped at: Completed 17-05-PLAN.md (Guided Estimate Workflow UI)
+Last session: 2026-02-16 (Phase 17 Plan 06)
+Stopped at: Completed 17-06-PLAN.md (Line Items Table and SOV Builder)
 Resume file: None
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-15*
+*Last updated: 2026-02-16*
