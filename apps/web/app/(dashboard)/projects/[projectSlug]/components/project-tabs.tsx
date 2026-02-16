@@ -19,6 +19,7 @@ const sections = [
   { name: "Payment Apps", href: "/payment-apps" },
   { name: "Invoices", href: "/invoices" },
   { name: "RFQs", href: "/rfqs" },
+  { name: "Estimates", href: "/estimates" },
 ];
 
 export function ProjectTabs({ projectSlug }: ProjectTabsProps) {
@@ -83,6 +84,11 @@ export function ProjectTabs({ projectSlug }: ProjectTabsProps) {
     utils.rfq.list.prefetch({ projectId });
   };
 
+  const prefetchEstimates = () => {
+    if (!projectId) return;
+    utils.estimates.list.prefetch({ projectId });
+  };
+
   // Map sections to their prefetch handlers
   const sectionPrefetchMap: Record<string, () => void> = {
     "": prefetchOverview,
@@ -94,6 +100,7 @@ export function ProjectTabs({ projectSlug }: ProjectTabsProps) {
     "/payment-apps": prefetchPaymentApps,
     "/invoices": prefetchInvoices,
     "/rfqs": prefetchRFQs,
+    "/estimates": prefetchEstimates,
   };
 
   return (
