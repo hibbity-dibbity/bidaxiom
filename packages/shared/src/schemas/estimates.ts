@@ -41,7 +41,7 @@ export const createLineItemSchema = z.object({
   description: z.string().min(1).max(500),
   quantity: z.number().positive(),
   unit: unitEnum,
-  unitCost: z.number().positive(),
+  unitCost: z.number().min(0),
   costType: costTypeEnum,
   customMarkupPercent: z.number().min(0).max(100).optional(),
 });
@@ -54,7 +54,7 @@ export const updateLineItemSchema = z.object({
   description: z.string().min(1).max(500).optional(),
   quantity: z.number().positive().optional(),
   unit: unitEnum.optional(),
-  unitCost: z.number().positive().optional(),
+  unitCost: z.number().min(0).optional(),
   costType: costTypeEnum.optional(),
   customMarkupPercent: z.number().min(0).max(100).nullable().optional(),
 });
