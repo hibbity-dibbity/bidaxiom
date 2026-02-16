@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import Decimal from "decimal.js";
 import type { TenantSchema } from "../db/schema/index.js";
-import type { DrizzleDB } from "../db/index.js";
 import { eq } from "drizzle-orm";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 /**
  * SOV generation service for estimates.
@@ -132,7 +132,7 @@ export function groupByPaymentSchedule(lineItems: any[]): Map<string, any[]> {
 export async function generateSOVFromEstimate(
   estimateId: string,
   groupingMethod: "csi" | "phase" | "payment_schedule",
-  db: DrizzleDB,
+  db: NodePgDatabase,
   tenantSchema: TenantSchema
 ): Promise<SOVLineItem[]> {
   // 1. Fetch estimate with line items
@@ -175,7 +175,7 @@ export async function generateSOVFromEstimate(
   const sovLineItems: SOVLineItem[] = [];
   let sortOrder = 0;
 
-  for (const [groupName, items] of groups.entries()) {
+  for (const [groupName, items] of Array.from(groups.entries())) {
     // Calculate group total with proper decimal precision
     // Formula: sum(quantity × unitCost × (1 + customMarkupPercent/100))
     const groupTotal = items.reduce((sum, item) => {

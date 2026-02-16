@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-14)
 ## Current Position
 
 Phase: Phase 17 - Estimating Workflow Setup Core
-Plan: 1 of TBD complete
+Plan: 3 of TBD complete
 Status: In Progress
-Last activity: 2026-02-16 - Completed 17-01-PLAN.md (Estimate Schema and Types Foundation)
+Last activity: 2026-02-16 - Completed 17-03-PLAN.md (Estimate Templates Router and Application Logic)
 
-Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [█████████░] 90% (Phase 13 complete, Phase 14 6/8 plans, Phase 15 5/5 plans complete, Phase 16 7/7 plans complete, Phase 17 1/? plans complete)
+Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [█████████░] 90% (Phase 13 complete, Phase 14 6/8 plans, Phase 15 5/5 plans complete, Phase 16 7/7 plans complete, Phase 17 3/? plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 71
+- Total plans completed: 72
 - Average duration: 5.3 min
-- Total execution time: 7.2 hours
+- Total execution time: 7.3 hours
 
 **By Phase:**
 
@@ -42,11 +42,11 @@ Progress: v1.0: [██████████] 100% complete (12 phases) | v1.
 | 14 | 6 | 24.2 min | 4.0 min |
 | 15 | 5 | 12.5 min | 2.5 min |
 | 16 | 7 | 63.2 min | 9.0 min |
-| 17 | 1 | 4 min | 4.0 min |
+| 17 | 3 | 12 min | 4.0 min |
 
 **Recent Trend:**
-- Last 5 plans: 16-04 (5 min), 16-05 (38 min), 16-06 (2 min), 16-07 (5.2 min), 17-01 (4 min)
-- Trend: Phase 17 started, 1/? plans complete, averaging 4.0 min.
+- Last 5 plans: 16-05 (38 min), 16-06 (2 min), 16-07 (5.2 min), 17-01 (4 min), 17-03 (4 min)
+- Trend: Phase 17 in progress, 3/? plans complete, averaging 4.0 min.
 
 *Updated after each plan completion*
 | Phase 06 P02 | 8 | 2 tasks | 5 files |
@@ -116,6 +116,7 @@ Progress: v1.0: [██████████] 100% complete (12 phases) | v1.
 | Phase 16-projects-interface-redesign P06 | 2 min | 2 tasks | 3 files |
 | Phase 16-projects-interface-redesign P07 | 5.2 min | 2 tasks | 16 files |
 | Phase 17-estimating-workflow-setup-core P01 | 4 min | 2 tasks | 7 files |
+| Phase 17-estimating-workflow-setup-core P03 | 4 min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -312,6 +313,9 @@ Recent decisions affecting current work:
 - [Phase 16-06]: PlaceholderData for stale-while-revalidate — Shows previously loaded data during background revalidation to prevent "-- " flashes in overview page
 - [Phase 16-06]: Hover-based query prefetching — Tab onMouseEnter triggers prefetch of section queries 200-500ms before click for instant perceived navigation
 - [Phase 16-07]: Dual-prop pattern for navigation — Components accept both projectId (for tRPC queries requiring UUID) and projectSlug (for navigation URLs) to maintain API compatibility while enabling slug-based routing
+- [Phase 17-03]: Deep clone template line items without FK constraints — Preserves template mutability; sourceTemplateId tracks origin without preventing template deletion
+- [Phase 17-03]: Scope-based permissions (company requires admin, personal requires company setting) — Company templates are admin-only; personal templates controlled by allowPersonalTemplates setting
+- [Phase 17-03]: Permissive default for allowPersonalTemplates (null treated as true) — Existing companies can create personal templates unless explicitly disabled; no migration needed
 
 ### Pending Todos
 
@@ -342,8 +346,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-16 (Phase 17 Plan 01)
-Stopped at: Completed 17-01-PLAN.md (Estimate Schema and Types Foundation)
+Last session: 2026-02-16 (Phase 17 Plan 03)
+Stopped at: Completed 17-03-PLAN.md (Estimate Templates Router and Application Logic)
 Resume file: None
 
 ---

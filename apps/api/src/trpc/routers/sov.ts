@@ -12,6 +12,8 @@ import { createAuditLog } from "../../audit/logger.js";
 import { defineAbilitiesFor } from "../../auth/abilities.js";
 import { eq, desc, and, sql, isNull, isNotNull } from "drizzle-orm";
 import { ForbiddenError } from "@casl/ability";
+import { generateSOVFromEstimate } from "../../services/sovGeneration.js";
+import Decimal from "decimal.js";
 
 /**
  * Load project-level abilities for the current user.
@@ -631,5 +633,499 @@ export const sovRouter = router({
       });
 
       return { success: true };
+    }),
+
+  // ============================================================================
+  // ESTIMATE-BASED SOV PROCEDURES
+  // For generating Schedule of Values from estimates (not payment apps)
+  // ============================================================================
+
+  /**
+   * Generate SOV preview from estimate.
+   * Returns SOV line items without saving to database.
+   * User can review and adjust before finalizing.
+   */
+  generate: protectedProcedure
+    .input(
+      z.object({
+        estimateId: z.string().uuid(),
+        groupingMethod: z.enum(["csi", "phase", "payment_schedule"]).optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+      const abilities = await loadProjectAbilities({
+        tenant: ctx.tenant,
+        userId: ctx.userId,
+        orgRole: ctx.orgRole,
+      });
+
+      // Check permission
+      ForbiddenError.from(abilities).throwUnlessCan("manage", "SOV");
+
+      // Get estimate
+      const [estimate] = await db
+        .select()
+        .from(schema.estimates)
+        .where(eq(schema.estimates.id, input.estimateId))
+        .limit(1);
+
+      if (!estimate) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Estimate not found",
+        });
+      }
+
+      // Verify estimate is in valid status (not under_contract)
+      if (estimate.status === "under_contract") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message:
+            "Cannot generate SOV for estimate under contract. Use change orders to modify.",
+        });
+      }
+
+      // Get company profile to use default grouping method if not provided
+      const [companyProfile] = await db
+        .select()
+        .from(schema.companyProfiles)
+        .where(isNull(schema.companyProfiles.validTo))
+        .limit(1);
+
+      // Use provided grouping method or fall back to company default or CSI
+      const groupingMethod =
+        input.groupingMethod ||
+        (companyProfile?.sovGroupingMethod as "csi" | "phase" | "payment_schedule" | undefined) ||
+        "csi";
+
+      // Generate SOV preview
+      const sovLineItems = await generateSOVFromEstimate(
+        input.estimateId,
+        groupingMethod,
+        db,
+        schema
+      );
+
+      return sovLineItems;
+    }),
+
+  /**
+   * Finalize SOV for estimate.
+   * Validates total matches estimate, creates version snapshot.
+   */
+  finalize: protectedProcedure
+    .input(
+      z.object({
+        estimateId: z.string().uuid(),
+        lineItems: z.array(
+          z.object({
+            id: z.string().uuid().optional(),
+            description: z.string().min(1),
+            amount: z.number(),
+            costCodeReferences: z.array(z.string()),
+            completionPercent: z.number().min(0).max(100).default(0),
+            sortOrder: z.number(),
+            scheduledValues: z.array(z.unknown()).default([]),
+          })
+        ),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+      const abilities = await loadProjectAbilities({
+        tenant: ctx.tenant,
+        userId: ctx.userId,
+        orgRole: ctx.orgRole,
+      });
+
+      // Check permission
+      ForbiddenError.from(abilities).throwUnlessCan("manage", "SOV");
+
+      // Get estimate
+      const [estimate] = await db
+        .select()
+        .from(schema.estimates)
+        .where(eq(schema.estimates.id, input.estimateId))
+        .limit(1);
+
+      if (!estimate) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Estimate not found",
+        });
+      }
+
+      // Validate: sum(lineItems.amount) equals estimate.totalCost (within $1.00 tolerance)
+      const sovTotal = input.lineItems.reduce(
+        (sum, item) => sum.plus(item.amount),
+        new Decimal(0)
+      );
+      const estimateTotal = new Decimal(estimate.totalCost);
+      const difference = sovTotal.minus(estimateTotal).abs();
+
+      if (difference.greaterThan(1.0)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `SOV total ($${sovTotal.toFixed(2)}) does not match estimate total ($${estimateTotal.toFixed(2)}). Difference: $${difference.toFixed(2)}`,
+        });
+      }
+
+      // Create SOV version snapshot in transaction
+      const result = await db.transaction(async (tx) => {
+        // Check if estimate version exists for current version
+        const [estimateVersion] = await tx
+          .select()
+          .from(schema.estimateVersions)
+          .where(
+            and(
+              eq(schema.estimateVersions.estimateId, input.estimateId),
+              eq(schema.estimateVersions.version, estimate.currentVersion)
+            )
+          )
+          .limit(1);
+
+        // Create SOV version snapshot
+        const [sovVersion] = await tx
+          .insert(schema.sovVersions)
+          .values({
+            sovId: input.estimateId, // Using estimateId as sovId for now
+            estimateVersionId: estimateVersion?.id || null,
+            version: estimate.currentVersion,
+            status: estimate.status,
+            lineItems: input.lineItems,
+            createdFromChangeOrder: null,
+          })
+          .returning();
+
+        // Audit log
+        await createAuditLog(db, schema, {
+          action: AuditAction.CREATE,
+          entityType: "sov_version",
+          entityId: sovVersion.id,
+          actorId: ctx.userId!,
+          changes: {
+            after: {
+              estimateId: input.estimateId,
+              version: estimate.currentVersion,
+              lineItemCount: input.lineItems.length,
+              total: sovTotal.toFixed(2),
+            },
+          },
+        });
+
+        return { sovVersion, version: estimate.currentVersion };
+      });
+
+      return { success: true, version: result.version };
+    }),
+
+  /**
+   * Get SOV line items for an estimate.
+   * Returns the latest finalized SOV version.
+   */
+  getByEstimate: protectedProcedure
+    .input(z.object({ estimateId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+      const abilities = await loadProjectAbilities({
+        tenant: ctx.tenant,
+        userId: ctx.userId,
+        orgRole: ctx.orgRole,
+      });
+
+      // Check permission
+      ForbiddenError.from(abilities).throwUnlessCan("read", "SOV");
+
+      // Get latest SOV version for this estimate
+      const [sovVersion] = await db
+        .select()
+        .from(schema.sovVersions)
+        .where(eq(schema.sovVersions.sovId, input.estimateId))
+        .orderBy(desc(schema.sovVersions.version))
+        .limit(1);
+
+      if (!sovVersion) {
+        return { lineItems: [], version: null };
+      }
+
+      return {
+        lineItems: sovVersion.lineItems,
+        version: sovVersion.version,
+      };
+    }),
+
+  /**
+   * Update a single SOV line item.
+   * Only allowed when estimate status is draft.
+   */
+  updateLineItem: protectedProcedure
+    .input(
+      z.object({
+        estimateId: z.string().uuid(),
+        lineItemId: z.string().uuid(),
+        description: z.string().min(1).optional(),
+        amount: z.number().optional(),
+        sortOrder: z.number().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+      const abilities = await loadProjectAbilities({
+        tenant: ctx.tenant,
+        userId: ctx.userId,
+        orgRole: ctx.orgRole,
+      });
+
+      // Check permission
+      ForbiddenError.from(abilities).throwUnlessCan("manage", "SOV");
+
+      // Get estimate
+      const [estimate] = await db
+        .select()
+        .from(schema.estimates)
+        .where(eq(schema.estimates.id, input.estimateId))
+        .limit(1);
+
+      if (!estimate) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Estimate not found",
+        });
+      }
+
+      // Verify estimate status is draft
+      if (estimate.status !== "draft") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message:
+            "Cannot modify SOV: estimate is not in draft status. Create a new estimate revision to make changes.",
+        });
+      }
+
+      // Get latest SOV version
+      const [sovVersion] = await db
+        .select()
+        .from(schema.sovVersions)
+        .where(eq(schema.sovVersions.sovId, input.estimateId))
+        .orderBy(desc(schema.sovVersions.version))
+        .limit(1);
+
+      if (!sovVersion) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "No SOV found for this estimate",
+        });
+      }
+
+      // Update line item in JSONB array
+      const lineItems = sovVersion.lineItems as any[];
+      const lineItemIndex = lineItems.findIndex((item: any) => item.id === input.lineItemId);
+
+      if (lineItemIndex === -1) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Line item not found in SOV",
+        });
+      }
+
+      // Apply updates
+      if (input.description !== undefined) {
+        lineItems[lineItemIndex].description = input.description;
+      }
+      if (input.amount !== undefined) {
+        lineItems[lineItemIndex].amount = input.amount;
+      }
+      if (input.sortOrder !== undefined) {
+        lineItems[lineItemIndex].sortOrder = input.sortOrder;
+      }
+
+      // Update SOV version
+      await db
+        .update(schema.sovVersions)
+        .set({ lineItems })
+        .where(eq(schema.sovVersions.id, sovVersion.id));
+
+      // Audit log
+      await createAuditLog(db, schema, {
+        action: AuditAction.UPDATE,
+        entityType: "sov_line_item",
+        entityId: input.lineItemId,
+        actorId: ctx.userId,
+        changes: {
+          after: {
+            estimateId: input.estimateId,
+            lineItemId: input.lineItemId,
+            updates: input,
+          },
+        },
+      });
+
+      return lineItems[lineItemIndex];
+    }),
+
+  /**
+   * Delete a SOV line item.
+   * Only allowed when estimate status is draft.
+   */
+  deleteLineItem: protectedProcedure
+    .input(
+      z.object({
+        estimateId: z.string().uuid(),
+        lineItemId: z.string().uuid(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+      const abilities = await loadProjectAbilities({
+        tenant: ctx.tenant,
+        userId: ctx.userId,
+        orgRole: ctx.orgRole,
+      });
+
+      // Check permission
+      ForbiddenError.from(abilities).throwUnlessCan("manage", "SOV");
+
+      // Get estimate
+      const [estimate] = await db
+        .select()
+        .from(schema.estimates)
+        .where(eq(schema.estimates.id, input.estimateId))
+        .limit(1);
+
+      if (!estimate) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Estimate not found",
+        });
+      }
+
+      // Verify estimate status is draft
+      if (estimate.status !== "draft") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message:
+            "Cannot delete SOV line item: estimate is not in draft status.",
+        });
+      }
+
+      // Get latest SOV version
+      const [sovVersion] = await db
+        .select()
+        .from(schema.sovVersions)
+        .where(eq(schema.sovVersions.sovId, input.estimateId))
+        .orderBy(desc(schema.sovVersions.version))
+        .limit(1);
+
+      if (!sovVersion) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "No SOV found for this estimate",
+        });
+      }
+
+      // Remove line item from JSONB array
+      const lineItems = sovVersion.lineItems as any[];
+      const filteredLineItems = lineItems.filter(
+        (item: any) => item.id !== input.lineItemId
+      );
+
+      if (filteredLineItems.length === lineItems.length) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Line item not found in SOV",
+        });
+      }
+
+      // Update SOV version
+      await db
+        .update(schema.sovVersions)
+        .set({ lineItems: filteredLineItems })
+        .where(eq(schema.sovVersions.id, sovVersion.id));
+
+      // Audit log
+      await createAuditLog(db, schema, {
+        action: AuditAction.DELETE,
+        entityType: "sov_line_item",
+        entityId: input.lineItemId,
+        actorId: ctx.userId,
+        changes: {
+          before: {
+            estimateId: input.estimateId,
+            lineItemId: input.lineItemId,
+          },
+        },
+      });
+
+      return { success: true };
+    }),
+
+  /**
+   * Get SOV version history for an estimate.
+   * Returns all SOV versions with line items snapshots.
+   */
+  getVersionHistory: protectedProcedure
+    .input(z.object({ estimateId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+      const abilities = await loadProjectAbilities({
+        tenant: ctx.tenant,
+        userId: ctx.userId,
+        orgRole: ctx.orgRole,
+      });
+
+      // Check permission
+      ForbiddenError.from(abilities).throwUnlessCan("read", "SOV");
+
+      // Query all SOV versions for this estimate
+      const versions = await db
+        .select()
+        .from(schema.sovVersions)
+        .where(eq(schema.sovVersions.sovId, input.estimateId))
+        .orderBy(desc(schema.sovVersions.version));
+
+      return versions;
     }),
 });
