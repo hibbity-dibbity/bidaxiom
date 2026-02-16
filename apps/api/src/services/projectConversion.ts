@@ -22,13 +22,9 @@ export async function convertEstimateToProject(
 ) {
   const { db, schema } = ctx.tenant;
 
-  // 1. Get estimate with line items
+  // 1. Get estimate
   const estimate = await db.query.estimates.findFirst({
     where: eq(schema.estimates.id, input.estimateId),
-    with: {
-      lineItems: true,
-      project: true,
-    },
   });
 
   if (!estimate) {
@@ -38,6 +34,12 @@ export async function convertEstimateToProject(
     });
   }
 
+  // 2. Get estimate line items separately (no relations defined in schema)
+  const lineItems = await db
+    .select()
+    .from(schema.estimateLineItems)
+    .where(eq(schema.estimateLineItems.estimateId, input.estimateId));
+
   if (estimate.status !== "accepted") {
     throw new TRPCError({
       code: "BAD_REQUEST",
@@ -45,7 +47,7 @@ export async function convertEstimateToProject(
     });
   }
 
-  // 2. Check if estimate already has budget (prevent double conversion)
+  // 3. Check if estimate already has budget (prevent double conversion)
   const existingBudget = await db.query.budgetLineItems.findFirst({
     where: eq(schema.budgetLineItems.projectId, estimate.projectId),
   });
@@ -57,7 +59,7 @@ export async function convertEstimateToProject(
     });
   }
 
-  // 3. Transaction: update estimate, update project, create budget
+  // 4. Transaction: update estimate, update project, create budget
   return await db.transaction(async (tx) => {
     // Update estimate status to under_contract
     await tx.update(schema.estimates)
@@ -77,7 +79,7 @@ export async function convertEstimateToProject(
       .where(eq(schema.projects.id, estimate.projectId));
 
     // Create budget line items from estimate line items
-    const budgetLineItems = estimate.lineItems.map((item, index) => ({
+    const budgetLineItems = lineItems.map((item, index) => ({
       projectId: estimate.projectId,
       costCodeId: item.costCodeId,
       description: item.description,
