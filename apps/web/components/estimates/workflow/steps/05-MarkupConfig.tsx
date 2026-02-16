@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAutoSave } from "../useAutoSave";
+import { useWorkflowState } from "../useWorkflowState";
 import { toast } from "sonner";
 import { formatCurrency } from "@construction/shared";
 
@@ -40,6 +41,7 @@ interface MarkupConfigStepProps {
 
 export function MarkupConfigStep({ estimateId }: MarkupConfigStepProps) {
   const utils = trpc.useUtils();
+  const { unlockStep } = useWorkflowState();
 
   // Load company defaults
   const { data: companyProfile } = trpc.company.getCurrent.useQuery();
@@ -71,6 +73,11 @@ export function MarkupConfigStep({ estimateId }: MarkupConfigStepProps) {
       subcontractorMarkupPercent: 8,
     },
   });
+
+  // Unlock Step 6 on mount (markup config is optional)
+  useEffect(() => {
+    unlockStep(6);
+  }, [unlockStep]);
 
   // Load data from company defaults or estimate
   useEffect(() => {
@@ -120,7 +127,7 @@ export function MarkupConfigStep({ estimateId }: MarkupConfigStepProps) {
       watchedData.markupBase === "direct_plus_overhead" ? totalCost : directCost;
     const markupAmount = markupBase * (avgMarkup / 100);
     const sellingPrice = totalCost + markupAmount;
-    const margin = ((sellingPrice - directCost) / sellingPrice) * 100;
+    const margin = sellingPrice > 0 ? ((sellingPrice - directCost) / sellingPrice) * 100 : 0;
 
     return {
       directCost,
