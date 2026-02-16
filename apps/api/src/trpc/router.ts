@@ -27,6 +27,8 @@ import { reportScheduleRouter } from "./routers/report-schedule.js";
 import { calendarRouter } from "./routers/calendar.js";
 import { organizationRouter } from "./routers/organization.js";
 import { searchRouter } from "./routers/search.js";
+import { estimatesRouter } from "./routers/estimates.js";
+import { estimateTemplatesRouter } from "./routers/estimateTemplates.js";
 
 /**
  * Root application router.
@@ -64,6 +66,8 @@ export const appRouter = router({
   reportSchedule: reportScheduleRouter,
   calendar: calendarRouter,
   search: searchRouter,
+  estimates: estimatesRouter,
+  estimateTemplates: estimateTemplatesRouter,
 });
 
 /**

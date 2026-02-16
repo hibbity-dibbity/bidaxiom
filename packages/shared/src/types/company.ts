@@ -104,6 +104,8 @@ export const companyConfigSchema = z.object({
   tradesConfig: tradesConfigSchema,
   jobNumberSettings: jobNumberSettingsSchema,
   logoStorageKey: z.string().nullable().optional(),
+  allowPersonalTemplates: z.boolean().optional(), // Allow users to create personal estimate templates (default: true)
+  sovGroupingMethod: z.enum(["csi", "phase", "payment_schedule"]).optional(), // Default SOV grouping method (default: csi)
 });
 
 export type CompanyConfig = z.infer<typeof companyConfigSchema>;
