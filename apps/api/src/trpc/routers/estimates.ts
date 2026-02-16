@@ -7,7 +7,10 @@ import {
   updateEstimateSchema,
   createLineItemSchema,
   updateLineItemSchema,
+  generateBidSchema,
+  updateBidStatusSchema,
   AuditAction,
+  type EstimateStatus,
 } from "@construction/shared";
 import { createAuditLog } from "../../audit/logger.js";
 import { defineAbilitiesFor } from "../../auth/abilities.js";
@@ -15,6 +18,8 @@ import { eq, desc, and, count, inArray, sql } from "drizzle-orm";
 import { ForbiddenError } from "@casl/ability";
 import { calculateEstimateTotals } from "../../services/estimateCalculations.js";
 import { convertEstimateToProject } from "../../services/projectConversion.js";
+import { canTransitionEstimate } from "../../services/estimateLifecycle.js";
+import { generateBidFromEstimate } from "../../services/bidGeneration.js";
 
 /**
  * Load project-level abilities for the current user.
@@ -919,6 +924,133 @@ export const estimatesRouter = router({
       return await convertEstimateToProject(ctx, {
         estimateId: input.estimateId,
         userId: ctx.userId,
+      });
+    }),
+
+  /**
+   * Submit estimate for approval.
+   * Validates status transition and updates both estimate and project status.
+   */
+  submitEstimate: protectedProcedure
+    .input(z.object({ estimateId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+
+      const estimate = await db.query.estimates.findFirst({
+        where: eq(schema.estimates.id, input.estimateId),
+      });
+
+      if (!estimate) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Estimate not found" });
+      }
+
+      if (!canTransitionEstimate(estimate.status as EstimateStatus, "submitted")) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Cannot submit estimate with status '${estimate.status}'`,
+        });
+      }
+
+      return await db.transaction(async (tx) => {
+        // Update estimate status
+        const [updated] = await tx.update(schema.estimates)
+          .set({
+            status: "submitted",
+            submittedAt: new Date(),
+          })
+          .where(eq(schema.estimates.id, input.estimateId))
+          .returning();
+
+        // Update project status to "bidding"
+        await tx.update(schema.projects)
+          .set({ status: "bidding" })
+          .where(eq(schema.projects.id, estimate.projectId));
+
+        return updated;
+      });
+    }),
+
+  /**
+   * Generate bid from estimate.
+   * Creates bid with immutable snapshot of estimate line items.
+   */
+  generateBid: protectedProcedure
+    .input(generateBidSchema)
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      return await generateBidFromEstimate(ctx, {
+        ...input,
+        userId: ctx.userId,
+      });
+    }),
+
+  /**
+   * Update bid status (won/lost).
+   * Validates status transition and updates estimate status when bid is won.
+   */
+  updateBidStatus: protectedProcedure
+    .input(updateBidStatusSchema)
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+
+      const bid = await db.query.bids.findFirst({
+        where: eq(schema.bids.id, input.bidId),
+      });
+
+      if (!bid) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Bid not found" });
+      }
+
+      if (bid.status !== "submitted" && (input.status === "won" || input.status === "lost")) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Can only mark submitted bids as won/lost",
+        });
+      }
+
+      return await db.transaction(async (tx) => {
+        // Update bid status
+        const [updated] = await tx.update(schema.bids)
+          .set({
+            status: input.status,
+            closedAt: input.status === "won" || input.status === "lost" ? new Date() : undefined,
+            closedBy: input.status === "won" || input.status === "lost" ? ctx.userId : undefined,
+            closedNotes: input.notes,
+          })
+          .where(eq(schema.bids.id, input.bidId))
+          .returning();
+
+        // If won, update estimate to accepted
+        if (input.status === "won" && bid.estimateId) {
+          await tx.update(schema.estimates)
+            .set({
+              status: "accepted",
+              acceptedAt: new Date(),
+            })
+            .where(eq(schema.estimates.id, bid.estimateId));
+        }
+
+        return updated;
       });
     }),
 });

@@ -126,4 +126,6 @@ export const convertToProjectSchema = z.object({
   estimateId: z.string().uuid(),
 });
 
+export type GenerateBidInput = z.infer<typeof generateBidSchema>;
+export type UpdateBidStatusInput = z.infer<typeof updateBidStatusSchema>;
 export type ConvertToProjectInput = z.infer<typeof convertToProjectSchema>;
