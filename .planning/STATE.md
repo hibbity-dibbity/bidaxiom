@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-14)
 ## Current Position
 
 Phase: Phase 17 - Estimating Workflow Setup Core
-Plan: 4 of TBD complete
+Plan: 5 of TBD complete
 Status: In Progress
-Last activity: 2026-02-16 - Completed 17-04-PLAN.md (SOV Generation and Management from Estimates)
+Last activity: 2026-02-15 - Completed 17-05-PLAN.md (Guided Estimate Workflow UI)
 
-Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [█████████░] 90% (Phase 13 complete, Phase 14 6/8 plans, Phase 15 5/5 plans complete, Phase 16 7/7 plans complete, Phase 17 4/? plans complete)
+Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [█████████░] 91% (Phase 13 complete, Phase 14 6/8 plans, Phase 15 5/5 plans complete, Phase 16 7/7 plans complete, Phase 17 5/? plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 74
+- Total plans completed: 75
 - Average duration: 5.3 min
-- Total execution time: 7.5 hours
+- Total execution time: 7.6 hours
 
 **By Phase:**
 
@@ -42,11 +42,11 @@ Progress: v1.0: [██████████] 100% complete (12 phases) | v1.
 | 14 | 6 | 24.2 min | 4.0 min |
 | 15 | 5 | 12.5 min | 2.5 min |
 | 16 | 7 | 63.2 min | 9.0 min |
-| 17 | 4 | 26 min | 6.5 min |
+| 17 | 5 | 31 min | 6.2 min |
 
 **Recent Trend:**
-- Last 5 plans: 16-07 (5.2 min), 17-01 (4 min), 17-02 (6 min), 17-03 (4 min), 17-04 (8 min)
-- Trend: Phase 17 in progress, 4/? plans complete, averaging 6.5 min.
+- Last 5 plans: 17-01 (4 min), 17-02 (6 min), 17-03 (4 min), 17-04 (8 min), 17-05 (5 min)
+- Trend: Phase 17 in progress, 5/? plans complete, averaging 6.2 min.
 
 *Updated after each plan completion*
 | Phase 06 P02 | 8 | 2 tasks | 5 files |
@@ -119,6 +119,7 @@ Progress: v1.0: [██████████] 100% complete (12 phases) | v1.
 | Phase 17-estimating-workflow-setup-core P02 | 6 min | 2 tasks | 5 files |
 | Phase 17-estimating-workflow-setup-core P03 | 4 min | 2 tasks | 4 files |
 | Phase 17-estimating-workflow-setup-core P04 | 8 min | 2 tasks | 8 files |
+| Phase 17-estimating-workflow-setup-core P05 | 5 min | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -318,6 +319,12 @@ Recent decisions affecting current work:
 - [Phase 17-03]: Deep clone template line items without FK constraints — Preserves template mutability; sourceTemplateId tracks origin without preventing template deletion
 - [Phase 17-03]: Scope-based permissions (company requires admin, personal requires company setting) — Company templates are admin-only; personal templates controlled by allowPersonalTemplates setting
 - [Phase 17-03]: Permissive default for allowPersonalTemplates (null treated as true) — Existing companies can create personal templates unless explicitly disabled; no migration needed
+- [Phase 17-05]: Zustand for workflow state management — Lightweight (3kb), built-in localStorage persistence, simple API, no provider wrapping needed
+- [Phase 17-05]: use-debounce library for auto-save — Battle-tested (1M+ weekly downloads), handles edge cases, consistent with React hooks patterns
+- [Phase 17-05]: 500ms debounce delay for auto-save — Industry standard (Google Docs uses 500ms), balances responsiveness with API load
+- [Phase 17-05]: Step unlocking based on minimal data completion — Name + projectType unlocks step 2, template application unlocks step 3 (better UX than requiring all fields)
+- [Phase 17-05]: React Query mutation tracking prevents concurrent saves — useIsMutating > 0 check prevents save conflicts, never save while another save is in progress
+- [Phase 17-05]: Partial state persistence (estimateId + currentStep only) — formData comes from server (source of truth), only UI state needs localStorage persistence
 
 ### Pending Todos
 
@@ -348,10 +355,10 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-16 (Phase 17 Plan 04)
-Stopped at: Completed 17-04-PLAN.md (SOV Generation and Management from Estimates)
+Last session: 2026-02-15 (Phase 17 Plan 05)
+Stopped at: Completed 17-05-PLAN.md (Guided Estimate Workflow UI)
 Resume file: None
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-16*
+*Last updated: 2026-02-15*
