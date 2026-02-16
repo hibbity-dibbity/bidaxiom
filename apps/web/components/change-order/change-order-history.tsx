@@ -56,14 +56,22 @@ export function ChangeOrderHistory({ changeOrderId }: ChangeOrderHistoryProps) {
     return `${Math.floor(months / 12)}y ago`;
   };
 
+  const formatHistoryValue = (value: unknown): string => {
+    if (value === null || value === undefined) return "(empty)";
+    if (typeof value === "string") return value;
+    if (typeof value === "number" || typeof value === "boolean") return String(value);
+    if (typeof value === "object") return JSON.stringify(value);
+    return String(value);
+  };
+
   const getHistoryDescription = (entry: any) => {
     switch (entry.changeType) {
       case "field_update":
         return (
           <>
             Changed <span className="font-medium">{entry.fieldName}</span> from{" "}
-            <span className="text-muted-foreground">{entry.oldValue || "(empty)"}</span>{" "}
-            to <span className="text-muted-foreground">{entry.newValue}</span>
+            <span className="text-muted-foreground">{formatHistoryValue(entry.oldValue)}</span>{" "}
+            to <span className="text-muted-foreground">{formatHistoryValue(entry.newValue)}</span>
           </>
         );
       case "status_change":
@@ -71,11 +79,11 @@ export function ChangeOrderHistory({ changeOrderId }: ChangeOrderHistoryProps) {
           <>
             Status changed from{" "}
             <span className="font-medium">
-              {entry.oldValue?.replace(/_/g, " ") || "none"}
+              {typeof entry.oldValue === "string" ? entry.oldValue.replace(/_/g, " ") : formatHistoryValue(entry.oldValue) || "none"}
             </span>{" "}
             to{" "}
             <span className="font-medium">
-              {entry.newValue?.replace(/_/g, " ")}
+              {typeof entry.newValue === "string" ? entry.newValue.replace(/_/g, " ") : formatHistoryValue(entry.newValue)}
             </span>
           </>
         );
