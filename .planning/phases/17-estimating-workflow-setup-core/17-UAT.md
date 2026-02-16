@@ -1,9 +1,10 @@
 ---
 status: complete
 phase: 17-estimating-workflow-setup-core
-source: 17-02-SUMMARY.md, 17-05-SUMMARY.md, 17-06-SUMMARY.md, 17-07-SUMMARY.md, 17-08-SUMMARY.md, 17-09-SUMMARY.md
+source: 17-02-SUMMARY.md, 17-05-SUMMARY.md, 17-06-SUMMARY.md, 17-07-SUMMARY.md, 17-08-SUMMARY.md, 17-09-SUMMARY.md, 17-10-SUMMARY.md
 started: 2026-02-16T08:45:00Z
-updated: 2026-02-16T09:00:00Z
+updated: 2026-02-16T09:20:00Z
+retested: 2026-02-16T09:15:00Z
 ---
 
 ## Current Test
@@ -44,59 +45,95 @@ result: pass
 
 ### 8. Line items show color-coded margin indicators
 expected: In the line items table (Step 3), the "Margin %" column displays percentages with color coding: red for < 10%, yellow for 10-20%, green for >= 20%. Add or edit line items with different markup percentages to see the color changes. The margin updates in real-time as you edit unit cost or markup.
-result: issue
-reported: "Cannot test. Do not have any line items to test. When selecting \"Add Line Item\" I get the following error: Failed to add line item [ { \"code\": \"too_small\", \"minimum\": 0, \"type\": \"number\", \"inclusive\": false, \"exact\": false, \"message\": \"Number must be greater than 0\", \"path\": [ \"unitCost\" ] } ]"
-severity: major
+result: pass
+note: Fix verified - Plan 17-10 resolved validation error, line items now creatable
 
 ### 9. Section subtotals group line items by CSI division
 expected: If line items have different CSI codes/divisions: The table displays bold subtotal rows between sections showing "Division X Subtotal" with rolled-up Cost, Markup, and Margin totals for that division. Line items are visually grouped by their CSI code. (May not be visible if all items share same CSI code.)
-result: skipped
-reason: Cannot test - blocked by Test 8 (cannot add line items)
+result: issue
+reported: "Partially passed (I see the Division 1 - General Labor subtotal). When I click the dropdown for a line item and select a new CSI code it does not change from the default."
+severity: major
 
 ### 10. Step 4 shows labor rates application
 expected: Navigate to Step 4 (Labor Rates). Page shows labor rate templates as clickable cards (similar to Step 2). An "Apply Labor Rates" button applies the template to all labor-type line items. A table displays current labor line items with: description, quantity, rate, total. A "Skip Labor Rates" button allows bypassing this step.
-result: skipped
-reason: Cannot test - blocked by Test 8 (cannot add line items)
+result: pass
 
 ### 11. Step 5 shows markup configuration
 expected: Navigate to Step 5 (Markup Configuration). Page shows overhead settings (percentage or fixed amount toggle), markup base selection (direct costs vs direct + overhead), and tiered markup inputs by cost type (labor %, material %, equipment %, subcontractor %). Changes auto-save after 500ms. A live margin summary displays: Overhead Amount, Markup Amount, Selling Price, Margin %.
-result: skipped
-reason: Cannot test - blocked by Test 8 (cannot add line items)
+result: issue
+reported: "Selling Price and Margin show NaN"
+severity: major
 
 ### 12. Step 6 shows SOV builder with generation
 expected: Navigate to Step 6 (SOV Builder). Page shows a "Generate SOV" button with grouping method dropdown (CSI/Phase/Payment Schedule). Click "Generate SOV" → SOV line items appear as cards below. Each card shows description, amount, cost code references (as chips/badges), and completion percentage. Running totals display: Estimate Total, SOV Total, Variance.
-result: skipped
-reason: Cannot test - blocked by Test 8 (cannot add line items)
+result: issue
+reported: "There is no way for me to progress from step 5 (Markup Config) to Step 6 (SOV Builder)"
+severity: blocker
 
 ### 13. SOV variance validation prevents finalization
 expected: In Step 6, after generating SOV, if the SOV Total doesn't match Estimate Total (variance > $1.00), a red alert appears warning of the mismatch. The "Finalize SOV" button is disabled. Edit SOV line item amounts to make totals match (variance <= $1.00) → green alert appears, "Finalize SOV" button becomes enabled.
 result: skipped
-reason: Cannot test - blocked by Test 8 (cannot add line items)
+reason: Cannot test - blocked by Test 12 (cannot navigate to Step 6)
 
 ### 14. SOV finalization locks and versions the SOV
 expected: In Step 6, with variance <= $1.00, click "Finalize SOV" button → mutation triggers, success message appears. Note in UI should indicate "Once finalized, the SOV will be locked and versioned" or similar. (Actual versioning behavior may not be visible in UI, but button should work without errors.)
 result: skipped
-reason: Cannot test - blocked by Test 8 (cannot add line items)
+reason: Cannot test - blocked by Test 12 (cannot navigate to Step 6)
 
 ### 15. All 6 workflow steps are accessible and functional
 expected: Navigate through all 6 steps using the sidebar: Step 1 (Basic Info), Step 2 (Template Selection), Step 3 (Line Items), Step 4 (Labor Rates), Step 5 (Markup Config), Step 6 (SOV Builder). Each step loads without errors, shows the expected components (forms, tables, cards), and navigation works smoothly. No placeholder text like "Step not implemented" appears.
 result: skipped
-reason: Cannot test - blocked by Test 8 (cannot add line items)
+reason: Cannot test - blocked by Test 12 (cannot navigate to Step 6)
 
 ## Summary
 
 total: 15
-passed: 7
-issues: 1
+passed: 9
+issues: 3
 pending: 0
-skipped: 7
+skipped: 3
 
 ## Gaps
 
 - truth: "User can add line items to estimate in Step 3"
-  status: failed
+  status: resolved
   reason: "User reported: Cannot test. Do not have any line items to test. When selecting \"Add Line Item\" I get the following error: Failed to add line item [ { \"code\": \"too_small\", \"minimum\": 0, \"type\": \"number\", \"inclusive\": false, \"exact\": false, \"message\": \"Number must be greater than 0\", \"path\": [ \"unitCost\" ] } ]"
   severity: major
   test: 8
+  root_cause: "Schema validation mismatch - frontend submits unitCost: 0 as default, but backend schema requires .positive() (> 0). The createLineItemSchema in packages/shared/src/schemas/estimates.ts line 44 has overly strict validation that should allow draft/incomplete data."
+  artifacts:
+    - path: "packages/shared/src/schemas/estimates.ts"
+      issue: "Line 44: unitCost uses .positive() instead of .min(0) (FIXED via Plan 17-10)"
+    - path: "apps/web/components/estimates/line-items/EstimateLineItemsTable.tsx"
+      issue: "Line 367: submits unitCost: 0 as default"
+    - path: "apps/api/src/trpc/routers/estimates.ts"
+      issue: "Line 510: enforces the strict schema validation"
+  missing:
+    - "Relax schema validation to allow unitCost >= 0 (FIXED)"
+    - "Update both createLineItemSchema and updateLineItemSchema for consistency (FIXED)"
+    - "Add business logic validation at estimate submission to ensure no zero-cost items in final submission"
+  debug_session: ".planning/debug/add-line-item-validation-error.md"
+
+- truth: "CSI code dropdown can be changed from default value"
+  status: failed
+  reason: "User reported: Partially passed (I see the Division 1 - General Labor subtotal). When I click the dropdown for a line item and select a new CSI code it does not change from the default."
+  severity: major
+  test: 9
+  artifacts: []
+  missing: []
+
+- truth: "Margin summary displays valid calculated values in Step 5"
+  status: failed
+  reason: "User reported: Selling Price and Margin show NaN"
+  severity: major
+  test: 11
+  artifacts: []
+  missing: []
+
+- truth: "User can navigate from Step 5 to Step 6"
+  status: failed
+  reason: "User reported: There is no way for me to progress from step 5 (Markup Config) to Step 6 (SOV Builder)"
+  severity: blocker
+  test: 12
   artifacts: []
   missing: []
