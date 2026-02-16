@@ -14,7 +14,7 @@ interface TemplateSelectionStepProps {
 }
 
 export function TemplateSelectionStep({ estimateId }: TemplateSelectionStepProps) {
-  const { unlockStep } = useWorkflowState();
+  const { unlockStep, goToStep } = useWorkflowState();
   const utils = trpc.useUtils();
 
   // Load estimate to check applied template
@@ -52,6 +52,14 @@ export function TemplateSelectionStep({ estimateId }: TemplateSelectionStepProps
     });
   };
 
+  const handleSkipTemplates = () => {
+    unlockStep(3); // Unlock Step 3 when user skips template selection
+    goToStep(3);   // Automatically navigate to Step 3
+    toast.success("Skipped template selection", {
+      description: "You can manually add line items in the next step",
+    });
+  };
+
   return (
     <div className="space-y-6">
       <p className="text-sm text-muted-foreground">
@@ -70,11 +78,18 @@ export function TemplateSelectionStep({ estimateId }: TemplateSelectionStepProps
           </div>
         ) : !costCodeTemplates || costCodeTemplates.length === 0 ? (
           <Card>
-            <CardContent className="flex flex-col items-center justify-center py-8">
-              <FileText className="h-12 w-12 text-muted-foreground mb-3" />
+            <CardContent className="flex flex-col items-center justify-center py-8 space-y-4">
+              <FileText className="h-12 w-12 text-muted-foreground" />
+              <p className="text-muted-foreground">No cost code templates available</p>
               <p className="text-sm text-muted-foreground">
-                No cost code templates available
+                You can skip this step and manually add line items in the next step.
               </p>
+              <Button
+                onClick={handleSkipTemplates}
+                variant="outline"
+              >
+                Skip Template Selection
+              </Button>
             </CardContent>
           </Card>
         ) : (
@@ -113,6 +128,17 @@ export function TemplateSelectionStep({ estimateId }: TemplateSelectionStepProps
                 </Card>
               );
             })}
+          </div>
+        )}
+        {costCodeTemplates && costCodeTemplates.length > 0 && (
+          <div className="mt-4 text-center">
+            <Button
+              onClick={handleSkipTemplates}
+              variant="ghost"
+              size="sm"
+            >
+              Skip and add line items manually
+            </Button>
           </div>
         )}
       </div>
