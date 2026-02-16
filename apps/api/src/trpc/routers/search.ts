@@ -24,6 +24,7 @@ export const searchRouter = router({
           name: projects.name,
           jobNumber: projects.jobNumber,
           customerId: projects.customerId,
+          slug: projects.slug,
         })
         .from(projects)
         .where(
@@ -57,7 +58,7 @@ export const searchRouter = router({
           id: p.id,
           title: p.name,
           subtitle: p.jobNumber,
-          url: `/projects/${p.id}`,
+          url: `/projects/${p.slug}`,
         })),
         ...customerResults.map((c) => ({
           type: "customer" as const,
