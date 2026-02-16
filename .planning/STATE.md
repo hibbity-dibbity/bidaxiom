@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-14)
 ## Current Position
 
 Phase: Phase 18 - Estimating Workflow Lifecycle and Conversion
-Plan: 2 of 4 complete
+Plan: 3 of 4 complete
 Status: In Progress
-Last activity: 2026-02-16 - Completed 18-03-PLAN.md (One-Click Estimate-to-Project Conversion)
+Last activity: 2026-02-16 - Completed 18-02-PLAN.md (Estimate Lifecycle Management with Bid Generation)
 
-Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [█████████░] 96% (Phase 13 complete, Phase 14 6/8 plans, Phase 15 5/5 plans complete, Phase 16 7/7 plans complete, Phase 17 11/11 plans complete, Phase 18 2/4 plans complete)
+Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [█████████░] 97% (Phase 13 complete, Phase 14 6/8 plans, Phase 15 5/5 plans complete, Phase 16 7/7 plans complete, Phase 17 11/11 plans complete, Phase 18 3/4 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 83
-- Average duration: 4.8 min
-- Total execution time: 8.02 hours
+- Total plans completed: 84
+- Average duration: 4.7 min
+- Total execution time: 8.07 hours
 
 **By Phase:**
 
@@ -43,11 +43,11 @@ Progress: v1.0: [██████████] 100% complete (12 phases) | v1.
 | 15 | 5 | 12.5 min | 2.5 min |
 | 16 | 7 | 63.2 min | 9.0 min |
 | 17 | 11 | 47.6 min | 4.3 min |
-| 18 | 2 | 4 min | 2 min |
+| 18 | 3 | 7 min | 2.3 min |
 
 **Recent Trend:**
-- Last 5 plans: 17-09 (2.3 min), 17-10 (1.3 min), 17-11 (3 min), 18-01 (2 min), 18-03 (2 min)
-- Trend: Phase 18 in progress, 2/4 plans complete, averaging 2 min.
+- Last 5 plans: 17-10 (1.3 min), 17-11 (3 min), 18-01 (2 min), 18-03 (2 min), 18-02 (3 min)
+- Trend: Phase 18 in progress, 3/4 plans complete, averaging 2.3 min.
 
 *Updated after each plan completion*
 | Phase 06 P02 | 8 | 2 tasks | 5 files |
@@ -129,6 +129,8 @@ Progress: v1.0: [██████████] 100% complete (12 phases) | v1.
 | Phase 17-estimating-workflow-setup-core P11 | 3 min | 2 tasks | 2 files |
 | Phase 18-estimating-workflow-lifecycle-and-conversion P01 | 2 min | 1 task | 4 files |
 | Phase 18 P03 | 2 | 2 tasks | 3 files |
+| Phase 18-estimating-workflow-lifecycle-and-conversion P02 | 3 min | 2 tasks | 6 files |
+| Phase 18 P02 | 3 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -351,6 +353,11 @@ Recent decisions affecting current work:
 - [Phase 18-01]: Migration checks column existence for idempotency to support multiple runs
 - [Phase 18]: Atomic transaction for conversion ensures all-or-nothing conversion - if budget creation fails, estimate and project status don't change
 - [Phase 18]: Prevent double conversion by checking for existing budget to prevent data duplication
+- [Phase 18-02]: rfqId nullable on bids table to support estimate-based bids alongside RFQ-based bids — Unifies both bid sources in same table
+- [Phase 18-02]: projectId added to bids table for unified project association across RFQ and estimate-based bids
+- [Phase 18-02]: State machine pattern enforces valid status transitions server-side via canTransitionEstimate/Bid functions
+- [Phase 18-02]: Immutable bid snapshots preserve estimate breakdown at bid generation time for historical accuracy
+- [Phase 18-02]: Atomic transactions ensure status consistency across estimates, bids, and projects during lifecycle transitions
 
 ### Pending Todos
 
@@ -381,8 +388,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-16 (Phase 18 Plan 03)
-Stopped at: Completed 18-03-PLAN.md (One-Click Estimate-to-Project Conversion)
+Last session: 2026-02-16 (Phase 18 Plan 02)
+Stopped at: Completed 18-02-PLAN.md (Estimate Lifecycle Management with Bid Generation)
 Resume file: None
 
 ---
