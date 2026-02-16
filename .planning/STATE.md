@@ -373,6 +373,10 @@ Recent decisions affecting current work:
 - [Phase 19-01]: Centralized formatting utilities in lib/utils/format.ts — All currency, percentage, and date formatting consolidated for consistency
 - [Phase 19-03]: Keep entity schemas in types/, re-export from schemas/ — Schemas already centralized and working in types/ directory; added re-exports in schemas/index.ts for convenience without disruption
 - [Phase 19-03]: Use .pick() for multi-step form validation — createEstimateSchema.pick({ name: true, projectType: true }) maintains single source of truth while validating subsets
+- [Phase 19-04]: Two-step slug generation on create (insert without slug, update with ID-based slug) ensures unique identifier availability before final slug generation
+- [Phase 19-04]: Generic slug utilities with backward compatibility wrapper (generateProjectSlug calls generateSlug internally) maintains zero breaking changes
+- [Phase 19-04]: Slug patterns use entity prefixes (cust-*, sub-*, est-*) for clear entity type identification in URLs
+- [Phase 19-04]: Database UNIQUE constraint on slug column provides strongest guarantee against routing collisions
 
 ### Pending Todos
 
@@ -403,10 +407,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-16 (Phase 19 Plan 03 execution)
-Stopped at: Completed 19-03-PLAN.md (schema centralization)
-Resume file: .planning/phases/19-component-library-architecture/19-03-SUMMARY.md
+Last session: 2026-02-16 (Phase 19 Plan 04 execution)
+Stopped at: Completed 19-04-PLAN.md (slug-based routing extension)
+Resume file: .planning/phases/19-component-library-architecture/19-04-SUMMARY.md
 
----
-*Created: 2026-02-10*
-*Last updated: 2026-02-16*
