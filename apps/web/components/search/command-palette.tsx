@@ -82,8 +82,17 @@ function CommandPalette({ open, setOpen }: CommandPaletteProps) {
     [router]
   );
 
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      setOpen(false);
+      setQuery("");
+    }
+  }, [setOpen]);
+
   return (
-    <CommandDialog open={open} onOpenChange={setOpen} shouldFilter={false}>
+    <CommandDialog open={open} onOpenChange={setOpen} shouldFilter={false} onKeyDown={handleKeyDown}>
       <CommandInput
         placeholder="Search projects, customers, jobs..."
         value={query}
