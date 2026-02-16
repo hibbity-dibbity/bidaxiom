@@ -1,7 +1,12 @@
 /**
  * Margin calculation utilities for estimate line items.
  * Pure functions for cost, markup, and margin calculations.
+ *
+ * Note: formatCurrency and formatPercent have been moved to @/lib/utils/format
+ * Re-exported here for backward compatibility.
  */
+
+import { formatCurrency as sharedFormatCurrency } from "@/lib/utils/format";
 
 export interface MarginResult {
   cost: number;
@@ -60,14 +65,10 @@ export function getMarginColorClass(marginPercent: number): string {
 
 /**
  * Format currency for display.
+ * Re-exported from shared utilities for backward compatibility.
  */
 export function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
+  return sharedFormatCurrency(value);
 }
 
 /**

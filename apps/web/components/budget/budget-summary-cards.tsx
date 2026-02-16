@@ -2,19 +2,13 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { CurrencyDisplay } from "@/components/shared/currency-display";
 import type { BudgetSummary } from "@construction/shared";
 import { DollarSign, TrendingDown, Wallet, FileText } from "lucide-react";
 
 interface BudgetSummaryCardsProps {
   summary: BudgetSummary;
 }
-
-const currencyFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 0,
-});
 
 export function BudgetSummaryCards({ summary }: BudgetSummaryCardsProps) {
   const remaining = summary.totalBudgeted - summary.totalCommitted;
@@ -31,7 +25,7 @@ export function BudgetSummaryCards({ summary }: BudgetSummaryCardsProps) {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-blue-600">
-            {currencyFormatter.format(summary.totalBudgeted)}
+            <CurrencyDisplay amount={summary.totalBudgeted} />
           </div>
           <p className="text-xs text-muted-foreground mt-1">
             {summary.lineItemCount} line items
@@ -46,7 +40,7 @@ export function BudgetSummaryCards({ summary }: BudgetSummaryCardsProps) {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-amber-600">
-            {currencyFormatter.format(summary.totalCommitted)}
+            <CurrencyDisplay amount={summary.totalCommitted} />
           </div>
           <p className="text-xs text-muted-foreground mt-1">
             {commitmentPercentage.toFixed(1)}% of budget
@@ -61,8 +55,8 @@ export function BudgetSummaryCards({ summary }: BudgetSummaryCardsProps) {
           <TrendingDown className={`h-4 w-4 ${remaining >= 0 ? "text-green-600" : "text-red-600"}`} />
         </CardHeader>
         <CardContent>
-          <div className={`text-2xl font-bold ${remaining >= 0 ? "text-green-600" : "text-red-600"}`}>
-            {currencyFormatter.format(remaining)}
+          <div className="text-2xl font-bold">
+            <CurrencyDisplay amount={remaining} colorize />
           </div>
           <p className="text-xs text-muted-foreground mt-1">
             {remaining >= 0 ? "Under budget" : "Over budget"}

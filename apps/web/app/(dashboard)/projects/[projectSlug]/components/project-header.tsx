@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Building2, MapPin, Calendar } from "lucide-react";
+import { formatCurrency } from "@/lib/utils/format";
 import type { ProjectStatus } from "@construction/shared";
 
 const statusColors: Record<ProjectStatus, string> = {
@@ -39,17 +40,12 @@ interface ProjectHeaderProps {
 }
 
 export function ProjectHeader({ project, budgetSummary, teamMemberCount }: ProjectHeaderProps) {
-  // Format currency
-  const formatCurrency = (value: number | string | null | undefined) => {
+  // Format currency with fallback for null/undefined
+  const formatCurrencyValue = (value: number | string | null | undefined) => {
     if (value === null || value === undefined) return "--";
     const numValue = typeof value === "string" ? parseFloat(value) : value;
     if (isNaN(numValue)) return "--";
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(numValue);
+    return formatCurrency(numValue);
   };
 
   // Format date range
@@ -135,19 +131,19 @@ export function ProjectHeader({ project, budgetSummary, teamMemberCount }: Proje
         <div>
           <p className="text-xs text-muted-foreground">Budget Total</p>
           <p className="text-sm font-semibold">
-            {budgetSummary ? formatCurrency(budgetSummary.totalBudgeted) : "--"}
+            {budgetSummary ? formatCurrencyValue(budgetSummary.totalBudgeted) : "--"}
           </p>
         </div>
         <div>
           <p className="text-xs text-muted-foreground">Committed</p>
           <p className="text-sm font-semibold">
-            {budgetSummary ? formatCurrency(budgetSummary.totalCommitted) : "--"}
+            {budgetSummary ? formatCurrencyValue(budgetSummary.totalCommitted) : "--"}
           </p>
         </div>
         <div>
           <p className="text-xs text-muted-foreground">Actual Cost</p>
           <p className="text-sm font-semibold">
-            {budgetSummary ? formatCurrency(budgetSummary.totalActual) : "--"}
+            {budgetSummary ? formatCurrencyValue(budgetSummary.totalActual) : "--"}
           </p>
         </div>
         <div>
