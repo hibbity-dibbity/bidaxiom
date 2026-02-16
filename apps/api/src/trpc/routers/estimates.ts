@@ -11,7 +11,7 @@ import {
 } from "@construction/shared";
 import { createAuditLog } from "../../audit/logger.js";
 import { defineAbilitiesFor } from "../../auth/abilities.js";
-import { eq, desc, and, count, inArray } from "drizzle-orm";
+import { eq, desc, and, count, inArray, sql } from "drizzle-orm";
 import { ForbiddenError } from "@casl/ability";
 import { calculateEstimateTotals } from "../../services/estimateCalculations.js";
 
@@ -500,6 +500,241 @@ export const estimatesRouter = router({
       });
 
       return updated;
+    }),
+
+  /**
+   * Create a line item.
+   * Appends to end of estimate (max orderIndex + 1).
+   */
+  createLineItem: protectedProcedure
+    .input(createLineItemSchema)
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+
+      // Fetch estimate to check abilities
+      const [estimate] = await db
+        .select()
+        .from(schema.estimates)
+        .where(eq(schema.estimates.id, input.estimateId))
+        .limit(1);
+
+      if (!estimate) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Estimate not found",
+        });
+      }
+
+      // Load abilities
+      const abilities = await loadProjectAbilities({
+        tenant: ctx.tenant,
+        userId: ctx.userId,
+        orgRole: ctx.orgRole,
+      });
+
+      ForbiddenError.from(abilities).throwUnlessCan("update", "Estimate");
+
+      // Get max orderIndex
+      const [maxOrderResult] = await db
+        .select({
+          maxOrder: sql<number>`COALESCE(MAX(${schema.estimateLineItems.orderIndex}), -1)`,
+        })
+        .from(schema.estimateLineItems)
+        .where(eq(schema.estimateLineItems.estimateId, input.estimateId));
+
+      const orderIndex = (maxOrderResult?.maxOrder ?? -1) + 1;
+
+      // Create line item
+      const [lineItem] = await db
+        .insert(schema.estimateLineItems)
+        .values({
+          estimateId: input.estimateId,
+          costCodeId: input.costCodeId,
+          description: input.description,
+          quantity: input.quantity.toFixed(4),
+          unit: input.unit,
+          unitCost: input.unitCost.toFixed(4),
+          costType: input.costType,
+          customMarkupPercent: input.customMarkupPercent?.toFixed(2) ?? null,
+          orderIndex,
+        })
+        .returning();
+
+      // Recalculate estimate totals
+      const allLineItems = await db
+        .select()
+        .from(schema.estimateLineItems)
+        .where(eq(schema.estimateLineItems.estimateId, input.estimateId));
+
+      const totals = calculateEstimateTotals(
+        allLineItems as any,
+        {
+          companyDefaults: {
+            laborMarkup: 20,
+            materialMarkup: 15,
+            equipmentMarkup: 10,
+            subcontractorMarkup: 5,
+          },
+          markupBaseType: estimate.markupBase as "direct" | "direct_plus_overhead",
+        },
+        {
+          type: estimate.overheadType as "percentage" | "fixed",
+          value: Number(estimate.overheadValue),
+        }
+      );
+
+      // Update denormalized totals on estimate
+      await db
+        .update(schema.estimates)
+        .set({
+          directCosts: totals.directCosts.toFixed(2),
+          overheadAmount: totals.overhead.toFixed(2),
+          markupAmount: totals.totalMarkup.toFixed(2),
+          totalCost: totals.totalCost.toFixed(2),
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.estimates.id, input.estimateId));
+
+      // Audit log
+      await createAuditLog(db, schema, {
+        entityType: "EstimateLineItem",
+        entityId: lineItem.id,
+        action: AuditAction.CREATE,
+        actorId: ctx.userId,
+        changes: {
+          after: lineItem,
+        },
+      });
+
+      return lineItem;
+    }),
+
+  /**
+   * Delete a line item.
+   * Recalculates estimate totals.
+   */
+  deleteLineItem: protectedProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+
+      // Fetch existing line item
+      const [existingItem] = await db
+        .select()
+        .from(schema.estimateLineItems)
+        .where(eq(schema.estimateLineItems.id, input.id))
+        .limit(1);
+
+      if (!existingItem) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Line item not found",
+        });
+      }
+
+      // Fetch estimate to check abilities
+      const [estimate] = await db
+        .select()
+        .from(schema.estimates)
+        .where(eq(schema.estimates.id, existingItem.estimateId))
+        .limit(1);
+
+      if (!estimate) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Estimate not found",
+        });
+      }
+
+      // Load abilities
+      const abilities = await loadProjectAbilities({
+        tenant: ctx.tenant,
+        userId: ctx.userId,
+        orgRole: ctx.orgRole,
+      });
+
+      ForbiddenError.from(abilities).throwUnlessCan("update", "Estimate");
+
+      // Delete line item
+      await db
+        .delete(schema.estimateLineItems)
+        .where(eq(schema.estimateLineItems.id, input.id));
+
+      // Recalculate estimate totals
+      const allLineItems = await db
+        .select()
+        .from(schema.estimateLineItems)
+        .where(eq(schema.estimateLineItems.estimateId, existingItem.estimateId));
+
+      if (allLineItems.length > 0) {
+        const totals = calculateEstimateTotals(
+          allLineItems as any,
+          {
+            companyDefaults: {
+              laborMarkup: 20,
+              materialMarkup: 15,
+              equipmentMarkup: 10,
+              subcontractorMarkup: 5,
+            },
+            markupBaseType: estimate.markupBase as "direct" | "direct_plus_overhead",
+          },
+          {
+            type: estimate.overheadType as "percentage" | "fixed",
+            value: Number(estimate.overheadValue),
+          }
+        );
+
+        // Update denormalized totals on estimate
+        await db
+          .update(schema.estimates)
+          .set({
+            directCosts: totals.directCosts.toFixed(2),
+            overheadAmount: totals.overhead.toFixed(2),
+            markupAmount: totals.totalMarkup.toFixed(2),
+            totalCost: totals.totalCost.toFixed(2),
+            updatedAt: new Date(),
+          })
+          .where(eq(schema.estimates.id, existingItem.estimateId));
+      } else {
+        // No line items left, reset totals to 0
+        await db
+          .update(schema.estimates)
+          .set({
+            directCosts: "0.00",
+            overheadAmount: "0.00",
+            markupAmount: "0.00",
+            totalCost: "0.00",
+            updatedAt: new Date(),
+          })
+          .where(eq(schema.estimates.id, existingItem.estimateId));
+      }
+
+      // Audit log
+      await createAuditLog(db, schema, {
+        entityType: "EstimateLineItem",
+        entityId: input.id,
+        action: AuditAction.DELETE,
+        actorId: ctx.userId,
+        changes: {
+          before: existingItem,
+        },
+      });
+
+      return { success: true };
     }),
 
   /**
