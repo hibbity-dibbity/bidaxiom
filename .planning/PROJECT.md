@@ -8,58 +8,62 @@ A cloud-first, API-first construction SaaS platform for small-to-mid-sized comme
 
 A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
 
-## Current Milestone: v1.1 Enterprise UX Redesign
+## Current State
 
-**Goal:** Transform the UI/UX from functional MVP to enterprise-grade tool optimized for solo operators with Procore-style density, guided workflows, and modern navigation patterns.
+**Shipped:** v1.0 MVP + v1.1 Enterprise UX Redesign (Feb 2026)
 
-**Target features:**
-- Procore-style enterprise layout with higher data density and dark mode
-- Unified top bar + contextual collapsible sidebar navigation
-- Global search across jobs, projects, and customers
-- Form standardization (phone format, structured addresses, centralized validation)
-- Company logo upload and branding throughout platform
-- Dashboard redesign with KPI + task + pipeline widgets
-- Projects page redesigned as compact table with advanced filtering
-- Project detail persistent header with dynamic section loading
-- Guided estimate builder workflow (step-by-step default, optional spreadsheet mode)
-- Estimate lifecycle management (estimate → bid → award → active project)
-- Component library and reusable UI system
-- Clean routing with slug-safe URLs
-- SSO architecture (OAuth-ready for Google/Microsoft)
+**What's built:**
+- Complete project financial lifecycle (RFQs → bidding → budget → change orders → payment apps)
+- Multi-tenant auth with custom JWT, MFA, and organization management
+- QuickBooks bi-directional integration for projects, invoices, and bills
+- Document management with workflows (RFIs, submittals, transmittals)
+- Reporting & analytics with custom builder and scheduled delivery
+- Calendar integration (Google, Microsoft) with bi-directional sync
+- Enterprise-grade UI with dark mode, global search, and company branding
+- Guided estimate workflow with cost code templates, labor rates, and SOV builder
+- Estimate lifecycle (draft → submitted → bid → won → active project)
+- Slug-based routing, persistent headers, and component library
+
+**Tech stack:** Next.js 14, Fastify, tRPC, Drizzle ORM, PostgreSQL (schema-per-tenant), Redis, MinIO (S3), Tailwind CSS
+
+**Codebase:** 142,961 lines of TypeScript across 19 phases (12 v1.0 + 7 v1.1)
 
 ## Requirements
 
 ### Validated
 
-<!-- Shipped and confirmed valuable. -->
+<!-- Shipped in v1.0 and v1.1. See archived REQUIREMENTS.md for full details. -->
 
-(None yet — ship to validate)
+**v1.0 Core Platform (Phases 1-12):**
+- ✓ Multi-tenant authentication with MFA and organization management — v1.0
+- ✓ Schema-per-company database isolation with audit logging — v1.0
+- ✓ Company configuration (GC/Sub/Both types, CSI trades) — v1.0
+- ✓ Project management with team access controls and document storage — v1.0
+- ✓ Budget tracking with cost codes, committed costs, and forecasting — v1.0
+- ✓ Change order management with approval workflows — v1.0
+- ✓ Payment applications with retainage and lien waiver tracking — v1.0
+- ✓ RFQ issuance and bid management with versioning — v1.0
+- ✓ QuickBooks bi-directional integration — v1.0
+- ✓ Document workflows (RFI, Submittal, Transmittal) with approvals — v1.0
+- ✓ Custom reports with builder, export (PDF/Excel), and scheduling — v1.0
+- ✓ Calendar integration (Google, Microsoft) with bi-directional sync — v1.0
+
+**v1.1 Enterprise UX (Phases 13-19):**
+- ✓ Unified navigation with global search (⌘K) and contextual sidebar — v1.1
+- ✓ Dark mode with FOUC prevention and company logo branding — v1.1
+- ✓ Standardized form inputs (phone, address) with centralized validation — v1.1
+- ✓ Enterprise dashboard with 10 KPI widgets (user + company metrics) — v1.1
+- ✓ Slug-based project routing with persistent headers — v1.1
+- ✓ Advanced filtering with URL state management (nuqs) — v1.1
+- ✓ Guided estimate workflow (6 steps) with cost code templates — v1.1
+- ✓ Estimate lifecycle management (draft → bid → won → active project) — v1.1
+- ✓ Reusable component library with CVA variants and formatting utilities — v1.1
 
 ### Active
 
-<!-- Current scope. Building toward these. -->
+<!-- Next milestone scope. Define in /gsd:new-milestone. -->
 
-- [ ] Central identity with multi-org/multi-company membership
-- [ ] Company types: GC-only, Sub-only, Both (hybrid)
-- [ ] Schema-per-company database isolation
-- [ ] Zero Trust security: MFA, short-lived tokens, server-side PBAC
-- [ ] Subscription tier & add-on module access control
-- [ ] Configurable trades per company (CSI-based + custom specialties)
-- [ ] Flexible project model: phases, cost codes, roles, audited access
-- [ ] GC-issued RFQs with in-platform and external sub invitations
-- [ ] Free sub accounts: company profile, respond to RFQs, limited projects
-- [ ] Paid sub accounts: full project creation, bid building, downstream RFQs
-- [ ] AI-assisted document drafting (RFQs, emails, reports from project context)
-- [ ] Bid ownership: snapshot + versioning, upstream change notifications
-- [ ] JV bid sharing (formal, scoped, time-bound collaboration for bids)
-- [ ] CSI-based cost codes with budget vs actuals
-- [ ] Committed costs, change orders (owner/internal/sub)
-- [ ] Pay applications & retainage tracking
-- [ ] Cost-to-complete forecasting
-- [ ] QuickBooks bi-directional ERP integration
-- [ ] Calendar integration (company + user level, bi-directional)
-- [ ] Immutable audit logging of sensitive actions
-- [ ] Responsive web application (desktop, tablet, mobile browser)
+(To be defined for next milestone — see validated requirements above for shipped features)
 
 ### Out of Scope
 
@@ -78,15 +82,16 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 
 **Market:** Small-to-mid-sized commercial contractors are underserved. Enterprise tools (Procore, Sage) are expensive and complex. Smaller tools lack multi-company collaboration and financial depth. The gap is a platform that handles the full GC↔Sub lifecycle affordably.
 
+**Current status:** v1.0 + v1.1 shipped with full project financial lifecycle, enterprise-grade UX, and guided estimate workflow. Platform handles budget tracking, change orders, payment applications, RFQ management, and bi-directional QuickBooks sync. 142K lines of TypeScript across 19 phases.
+
+**Known technical debt:**
+- Frontend slug routing incomplete for customers and subcontractors (backend ready, frontend not migrated from UUID routes)
+- Dashboard KPI widgets don't auto-filter target pages (e.g., "My Active Projects" doesn't pre-filter to user's projects)
+- Global search doesn't include estimates (only projects and customers)
+
 **Go-to-market:** Both GCs and subs need to find value from day one. GCs use the platform to issue RFQs and manage project financials. Subs use it to respond to RFQs and manage their own projects/bids. Free sub accounts (profile + RFQ response + limited projects) create network effects.
 
-**Trades:** Companies self-configure using CSI-based trade lists plus custom specialties with subcategories. Trades are metadata — they inform RFQs, bids, and reporting but historical data is never mutated by trade updates.
-
 **AI approach:** v1 AI focuses on document drafting (RFQs, emails, reports, scope review, consistent verbiage). AI strictly respects user permissions and company data boundaries — zero cross-customer leakage. Bid parsing/analysis deferred to v2.
-
-**Free tier model:** Sub accounts can create a company profile, respond to GC-issued RFQs, view past bid history, and manage a limited number of projects. Paid accounts unlock full project creation, bid building, and downstream RFQ capabilities.
-
-**JV scope:** v1 supports JV bid sharing — companies can formally collaborate on bids with scoped, time-bound, audited agreements. Full JV project execution (shared access, cost splitting) deferred.
 
 ## Constraints
 
@@ -105,16 +110,14 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Schema-per-company DB isolation | Strong data isolation without per-company DB instance ops overhead | — Pending |
-| RFQ & Bidding as core value hook | Contractors evaluate tools by how they handle bids — this is the entry point | — Pending |
-| AI drafting over AI parsing for v1 | Drafting provides immediate value; parsing requires more complex document handling | — Pending |
-| JV bid sharing only (no execution) in v1 | Full JV execution is high complexity; bid sharing proves the collaboration model | — Pending |
-| Calendar integration only (no CPM) for v1 | CPM engine is a major build; calendar sync meets scheduling needs while we validate core | — Pending |
-| No paid add-on modules in v1 | Ship core lifecycle first — add-ons (time tracking, equipment) come after core is validated | — Pending |
-| Cloud-agnostic deployment | Avoids vendor lock-in; keeps deployment flexible as business needs evolve | — Pending |
-| Free sub tier with real functionality | Profile + RFQ response + limited projects drives adoption and network effects | — Pending |
-| QuickBooks as v1 ERP target | Most common ERP among target market (small-mid commercial contractors) | — Pending |
-| Responsive web (no native mobile) for v1 | Faster to ship; field use works via mobile browser until usage patterns justify native | — Pending |
+| Schema-per-company DB isolation | Strong data isolation without per-company DB instance ops overhead | ✓ Proven — works well across 19 phases |
+| Custom auth over Clerk (Phase 12) | Eliminate third-party dependency, reduce costs, full control over flows | ✓ Good — JWT + MFA working well |
+| Cookie-based theme storage (Phase 13) | Prevents FOUC by ensuring server HTML matches client hydration | ✓ Good — no flash on load |
+| Slug-based routing (Phases 16-19) | Bookmarkable URLs, SEO-friendly, human-readable | ⚠️ Revisit — partial (projects done, customers/subs deferred) |
+| Guided estimate workflow over spreadsheet-first (Phase 17) | Reduces cognitive load for solo operators, clear next steps | ✓ Good — user preference toggle available |
+| Component library extraction at 3+ uses (Phase 19) | Prevents premature abstraction while encouraging reuse | ✓ Good — StatusBadge, CurrencyDisplay proven |
+| QuickBooks as v1 ERP target | Most common ERP among target market (small-mid commercial contractors) | ✓ Good — bi-directional sync working |
+| Responsive web (no native mobile) for v1 | Faster to ship; field use works via mobile browser until usage patterns justify native | ✓ Good — mobile browser working well |
 
 ---
-*Last updated: 2026-02-14 after starting milestone v1.1*
+*Last updated: 2026-02-16 after completing v1.1 milestone*
