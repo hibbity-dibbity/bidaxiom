@@ -336,11 +336,12 @@ None yet.
 | 11 | Fix organization not loading as active after creation | 2026-02-15 | ce0d778 | [11-organization-not-loading-as-active-top-n](./quick/11-organization-not-loading-as-active-top-n/) |
 | 12 | Add debug logging to organization loading flow | 2026-02-14 | 68257dd | [12-add-debug-logging-to-organization-loadin](./quick/12-add-debug-logging-to-organization-loadin/) |
 | 13 | Fix organization not being recognized as active after signup | 2026-02-15 | 3fac31f, 13fbdb9 | [13-fix-organization-not-being-recognized-as](./quick/13-fix-organization-not-being-recognized-as/) |
+| 14 | Fix change order history runtime error | 2026-02-16 | 0bbb083 | [14-fix-change-order-history-runtime-error](./quick/14-fix-change-order-history-runtime-error/) |
 
 ## Session Continuity
 
-Last session: 2026-02-15 (Phase 16 Plan 07)
-Stopped at: Completed 16-07-PLAN.md (Component Navigation URL Migration)
+Last session: 2026-02-16 (Quick Task 14)
+Stopped at: Completed quick-14 (Fix change order history runtime error)
 Resume file: None
 
 ---
