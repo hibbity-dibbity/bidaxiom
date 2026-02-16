@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import Image from "next/image";
 import {
   Sidebar as ShadcnSidebar,
   SidebarContent,
@@ -11,7 +12,6 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { SidebarNav } from "./sidebar-nav";
-import { CompanyLogo } from "@/components/branding/company-logo";
 
 const STORAGE_KEY = "sidebar-collapsed";
 
@@ -54,8 +54,25 @@ export function AppSidebar() {
   return (
     <ShadcnSidebar collapsible="icon">
       <SidebarHeader className="border-b px-2 py-3">
-        <div className="px-2">
-          <CompanyLogo variant="sidebar" />
+        <div className="px-2 flex items-center justify-center">
+          {/* Full logo when expanded */}
+          <Image
+            src="/bidaxiom-logo.png"
+            alt="BidAxiom"
+            width={140}
+            height={32}
+            className="group-data-[collapsible=icon]:hidden dark:invert"
+            priority
+          />
+          {/* Icon when collapsed */}
+          <Image
+            src="/bidaxiom-icon.png"
+            alt="BidAxiom"
+            width={32}
+            height={32}
+            className="hidden group-data-[collapsible=icon]:block dark:invert"
+            priority
+          />
         </div>
       </SidebarHeader>
 

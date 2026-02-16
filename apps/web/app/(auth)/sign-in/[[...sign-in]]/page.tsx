@@ -6,12 +6,12 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Link from "next/link";
+import Image from "next/image";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { CompanyLogo } from "@/components/branding/company-logo";
 import { toast } from "sonner";
 
 const loginSchema = z.object({
@@ -158,9 +158,16 @@ export default function SignInPage() {
   if (mfaRequired) {
     return (
       <div className="space-y-8">
-        {/* Company logo */}
+        {/* BidAxiom logo */}
         <div className="flex justify-center">
-          <CompanyLogo variant="auth" />
+          <Image
+            src="/bidaxiom-logo.png"
+            alt="BidAxiom"
+            width={200}
+            height={48}
+            className="mx-auto dark:invert"
+            priority
+          />
         </div>
 
         <Card>
@@ -215,9 +222,16 @@ export default function SignInPage() {
 
   return (
     <div className="space-y-8">
-      {/* Company logo */}
+      {/* BidAxiom logo */}
       <div className="flex justify-center">
-        <CompanyLogo variant="auth" />
+        <Image
+          src="/bidaxiom-logo.png"
+          alt="BidAxiom"
+          width={200}
+          height={48}
+          className="mx-auto dark:invert"
+          priority
+        />
       </div>
 
       <Card>
