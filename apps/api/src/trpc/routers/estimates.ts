@@ -20,6 +20,7 @@ import { calculateEstimateTotals } from "../../services/estimateCalculations.js"
 import { convertEstimateToProject } from "../../services/projectConversion.js";
 import { canTransitionEstimate } from "../../services/estimateLifecycle.js";
 import { generateBidFromEstimate } from "../../services/bidGeneration.js";
+import { generateSlug, isValidSlug } from "../../utils/slug.js";
 
 /**
  * Load project-level abilities for the current user.
@@ -165,6 +166,65 @@ export const estimatesRouter = router({
     }),
 
   /**
+   * Get estimate by slug with all line items.
+   * Returns estimate with line items and calculated totals.
+   */
+  getBySlug: protectedProcedure
+    .input(z.object({ slug: z.string() }))
+    .query(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      if (!isValidSlug(input.slug)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid slug format"
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+
+      // Fetch estimate
+      const [estimate] = await db
+        .select()
+        .from(schema.estimates)
+        .where(eq(schema.estimates.slug, input.slug))
+        .limit(1);
+
+      if (!estimate) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Estimate not found",
+        });
+      }
+
+      // Load abilities
+      const abilities = await loadProjectAbilities({
+        tenant: ctx.tenant,
+        userId: ctx.userId,
+        orgRole: ctx.orgRole,
+      });
+
+      ForbiddenError.from(abilities).throwUnlessCan("read", "Estimate");
+
+      // Fetch line items
+      const lineItems = await db
+        .select()
+        .from(schema.estimateLineItems)
+        .where(eq(schema.estimateLineItems.estimateId, estimate.id))
+        .orderBy(schema.estimateLineItems.orderIndex);
+
+      return {
+        ...estimate,
+        lineItems,
+      };
+    }),
+
+  /**
    * Create a new estimate.
    * Initializes estimate with draft status and version 1.
    */
@@ -202,7 +262,7 @@ export const estimatesRouter = router({
         });
       }
 
-      // Create estimate
+      // Create estimate without slug first
       const [estimate] = await db
         .insert(schema.estimates)
         .values({
@@ -216,6 +276,19 @@ export const estimatesRouter = router({
         })
         .returning();
 
+      // Generate slug using project job number if available
+      const identifier = project.jobNumber
+        ? `est-${project.jobNumber}`
+        : `est-${estimate.id.slice(0, 8)}`;
+      const finalSlug = generateSlug(identifier, input.name);
+
+      // Update with final slug
+      const [updatedEstimate] = await db
+        .update(schema.estimates)
+        .set({ slug: finalSlug })
+        .where(eq(schema.estimates.id, estimate.id))
+        .returning();
+
       // Audit log
       await createAuditLog(db, schema, {
         entityType: "Estimate",
@@ -223,11 +296,11 @@ export const estimatesRouter = router({
         action: AuditAction.CREATE,
         actorId: ctx.userId,
         changes: {
-          after: estimate,
+          after: updatedEstimate,
         },
       });
 
-      return estimate;
+      return updatedEstimate;
     }),
 
   /**

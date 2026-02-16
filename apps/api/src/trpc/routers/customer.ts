@@ -9,6 +9,7 @@ import {
 } from "@construction/shared";
 import { createAuditLog } from "../../audit/logger.js";
 import { eq, desc, or, like, sql } from "drizzle-orm";
+import { generateSlug, isValidSlug } from "../../utils/slug.js";
 
 /**
  * Customer management router.
@@ -52,7 +53,23 @@ export const customerRouter = router({
 
       const [items, totalResult] = await Promise.all([
         db
-          .select()
+          .select({
+            id: schema.customers.id,
+            companyName: schema.customers.companyName,
+            contactName: schema.customers.contactName,
+            phone: schema.customers.phone,
+            email: schema.customers.email,
+            address: schema.customers.address,
+            street1: schema.customers.street1,
+            street2: schema.customers.street2,
+            city: schema.customers.city,
+            state: schema.customers.state,
+            zip: schema.customers.zip,
+            slug: schema.customers.slug,
+            createdBy: schema.customers.createdBy,
+            createdAt: schema.customers.createdAt,
+            updatedAt: schema.customers.updatedAt,
+          })
           .from(schema.customers)
           .where(whereClause)
           .orderBy(desc(schema.customers.createdAt))
@@ -112,6 +129,54 @@ export const customerRouter = router({
     }),
 
   /**
+   * Get customer by slug with project count
+   */
+  getBySlug: protectedProcedure
+    .input(z.object({ slug: z.string() }))
+    .query(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      if (!isValidSlug(input.slug)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid slug format"
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+
+      const [customer] = await db
+        .select()
+        .from(schema.customers)
+        .where(eq(schema.customers.slug, input.slug))
+        .limit(1);
+
+      if (!customer) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Customer not found",
+        });
+      }
+
+      // Get project count for this customer
+      const projects = await db
+        .select()
+        .from(schema.projects)
+        .where(eq(schema.projects.customerId, customer.id));
+
+      return {
+        ...customer,
+        projectCount: projects.length,
+        projects,
+      };
+    }),
+
+  /**
    * Create a new customer
    */
   create: protectedProcedure
@@ -127,6 +192,7 @@ export const customerRouter = router({
       const { db, schema } = ctx.tenant;
       const userId = ctx.userId;
 
+      // Create customer without slug first
       const [customer] = await db
         .insert(schema.customers)
         .values({
@@ -144,6 +210,17 @@ export const customerRouter = router({
         })
         .returning();
 
+      // Generate slug using ID and name
+      const name = input.companyName || input.contactName;
+      const finalSlug = generateSlug(`cust-${customer.id.slice(0, 8)}`, name);
+
+      // Update with final slug
+      const [updatedCustomer] = await db
+        .update(schema.customers)
+        .set({ slug: finalSlug })
+        .where(eq(schema.customers.id, customer.id))
+        .returning();
+
       // Audit log
       await createAuditLog(db, schema, {
         entityType: "Customer",
@@ -151,11 +228,11 @@ export const customerRouter = router({
         action: AuditAction.CREATE,
         actorId: userId,
         changes: {
-          after: customer,
+          after: updatedCustomer,
         },
       });
 
-      return customer;
+      return updatedCustomer;
     }),
 
   /**
@@ -205,6 +282,14 @@ export const customerRouter = router({
         updateValues.city = input.address.city || null;
         updateValues.state = input.address.state || null;
         updateValues.zip = input.address.zipCode || null;
+      }
+
+      // Regenerate slug if name changed
+      if (input.companyName !== undefined || input.contactName !== undefined) {
+        const newCompanyName = input.companyName ?? existingCustomer.companyName;
+        const newContactName = input.contactName ?? existingCustomer.contactName;
+        const name = newCompanyName || newContactName;
+        updateValues.slug = generateSlug(`cust-${existingCustomer.id.slice(0, 8)}`, name);
       }
 
       const [updated] = await db

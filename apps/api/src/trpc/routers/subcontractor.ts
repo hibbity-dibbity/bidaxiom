@@ -12,6 +12,7 @@ import { createAuditLog } from "../../audit/logger.js";
 import { defineAbilitiesFor } from "../../auth/abilities.js";
 import { eq, desc, and, sql, or, ilike, inArray } from "drizzle-orm";
 import { ForbiddenError } from "@casl/ability";
+import { generateSlug, isValidSlug } from "../../utils/slug.js";
 
 /**
  * Subcontractor directory router.
@@ -40,7 +41,7 @@ export const subcontractorRouter = router({
       // Check permission
       ForbiddenError.from(abilities).throwUnlessCan("create", "SubcontractorDirectory");
 
-      // Create subcontractor
+      // Create subcontractor without slug first
       const [subcontractor] = await db
         .insert(schema.subcontractorDirectory)
         .values({
@@ -61,6 +62,14 @@ export const subcontractorRouter = router({
         })
         .returning();
 
+      // Generate and update slug
+      const finalSlug = generateSlug(`sub-${subcontractor.id.slice(0, 8)}`, input.companyName);
+      const [updatedSubcontractor] = await db
+        .update(schema.subcontractorDirectory)
+        .set({ slug: finalSlug })
+        .where(eq(schema.subcontractorDirectory.id, subcontractor.id))
+        .returning();
+
       // Create audit log
       await createAuditLog(db, schema, {
         entityType: "SubcontractorDirectory",
@@ -68,11 +77,11 @@ export const subcontractorRouter = router({
         action: AuditAction.CREATE,
         actorId: ctx.userId,
         changes: {
-          after: subcontractor,
+          after: updatedSubcontractor,
         },
       });
 
-      return subcontractor;
+      return updatedSubcontractor;
     }),
 
   /**
@@ -214,6 +223,85 @@ export const subcontractorRouter = router({
     }),
 
   /**
+   * Get subcontractor by slug with bid history.
+   */
+  getBySlug: protectedProcedure
+    .input(z.object({ slug: z.string() }))
+    .query(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      if (!isValidSlug(input.slug)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid slug format"
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+      const abilities = defineAbilitiesFor(
+        ctx.orgRole ?? "org:member",
+        ctx.userId
+      );
+
+      // Check permission
+      ForbiddenError.from(abilities).throwUnlessCan("read", "SubcontractorDirectory");
+
+      // Fetch subcontractor
+      const [subcontractor] = await db
+        .select()
+        .from(schema.subcontractorDirectory)
+        .where(eq(schema.subcontractorDirectory.slug, input.slug))
+        .limit(1);
+
+      if (!subcontractor) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Subcontractor not found",
+        });
+      }
+
+      // Fetch bid history with RFQ details and latest version amounts
+      const bidHistory = await db
+        .select({
+          rfqId: schema.rfqs.id,
+          rfqNumber: schema.rfqs.rfqNumber,
+          rfqTitle: schema.rfqs.title,
+          bidId: schema.bids.id,
+          status: schema.bids.status,
+          submittedAt: schema.bids.submittedAt,
+          latestAmount: sql<string>`(
+            SELECT ${schema.bidVersions.totalAmount}
+            FROM ${schema.bidVersions}
+            WHERE ${schema.bidVersions.bidId} = ${schema.bids.id}
+            ORDER BY ${schema.bidVersions.versionNumber} DESC
+            LIMIT 1
+          )`,
+        })
+        .from(schema.bids)
+        .innerJoin(schema.rfqs, eq(schema.bids.rfqId, schema.rfqs.id))
+        .where(eq(schema.bids.subcontractorId, subcontractor.id))
+        .orderBy(desc(schema.bids.submittedAt));
+
+      return {
+        ...subcontractor,
+        bidHistory: bidHistory.map(bid => ({
+          rfqId: bid.rfqId,
+          rfqNumber: bid.rfqNumber,
+          rfqTitle: bid.rfqTitle,
+          bidId: bid.bidId,
+          latestAmount: bid.latestAmount ? Number(bid.latestAmount) : null,
+          status: bid.status,
+          submittedAt: bid.submittedAt,
+        })),
+      };
+    }),
+
+  /**
    * Update subcontractor information.
    */
   update: protectedProcedure
@@ -290,6 +378,11 @@ export const subcontractorRouter = router({
 
       if (input.status !== undefined) {
         updateValues.status = input.status;
+      }
+
+      // Regenerate slug if company name changed
+      if (input.companyName !== undefined) {
+        updateValues.slug = generateSlug(`sub-${existingSubcontractor.id.slice(0, 8)}`, input.companyName);
       }
 
       // Update subcontractor

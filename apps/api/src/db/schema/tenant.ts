@@ -126,6 +126,7 @@ export function createTenantSchema(schemaName: string) {
     city: text("city"),
     state: text("state"), // 2-char US state abbreviation
     zip: text("zip"),
+    slug: text("slug").unique(), // URL-safe slug for routing
     createdBy: text("created_by").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
@@ -682,6 +683,7 @@ export function createTenantSchema(schemaName: string) {
     trades: jsonb("trades").notNull().default([]).$type<number[]>(),
     notes: text("notes"),
     status: text("status").notNull().default("active"), // active, inactive, blacklisted
+    slug: text("slug").unique(), // URL-safe slug for routing
     createdBy: text("created_by").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
@@ -1062,6 +1064,7 @@ export function createTenantSchema(schemaName: string) {
     submittedAt: timestamp("submitted_at", { withTimezone: true }),
     acceptedAt: timestamp("accepted_at", { withTimezone: true }),
     linkedBidId: uuid("linked_bid_id"),
+    slug: text("slug").unique(), // URL-safe slug for routing
     createdBy: text("created_by").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
