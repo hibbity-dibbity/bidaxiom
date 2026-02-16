@@ -73,4 +73,8 @@ export type AppSubjects =
   | "Workflow"
   | "ProjectTeam"
   | "Report"
+  | "Estimate"
+  | "EstimateTemplate"
+  | "LaborRateTemplate"
+  | "SOV"
   | "all";
