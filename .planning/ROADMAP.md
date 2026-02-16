@@ -395,7 +395,7 @@ Plans:
 - [x] 17-08-PLAN.md — Gap closure: Fix margin indicator color-coding logic (wave 1)
 - [x] 17-09-PLAN.md — Gap closure: Add template selection skip option (wave 1)
 - [x] 17-10-PLAN.md — Gap closure: Fix line item creation validation error (wave 1)
-- [ ] 17-11-PLAN.md — UAT gap closure: Fix CSI dropdown, NaN margin, and Step 6 navigation (wave 1)
+- [x] 17-11-PLAN.md — UAT gap closure: Fix CSI dropdown, NaN margin, and Step 6 navigation (wave 1)
 
 ### Phase 18: Estimating Workflow - Lifecycle & Conversion
 **Goal**: User can generate bids from estimates, submit, track won/lost, and convert to active projects
@@ -408,7 +408,13 @@ Plans:
   4. Project status transitions are automated based on estimating lifecycle stage
   5. Estimating workflow is designed for minimal cognitive load with clear next steps
   6. Estimating workflow requires minimal clicks between stages
-**Plans**: Not yet planned
+**Plans**: 4 plans across 3 waves
+
+Plans:
+- [ ] 18-01-PLAN.md — Schema extensions (estimate-bid linking, bid status, project "bidding" status), migration script (wave 1)
+- [ ] 18-02-PLAN.md — Lifecycle management services and tRPC procedures (submit estimate, generate bid, mark won/lost) (wave 2)
+- [ ] 18-03-PLAN.md — Project conversion service and tRPC procedure (convert accepted estimate to active project) (wave 2)
+- [ ] 18-04-PLAN.md — Lifecycle UI components (status badge, next steps panel, action buttons) (wave 3)
 
 ### Phase 19: Component Library & Architecture
 **Goal**: Reusable UI component system is centralized with clean routing and dynamic content loading
@@ -450,10 +456,10 @@ v1.1: Phases 13-19 (in progress)
 | 14. Form Standardization & Validation | 5/8 | UAT Gap Closure | - |
 | 15. Dashboard Redesign | 0/5 | Planned | - |
 | 16. Projects Interface Redesign | 7/7 | Complete | 2026-02-15 |
-| 17. Estimating Workflow - Setup & Core | 10/11 | UAT Gap Closure | 2026-02-16 |
-| 18. Estimating Workflow - Lifecycle & Conversion | 0/TBD | Pending | - |
+| 17. Estimating Workflow - Setup & Core | 11/11 | Complete | 2026-02-16 |
+| 18. Estimating Workflow - Lifecycle & Conversion | 0/4 | Pending | - |
 | 19. Component Library & Architecture | 0/TBD | Pending | - |
 
 ---
 *Roadmap created: 2026-02-10 (v1.0)*
-*Last updated: 2026-02-16 (Phase 17 gap closure - added Plan 17-11)*
+*Last updated: 2026-02-16 (Phase 18 planned - 4 plans across 3 waves)*
