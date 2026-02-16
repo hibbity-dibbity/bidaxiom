@@ -17,7 +17,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TradesCombobox } from "@/components/company/trades-combobox";
 import { CustomTradesList } from "@/components/company/custom-trades-list";
-import { LogoUpload } from "@/components/branding/logo-upload";
 import { toast } from "sonner";
 import { AlertCircle } from "lucide-react";
 
@@ -324,17 +323,6 @@ export default function CompanySettingsPage() {
           </div>
         )}
       </form>
-
-      {/* Company Branding Section */}
-      <div className="space-y-4">
-        <div>
-          <h2 className="text-2xl font-semibold">Branding</h2>
-          <p className="text-muted-foreground">
-            Customize your company's visual identity
-          </p>
-        </div>
-        <LogoUpload />
-      </div>
     </div>
   );
 }
