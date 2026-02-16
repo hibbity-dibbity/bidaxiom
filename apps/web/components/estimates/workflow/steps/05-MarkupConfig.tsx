@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { overheadTypeEnum, markupBaseEnum, formatCurrency } from "@construction/shared";
 import { trpc } from "@/lib/trpc";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,12 +22,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useAutoSave } from "../useAutoSave";
 import { useWorkflowState } from "../useWorkflowState";
 import { toast } from "sonner";
-import { formatCurrency } from "@construction/shared";
 
+// Markup config schema extends updateEstimateSchema fields with per-cost-type markup percentages
+// These are stored as JSONB in the markupConfig column
 const markupConfigSchema = z.object({
-  overheadType: z.enum(["percentage", "fixed"]),
+  overheadType: overheadTypeEnum,
   overheadValue: z.number().min(0),
-  markupBase: z.enum(["direct", "direct_plus_overhead"]),
+  markupBase: markupBaseEnum,
   laborMarkupPercent: z.number().min(0).max(100),
   materialMarkupPercent: z.number().min(0).max(100),
   equipmentMarkupPercent: z.number().min(0).max(100),

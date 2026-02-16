@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { createEstimateSchema } from "@construction/shared";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,10 +29,12 @@ import { useAutoSave } from "../useAutoSave";
 import { useWorkflowState } from "../useWorkflowState";
 import { toast } from "sonner";
 
-const basicInfoSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  description: z.string().optional(),
-  projectType: z.enum(["residential", "commercial", "industrial", "institutional"]),
+// Use subset of createEstimateSchema for this step
+// Full schema requires projectId which is already set during estimate creation
+const basicInfoSchema = createEstimateSchema.pick({
+  name: true,
+  description: true,
+  projectType: true,
 });
 
 type BasicInfoFormValues = z.infer<typeof basicInfoSchema>;
@@ -156,7 +159,7 @@ export function BasicInfoStep({ estimateId }: BasicInfoStepProps) {
                     <SelectItem value="residential">Residential</SelectItem>
                     <SelectItem value="commercial">Commercial</SelectItem>
                     <SelectItem value="industrial">Industrial</SelectItem>
-                    <SelectItem value="institutional">Institutional</SelectItem>
+                    <SelectItem value="infrastructure">Infrastructure</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormDescription>
