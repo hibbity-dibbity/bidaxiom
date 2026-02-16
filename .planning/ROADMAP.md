@@ -38,7 +38,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 15: Dashboard Redesign** - KPI widgets (user-level and company-level), task management, pipeline visibility
 - [x] **Phase 16: Projects Interface Redesign** - Compact table view, advanced filtering (nuqs), slug-safe URLs, persistent header (completed 2026-02-15)
 - [x] **Phase 17: Estimating Workflow - Setup & Core** - Guided step-by-step builder, cost code templates, labor rates, SOV builder (completed 2026-02-16)
-- [ ] **Phase 18: Estimating Workflow - Lifecycle & Conversion** - Bid generation, submission, won/lost tracking, conversion to active project
+- [x] **Phase 18: Estimating Workflow - Lifecycle & Conversion** - Bid generation, submission, won/lost tracking, conversion to active project (completed 2026-02-16)
 - [ ] **Phase 19: Component Library & Architecture** - Reusable UI system, clean routing, dynamic content loading, architectural polish
 
 ## Phase Details
@@ -457,7 +457,7 @@ v1.1: Phases 13-19 (in progress)
 | 15. Dashboard Redesign | 0/5 | Planned | - |
 | 16. Projects Interface Redesign | 7/7 | Complete | 2026-02-15 |
 | 17. Estimating Workflow - Setup & Core | 11/11 | Complete | 2026-02-16 |
-| 18. Estimating Workflow - Lifecycle & Conversion | 0/4 | Pending | - |
+| 18. Estimating Workflow - Lifecycle & Conversion | 0/4 | Complete    | 2026-02-16 |
 | 19. Component Library & Architecture | 0/TBD | Pending | - |
 
 ---
