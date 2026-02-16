@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-02-14)
 Phase: Phase 19 - Component Library & Architecture
 Plan: 6 of 6 (phase complete)
 Status: Complete
-Last activity: 2026-02-16 - Completed quick task 15: Fix Next.js dev server EINVAL readlink error
+Last activity: 2026-02-16 - Completed quick task 16: Fix slug routing bugs in search and estimate conversion
 
 Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [██████████] 100% (Phase 13 complete, Phase 14 6/8 plans, Phase 15 5/5 plans complete, Phase 16 7/7 plans complete, Phase 17 11/11 plans complete, Phase 18 4/4 plans complete, Phase 19 6/6 plans complete)
 
@@ -409,10 +409,11 @@ None yet.
 | 13 | Fix organization not being recognized as active after signup | 2026-02-15 | 3fac31f, 13fbdb9 | [13-fix-organization-not-being-recognized-as](./quick/13-fix-organization-not-being-recognized-as/) |
 | 14 | Fix change order history runtime error | 2026-02-16 | 0bbb083 | [14-fix-change-order-history-runtime-error](./quick/14-fix-change-order-history-runtime-error/) |
 | 15 | Fix Next.js dev server EINVAL readlink error | 2026-02-16 | 75e55cf | [15-fix-next-js-dev-server-einval-readlink-e](./quick/15-fix-next-js-dev-server-einval-readlink-e/) |
+| 16 | Fix slug routing bugs in search and estimate conversion | 2026-02-16 | a6d8f19 | [16-slug-routing-hotfixes](./quick/16-slug-routing-hotfixes/) |
 
 ## Session Continuity
 
-Last session: 2026-02-16 (Quick Task 15 execution)
-Stopped at: Completed quick-15-PLAN.md (dev server EINVAL fix)
-Resume file: .planning/quick/15-fix-next-js-dev-server-einval-readlink-e/15-SUMMARY.md
+Last session: 2026-02-16 (Quick Task 16 execution)
+Stopped at: Completed quick-16-PLAN.md (slug routing hotfixes)
+Resume file: .planning/quick/16-slug-routing-hotfixes/16-SUMMARY.md
 
