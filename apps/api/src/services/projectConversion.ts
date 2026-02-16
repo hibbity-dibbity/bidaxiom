@@ -79,15 +79,13 @@ export async function convertEstimateToProject(
       .where(eq(schema.projects.id, estimate.projectId));
 
     // Create budget line items from estimate line items
-    const budgetLineItems = lineItems.map((item, index) => ({
+    const budgetLineItems = lineItems.map((item) => ({
       projectId: estimate.projectId,
       costCodeId: item.costCodeId,
       description: item.description,
-      budgetAmount: String(Number(item.unitCost) * Number(item.quantity)),
-      committedCost: "0",
+      budgetedAmount: String(Number(item.unitCost) * Number(item.quantity)),
       actualCost: "0",
       isLocked: false,
-      orderIndex: index,
       createdBy: input.userId,
     }));
 
