@@ -14,6 +14,7 @@ import { defineAbilitiesFor } from "../../auth/abilities.js";
 import { eq, desc, and, count, inArray, sql } from "drizzle-orm";
 import { ForbiddenError } from "@casl/ability";
 import { calculateEstimateTotals } from "../../services/estimateCalculations.js";
+import { convertEstimateToProject } from "../../services/projectConversion.js";
 
 /**
  * Load project-level abilities for the current user.
@@ -906,5 +907,18 @@ export const estimatesRouter = router({
       });
 
       return { success: true };
+    }),
+
+  /**
+   * Convert accepted estimate to active project.
+   * Creates budget line items from estimate line items.
+   */
+  convertToProject: protectedProcedure
+    .input(z.object({ estimateId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      return await convertEstimateToProject(ctx, {
+        estimateId: input.estimateId,
+        userId: ctx.userId,
+      });
     }),
 });

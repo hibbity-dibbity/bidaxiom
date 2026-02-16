@@ -121,3 +121,9 @@ export const updateBidStatusSchema = z.object({
   status: bidStatusEnum,
   notes: z.string().optional(),
 });
+
+export const convertToProjectSchema = z.object({
+  estimateId: z.string().uuid(),
+});
+
+export type ConvertToProjectInput = z.infer<typeof convertToProjectSchema>;
