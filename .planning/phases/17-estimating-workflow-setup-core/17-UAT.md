@@ -103,5 +103,14 @@ skipped: 14
   reason: "User reported: Failed. There is no link to Estimates onthe Project Detail page. I can navigate manually to /projects/{slug}/estimates. I can click New Estimate and fill out the estimate info. When I click Start Estimating I get the following error: Failed query: insert into \"tenant_vpa_g9edvkmrj3ao2oebusov\".\"estimates\" (\"id\", \"project_id\", \"name\", \"description\", \"status\", \"project_type\", \"applied_cost_code_template_id\", \"applied_labor_rate_template_id\", \"overhead_type\", \"overhead_value\", \"markup_base\", \"direct_costs\", \"overhead_amount\", \"markup_amount\", \"total_cost\", \"current_version\", \"submitted_at\", \"accepted_at\", \"created_by\", \"created_at\", \"updated_at\") values (default, $1, $2, default, $3, $4, default, default, default, default, default, default, default, default, default, $5, default, default, $6, default, default) returning \"id\", \"project_id\", \"name\", \"description\", \"status\", \"project_type\", \"applied_cost_code_template_id\", \"applied_labor_rate_template_id\", \"overhead_type\", \"overhead_value\", \"markup_base\", \"direct_costs\", \"overhead_amount\", \"markup_amount\", \"total_cost\", \"current_version\", \"submitted_at\", \"accepted_at\", \"created_by\", \"created_at\", \"updated_at\" params: a17fb662-9a2b-440c-b4c0-374877bd92bf,Base Bid Option A,draft,commercial,1,edd55e62-309c-4ce0-9315-cb3c2066cb91"
   severity: blocker
   test: 1
-  artifacts: []
-  missing: []
+  root_cause: "Phase 17 estimating tables were defined in schema but never added to tenant provisioning. The provisionTenantSchema function in apps/api/src/tenant/provision.ts ended at calendar_sync_state table and did not include any Phase 17 tables (estimates, estimate_line_items, cost_code_templates, template_line_items, labor_rate_templates, estimate_versions, sov_versions)."
+  artifacts:
+    - path: "apps/api/src/tenant/provision.ts"
+      issue: "Missing Phase 17 table creation SQL"
+    - path: "apps/api/src/migrate-phase17-estimates.ts"
+      issue: "Migration script for existing tenants (created by debugger)"
+  missing:
+    - "Add Phase 17 table creation to provision.ts (FIXED)"
+    - "Run migration for existing tenant (FIXED)"
+    - "Add 'Estimates' tab to project detail layout"
+  debug_session: ".planning/debug/phase17-estimate-creation-fails.md"

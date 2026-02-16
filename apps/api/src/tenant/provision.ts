@@ -1427,6 +1427,169 @@ export async function provisionTenantSchema(
         )
       `);
 
+      // Create estimates table (Phase 17)
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".estimates (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          project_id UUID NOT NULL REFERENCES "${schemaName}".projects(id) ON DELETE CASCADE,
+          name TEXT NOT NULL,
+          description TEXT,
+          status TEXT NOT NULL DEFAULT 'draft',
+          project_type TEXT NOT NULL,
+          applied_cost_code_template_id UUID,
+          applied_labor_rate_template_id UUID,
+          overhead_type TEXT NOT NULL DEFAULT 'percentage',
+          overhead_value NUMERIC(15,2) NOT NULL DEFAULT 0,
+          markup_base TEXT NOT NULL DEFAULT 'direct',
+          direct_costs NUMERIC(15,2) NOT NULL DEFAULT 0,
+          overhead_amount NUMERIC(15,2) NOT NULL DEFAULT 0,
+          markup_amount NUMERIC(15,2) NOT NULL DEFAULT 0,
+          total_cost NUMERIC(15,2) NOT NULL DEFAULT 0,
+          current_version INTEGER NOT NULL DEFAULT 1,
+          submitted_at TIMESTAMPTZ,
+          accepted_at TIMESTAMPTZ,
+          created_by TEXT NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      // Index for fast estimates lookup by project
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_estimates_project
+        ON "${schemaName}".estimates(project_id)
+      `);
+
+      // Create estimate_line_items table (Phase 17)
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".estimate_line_items (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          estimate_id UUID NOT NULL REFERENCES "${schemaName}".estimates(id) ON DELETE CASCADE,
+          cost_code_id INTEGER NOT NULL,
+          description TEXT NOT NULL,
+          quantity NUMERIC(15,4) NOT NULL,
+          unit TEXT NOT NULL,
+          unit_cost NUMERIC(15,4) NOT NULL,
+          cost_type TEXT NOT NULL,
+          custom_markup_percent NUMERIC(5,2),
+          source_template_id UUID,
+          order_index INTEGER NOT NULL DEFAULT 0,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      // Index for fast estimate line items lookup
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_estimate_line_items_estimate
+        ON "${schemaName}".estimate_line_items(estimate_id)
+      `);
+
+      // Create cost_code_templates table (Phase 17)
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".cost_code_templates (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          name TEXT NOT NULL,
+          description TEXT,
+          scope TEXT NOT NULL,
+          project_type TEXT,
+          created_by TEXT NOT NULL,
+          is_active BOOLEAN NOT NULL DEFAULT true,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      // Index for active templates
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_cost_code_templates_active
+        ON "${schemaName}".cost_code_templates(is_active)
+        WHERE is_active = true
+      `);
+
+      // Create template_line_items table (Phase 17)
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".template_line_items (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          template_id UUID NOT NULL REFERENCES "${schemaName}".cost_code_templates(id) ON DELETE CASCADE,
+          cost_code_id INTEGER NOT NULL,
+          description TEXT NOT NULL,
+          quantity NUMERIC(15,4),
+          unit TEXT,
+          estimated_unit_cost NUMERIC(15,4),
+          cost_type TEXT NOT NULL,
+          order_index INTEGER NOT NULL DEFAULT 0,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      // Index for fast template line items lookup
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_template_line_items_template
+        ON "${schemaName}".template_line_items(template_id)
+      `);
+
+      // Create labor_rate_templates table (Phase 17)
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".labor_rate_templates (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          name TEXT NOT NULL,
+          description TEXT,
+          scope TEXT NOT NULL,
+          rates JSONB NOT NULL,
+          created_by TEXT NOT NULL,
+          is_active BOOLEAN NOT NULL DEFAULT true,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      // Index for active labor templates
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_labor_rate_templates_active
+        ON "${schemaName}".labor_rate_templates(is_active)
+        WHERE is_active = true
+      `);
+
+      // Create estimate_versions table (Phase 17)
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".estimate_versions (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          estimate_id UUID NOT NULL REFERENCES "${schemaName}".estimates(id) ON DELETE CASCADE,
+          version INTEGER NOT NULL,
+          status TEXT NOT NULL,
+          snapshot JSONB NOT NULL,
+          created_by TEXT NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      // Index for fast estimate versions lookup
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_estimate_versions_estimate
+        ON "${schemaName}".estimate_versions(estimate_id)
+      `);
+
+      // Create sov_versions table (Phase 17)
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "${schemaName}".sov_versions (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          sov_id UUID NOT NULL,
+          estimate_version_id UUID REFERENCES "${schemaName}".estimate_versions(id) ON DELETE SET NULL,
+          version INTEGER NOT NULL,
+          status TEXT NOT NULL,
+          line_items JSONB NOT NULL,
+          created_from_change_order UUID REFERENCES "${schemaName}".change_orders(id) ON DELETE SET NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      // Index for fast SOV versions lookup
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_sov_versions_sov
+        ON "${schemaName}".sov_versions(sov_id)
+      `);
+
       // Register tenant in public schema
       const insertResult = await client.query(
         `INSERT INTO tenants (schema_name, clerk_org_id, name, status)
