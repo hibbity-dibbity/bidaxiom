@@ -12,16 +12,16 @@ See: .planning/PROJECT.md (updated 2026-02-14)
 Phase: Phase 19 - Component Library & Architecture
 Plan: 5 of 5 (ready for next phase)
 Status: In progress
-Last activity: 2026-02-16 - Completed Plan 19-02 (shared component migration)
+Last activity: 2026-02-16 - Completed Plan 19-05 (architectural conventions documentation)
 
 Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [██████████] 100% (Phase 13 complete, Phase 14 6/8 plans, Phase 15 5/5 plans complete, Phase 16 7/7 plans complete, Phase 17 11/11 plans complete, Phase 18 4/4 plans complete, Phase 19 5/5 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 89
+- Total plans completed: 90
 - Average duration: 4.6 min
-- Total execution time: 8.31 hours
+- Total execution time: 8.40 hours
 
 **By Phase:**
 
@@ -44,11 +44,11 @@ Progress: v1.0: [██████████] 100% complete (12 phases) | v1.
 | 16 | 7 | 63.2 min | 9.0 min |
 | 17 | 11 | 47.6 min | 4.3 min |
 | 18 | 4 | 9.7 min | 2.4 min |
-| 19 | 4 | 15.2 min | 3.8 min |
+| 19 | 5 | 20.7 min | 4.1 min |
 
 **Recent Trend:**
-- Last 5 plans: 19-02 (2.7 min), 19-03 (4.8 min), 19-01 (2.7 min), 18-01 (2 min), 18-03 (2 min)
-- Trend: Phase 19 in progress (component library), averaging 3.8 min.
+- Last 5 plans: 19-05 (5.5 min), 19-04 (5 min), 19-03 (4.8 min), 19-02 (2.7 min), 19-01 (2.7 min)
+- Trend: Phase 19 complete (component library), averaged 4.1 min.
 
 *Updated after each plan completion*
 | Phase 06 P02 | 8 | 2 tasks | 5 files |
@@ -138,6 +138,7 @@ Progress: v1.0: [██████████] 100% complete (12 phases) | v1.
 | Phase 19-component-library-architecture P03 | 4.8 min | 3 tasks | 4 files |
 | Phase 19-component-library-architecture P04 | 5 min | 2 tasks | 6 files |
 | Phase 19-component-library-architecture P02 | 2.7 min | 2 tasks | 7 files |
+| Phase 19-component-library-architecture P05 | 5.5 min | 4 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -378,6 +379,7 @@ Recent decisions affecting current work:
 - [Phase 19-04]: Generic slug utilities with backward compatibility wrapper (generateProjectSlug calls generateSlug internally) maintains zero breaking changes
 - [Phase 19-04]: Slug patterns use entity prefixes (cust-*, sub-*, est-*) for clear entity type identification in URLs
 - [Phase 19-04]: Database UNIQUE constraint on slug column provides strongest guarantee against routing collisions
+- [Phase 19-05]: Convention documentation location strategy — Domain-specific conventions placed in workspace directories (apps/web/ for components/routing, packages/shared/ for schemas) for natural discoverability while central ARCHITECTURE.md provides overview
 
 ### Pending Todos
 
@@ -408,7 +410,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-16 (Phase 19 Plan 02 execution)
-Stopped at: Completed 19-02-PLAN.md (shared component migration)
-Resume file: .planning/phases/19-component-library-architecture/19-02-SUMMARY.md
+Last session: 2026-02-16 (Phase 19 Plan 05 execution)
+Stopped at: Completed 19-05-PLAN.md (architectural conventions documentation)
+Resume file: .planning/phases/19-component-library-architecture/19-05-SUMMARY.md
 
