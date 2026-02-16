@@ -1031,6 +1031,132 @@ export function createTenantSchema(schemaName: string) {
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   });
 
+  /**
+   * Estimates
+   * Core estimate records with versioning and template tracking
+   */
+  const estimates = schema.table("estimates", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description"),
+    status: text("status").notNull().default("draft"), // draft, submitted, accepted, under_contract
+    projectType: text("project_type").notNull(), // commercial, residential, infrastructure, industrial
+    appliedCostCodeTemplateId: uuid("applied_cost_code_template_id"),
+    appliedLaborRateTemplateId: uuid("applied_labor_rate_template_id"),
+    overheadType: text("overhead_type").notNull().default("percentage"), // percentage, fixed
+    overheadValue: numeric("overhead_value", { precision: 15, scale: 2 }).notNull().default("0"),
+    markupBase: text("markup_base").notNull().default("direct"), // direct, direct_plus_overhead
+    directCosts: numeric("direct_costs", { precision: 15, scale: 2 }).notNull().default("0"),
+    overheadAmount: numeric("overhead_amount", { precision: 15, scale: 2 }).notNull().default("0"),
+    markupAmount: numeric("markup_amount", { precision: 15, scale: 2 }).notNull().default("0"),
+    totalCost: numeric("total_cost", { precision: 15, scale: 2 }).notNull().default("0"),
+    currentVersion: integer("current_version").notNull().default(1),
+    submittedAt: timestamp("submitted_at", { withTimezone: true }),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * Estimate line items
+   * Individual cost line items within an estimate
+   */
+  const estimateLineItems = schema.table("estimate_line_items", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    estimateId: uuid("estimate_id").notNull().references(() => estimates.id, { onDelete: "cascade" }),
+    costCodeId: integer("cost_code_id").notNull(),
+    description: text("description").notNull(),
+    quantity: numeric("quantity", { precision: 15, scale: 4 }).notNull(),
+    unit: text("unit").notNull(), // ea, sf, lf, ton, hr
+    unitCost: numeric("unit_cost", { precision: 15, scale: 4 }).notNull(),
+    costType: text("cost_type").notNull(), // labor, material, equipment, subcontractor
+    customMarkupPercent: numeric("custom_markup_percent", { precision: 5, scale: 2 }),
+    sourceTemplateId: uuid("source_template_id"), // NO FK - tracks origin without constraint
+    orderIndex: integer("order_index").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * Cost code templates
+   * Company and personal templates for recurring estimate structures
+   */
+  const costCodeTemplates = schema.table("cost_code_templates", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    description: text("description"),
+    scope: text("scope").notNull(), // company, personal
+    projectType: text("project_type"), // applies to all if null
+    createdBy: text("created_by").notNull(),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * Template line items
+   * Predefined line items within cost code templates
+   */
+  const templateLineItems = schema.table("template_line_items", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    templateId: uuid("template_id").notNull().references(() => costCodeTemplates.id, { onDelete: "cascade" }),
+    costCodeId: integer("cost_code_id").notNull(),
+    description: text("description").notNull(),
+    quantity: numeric("quantity", { precision: 15, scale: 4 }),
+    unit: text("unit"),
+    estimatedUnitCost: numeric("estimated_unit_cost", { precision: 15, scale: 4 }),
+    costType: text("cost_type").notNull(), // labor, material, equipment, subcontractor
+    orderIndex: integer("order_index").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * Labor rate templates
+   * Company and personal templates for labor classifications and rates
+   */
+  const laborRateTemplates = schema.table("labor_rate_templates", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    description: text("description"),
+    scope: text("scope").notNull(), // company, personal
+    rates: jsonb("rates").notNull().$type<Record<string, number>>(), // { "Foreman": 65, "Carpenter": 45 }
+    createdBy: text("created_by").notNull(),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * Estimate versions
+   * Snapshot history of estimates for change tracking
+   */
+  const estimateVersions = schema.table("estimate_versions", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    estimateId: uuid("estimate_id").notNull().references(() => estimates.id, { onDelete: "cascade" }),
+    version: integer("version").notNull(),
+    status: text("status").notNull(),
+    snapshot: jsonb("snapshot").notNull().$type<Record<string, unknown>>(), // complete estimate + line items + totals
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * SOV versions
+   * Schedule of Values version history linked to estimate versions
+   */
+  const sovVersions = schema.table("sov_versions", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sovId: uuid("sov_id").notNull(),
+    estimateVersionId: uuid("estimate_version_id").references(() => estimateVersions.id, { onDelete: "set null" }),
+    version: integer("version").notNull(),
+    status: text("status").notNull(), // draft, submitted, accepted, contractual
+    lineItems: jsonb("line_items").notNull().$type<unknown[]>(), // array of SOV line items with metadata
+    createdFromChangeOrder: uuid("created_from_change_order").references(() => changeOrders.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
   return {
     schema,
     auditLogs,
@@ -1084,6 +1210,13 @@ export function createTenantSchema(schemaName: string) {
     calendarConnections,
     calendarEvents,
     calendarSyncState,
+    estimates,
+    estimateLineItems,
+    costCodeTemplates,
+    templateLineItems,
+    laborRateTemplates,
+    estimateVersions,
+    sovVersions,
   };
 }
 

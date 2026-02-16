@@ -104,6 +104,13 @@ export async function buildTenantContext(
       calendarConnections: tenantDb.calendarConnections,
       calendarEvents: tenantDb.calendarEvents,
       calendarSyncState: tenantDb.calendarSyncState,
+      estimates: tenantDb.estimates,
+      estimateLineItems: tenantDb.estimateLineItems,
+      costCodeTemplates: tenantDb.costCodeTemplates,
+      templateLineItems: tenantDb.templateLineItems,
+      laborRateTemplates: tenantDb.laborRateTemplates,
+      estimateVersions: tenantDb.estimateVersions,
+      sovVersions: tenantDb.sovVersions,
     },
   };
 }
