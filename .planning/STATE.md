@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2026-02-14)
 
 ## Current Position
 
-Phase: Phase 17 - Estimating Workflow Setup Core
-Plan: 11 of TBD complete
+Phase: Phase 18 - Estimating Workflow Lifecycle and Conversion
+Plan: 1 of 4 complete
 Status: In Progress
-Last activity: 2026-02-16 - Completed 17-11-PLAN.md (UAT Gap Closure - Critical Fixes)
+Last activity: 2026-02-16 - Completed 18-01-PLAN.md (Estimate-Bid Lifecycle Schema Extension)
 
-Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [█████████░] 94% (Phase 13 complete, Phase 14 6/8 plans, Phase 15 5/5 plans complete, Phase 16 7/7 plans complete, Phase 17 11/? plans complete)
+Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [█████████░] 95% (Phase 13 complete, Phase 14 6/8 plans, Phase 15 5/5 plans complete, Phase 16 7/7 plans complete, Phase 17 11/11 plans complete, Phase 18 1/4 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 81
-- Average duration: 5.0 min
-- Total execution time: 7.95 hours
+- Total plans completed: 82
+- Average duration: 4.9 min
+- Total execution time: 7.98 hours
 
 **By Phase:**
 
@@ -43,10 +43,11 @@ Progress: v1.0: [██████████] 100% complete (12 phases) | v1.
 | 15 | 5 | 12.5 min | 2.5 min |
 | 16 | 7 | 63.2 min | 9.0 min |
 | 17 | 11 | 47.6 min | 4.3 min |
+| 18 | 1 | 2 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 17-07 (2 min), 17-08 (2 min), 17-09 (2.3 min), 17-10 (1.3 min), 17-11 (3 min)
-- Trend: Phase 17 in progress, 11/? plans complete, averaging 4.3 min.
+- Last 5 plans: 17-08 (2 min), 17-09 (2.3 min), 17-10 (1.3 min), 17-11 (3 min), 18-01 (2 min)
+- Trend: Phase 18 in progress, 1/4 plans complete, averaging 2 min.
 
 *Updated after each plan completion*
 | Phase 06 P02 | 8 | 2 tasks | 5 files |
@@ -126,6 +127,7 @@ Progress: v1.0: [██████████] 100% complete (12 phases) | v1.
 | Phase 17-estimating-workflow-setup-core P09 | 2.3 min | 1 task | 1 file |
 | Phase 17-estimating-workflow-setup-core P10 | 1.3 min | 1 task | 1 file |
 | Phase 17-estimating-workflow-setup-core P11 | 3 min | 2 tasks | 2 files |
+| Phase 18-estimating-workflow-lifecycle-and-conversion P01 | 2 min | 1 task | 4 files |
 
 ## Accumulated Context
 
@@ -334,12 +336,18 @@ Recent decisions affecting current work:
 - [Phase 17-06]: TanStack Table for inline editing — Industry-standard table library with excellent TypeScript support and flexible cell editing patterns
 - [Phase 17-06]: Auto-save on blur without debouncing — Simpler than debounced typing, prevents data loss, matches user expectation of "edit then click away"
 - [Phase 17-06]: Color-coded margin indicators — Red < 10%, yellow 10-20%, green >= 20% based on construction industry norms
-- [Phase 17-06]: $1.00 SOV variance tolerance — Allows for rounding differences while ensuring accuracy for financial compliance
+- [Phase 17-06]: ### Decisions
+
+.00 SOV variance tolerance — Allows for rounding differences while ensuring accuracy for financial compliance
 - [Phase 17-07]: Workflow step container acts as router pattern — WorkflowStepContainer imports and renders step components based on currentStep prop, delegating all logic to step-specific components
 - [Phase 17-10]: Allow zero-cost line items in validation schema — Users can add line items before costs are known; business rule validation at estimate submission time ensures no zero costs in final estimates
 - [Phase 17-11]: Zero-check before division for margin calculation — sellingPrice > 0 ternary prevents NaN when costs are zero, returns 0 instead
 - [Phase 17-11]: Optional costCodeId in updateLineItemSchema — Allows frontend to update cost code selection; schema strips unlisted fields during Zod validation
 - [Phase 17-11]: Step 6 unlocks on Step 5 mount — Markup config is optional (user can skip), following Step 3 pattern which unlocks Step 4 on mount
+- [Phase 18-01]: Estimate-bid linking via linkedBidId on estimates and estimateId on bids for bidirectional navigation
+- [Phase 18-01]: Closure tracking fields (closedAt/By/Notes) support bid won/lost workflow documentation
+- [Phase 18-01]: Bidding project status enables automated project lifecycle transitions from estimate workflow
+- [Phase 18-01]: Migration checks column existence for idempotency to support multiple runs
 
 ### Pending Todos
 
@@ -370,8 +378,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-16 (Phase 17 Plan 11)
-Stopped at: Completed 17-11-PLAN.md (UAT Gap Closure - Critical Fixes)
+Last session: 2026-02-16 (Phase 18 Plan 01)
+Stopped at: Completed 18-01-PLAN.md (Estimate-Bid Lifecycle Schema Extension)
 Resume file: None
 
 ---
