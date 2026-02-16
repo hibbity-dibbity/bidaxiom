@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 // Estimate status enum
+// Lifecycle: draft → submitted (bid generated) → accepted (bid won) → under_contract (converted to project)
 export const estimateStatusEnum = z.enum(["draft", "submitted", "accepted", "under_contract"]);
 export type EstimateStatus = z.infer<typeof estimateStatusEnum>;
 
@@ -27,6 +28,10 @@ export type SOVGroupingMethod = z.infer<typeof sovGroupingMethodEnum>;
 // Unit enum for quantities
 export const unitEnum = z.enum(["ea", "sf", "lf", "ton", "hr"]);
 export type Unit = z.infer<typeof unitEnum>;
+
+// Bid status enum (from Phase 7 bids table)
+export const bidStatusEnum = z.enum(["draft", "submitted", "won", "lost", "withdrawn"]);
+export type BidStatus = z.infer<typeof bidStatusEnum>;
 
 /**
  * Estimate totals calculated from line items

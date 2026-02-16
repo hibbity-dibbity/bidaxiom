@@ -149,7 +149,7 @@ export function createTenantSchema(schemaName: string) {
     state: text("state"), // 2-char US state abbreviation
     zip: text("zip"),
     projectType: text("project_type").notNull(), // commercial, residential, infrastructure, industrial
-    status: text("status").notNull().default("active"), // active, on_hold, completed, archived
+    status: text("status").notNull().default("active"), // active, on_hold, completed, archived, bidding
     startDate: timestamp("start_date", { withTimezone: true }),
     endDate: timestamp("end_date", { withTimezone: true }),
     budget: numeric("budget", { precision: 15, scale: 2 }),
@@ -754,12 +754,16 @@ export function createTenantSchema(schemaName: string) {
     bidderCompanyName: text("bidder_company_name").notNull(),
     bidderContactEmail: text("bidder_contact_email"),
     currentVersionId: uuid("current_version_id"),
-    status: text("status").notNull().default("submitted"), // submitted, under_review, shortlisted, awarded, rejected, withdrawn
+    estimateId: uuid("estimate_id").references(() => estimates.id, { onDelete: "set null" }),
+    status: text("status").notNull().default("draft"), // draft, submitted, won, lost, withdrawn
     submittedAt: timestamp("submitted_at", { withTimezone: true }).defaultNow().notNull(),
     awardedAt: timestamp("awarded_at", { withTimezone: true }),
     awardedBy: text("awarded_by"),
     commitmentId: text("commitment_id"), // TEXT reference to avoid circular FK
     notes: text("notes"),
+    closedAt: timestamp("closed_at", { withTimezone: true }),
+    closedBy: text("closed_by"),
+    closedNotes: text("closed_notes"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   });
@@ -1056,6 +1060,7 @@ export function createTenantSchema(schemaName: string) {
     currentVersion: integer("current_version").notNull().default(1),
     submittedAt: timestamp("submitted_at", { withTimezone: true }),
     acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+    linkedBidId: uuid("linked_bid_id"),
     createdBy: text("created_by").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),

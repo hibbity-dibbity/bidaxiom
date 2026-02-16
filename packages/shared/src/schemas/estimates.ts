@@ -7,6 +7,7 @@ import {
   overheadTypeEnum,
   sovGroupingMethodEnum,
   unitEnum,
+  bidStatusEnum,
 } from "../types/estimates";
 
 /**
@@ -107,4 +108,16 @@ export const updateSOVLineItemSchema = z.object({
   description: z.string().min(1).max(500).optional(),
   amount: z.number().positive().optional(),
   sortOrder: z.number().int().min(0).optional(),
+});
+
+// Bid lifecycle schemas
+export const generateBidSchema = z.object({
+  estimateId: z.string().uuid(),
+  bidName: z.string().min(1, "Bid name is required"),
+});
+
+export const updateBidStatusSchema = z.object({
+  bidId: z.string().uuid(),
+  status: bidStatusEnum,
+  notes: z.string().optional(),
 });
