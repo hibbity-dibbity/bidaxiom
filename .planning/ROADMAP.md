@@ -429,7 +429,14 @@ Plans:
   5. Reusable UI component system is centralized
   6. Validation layer is centralized and shared between client and server
   7. Architecture maintains scalable SaaS multi-tenant structure
-**Plans**: Not yet planned
+**Plans**: 5 plans across 3 waves
+
+Plans:
+- [ ] 19-01-PLAN.md — Extract shared components with CVA variants (StatusBadge, CurrencyDisplay, formatting utilities) (wave 1)
+- [ ] 19-02-PLAN.md — Migrate existing components to use shared implementations (wave 2)
+- [ ] 19-03-PLAN.md — Centralize validation schemas in packages/shared (wave 1)
+- [ ] 19-04-PLAN.md — Extend slug-based routing to all entities (customers, subcontractors, estimates) (wave 1)
+- [ ] 19-05-PLAN.md — Document architectural conventions and update codebase map (wave 3)
 
 ## Progress
 
@@ -459,8 +466,8 @@ v1.1: Phases 13-19 (in progress)
 | 16. Projects Interface Redesign | 7/7 | Complete | 2026-02-15 |
 | 17. Estimating Workflow - Setup & Core | 11/11 | Complete | 2026-02-16 |
 | 18. Estimating Workflow - Lifecycle & Conversion | 4/4 | Complete | 2026-02-16 |
-| 19. Component Library & Architecture | 0/TBD | Pending | - |
+| 19. Component Library & Architecture | 0/5 | Planned | - |
 
 ---
 *Roadmap created: 2026-02-10 (v1.0)*
-*Last updated: 2026-02-16 (Phase 18 planned - 4 plans across 3 waves)*
+*Last updated: 2026-02-16 (Phase 19 planned - 5 plans across 3 waves)*
