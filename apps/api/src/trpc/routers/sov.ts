@@ -694,11 +694,17 @@ export const sovRouter = router({
       }
 
       // Get company profile to use default grouping method if not provided
-      const [companyProfile] = await db
-        .select()
-        .from(schema.companyProfiles)
-        .where(isNull(schema.companyProfiles.validTo))
-        .limit(1);
+      let companyProfile;
+      try {
+        [companyProfile] = await db
+          .select()
+          .from(schema.companyProfiles)
+          .where(isNull(schema.companyProfiles.validTo))
+          .limit(1);
+      } catch (error) {
+        // Gracefully handle missing company profile or schema mismatch
+        console.warn("Failed to load company profile for SOV generation:", error);
+      }
 
       // Use provided grouping method or fall back to company default or CSI
       const groupingMethod =

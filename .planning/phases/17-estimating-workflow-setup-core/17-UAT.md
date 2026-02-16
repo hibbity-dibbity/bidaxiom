@@ -1,15 +1,16 @@
 ---
 status: complete
 phase: 17-estimating-workflow-setup-core
-source: 17-02-SUMMARY.md, 17-05-SUMMARY.md, 17-06-SUMMARY.md, 17-07-SUMMARY.md, 17-08-SUMMARY.md, 17-09-SUMMARY.md, 17-10-SUMMARY.md
+source: 17-02-SUMMARY.md, 17-05-SUMMARY.md, 17-06-SUMMARY.md, 17-07-SUMMARY.md, 17-08-SUMMARY.md, 17-09-SUMMARY.md, 17-10-SUMMARY.md, 17-11-SUMMARY.md
 started: 2026-02-16T08:45:00Z
-updated: 2026-02-16T09:20:00Z
-retested: 2026-02-16T09:15:00Z
+updated: 2026-02-16T10:45:00Z
+retested: 2026-02-16T10:30:00Z
+completed: 2026-02-16T10:45:00Z
 ---
 
 ## Current Test
 
-[testing complete]
+[UAT complete - 12/15 tests passed, 3 issues fixed during session]
 
 ## Tests
 
@@ -50,9 +51,8 @@ note: Fix verified - Plan 17-10 resolved validation error, line items now creata
 
 ### 9. Section subtotals group line items by CSI division
 expected: If line items have different CSI codes/divisions: The table displays bold subtotal rows between sections showing "Division X Subtotal" with rolled-up Cost, Markup, and Margin totals for that division. Line items are visually grouped by their CSI code. (May not be visible if all items share same CSI code.)
-result: issue
-reported: "Partially passed (I see the Division 1 - General Labor subtotal). When I click the dropdown for a line item and select a new CSI code it does not change from the default."
-severity: major
+result: pass
+note: FIXED during UAT - Added costCodeId to updateLineItem API handler
 
 ### 10. Step 4 shows labor rates application
 expected: Navigate to Step 4 (Labor Rates). Page shows labor rate templates as clickable cards (similar to Step 2). An "Apply Labor Rates" button applies the template to all labor-type line items. A table displays current labor line items with: description, quantity, rate, total. A "Skip Labor Rates" button allows bypassing this step.
@@ -60,38 +60,55 @@ result: pass
 
 ### 11. Step 5 shows markup configuration
 expected: Navigate to Step 5 (Markup Configuration). Page shows overhead settings (percentage or fixed amount toggle), markup base selection (direct costs vs direct + overhead), and tiered markup inputs by cost type (labor %, material %, equipment %, subcontractor %). Changes auto-save after 500ms. A live margin summary displays: Overhead Amount, Markup Amount, Selling Price, Margin %.
-result: issue
-reported: "Selling Price and Margin show NaN"
-severity: major
+result: pass
+note: FIXED during UAT - Added parseFloat() to handle string values from database in margin calculations
 
 ### 12. Step 6 shows SOV builder with generation
 expected: Navigate to Step 6 (SOV Builder). Page shows a "Generate SOV" button with grouping method dropdown (CSI/Phase/Payment Schedule). Click "Generate SOV" → SOV line items appear as cards below. Each card shows description, amount, cost code references (as chips/badges), and completion percentage. Running totals display: Estimate Total, SOV Total, Variance.
-result: issue
-reported: "There is no way for me to progress from step 5 (Markup Config) to Step 6 (SOV Builder)"
-severity: blocker
+result: pass
+note: FIXED during UAT - Added unlockStep(6) to Step 5, fixed SOV generation query API issue, added error handling for missing company profile columns
 
 ### 13. SOV variance validation prevents finalization
 expected: In Step 6, after generating SOV, if the SOV Total doesn't match Estimate Total (variance > $1.00), a red alert appears warning of the mismatch. The "Finalize SOV" button is disabled. Edit SOV line item amounts to make totals match (variance <= $1.00) → green alert appears, "Finalize SOV" button becomes enabled.
-result: skipped
-reason: Cannot test - blocked by Test 12 (cannot navigate to Step 6)
+result: pass
+note: User feedback - cannot split SOV line items into multiple items (future enhancement)
 
 ### 14. SOV finalization locks and versions the SOV
 expected: In Step 6, with variance <= $1.00, click "Finalize SOV" button → mutation triggers, success message appears. Note in UI should indicate "Once finalized, the SOV will be locked and versioned" or similar. (Actual versioning behavior may not be visible in UI, but button should work without errors.)
-result: skipped
-reason: Cannot test - blocked by Test 12 (cannot navigate to Step 6)
+result: partial
+reported: "Shows SOV finalized successfully, but it's not locked in any way"
+note: Finalization completes without errors, but locking mechanism not implemented - GAP identified
 
 ### 15. All 6 workflow steps are accessible and functional
 expected: Navigate through all 6 steps using the sidebar: Step 1 (Basic Info), Step 2 (Template Selection), Step 3 (Line Items), Step 4 (Labor Rates), Step 5 (Markup Config), Step 6 (SOV Builder). Each step loads without errors, shows the expected components (forms, tables, cards), and navigation works smoothly. No placeholder text like "Step not implemented" appears.
-result: skipped
-reason: Cannot test - blocked by Test 12 (cannot navigate to Step 6)
+result: pass
+note: User feedback - multi-step wizard is cumbersome, suggests single-page consolidated flow (UX redesign for future phase)
 
 ## Summary
 
 total: 15
-passed: 9
-issues: 3
+passed: 12
+partial: 1
+failed: 0
 pending: 0
-skipped: 3
+skipped: 0
+
+## Issues Fixed During UAT
+
+1. **CSI dropdown not updating (Test 9)**
+   - Root cause: updateLineItemSchema missing costCodeId field
+   - Fix: Added costCodeId to API handler in estimates.ts
+   - Commit: feat(17): add costCodeId to updateLineItem handler
+
+2. **NaN margin calculations (Test 11)**
+   - Root cause: Database decimal values returned as strings, not parsed before math operations
+   - Fix: Added parseFloat() for all numeric values in calculateMargin()
+   - Commit: fix(17): parse numeric strings in margin calculations
+
+3. **Cannot navigate Step 5→6 + SOV generation errors (Test 12)**
+   - Root cause: Step 5 missing unlockStep(6) call, SOV service using relational query API that wasn't initialized
+   - Fix: Added unlockStep(6) to Step 5, rewrote SOV generation to use standard queries, added error handling for missing company profile columns
+   - Commit: fix(17): unlock Step 6 and fix SOV generation queries
 
 ## Gaps
 
@@ -115,25 +132,43 @@ skipped: 3
   debug_session: ".planning/debug/add-line-item-validation-error.md"
 
 - truth: "CSI code dropdown can be changed from default value"
-  status: failed
-  reason: "User reported: Partially passed (I see the Division 1 - General Labor subtotal). When I click the dropdown for a line item and select a new CSI code it does not change from the default."
-  severity: major
+  status: resolved
+  resolution: "FIXED during UAT - Added costCodeId field handling to API updateLineItem handler"
   test: 9
-  artifacts: []
-  missing: []
 
 - truth: "Margin summary displays valid calculated values in Step 5"
-  status: failed
-  reason: "User reported: Selling Price and Margin show NaN"
-  severity: major
+  status: resolved
+  resolution: "FIXED during UAT - Added parseFloat() to handle database decimal strings in calculateMargin()"
   test: 11
-  artifacts: []
-  missing: []
 
 - truth: "User can navigate from Step 5 to Step 6"
-  status: failed
-  reason: "User reported: There is no way for me to progress from step 5 (Markup Config) to Step 6 (SOV Builder)"
-  severity: blocker
+  status: resolved
+  resolution: "FIXED during UAT - Added unlockStep(6) call to Step 5 component"
   test: 12
-  artifacts: []
-  missing: []
+
+## New Gaps Identified
+
+- truth: "SOV is locked after finalization to prevent further edits"
+  status: failed
+  reason: "User reported: Shows SOV finalized successfully, but it's not locked in any way"
+  severity: minor
+  test: 14
+  impact: "Users can continue editing SOV after finalization, which could lead to data inconsistency with versioned snapshots"
+  recommendation: "Implement read-only mode for finalized SOVs, add version history UI"
+
+- truth: "Users can split SOV line items into multiple payment items"
+  status: not_implemented
+  reason: "User reported: I can change the amount in the SOV line item, but there is nowhere to add another line item if I want to break up the payment"
+  severity: minor
+  test: 13
+  impact: "Users cannot break down a single estimate division into multiple SOV payment items for phased billing"
+  recommendation: "Add 'Add Line Item' button to SOV builder, allow manual SOV line item creation"
+
+- truth: "Estimating workflow follows user's mental model and minimizes clicks"
+  status: ux_concern
+  reason: "User feedback: Multi-step wizard is cumbersome. Suggests consolidating into single page with templates as dropdowns, all sections visible at once, sticky totals at bottom"
+  severity: major
+  test: 15
+  impact: "Current 6-step wizard adds friction to estimate creation process. User prefers single-page flow for speed."
+  recommendation: "Consider redesigning as single-page estimate builder with collapsible sections, or offer both wizard and single-page modes"
+  user_quote: "The way I see the flow working: 1. Create estimate goes straight to workflow page. 2. Lose side navigation, make it one page. Basic info at top, template dropdowns, line items table with section-level markup overrides, sticky totals at bottom."

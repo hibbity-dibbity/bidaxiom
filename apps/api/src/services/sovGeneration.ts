@@ -135,43 +135,48 @@ export async function generateSOVFromEstimate(
   db: NodePgDatabase,
   tenantSchema: TenantSchema
 ): Promise<SOVLineItem[]> {
-  // 1. Fetch estimate with line items
-  const estimate = await db.query.estimates.findFirst({
-    where: eq(tenantSchema.estimates.id, estimateId),
-    with: {
-      lineItems: true,
-    },
-  });
+  // 1. Fetch estimate
+  const [estimate] = await db
+    .select()
+    .from(tenantSchema.estimates)
+    .where(eq(tenantSchema.estimates.id, estimateId))
+    .limit(1);
 
   if (!estimate) {
     throw new Error("Estimate not found");
   }
 
-  if (!estimate.lineItems || estimate.lineItems.length === 0) {
+  // 2. Fetch line items for the estimate
+  const lineItems = await db
+    .select()
+    .from(tenantSchema.estimateLineItems)
+    .where(eq(tenantSchema.estimateLineItems.estimateId, estimateId));
+
+  if (!lineItems || lineItems.length === 0) {
     throw new Error("Estimate has no line items");
   }
 
-  // 2. Group line items based on selected method
+  // 3. Group line items based on selected method
   let groups: Map<string, any[]>;
 
   switch (groupingMethod) {
     case "csi":
-      groups = groupByCsi(estimate.lineItems);
+      groups = groupByCsi(lineItems);
       break;
 
     case "phase":
-      groups = groupByPhase(estimate.lineItems);
+      groups = groupByPhase(lineItems);
       break;
 
     case "payment_schedule":
-      groups = groupByPaymentSchedule(estimate.lineItems);
+      groups = groupByPaymentSchedule(lineItems);
       break;
 
     default:
       throw new Error(`Unknown grouping method: ${groupingMethod}`);
   }
 
-  // 3. Create SOV line items from groups
+  // 4. Create SOV line items from groups
   const sovLineItems: SOVLineItem[] = [];
   let sortOrder = 0;
 
@@ -203,7 +208,7 @@ export async function generateSOVFromEstimate(
     });
   }
 
-  // 4. Validate total matches estimate (within $1.00 tolerance for rounding)
+  // 5. Validate total matches estimate (within $1.00 tolerance for rounding)
   const sovTotal = sovLineItems.reduce(
     (sum, item) => sum.plus(item.amount),
     new Decimal(0)

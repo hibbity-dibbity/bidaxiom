@@ -105,22 +105,27 @@ export function MarkupConfigStep({ estimateId }: MarkupConfigStepProps) {
   const calculateMargin = () => {
     if (!estimate?.totalCost) return null;
 
-    const directCost = estimate.totalCost;
+    // Parse all numeric values (totalCost from DB is a string)
+    const directCost = parseFloat(estimate.totalCost.toString());
+    if (isNaN(directCost) || directCost <= 0) return null;
+
     let totalCost = directCost;
 
     // Add overhead
     if (watchedData.overheadType === "percentage") {
-      totalCost += directCost * (watchedData.overheadValue / 100);
+      const overheadPercent = parseFloat(watchedData.overheadValue.toString()) || 0;
+      totalCost += directCost * (overheadPercent / 100);
     } else {
-      totalCost += watchedData.overheadValue;
+      const overheadFixed = parseFloat(watchedData.overheadValue.toString()) || 0;
+      totalCost += overheadFixed;
     }
 
     // Calculate weighted markup (simplified - assumes even distribution)
     const avgMarkup =
-      (watchedData.laborMarkupPercent +
-        watchedData.materialMarkupPercent +
-        watchedData.equipmentMarkupPercent +
-        watchedData.subcontractorMarkupPercent) /
+      (parseFloat(watchedData.laborMarkupPercent.toString()) +
+        parseFloat(watchedData.materialMarkupPercent.toString()) +
+        parseFloat(watchedData.equipmentMarkupPercent.toString()) +
+        parseFloat(watchedData.subcontractorMarkupPercent.toString())) /
       4;
 
     const markupBase =

@@ -444,6 +444,9 @@ export const estimatesRouter = router({
       if (input.customMarkupPercent !== undefined) {
         updateValues.customMarkupPercent = input.customMarkupPercent?.toFixed(2);
       }
+      if (input.costCodeId !== undefined) {
+        updateValues.costCodeId = input.costCodeId;
+      }
 
       // Update line item
       const [updated] = await db
