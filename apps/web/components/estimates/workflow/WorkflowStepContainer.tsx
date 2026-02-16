@@ -3,7 +3,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BasicInfoStep } from "./steps/01-BasicInfo";
 import { TemplateSelectionStep } from "./steps/02-TemplateSelection";
+import { LineItemsStep } from "./steps/03-LineItems";
+import { LaborRatesStep } from "./steps/04-LaborRates";
 import { MarkupConfigStep } from "./steps/05-MarkupConfig";
+import { SOVBuilderStep } from "./steps/06-SOVBuilder";
 
 interface WorkflowStepContainerProps {
   estimateId: string;
@@ -30,25 +33,13 @@ export function WorkflowStepContainer({
       case 2:
         return <TemplateSelectionStep estimateId={estimateId} />;
       case 3:
-        return (
-          <div className="text-muted-foreground">
-            Line Items step - Coming in next plan
-          </div>
-        );
+        return <LineItemsStep estimateId={estimateId} />;
       case 4:
-        return (
-          <div className="text-muted-foreground">
-            Labor Rates step - Coming in next plan
-          </div>
-        );
+        return <LaborRatesStep estimateId={estimateId} />;
       case 5:
         return <MarkupConfigStep estimateId={estimateId} />;
       case 6:
-        return (
-          <div className="text-muted-foreground">
-            SOV Builder step - Coming in next plan
-          </div>
-        );
+        return <SOVBuilderStep estimateId={estimateId} />;
       default:
         return <div>Invalid step</div>;
     }
