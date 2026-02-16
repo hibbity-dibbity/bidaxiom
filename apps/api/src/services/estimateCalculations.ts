@@ -1,4 +1,4 @@
-import type { CostType } from "@cm/shared/types/estimates";
+import type { CostType } from "@construction/shared";
 
 /**
  * Markup configuration with tiered fallback hierarchy

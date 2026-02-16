@@ -238,5 +238,25 @@ export {
   globalSearchInputSchema,
 } from "./types/search";
 
+export {
+  estimateStatusEnum,
+  type EstimateStatus,
+  costTypeEnum,
+  type CostType,
+  templateScopeEnum,
+  type TemplateScope,
+  markupBaseEnum,
+  type MarkupBase,
+  overheadTypeEnum,
+  type OverheadType,
+  sovGroupingMethodEnum,
+  type SOVGroupingMethod,
+  unitEnum,
+  type Unit,
+  type EstimateTotals,
+  type SOVLineItem,
+  type LaborRates,
+} from "./types/estimates";
+
 export * from "./schemas/index";
 export * from "./constants/index";
