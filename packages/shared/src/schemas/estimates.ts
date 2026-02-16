@@ -57,6 +57,7 @@ export const updateLineItemSchema = z.object({
   unitCost: z.number().min(0).optional(),
   costType: costTypeEnum.optional(),
   customMarkupPercent: z.number().min(0).max(100).nullable().optional(),
+  costCodeId: z.number().int().min(0).optional(),
 });
 
 /**
