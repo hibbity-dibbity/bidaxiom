@@ -61,9 +61,19 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 
 ### Active
 
-<!-- Next milestone scope. Define in /gsd:new-milestone. -->
+<!-- v1.2 Job Number System Fixes -->
 
-(To be defined for next milestone — see validated requirements above for shipped features)
+**Milestone v1.2: Job Number System Fixes & Reliability** (Started: 2026-02-17)
+
+**Goal:** Fix broken job number auto-generation system and ensure reliable increment tracking across all project touchpoints.
+
+**Target fixes:**
+- Restore job number field visibility (project creation, company settings)
+- Fix auto-generation assignment to new projects
+- Fix auto-increment after manual job number usage
+- Implement duplicate prevention
+- Handle year rollover sequence resets
+- Ensure job numbers display across project list, detail pages, and estimates
 
 ### Out of Scope
 
@@ -120,4 +130,4 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 | Responsive web (no native mobile) for v1 | Faster to ship; field use works via mobile browser until usage patterns justify native | ✓ Good — mobile browser working well |
 
 ---
-*Last updated: 2026-02-16 after completing v1.1 milestone*
+*Last updated: 2026-02-17 after starting v1.2 milestone*

@@ -2,19 +2,19 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-14)
+See: .planning/PROJECT.md (updated 2026-02-17)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** Milestone v1.1 - Enterprise UX Redesign
+**Current focus:** Milestone v1.2 - Job Number System Fixes
 
 ## Current Position
 
-Phase: Phase 19 - Component Library & Architecture
-Plan: 6 of 6 (phase complete)
-Status: Complete
-Last activity: 2026-02-16 - Completed quick task 18: Crop BidAxiom logo images to remove transparent padding
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements for v1.2
+Last activity: 2026-02-17 - Milestone v1.2 started (Job Number System Fixes)
 
-Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [██████████] 100% (Phase 13 complete, Phase 14 6/8 plans, Phase 15 5/5 plans complete, Phase 16 7/7 plans complete, Phase 17 11/11 plans complete, Phase 18 4/4 plans complete, Phase 19 6/6 plans complete)
+Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [██████████] 100% (7 phases complete) | v1.2: [░░░░░░░░░░] 0% (defining requirements)
 
 ## Performance Metrics
 
