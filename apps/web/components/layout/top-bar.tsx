@@ -17,9 +17,10 @@ export function TopBar({ onSearchOpen }: { onSearchOpen?: () => void }) {
 
   return (
     <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4">
-      {/* Left: Sidebar trigger */}
+      {/* Left: Sidebar trigger and logo */}
       <div className="flex items-center gap-2 flex-1">
-        <SidebarTrigger className="-ml-1" />
+        {/* Sidebar trigger when expanded */}
+        {open && <SidebarTrigger className="-ml-1" />}
         {/* Logo appears here when sidebar is collapsed */}
         {!open && (
           <Image

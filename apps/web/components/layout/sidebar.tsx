@@ -9,6 +9,7 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
+  SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { SidebarNav } from "./sidebar-nav";
@@ -64,15 +65,10 @@ export function AppSidebar() {
             className="group-data-[collapsible=icon]:hidden dark:invert h-8 w-auto"
             priority
           />
-          {/* Icon when collapsed */}
-          <Image
-            src="/bidaxiom-icon.png"
-            alt="BidAxiom"
-            width={32}
-            height={32}
-            className="hidden group-data-[collapsible=icon]:block dark:invert h-8 w-8"
-            priority
-          />
+          {/* Collapse/expand trigger when collapsed */}
+          <div className="hidden group-data-[collapsible=icon]:block">
+            <SidebarTrigger />
+          </div>
         </div>
       </SidebarHeader>
 
