@@ -193,6 +193,41 @@ export function previewJobNumber(
 }
 
 /**
+ * Parse a template to extract expected pattern for validation.
+ * Used to validate manually-entered job numbers against the configured template.
+ */
+export function parseTemplatePattern(template: string): RegExp {
+  // Escape special regex characters
+  let pattern = template
+    .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    .replace(/\\{YYYY\\}/g, "\\d{4}")
+    .replace(/\\{YY\\}/g, "\\d{2}")
+    .replace(/\\{MM\\}/g, "\\d{2}")
+    .replace(/\\{DD\\}/g, "\\d{2}");
+
+  // Match sequence pattern {NNN...}
+  const sequenceMatch = template.match(/\{(N+)\}/);
+  if (sequenceMatch) {
+    const length = sequenceMatch[1].length;
+    pattern = pattern.replace(/\\{N+\\}/, `\\d{${length}}`);
+  }
+
+  return new RegExp(`^${pattern}$`);
+}
+
+/**
+ * Validate a job number matches the template format.
+ * Used when manually entering/editing job numbers on the client.
+ */
+export function validateJobNumberFormat(
+  jobNumber: string,
+  template: string
+): boolean {
+  const pattern = parseTemplatePattern(template);
+  return pattern.test(jobNumber);
+}
+
+/**
  * Complete company configuration schema.
  * Used for create/update validation on the API.
  */

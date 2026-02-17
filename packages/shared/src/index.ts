@@ -23,6 +23,8 @@ export {
   validateJobNumberTemplate,
   previewJobNumber,
   getAvailableTokens,
+  validateJobNumberFormat,
+  parseTemplatePattern,
 } from "./types/company";
 
 export {
