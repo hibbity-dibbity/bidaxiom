@@ -125,7 +125,13 @@ Plans:
 2. Job number format must match configured pattern (validated on submission)
 3. Clear, actionable error messages appear when validation fails (not generic "Error")
 
-**Plans**: TBD
+**Plans**: 4 plans in 3 waves
+
+Plans:
+- [ ] 22-01-PLAN.md — Backend foundation: upgrade checkJobNumberAvailability (ilike, excludeProjectId, name+slug) and export validation utils from shared
+- [ ] 22-02-PLAN.md — New project form blur validation (format check + duplicate detection with clickable error link)
+- [ ] 22-03-PLAN.md — Edit project page creation with pre-filled form and blur validation (self-exclusion via excludeProjectId)
+- [ ] 22-04-PLAN.md — Human verification of validation UX on both forms
 
 ---
 
@@ -168,7 +174,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 20. Configuration Foundation | 3/3 | Complete    | 2026-02-17 |
 | 21. Assignment & Auto-Generation | 0/2 | Not started | - |
-| 22. Validation & Duplicate Prevention | 0/0 | Not started | - |
+| 22. Validation & Duplicate Prevention | 0/4 | Not started | - |
 | 23. Display & Integration | 0/0 | Not started | - |
 | 24. Year Rollover Logic | 0/0 | Not started | - |
 
@@ -177,4 +183,4 @@ Plans:
 ---
 
 *Roadmap created: 2026-02-10 (v1.0)*
-*Last updated: 2026-02-17 after Phase 21 planning*
+*Last updated: 2026-02-17 after Phase 22 planning*
