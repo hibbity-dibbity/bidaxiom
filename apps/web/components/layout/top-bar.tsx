@@ -1,21 +1,38 @@
 "use client";
 
 import { Bell, Search } from "lucide-react";
+import Image from "next/image";
+import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { CompanySwitcher } from "./company-switcher";
 import { UserMenu } from "./user-menu";
 
 /**
- * Top bar with search, company switcher, and user menu.
+ * Top bar with sidebar trigger, search, company switcher, and user menu.
  * Fixed at top of main content area.
- * Sidebar is always visible — no trigger or conditional logo needed here.
  */
 export function TopBar({ onSearchOpen }: { onSearchOpen?: () => void }) {
+  const { open } = useSidebar();
+
   return (
     <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4">
-      {/* Left: empty placeholder (sidebar always visible with logo) */}
-      <div className="flex items-center gap-2 flex-1" />
+      {/* Left: Sidebar trigger and logo */}
+      <div className="flex items-center gap-2 flex-1">
+        {/* Sidebar trigger when expanded */}
+        {open && <SidebarTrigger className="-ml-1" />}
+        {/* Logo appears here when sidebar is collapsed */}
+        {!open && (
+          <Image
+            src="/bidaxiom-logo.png"
+            alt="BidAxiom"
+            width={192}
+            height={32}
+            className="dark:invert h-8 w-auto"
+            priority
+          />
+        )}
+      </div>
 
       {/* Right: Search, Notifications, Company Switcher, User Menu */}
       <div className="flex items-center gap-3">

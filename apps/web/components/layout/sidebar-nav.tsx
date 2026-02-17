@@ -31,34 +31,12 @@ const mainNav = [
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
-// Contextual nav items shown when viewing a project
-const projectNav = [
-  { href: "/overview", label: "Overview", icon: Home },
-  { href: "/budget", label: "Budget", icon: DollarSign },
-  { href: "/change-orders", label: "Change Orders", icon: FileText },
-  { href: "/documents", label: "Documents", icon: FileText },
-];
-
 export function SidebarNav() {
   const pathname = usePathname();
 
-  // Detect if we're viewing a project detail page
-  const isProjectPage = pathname?.startsWith("/projects/") && pathname !== "/projects";
-
-  // Extract project ID from URL if on project page
-  const projectId = isProjectPage ? pathname?.split("/")[2] : null;
-
-  // Use contextual nav when viewing project, main nav otherwise
-  const navItems = isProjectPage
-    ? projectNav.map((item) => ({
-        ...item,
-        href: `/projects/${projectId}${item.href}`,
-      }))
-    : mainNav;
-
   return (
     <SidebarMenu>
-      {navItems.map((item) => {
+      {mainNav.map((item) => {
         const Icon = item.icon;
         const isActive = pathname === item.href;
 
