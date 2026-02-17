@@ -53,7 +53,7 @@ export function AppSidebar() {
   }, [open, mounted]);
 
   return (
-    <ShadcnSidebar collapsible="icon">
+    <ShadcnSidebar collapsible="icon" style={{ "--sidebar-width": "12.875rem" } as React.CSSProperties}>
       <SidebarHeader className="h-14 shrink-0 border-b">
         <div className="flex h-full items-center justify-center px-4">
           {/* Full logo when expanded */}
