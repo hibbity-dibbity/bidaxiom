@@ -6,7 +6,7 @@ import { companyConfigSchema, AuditAction } from "@construction/shared";
 import { asOfDate } from "../../lib/effective-dating.js";
 import { withAuditLog } from "../middleware/audit.js";
 import { requirePermission } from "../middleware/authorize.js";
-import { isNull, desc, eq } from "drizzle-orm";
+import { isNull, desc, eq, ilike, and, ne } from "drizzle-orm";
 
 /**
  * Company configuration router.
@@ -131,7 +131,10 @@ export const companyRouter = router({
    * Used for duplicate validation before project creation.
    */
   checkJobNumberAvailability: protectedProcedure
-    .input(z.object({ jobNumber: z.string().min(1) }))
+    .input(z.object({
+      jobNumber: z.string().min(1),
+      excludeProjectId: z.string().uuid().optional(),
+    }))
     .query(async ({ ctx, input }) => {
       if (!ctx.tenant) {
         throw new TRPCError({
@@ -140,15 +143,25 @@ export const companyRouter = router({
         });
       }
 
+      const conditions = [ilike(ctx.tenant.schema.projects.jobNumber, input.jobNumber)];
+      if (input.excludeProjectId) {
+        conditions.push(ne(ctx.tenant.schema.projects.id, input.excludeProjectId));
+      }
+
       const [existing] = await ctx.tenant.db
-        .select({ id: ctx.tenant.schema.projects.id })
+        .select({
+          id: ctx.tenant.schema.projects.id,
+          name: ctx.tenant.schema.projects.name,
+          slug: ctx.tenant.schema.projects.slug,
+        })
         .from(ctx.tenant.schema.projects)
-        .where(eq(ctx.tenant.schema.projects.jobNumber, input.jobNumber))
+        .where(and(...conditions))
         .limit(1);
 
       return {
         available: !existing,
-        existingProjectId: existing?.id || null,
+        existingProjectName: existing?.name ?? null,
+        existingProjectSlug: existing?.slug ?? null,
       };
     }),
 });
