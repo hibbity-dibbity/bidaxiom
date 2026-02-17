@@ -75,7 +75,7 @@
 ### Phases
 
 - [x] **Phase 25: Session & Auth Flow** - Immediate redirect on session expiry; return URL after sign-in (completed 2026-02-17)
-- [ ] **Phase 26: Account Settings & Shell Cleanup** - Consolidated /settings/account page; static sidebar
+- [x] **Phase 26: Account Settings & Shell Cleanup** - Consolidated /settings/account page; static sidebar (completed 2026-02-17)
 - [ ] **Phase 27: Slug Routing Completion** - Customer and subcontractor detail/edit pages on slug URLs
 - [ ] **Phase 28: Search & Dashboard Enhancements** - Estimates in global search; dashboard KPI click-through with pre-filtering
 - [ ] **Phase 29: UX Polish & Tech Debt** - Empty states, loading states, consistent error toasts, job number counter on edit
@@ -92,25 +92,26 @@
   3. Return URL is preserved correctly across the sign-in flow (no loss on page refresh at sign-in)
 **Plans**: 3 plans
 Plans:
-- [ ] 25-01-PLAN.md — Fix return URL (sign-in Server Component refactor + getSafeRedirectUrl + MFA flow)
-- [ ] 25-02-PLAN.md — Session expiry detection (useSessionWatcher hook + tRPC 401 interceptor)
-- [ ] 25-03-PLAN.md — Browser UAT verification of SESS-01 and SESS-02
+- [x] 25-01-PLAN.md — Fix return URL (sign-in Server Component refactor + getSafeRedirectUrl + MFA flow)
+- [x] 25-02-PLAN.md — Session expiry detection (useSessionWatcher hook + tRPC 401 interceptor)
+- [x] 25-03-PLAN.md — Browser UAT verification of SESS-01 and SESS-02
 
 #### Phase 26: Account Settings & Shell Cleanup
-**Goal**: All account management is in one place at /settings/account, the user dropdown is clean, and the sidebar is static with no toggle complexity.
+**Goal**: All account management is in one place at /settings/account, the user dropdown is clean, and the sidebar always shows the same global navigation items (no project-context switching) while keeping collapse/expand toggle.
 **Depends on**: Phase 25
 **Requirements**: ACCT-01, ACCT-02, ACCT-03, ACCT-04, NAV-01
+**Completed**: 2026-02-17
 **Success Criteria** (what must be TRUE):
   1. User can navigate to /settings/account and see a single page that consolidates profile, password change, and MFA configuration
   2. MFA can be enabled, disabled, and reconfigured (QR code setup) from the account settings page
   3. Password can be changed from the account settings page without visiting a separate URL
   4. The user dropdown in the top navigation links directly to /settings/account — no separate "Settings" and "MFA" links
-  5. The sidebar is always visible on all pages with no toggle button or dynamic show/hide behavior; legacy dynamic sidebar code is removed
+  5. The sidebar always shows global navigation on all pages with no project-context switching; icon-only collapse preserved
 **Plans**: 3 plans
 Plans:
-- [ ] 26-01-PLAN.md — API mutations: auth.changePassword and auth.disableMfa
-- [ ] 26-02-PLAN.md — Shell cleanup: static sidebar, user dropdown consolidation, MFA bug fix, Account Settings card
-- [ ] 26-03-PLAN.md — Account settings page: Profile, Password Change, MFA sections + human verify
+- [x] 26-01-PLAN.md — API mutations: auth.changePassword and auth.disableMfa
+- [x] 26-02-PLAN.md — Shell cleanup: static sidebar, user dropdown consolidation, MFA bug fix, Account Settings card
+- [x] 26-03-PLAN.md — Account settings page: Profile, Password Change, MFA sections + human verify
 
 #### Phase 27: Slug Routing Completion
 **Goal**: Customer and subcontractor detail and edit pages use human-readable slug URLs, completing the slug routing migration that was finished for projects in v1.1.
@@ -148,39 +149,10 @@ Plans:
 
 ## Progress
 
-| Phase | Milestone | Plans Complete | Status | Completed |
-|-------|-----------|----------------|--------|-----------|
-| 1. Foundation & Multi-Tenant Infrastructure | v1.0 | 8/8 | Complete | 2026-02-14 |
-| 2. Company Setup & Configuration | v1.0 | 2/2 | Complete | 2026-02-14 |
-| 3. Project Management Core | v1.0 | 5/5 | Complete | 2026-02-14 |
-| 4. Budget & Cost Tracking | v1.0 | 4/4 | Complete | 2026-02-14 |
-| 5. Change Order Management | v1.0 | 4/4 | Complete | 2026-02-14 |
-| 6. Payment Applications | v1.0 | 5/5 | Complete | 2026-02-14 |
-| 7. Bidding & Procurement | v1.0 | 5/5 | Complete | 2026-02-14 |
-| 8. QuickBooks Integration | v1.0 | 5/5 | Complete | 2026-02-14 |
-| 9. Document Management Enhancement | v1.0 | 8/8 | Complete | 2026-02-14 |
-| 10. Reporting & Analytics | v1.0 | 5/5 | Complete | 2026-02-14 |
-| 11. Calendar Integration | v1.0 | 5/5 | Complete | 2026-02-14 |
-| 12. Custom Authentication Migration | v1.0 | 8/8 | Complete | 2026-02-14 |
-| 13. Navigation & Theme Foundation | v1.1 | 11/11 | Complete | 2026-02-16 |
-| 14. Form Standardization & Validation | v1.1 | 8/8 | Complete | 2026-02-16 |
-| 15. Dashboard Redesign | v1.1 | 5/5 | Complete | 2026-02-16 |
-| 16. Projects Interface Redesign | v1.1 | 7/7 | Complete | 2026-02-16 |
-| 17. Estimating Workflow - Setup & Core | v1.1 | 11/11 | Complete | 2026-02-16 |
-| 18. Estimating Workflow - Lifecycle & Conversion | v1.1 | 4/4 | Complete | 2026-02-16 |
-| 19. Component Library & Architecture | v1.1 | 6/6 | Complete | 2026-02-16 |
-| 20. Configuration Foundation | v1.2 | 3/3 | Complete | 2026-02-17 |
-| 21. Assignment & Auto-Generation | v1.2 | 2/2 | Complete | 2026-02-17 |
-| 22. Validation & Duplicate Prevention | v1.2 | 4/4 | Complete | 2026-02-17 |
-| 23. Display & Integration | v1.2 | 1/1 | Complete | 2026-02-17 |
-| 24. Year Rollover Logic | v1.2 | 2/2 | Complete | 2026-02-17 |
-| 25. Session & Auth Flow | v1.3 | Complete    | 2026-02-17 | - |
-| 26. Account Settings & Shell Cleanup | 1/3 | In Progress|  | - |
-| 27. Slug Routing Completion | v1.3 | 0/TBD | Not started | - |
-| 28. Search & Dashboard Enhancements | v1.3 | 0/TBD | Not started | - |
-| 29. UX Polish & Tech Debt | v1.3 | 0/TBD | Not started | - |
-
----
-
-*Roadmap created: 2026-02-10 (v1.0)*
-*Last updated: 2026-02-17 — Phase 26 planned (3 plans: ACCT-01, ACCT-02, ACCT-03, ACCT-04, NAV-01)*
+| Phase | Status | Plans | Completed |
+|-------|--------|-------|-----------|
+| 25 | ✅ Complete | 3/3 | 2026-02-17 |
+| 26 | ✅ Complete | 3/3 | 2026-02-17 |
+| 27 | ⬜ Not started | TBD | — |
+| 28 | ⬜ Not started | TBD | — |
+| 29 | ⬜ Not started | TBD | — |

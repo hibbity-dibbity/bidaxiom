@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-02-17)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.3 Polish & Gap Closure — Phase 26 (next phase)
+**Current focus:** v1.3 Polish & Gap Closure — Phase 27 (next phase)
 
 ## Current Position
 
-Phase: 26 of 29 in v1.3 (Account Settings & Shell Cleanup) — In Progress
-Plan: 1 of 3 in Phase 26 — COMPLETE
-Status: Phase 26 in progress; Plan 26-01 done, plans 26-02 and 26-03 remaining
-Last activity: 2026-02-17 — Completed 26-01: auth.changePassword and auth.disableMfa mutations
+Phase: 27 of 29 in v1.3 (Slug Routing Completion) — Ready for planning
+Plan: 0 of TBD in Phase 27 — Not started
+Status: Phase 26 complete (verified 2026-02-17); Phase 27 ready for planning
+Last activity: 2026-02-17 — Completed Phase 26: account settings consolidated, shell cleaned up, NAV-01 fixed
 
-Progress: v1.0: [██████████] 100% (12 phases) | v1.1: [██████████] 100% (7 phases) | v1.2: [██████████] 100% (5 phases) | v1.3: [██░░░░░░░░] ~20% (1/5 phases complete, Phase 26 in progress)
+Progress: v1.0: [██████████] 100% (12 phases) | v1.1: [██████████] 100% (7 phases) | v1.2: [██████████] 100% (5 phases) | v1.3: [████░░░░░░] ~40% (2/5 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 99
+- Total plans completed: 102
 - Average duration: 4.5 min
 - Total execution time: ~8.75 hours
 
@@ -33,14 +33,13 @@ Progress: v1.0: [██████████] 100% (12 phases) | v1.1: [█�
 | 23 | 1 | 5 min | 5 min |
 | 24 | 2 | ~6 min | ~3 min |
 | 25 | 3 | ~11 min | ~3.7 min |
-| 26 | 1 so far | 2 min | 2 min |
+| 26 | 3 | ~40 min | ~13 min |
 
 **Recent Trend:**
-- Last 5 plans: 25-03 (~5 min UAT), 25-02 (3 min), 25-01 (3 min), 24-02 (2 min), 24-01 (4 min)
-- Trend: Stable — averaging 3 min per plan in v1.3
+- Last 5 plans: 26-03 (~30 min, 5 bugs fixed), 26-02 (8 min), 26-01 (2 min), 25-03 (~5 min UAT), 25-02 (3 min)
+- Trend: Phase 26 took longer due to 5 auto-corrected bugs during plan 03 execution
 
 *Updated after each plan completion*
-| Phase 26-account-settings-and-shell-cleanup P02 | 8min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -58,10 +57,10 @@ Recent decisions affecting current work:
 - **SessionWatcher client component pattern (Phase 25)**: Dashboard layout stays a Server Component; tiny client wrapper mounts the hook without polluting layout
 - **globalThis.fetch in tRPC interceptor (Phase 25)**: Prevents infinite recursion when custom fetch property overrides global fetch
 - **changePassword revokes refresh tokens, disableMfa does not (Phase 26)**: Password change is a credential rotation event requiring forced re-login on other devices; MFA disable is a settings change that should not disrupt sessions
-- **Manual Bearer token pattern for changePassword/disableMfa (Phase 26)**: Consistent with setupMfa/verifyMfaSetup in same file; both use authHeader?.replace("Bearer ", "") + verifyAccessToken
-- [Phase 26-02]: collapsible=none on ShadcnSidebar: sidebar always fully expanded, no toggle
-- [Phase 26-02]: User dropdown: single Account Settings link at /settings/account replaces Settings + MFA Settings
-- [Phase 26-02]: MFA bug fix: SetupData type now includes hashedBackupCodes; verifyMfaSetup receives hashedBackupCodes not backupCodes
+- **ctx.userId pattern for changePassword/disableMfa (Phase 26)**: createContext already verifies JWT and sets ctx.userId; manual Bearer token extraction pattern from Plan 26-01 was replaced with ctx.userId in Plan 26-03 after discovering ctx has no req property
+- **tRPC fetch body: no { json: {} } wrapper (Phase 26)**: Without superjson transformer, tRPC REST handler expects raw input directly, not wrapped in { json: {...} }; affects all manual fetch calls to tRPC endpoints
+- **collapsible="icon" not "none" (Phase 26)**: "icon" enables icon-only collapse mode (sidebar collapses to icon strip); "none" disables collapse entirely. Phase goal was always-visible with collapse toggle intact, so "icon" is correct
+- **sidebar-nav.tsx fix (Phase 26)**: NAV-01 root cause was projectNav context-switching in sidebar-nav.tsx, not the collapsible prop. Fixed by removing the project-context detection branch; sidebar-nav now always renders mainNav
 
 ### Pending Todos
 
@@ -74,5 +73,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 26-01-PLAN.md — auth.changePassword and auth.disableMfa mutations live in authRouter
+Stopped at: Completed Phase 26 — all 3 plans done, UAT passed (7/7), verification complete
 Resume file: None

@@ -14,14 +14,14 @@
 
 ### Account Settings
 
-- [ ] **ACCT-01**: User can access a consolidated account settings page at /settings/account
-- [ ] **ACCT-02**: Account settings page includes MFA configuration (enable, disable, QR code setup)
-- [ ] **ACCT-03**: Account settings page includes password change functionality
-- [ ] **ACCT-04**: User dropdown in top navigation links directly to /settings/account instead of separate Settings and MFA links
+- [x] **ACCT-01**: User can access a consolidated account settings page at /settings/account
+- [x] **ACCT-02**: Account settings page includes MFA configuration (enable, disable, QR code setup)
+- [x] **ACCT-03**: Account settings page includes password change functionality
+- [x] **ACCT-04**: User dropdown in top navigation links directly to /settings/account instead of separate Settings and MFA links
 
 ### Navigation
 
-- [ ] **NAV-01**: Sidebar is static — always visible, no dynamic toggle; layout is consistent across all pages; dynamic sidebar code removed
+- [x] **NAV-01**: Sidebar is static — always visible, no dynamic toggle; layout is consistent across all pages; dynamic sidebar code removed
 
 ### Slug Routing
 
@@ -68,11 +68,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | SESS-01 | Phase 25 | Pending |
 | SESS-02 | Phase 25 | Pending |
-| ACCT-01 | Phase 26 | Pending |
-| ACCT-02 | Phase 26 | Pending |
-| ACCT-03 | Phase 26 | Pending |
-| ACCT-04 | Phase 26 | Pending |
-| NAV-01 | Phase 26 | Pending |
+| ACCT-01 | Phase 26 | Satisfied (2026-02-17) |
+| ACCT-02 | Phase 26 | Satisfied (2026-02-17) |
+| ACCT-03 | Phase 26 | Satisfied (2026-02-17) |
+| ACCT-04 | Phase 26 | Satisfied (2026-02-17) |
+| NAV-01 | Phase 26 | Satisfied (2026-02-17) |
 | SLUG-01 | Phase 27 | Pending |
 | SLUG-02 | Phase 27 | Pending |
 | SLUG-03 | Phase 27 | Pending |
@@ -88,8 +88,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 **Coverage:**
 - v1.3 requirements: 18 total
 - Mapped to phases: 18/18
-- Unmapped: 0
+- Satisfied: 5 (ACCT-01, ACCT-02, ACCT-03, ACCT-04, NAV-01)
+- Pending: 13
 
 ---
 *Requirements defined: 2026-02-17*
-*Last updated: 2026-02-17 — traceability filled in after roadmap creation (Phases 25-29)*
+*Last updated: 2026-02-17 — Phase 26 requirements satisfied (ACCT-01, ACCT-02, ACCT-03, ACCT-04, NAV-01)*
