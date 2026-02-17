@@ -82,7 +82,11 @@
 4. Admin can toggle auto-generation on/off via checkbox
 5. Configuration changes save successfully and persist across sessions
 
-**Plans**: TBD
+**Plans**: 2 plans in 1 wave
+
+Plans:
+- [ ] 20-01-PLAN.md — Verify and fix configuration persistence (data integrity, mutation logic)
+- [ ] 20-02-PLAN.md — Enhanced validation and preview (error messages, inline feedback)
 
 ---
 
@@ -157,7 +161,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 20. Configuration Foundation | 0/0 | Not started | - |
+| 20. Configuration Foundation | 0/2 | Ready to execute | - |
 | 21. Assignment & Auto-Generation | 0/0 | Not started | - |
 | 22. Validation & Duplicate Prevention | 0/0 | Not started | - |
 | 23. Display & Integration | 0/0 | Not started | - |
@@ -168,4 +172,4 @@
 ---
 
 *Roadmap created: 2026-02-10 (v1.0)*
-*Last updated: 2026-02-17 after v1.2 roadmap creation*
+*Last updated: 2026-02-17 after Phase 20 planning*
