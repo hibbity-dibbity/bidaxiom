@@ -53,6 +53,7 @@ export default function CompanySettingsPage() {
       jobNumberSettings: {
         enabled: false,
         template: "{YYYY}-{NNN}",
+        startingSequenceNumber: 1,
         nextSequenceNumber: 1,
         lastGeneratedFormat: null,
       },
@@ -68,6 +69,7 @@ export default function CompanySettingsPage() {
         jobNumberSettings: data.jobNumberSettings ?? {
           enabled: false,
           template: "{YYYY}-{NNN}",
+          startingSequenceNumber: 1,
           nextSequenceNumber: 1,
           lastGeneratedFormat: null,
         },
@@ -307,6 +309,27 @@ export default function CompanySettingsPage() {
                   />
                   <p className="text-sm text-muted-foreground mt-2">
                     The starting sequence number for new job numbers
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="starting-sequence-number">Starting Sequence Number</Label>
+                  <Input
+                    id="starting-sequence-number"
+                    type="number"
+                    min={1}
+                    value={form.watch("jobNumberSettings.startingSequenceNumber") ?? 1}
+                    onChange={(e) =>
+                      form.setValue(
+                        "jobNumberSettings.startingSequenceNumber",
+                        parseInt(e.target.value, 10) || 1
+                      )
+                    }
+                    disabled={!canManage}
+                    className="mt-2"
+                  />
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Sequence resets to this number when the year changes (e.g., set to 1001 to start each year at 1001)
                   </p>
                 </div>
 
