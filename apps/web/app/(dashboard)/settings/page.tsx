@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { Users, Building2, Plug, Activity } from "lucide-react";
+import { User, Users, Building2, Plug, Activity } from "lucide-react";
 
 /**
  * Settings landing page.
- * Routes to sub-pages for company configuration.
+ * Routes to sub-pages for company configuration and account settings.
  */
 export default function SettingsPage() {
   return (
@@ -18,6 +18,19 @@ export default function SettingsPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
+        <Link
+          href="/settings/account"
+          className="rounded-lg border bg-card p-6 hover:shadow-sm transition-shadow"
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <User className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold">Account Settings</h2>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Manage your profile, password, and two-factor authentication
+          </p>
+        </Link>
+
         <Link
           href="/settings/members"
           className="rounded-lg border bg-card p-6 hover:shadow-sm transition-shadow"

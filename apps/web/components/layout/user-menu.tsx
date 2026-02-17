@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/lib/auth-context";
-import { LogOut, Settings, Shield } from "lucide-react";
+import { LogOut, Settings } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -75,15 +75,9 @@ export function UserMenu() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/settings" className="cursor-pointer">
+          <Link href="/settings/account" className="cursor-pointer">
             <Settings className="mr-2 h-4 w-4" />
-            <span>Settings</span>
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/mfa-setup" className="cursor-pointer">
-            <Shield className="mr-2 h-4 w-4" />
-            <span>MFA Settings</span>
+            <span>Account Settings</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />

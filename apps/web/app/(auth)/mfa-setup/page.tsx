@@ -25,7 +25,8 @@ type VerifyFormData = z.infer<typeof verifySchema>;
 type SetupData = {
   qrCodeDataUrl: string;
   secret: string;
-  backupCodes: string[];
+  backupCodes: string[];       // plaintext — display to user
+  hashedBackupCodes: string[]; // hashed — send to API
 };
 
 function MfaSetupPage() {
@@ -117,7 +118,7 @@ function MfaSetupPage() {
           json: {
             token: data.token,
             secret: setupData.secret,
-            backupCodes: setupData.backupCodes,
+            hashedBackupCodes: setupData.hashedBackupCodes,
           },
         }),
       });
