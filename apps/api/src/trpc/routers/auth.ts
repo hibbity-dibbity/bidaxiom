@@ -709,30 +709,17 @@ export const authRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      // Manually verify access token from Authorization header
-      const authHeader = (ctx as any).req?.headers?.["authorization"];
-      const accessToken = authHeader?.replace("Bearer ", "");
-
-      if (!accessToken) {
+      // Auth is already verified by createContext — ctx.userId is set if the JWT was valid
+      if (!ctx.userId) {
         throw new TRPCError({
           code: "UNAUTHORIZED",
           message: "Authentication required",
         });
       }
 
-      let payload;
-      try {
-        payload = await verifyAccessToken(accessToken);
-      } catch {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "Invalid access token",
-        });
-      }
-
       // Get user
       const user = await getAuthDb().query.users.findFirst({
-        where: eq(users.id, payload.userId),
+        where: eq(users.id, ctx.userId),
       });
 
       if (!user) {
@@ -766,13 +753,13 @@ export const authRouter = router({
           passwordHash: newPasswordHash,
           hashType: "argon2id",
         })
-        .where(eq(users.id, payload.userId));
+        .where(eq(users.id, ctx.userId));
 
       // Revoke all refresh tokens for this user (security: force re-login on other devices)
       await getAuthDb()
         .update(refreshTokens)
         .set({ revokedAt: new Date() })
-        .where(eq(refreshTokens.userId, payload.userId));
+        .where(eq(refreshTokens.userId, ctx.userId));
 
       return { success: true };
     }),
@@ -789,30 +776,17 @@ export const authRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      // Manually verify access token from Authorization header
-      const authHeader = (ctx as any).req?.headers?.["authorization"];
-      const accessToken = authHeader?.replace("Bearer ", "");
-
-      if (!accessToken) {
+      // Auth is already verified by createContext — ctx.userId is set if the JWT was valid
+      if (!ctx.userId) {
         throw new TRPCError({
           code: "UNAUTHORIZED",
           message: "Authentication required",
         });
       }
 
-      let payload;
-      try {
-        payload = await verifyAccessToken(accessToken);
-      } catch {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "Invalid access token",
-        });
-      }
-
       // Get user
       const user = await getAuthDb().query.users.findFirst({
-        where: eq(users.id, payload.userId),
+        where: eq(users.id, ctx.userId),
       });
 
       if (!user) {
@@ -852,7 +826,7 @@ export const authRouter = router({
           mfaSecret: null,
           mfaBackupCodes: null,
         })
-        .where(eq(users.id, payload.userId));
+        .where(eq(users.id, ctx.userId));
 
       return { success: true };
     }),
