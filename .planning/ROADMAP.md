@@ -62,7 +62,7 @@
 
 - [x] **Phase 20: Configuration Foundation** - Restore job number configuration UI and settings (completed 2026-02-17)
 - [ ] **Phase 21: Assignment & Auto-Generation** - Fix core auto-generation and manual assignment logic
-- [ ] **Phase 22: Validation & Duplicate Prevention** - Prevent duplicate job numbers and enforce format validation
+- [x] **Phase 22: Validation & Duplicate Prevention** - Prevent duplicate job numbers and enforce format validation (completed 2026-02-17)
 - [ ] **Phase 23: Display & Integration** - Ensure job numbers display across all UI touchpoints
 - [ ] **Phase 24: Year Rollover Logic** - Implement year transition and sequence reset handling
 
@@ -174,7 +174,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 20. Configuration Foundation | 3/3 | Complete    | 2026-02-17 |
 | 21. Assignment & Auto-Generation | 0/2 | Not started | - |
-| 22. Validation & Duplicate Prevention | 0/4 | Not started | - |
+| 22. Validation & Duplicate Prevention | 0/4 | Complete    | 2026-02-17 |
 | 23. Display & Integration | 0/0 | Not started | - |
 | 24. Year Rollover Logic | 0/0 | Not started | - |
 
