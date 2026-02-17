@@ -74,7 +74,7 @@
 
 ### Phases
 
-- [ ] **Phase 25: Session & Auth Flow** - Immediate redirect on session expiry; return URL after sign-in
+- [x] **Phase 25: Session & Auth Flow** - Immediate redirect on session expiry; return URL after sign-in (completed 2026-02-17)
 - [ ] **Phase 26: Account Settings & Shell Cleanup** - Consolidated /settings/account page; static sidebar
 - [ ] **Phase 27: Slug Routing Completion** - Customer and subcontractor detail/edit pages on slug URLs
 - [ ] **Phase 28: Search & Dashboard Enhancements** - Estimates in global search; dashboard KPI click-through with pre-filtering
@@ -170,7 +170,7 @@ Plans:
 | 22. Validation & Duplicate Prevention | v1.2 | 4/4 | Complete | 2026-02-17 |
 | 23. Display & Integration | v1.2 | 1/1 | Complete | 2026-02-17 |
 | 24. Year Rollover Logic | v1.2 | 2/2 | Complete | 2026-02-17 |
-| 25. Session & Auth Flow | v1.3 | 0/3 | Not started | - |
+| 25. Session & Auth Flow | v1.3 | Complete    | 2026-02-17 | - |
 | 26. Account Settings & Shell Cleanup | v1.3 | 0/TBD | Not started | - |
 | 27. Slug Routing Completion | v1.3 | 0/TBD | Not started | - |
 | 28. Search & Dashboard Enhancements | v1.3 | 0/TBD | Not started | - |
