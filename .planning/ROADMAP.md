@@ -106,7 +106,11 @@ Plans:
   3. Password can be changed from the account settings page without visiting a separate URL
   4. The user dropdown in the top navigation links directly to /settings/account — no separate "Settings" and "MFA" links
   5. The sidebar is always visible on all pages with no toggle button or dynamic show/hide behavior; legacy dynamic sidebar code is removed
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 26-01-PLAN.md — API mutations: auth.changePassword and auth.disableMfa
+- [ ] 26-02-PLAN.md — Shell cleanup: static sidebar, user dropdown consolidation, MFA bug fix, Account Settings card
+- [ ] 26-03-PLAN.md — Account settings page: Profile, Password Change, MFA sections + human verify
 
 #### Phase 27: Slug Routing Completion
 **Goal**: Customer and subcontractor detail and edit pages use human-readable slug URLs, completing the slug routing migration that was finished for projects in v1.1.
@@ -171,7 +175,7 @@ Plans:
 | 23. Display & Integration | v1.2 | 1/1 | Complete | 2026-02-17 |
 | 24. Year Rollover Logic | v1.2 | 2/2 | Complete | 2026-02-17 |
 | 25. Session & Auth Flow | v1.3 | Complete    | 2026-02-17 | - |
-| 26. Account Settings & Shell Cleanup | v1.3 | 0/TBD | Not started | - |
+| 26. Account Settings & Shell Cleanup | v1.3 | 0/3 | Not started | - |
 | 27. Slug Routing Completion | v1.3 | 0/TBD | Not started | - |
 | 28. Search & Dashboard Enhancements | v1.3 | 0/TBD | Not started | - |
 | 29. UX Polish & Tech Debt | v1.3 | 0/TBD | Not started | - |
@@ -179,4 +183,4 @@ Plans:
 ---
 
 *Roadmap created: 2026-02-10 (v1.0)*
-*Last updated: 2026-02-17 — Phase 25 planned (3 plans: SESS-01, SESS-02)*
+*Last updated: 2026-02-17 — Phase 26 planned (3 plans: ACCT-01, ACCT-02, ACCT-03, ACCT-04, NAV-01)*
