@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 
 ## Current Position
 
-Phase: Phase 22 (next)
-Plan: —
-Status: Phase 21 UAT passed — ready to plan Phase 22
-Last activity: 2026-02-17 - Phase 21 UAT passed (7/7). Bug fixed: manual counter sequence extraction (b4d1e4c)
+Phase: Phase 22 (22-validation-and-duplicate-prevention)
+Plan: 22-01 complete
+Status: In progress — Plan 01 of 22 complete
+Last activity: 2026-02-17 - Completed 22-01 (backend availability check and shared validation utilities)
 
-Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [██████████] 100% (7 phases) | v1.2: [██████░░░░] 60% (3 of 5 phases complete)
+Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [██████████] 100% (7 phases) | v1.2: [███████░░░] 70% (Phase 22 in progress)
 
 ## Performance Metrics
 
@@ -147,6 +147,7 @@ Progress: v1.0: [██████████] 100% complete (12 phases) | v1.
 | Phase 20-configuration-foundation P03 | 2.5 min | 2 tasks | 3 files |
 | Phase 21-assignment-and-auto-generation P01 | 2 min | 2 tasks | 2 files |
 | Phase 21-assignment-and-auto-generation P02 | 2 min | 1 task | 0 files |
+| Phase 22-validation-and-duplicate-prevention P01 | 5 min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -391,6 +392,9 @@ Recent decisions affecting current work:
 - [Phase 20-02]: Discriminated union return type {valid: true} | {valid: false, error} for backward compatibility — Allows callers to handle validation failures gracefully
 - [Phase 20-02]: Preview shows next 3 job numbers to demonstrate token behavior and sequence progression — Better visualization of job numbering system
 - [Phase 21-02]: Plan work completed in previous plan (21-01) — Frontend and backend implemented together for efficiency; prevents intermediate broken state where backend works but UI doesn't match
+- [Phase 22-01]: ilike() over eq() for job number duplicate detection — ABC-001 and abc-001 are the same number; case-insensitive prevents duplicates with different casing
+- [Phase 22-01]: validateJobNumberFormat and parseTemplatePattern added to shared/types/company.ts — pure regex functions with no server-only deps; co-located with other job-number utilities; exportable to web client
+- [Phase 22-01]: excludeProjectId uses ne() in conditions array — edit flow can exclude own project number without separate query path
 
 ### Pending Todos
 
@@ -428,8 +432,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-17 (Phase 21 Execution)
-Stopped at: Completed 21-02-PLAN.md
-Last activity: 2026-02-17 - Completed plan 21-02 (Job number field visibility and UX improvements)
-Resume: Phase 21 in progress - 1 of 2 plans complete
+Last session: 2026-02-17 (Phase 22 Execution)
+Stopped at: Completed 22-01-PLAN.md
+Last activity: 2026-02-17 - Completed plan 22-01 (Backend availability check and shared validation utilities)
+Resume: Phase 22 in progress - Plan 01 complete
 
