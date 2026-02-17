@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 ## Current Position
 
 Phase: 25 of 29 in v1.3 (Session & Auth Flow)
-Plan: 0 of TBD in Phase 25
-Status: Ready to plan
-Last activity: 2026-02-17 — v1.3 roadmap created (5 phases, 18 requirements mapped)
+Plan: 2 of TBD in Phase 25
+Status: In progress
+Last activity: 2026-02-17 — Completed 25-02: session watcher hook + tRPC 401 interceptor
 
-Progress: v1.0: [██████████] 100% (12 phases) | v1.1: [██████████] 100% (7 phases) | v1.2: [██████████] 100% (5 phases) | v1.3: [░░░░░░░░░░] 0% (0/5 phases)
+Progress: v1.0: [██████████] 100% (12 phases) | v1.1: [██████████] 100% (7 phases) | v1.2: [██████████] 100% (5 phases) | v1.3: [░░░░░░░░░░] ~8% (0/5 phases complete, Phase 25 in progress)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 94
+- Total plans completed: 96
 - Average duration: 4.5 min
-- Total execution time: 8.57 hours
+- Total execution time: ~8.67 hours
 
 **By Phase:**
 
@@ -32,10 +32,11 @@ Progress: v1.0: [██████████] 100% (12 phases) | v1.1: [█�
 | 22 | 4 | ~15 min | ~3.8 min |
 | 23 | 1 | 5 min | 5 min |
 | 24 | 2 | ~6 min | ~3 min |
+| 25 | 2 | ~6 min | ~3 min |
 
 **Recent Trend:**
-- Last 5 plans: 24-02 (2 min), 24-01 (4 min), 23-01 (5 min), 22-03 (8 min), 22-02 (2 min)
-- Trend: Stable — averaging 3-4 min per plan in v1.2
+- Last 5 plans: 25-02 (3 min), 25-01 (3 min), 24-02 (2 min), 24-01 (4 min), 23-01 (5 min)
+- Trend: Stable — averaging 3 min per plan in v1.3
 
 *Updated after each plan completion*
 
@@ -51,6 +52,9 @@ Recent decisions affecting current work:
 - **Iron-session for encrypted stateless cookies**: 7-day maxAge matching refresh token TTL — expiry detection needed client-side
 - **startingSequenceNumber (Phase 24)**: Year rollover resets to configurable start; counter increment on manual edit-page change is tech debt (JOBEDIT-01, Phase 29)
 - **Component library extraction at 3+ uses (Phase 19)**: Empty state and loading state components will likely qualify for extraction in Phase 29
+- **window.location.href for session redirects (Phase 25)**: Full page reload ensures middleware re-evaluates iron-session cookie; router.push would leave broken session in place
+- **SessionWatcher client component pattern (Phase 25)**: Dashboard layout stays a Server Component; tiny client wrapper mounts the hook without polluting layout
+- **globalThis.fetch in tRPC interceptor (Phase 25)**: Prevents infinite recursion when custom fetch property overrides global fetch
 
 ### Pending Todos
 
@@ -63,5 +67,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: v1.3 roadmap created — 5 phases (25-29), 18/18 requirements mapped, ready to plan Phase 25
+Stopped at: Completed 25-02 — JWT session watcher hook + tRPC 401 interceptor implemented
 Resume file: None
