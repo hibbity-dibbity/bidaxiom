@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-17)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** Between milestones — v1.2 shipped, no active milestone
+**Current focus:** Milestone v1.3 - Polish & Gap Closure
 
 ## Current Position
 
-Phase: MILESTONE COMPLETE — v1.2 shipped 2026-02-17
-Plan: All 12 plans complete across 5 phases (20-24)
-Status: v1.2 archived — ROADMAP.md collapsed, REQUIREMENTS.md archived to milestones/, git tag v1.2 created
-Last activity: 2026-02-17 - v1.2 milestone completion and archive
+Phase: Not started (defining roadmap)
+Plan: —
+Status: Defining roadmap — 18 requirements across 8 categories
+Last activity: 2026-02-17 — Milestone v1.3 started
 
-Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [██████████] 100% (7 phases) | v1.2: [██████████] 100% complete (5 phases, 12 plans, 19/19 requirements)
+Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [██████████] 100% (7 phases) | v1.2: [██████████] 100% complete (5 phases, 12 plans, 19/19 requirements) | v1.3: [░░░░░░░░░░] 0% (roadmap pending)
 
 ## Performance Metrics
 

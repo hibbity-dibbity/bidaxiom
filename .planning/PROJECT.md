@@ -62,7 +62,21 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 
 ### Active
 
-*No active milestone. Run `/gsd:new-milestone` to define v1.3 requirements.*
+<!-- v1.3 Polish & Gap Closure -->
+
+**Milestone v1.3: Polish & Gap Closure** (Started: 2026-02-17)
+
+**Goal:** Complete unfinished routing migrations, fix auth session flows, consolidate account settings, revert to static sidebar, and tighten overall UX reliability.
+
+**Target features:**
+- Session expiry detection with immediate redirect to sign-in + return URL support
+- Consolidated /settings/account page (MFA, password change); updated user dropdown
+- Static sidebar (revert dynamic sidebar)
+- Slug-based routing for customer and subcontractor detail/edit pages
+- Estimates included in global search results
+- Dashboard KPI widget click-through with pre-filtering
+- Job number counter increment on manual edit-page change (v1.2 tech debt)
+- Consistent empty states, loading states, and error handling across the app
 
 <details>
 <summary>✅ v1.2 Job Number System Fixes & Reliability — SHIPPED Feb 17, 2026</summary>
@@ -136,4 +150,4 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 | Responsive web (no native mobile) for v1 | Faster to ship; field use works via mobile browser until usage patterns justify native | ✓ Good — mobile browser working well |
 
 ---
-*Last updated: 2026-02-17 after starting v1.2 milestone*
+*Last updated: 2026-02-17 after starting v1.3 milestone*
