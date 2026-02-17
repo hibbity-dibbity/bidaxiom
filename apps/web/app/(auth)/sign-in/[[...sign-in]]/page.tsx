@@ -163,8 +163,8 @@ export default function SignInPage() {
           <Image
             src="/bidaxiom-logo.png"
             alt="BidAxiom"
-            width={200}
-            height={48}
+            width={320}
+            height={74}
             className="mx-auto dark:invert"
             priority
           />
@@ -227,8 +227,8 @@ export default function SignInPage() {
         <Image
           src="/bidaxiom-logo.png"
           alt="BidAxiom"
-          width={200}
-          height={48}
+          width={320}
+          height={74}
           className="mx-auto dark:invert"
           priority
         />
