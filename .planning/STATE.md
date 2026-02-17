@@ -40,6 +40,7 @@ Progress: v1.0: [██████████] 100% (12 phases) | v1.1: [█�
 - Trend: Stable — averaging 3 min per plan in v1.3
 
 *Updated after each plan completion*
+| Phase 26-account-settings-and-shell-cleanup P02 | 8min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -58,6 +59,9 @@ Recent decisions affecting current work:
 - **globalThis.fetch in tRPC interceptor (Phase 25)**: Prevents infinite recursion when custom fetch property overrides global fetch
 - **changePassword revokes refresh tokens, disableMfa does not (Phase 26)**: Password change is a credential rotation event requiring forced re-login on other devices; MFA disable is a settings change that should not disrupt sessions
 - **Manual Bearer token pattern for changePassword/disableMfa (Phase 26)**: Consistent with setupMfa/verifyMfaSetup in same file; both use authHeader?.replace("Bearer ", "") + verifyAccessToken
+- [Phase 26-02]: collapsible=none on ShadcnSidebar: sidebar always fully expanded, no toggle
+- [Phase 26-02]: User dropdown: single Account Settings link at /settings/account replaces Settings + MFA Settings
+- [Phase 26-02]: MFA bug fix: SetupData type now includes hashedBackupCodes; verifyMfaSetup receives hashedBackupCodes not backupCodes
 
 ### Pending Todos
 
