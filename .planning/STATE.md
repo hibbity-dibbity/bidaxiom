@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 
 ## Current Position
 
-Phase: Phase 24 (24-year-rollover-logic) - IN PROGRESS
-Plan: 24-01 complete
-Status: In Progress — Phase 24 plan 01 done (startingSequenceNumber year-rollover)
-Last activity: 2026-02-17 - 24-01 complete (startingSequenceNumber added to schema, wired into generateJobNumber, surfaced in company settings UI)
+Phase: Phase 24 (24-year-rollover-logic) - COMPLETE
+Plan: 24-02 complete
+Status: Phase 24 complete — all JOBROLL requirements human-verified in live app
+Last activity: 2026-02-17 - 24-02 complete (UAT passed: year rollover resets to startingSequenceNumber, year tokens correct, existing numbers unchanged)
 
-Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [██████████] 100% (7 phases) | v1.2: [██████████] 100% complete (Phase 23 done) | v1.3: [█░░░░░░░░░] Phase 24 in progress
+Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [██████████] 100% (7 phases) | v1.2: [██████████] 100% complete (Phase 23 done) | v1.3: [██████████] 100% complete (Phase 24 done)
 
 ## Performance Metrics
 
@@ -152,6 +152,7 @@ Progress: v1.0: [██████████] 100% complete (12 phases) | v1.
 | Phase 22-validation-and-duplicate-prevention P03 | 8 min | 1 task | 1 file |
 | Phase 23-display-and-integration P01 | 5 min | 2 tasks | 0 files |
 | Phase 24-year-rollover-logic P01 | 4 | 3 tasks | 4 files |
+| Phase 24-year-rollover-logic P02 | 2 min | 1 task (UAT) | 0 files |
 
 ## Accumulated Context
 
@@ -407,6 +408,7 @@ Recent decisions affecting current work:
 - [Phase 22-03]: editFormSchema omits id and costCodes — id passed separately to mutation, costCodes out of scope for edit form
 - [Phase 24-01]: startingSequenceNumber ?? 1 fallback in generateJobNumber ensures backward compatibility with existing JSONB rows
 - [Phase 24-01]: startingSequenceNumber positioned between template and nextSequenceNumber in JobNumberSettings schema for logical grouping
+- [Phase 24-02]: UAT confirmed year rollover resets counter to startingSequenceNumber (not 1) — user verified with startingSequenceNumber=1002, new job number was 261002 (year=26, seq=1002)
 
 ### Pending Todos
 
@@ -446,7 +448,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-17 (Quick Task 24 Execution)
-Stopped at: Completed quick/24-fix-job-number-preview-and-redesign-sett
-Last activity: 2026-02-17 - quick-24 complete (computeNextSequenceNumber + parseSequenceFromJobNumber added to shared package; company settings redesigned with rollover-aware Next Job Number field)
+Last session: 2026-02-17 (Phase 24-02 Execution)
+Stopped at: Completed 24-02-PLAN.md (Phase 24 complete)
+Last activity: 2026-02-17 - 24-02 complete (UAT passed: year rollover resets to startingSequenceNumber=1002, year=26 prefix confirmed, existing job numbers unchanged — all JOBROLL requirements verified)
 
