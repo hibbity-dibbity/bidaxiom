@@ -51,6 +51,9 @@ export type TradesConfig = z.infer<typeof tradesConfigSchema>;
  * - {YY}{NNNN} → 261001, 261002, 271001 (resets yearly)
  * - {YYYY}-{NNN} → 2026-001, 2026-002, 2027-001 (resets yearly)
  * - JOB-{NNNNN} → JOB-00001, JOB-00002 (never resets)
+ *
+ * Fields:
+ * - startingSequenceNumber: sequence resets to this value at year (or format) boundary
  */
 export const jobNumberSettingsSchema = z.object({
   enabled: z.boolean(),
@@ -70,6 +73,7 @@ export const jobNumberSettingsSchema = z.object({
         };
       }
     ),
+  startingSequenceNumber: z.number().int().min(1).default(1),  // NEW: reset target on year change
   nextSequenceNumber: z.number().int().min(1).default(1),
   lastGeneratedFormat: z.string().nullable().optional(),
 });
