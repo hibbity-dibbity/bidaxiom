@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 
 ## Current Position
 
-Phase: Phase 21 (Assignment and Auto-Generation)
-Plan: 1 of 2 plans complete
-Status: In Progress
-Last activity: 2026-02-17 - Completed 21-02-PLAN.md (Job number field visibility and UX)
+Phase: Phase 22 (next)
+Plan: —
+Status: Phase 21 UAT passed — ready to plan Phase 22
+Last activity: 2026-02-17 - Phase 21 UAT passed (7/7). Bug fixed: manual counter sequence extraction (b4d1e4c)
 
-Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [██████████] 100% (7 phases) | v1.2: [████░░░░░░] 40% (2 of 5 phases complete)
+Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [██████████] 100% (7 phases) | v1.2: [██████░░░░] 60% (3 of 5 phases complete)
 
 ## Performance Metrics
 
