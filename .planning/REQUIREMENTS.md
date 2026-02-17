@@ -60,13 +60,31 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (To be filled by roadmapper) | — | — |
+| JOBCFG-01 | Phase 20 | Pending |
+| JOBCFG-02 | Phase 20 | Pending |
+| JOBCFG-03 | Phase 20 | Pending |
+| JOBCFG-04 | Phase 20 | Pending |
+| JOBASGN-01 | Phase 21 | Pending |
+| JOBASGN-02 | Phase 21 | Pending |
+| JOBASGN-03 | Phase 21 | Pending |
+| JOBASGN-04 | Phase 21 | Pending |
+| JOBASGN-05 | Phase 21 | Pending |
+| JOBVAL-01 | Phase 22 | Pending |
+| JOBVAL-02 | Phase 22 | Pending |
+| JOBVAL-03 | Phase 22 | Pending |
+| JOBDISP-01 | Phase 23 | Pending |
+| JOBDISP-02 | Phase 23 | Pending |
+| JOBDISP-03 | Phase 23 | Pending |
+| JOBDISP-04 | Phase 23 | Pending |
+| JOBROLL-01 | Phase 24 | Pending |
+| JOBROLL-02 | Phase 24 | Pending |
+| JOBROLL-03 | Phase 24 | Pending |
 
 **Coverage:**
 - v1.2 requirements: 16 total
-- Mapped to phases: (pending roadmap)
-- Unmapped: (pending roadmap)
+- Mapped to phases: 16/16 (100%)
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-17*
-*Last updated: 2026-02-17 after initial definition*
+*Last updated: 2026-02-17 after roadmap creation*

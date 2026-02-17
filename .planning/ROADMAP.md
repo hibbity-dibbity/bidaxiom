@@ -4,6 +4,7 @@
 
 - ✅ **v1.0 MVP** — Phases 1-12 (shipped Feb 14, 2026)
 - ✅ **v1.1 Enterprise UX Redesign** — Phases 13-19 (shipped Feb 16, 2026)
+- 🚧 **v1.2 Job Number System Fixes** — Phases 20-24 (started Feb 17, 2026)
 
 ## Shipped Milestones
 
@@ -50,11 +51,121 @@
 
 ---
 
-## Next Milestone
+## Current Milestone: v1.2 Job Number System Fixes
 
-**To be defined.** Run `/gsd:new-milestone` to start the next milestone cycle with questioning → research → requirements → roadmap.
+**Started:** 2026-02-17
+**Goal:** Fix broken job number auto-generation system and ensure reliable increment tracking across all project touchpoints.
+**Phases:** 20-24 (5 phases total)
+**Requirements:** 16 (across 5 categories)
+
+### Phases
+
+- [ ] **Phase 20: Configuration Foundation** - Restore job number configuration UI and settings
+- [ ] **Phase 21: Assignment & Auto-Generation** - Fix core auto-generation and manual assignment logic
+- [ ] **Phase 22: Validation & Duplicate Prevention** - Prevent duplicate job numbers and enforce format validation
+- [ ] **Phase 23: Display & Integration** - Ensure job numbers display across all UI touchpoints
+- [ ] **Phase 24: Year Rollover Logic** - Implement year transition and sequence reset handling
+
+## Phase Details
+
+### Phase 20: Configuration Foundation
+**Goal**: Company admins can configure job number format, starting sequence, and auto-generation settings through a visible and functional UI.
+
+**Depends on**: Nothing (first phase)
+
+**Requirements**: JOBCFG-01, JOBCFG-02, JOBCFG-03, JOBCFG-04
+
+**Success Criteria** (what must be TRUE):
+1. Admin can access job number configuration section in company settings page
+2. Admin can set job number format pattern (e.g., "YY-####")
+3. Admin can set starting sequence number (e.g., 1001)
+4. Admin can toggle auto-generation on/off via checkbox
+5. Configuration changes save successfully and persist across sessions
+
+**Plans**: TBD
+
+---
+
+### Phase 21: Assignment & Auto-Generation
+**Goal**: New projects receive job numbers automatically when auto-generation is enabled, with manual override support and correct counter incrementation.
+
+**Depends on**: Phase 20 (configuration must exist)
+
+**Requirements**: JOBASGN-01, JOBASGN-02, JOBASGN-03, JOBASGN-04, JOBASGN-05
+
+**Success Criteria** (what must be TRUE):
+1. When auto-generation enabled, new project receives job number automatically on creation
+2. User can manually enter custom job number on project creation form (field is visible)
+3. Manual job number entry increments the auto-generation counter to prevent future duplicates
+4. Auto-generation counter persists correctly across multiple sequential project creations
+5. Job number field is visible and functional on new project form (not hidden)
+
+**Plans**: TBD
+
+---
+
+### Phase 22: Validation & Duplicate Prevention
+**Goal**: System prevents duplicate job numbers and validates format compliance with clear error messages.
+
+**Depends on**: Phase 21 (assignment logic must work)
+
+**Requirements**: JOBVAL-01, JOBVAL-02, JOBVAL-03
+
+**Success Criteria** (what must be TRUE):
+1. Attempting to create project with duplicate job number shows validation error
+2. Job number format must match configured pattern (validated on submission)
+3. Clear, actionable error messages appear when validation fails (not generic "Error")
+
+**Plans**: TBD
+
+---
+
+### Phase 23: Display & Integration
+**Goal**: Job numbers display prominently across all project touchpoints (list, detail, cards, estimates).
+
+**Depends on**: Phase 21 (job numbers must be assigned correctly)
+
+**Requirements**: JOBDISP-01, JOBDISP-02, JOBDISP-03, JOBDISP-04
+
+**Success Criteria** (what must be TRUE):
+1. Job numbers appear as column in project list/table view
+2. Job number displays prominently in project detail page header
+3. Job numbers display on project cards if card view exists
+4. Job numbers carry through from estimates to projects after conversion
+
+**Plans**: TBD
+
+---
+
+### Phase 24: Year Rollover Logic
+**Goal**: Job number sequence resets correctly when year changes, preserving existing project job numbers.
+
+**Depends on**: Phase 21 (auto-generation must work)
+
+**Requirements**: JOBROLL-01, JOBROLL-02, JOBROLL-03
+
+**Success Criteria** (what must be TRUE):
+1. When new year starts, sequence counter resets to configured starting number
+2. Year component in job number (YY or YYYY) updates automatically for new projects
+3. Existing projects retain their original job numbers after year rollover (no retroactive changes)
+
+**Plans**: TBD
+
+---
+
+## Progress
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 20. Configuration Foundation | 0/0 | Not started | - |
+| 21. Assignment & Auto-Generation | 0/0 | Not started | - |
+| 22. Validation & Duplicate Prevention | 0/0 | Not started | - |
+| 23. Display & Integration | 0/0 | Not started | - |
+| 24. Year Rollover Logic | 0/0 | Not started | - |
+
+**Overall Milestone Progress**: 0% (0 of 5 phases complete)
 
 ---
 
 *Roadmap created: 2026-02-10 (v1.0)*
-*Last reorganized: 2026-02-16 after v1.1 completion*
+*Last updated: 2026-02-17 after v1.2 roadmap creation*

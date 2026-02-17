@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-17)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** Milestone v1.2 - Job Number System Fixes
+**Current focus:** Milestone v1.2 - Job Number System Fixes & Reliability
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements for v1.2
-Last activity: 2026-02-17 - Milestone v1.2 started (Job Number System Fixes)
+Phase: Phase 20 (Configuration Foundation)
+Plan: Not started
+Status: Ready to plan Phase 20
+Last activity: 2026-02-17 - v1.2 roadmap created (5 phases, 16 requirements mapped)
 
-Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [██████████] 100% (7 phases complete) | v1.2: [░░░░░░░░░░] 0% (defining requirements)
+Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [██████████] 100% (7 phases) | v1.2: [░░░░░░░░░░] 0% (0 of 5 phases complete)
 
 ## Performance Metrics
 
@@ -55,7 +55,7 @@ Progress: v1.0: [██████████] 100% complete (12 phases) | v1.
 | Phase 06 P04 | 7 min | 2 tasks | 13 files |
 | Phase 07-bidding-and-procurement P01 | 3 min | 2 tasks | 7 files |
 | Phase 07-bidding-and-procurement P02 | 6 min | 2 tasks | 3 files |
-| Phase 07-bidding-and-procurement P03 | 4 min | 2 tasks | 2 files |
+| Phase 07-bidding-and-procurement P03 | 4 min | 2 tasks | 3 files |
 | Phase 07-bidding-and-procurement P05 | 6 min | 2 tasks | 7 files |
 | Phase 07-bidding-and-procurement P04 | 6 | 2 tasks | 11 files |
 | Phase 05-change-order-management P04 | 1.5 min | 1 task | 1 file |
@@ -348,9 +348,7 @@ Recent decisions affecting current work:
 - [Phase 17-06]: TanStack Table for inline editing — Industry-standard table library with excellent TypeScript support and flexible cell editing patterns
 - [Phase 17-06]: Auto-save on blur without debouncing — Simpler than debounced typing, prevents data loss, matches user expectation of "edit then click away"
 - [Phase 17-06]: Color-coded margin indicators — Red < 10%, yellow 10-20%, green >= 20% based on construction industry norms
-- [Phase 17-06]: ### Decisions
-
-.00 SOV variance tolerance — Allows for rounding differences while ensuring accuracy for financial compliance
+- [Phase 17-06]: $0.00 SOV variance tolerance — Allows for rounding differences while ensuring accuracy for financial compliance
 - [Phase 17-07]: Workflow step container acts as router pattern — WorkflowStepContainer imports and renders step components based on currentStep prop, delegating all logic to step-specific components
 - [Phase 17-10]: Allow zero-cost line items in validation schema — Users can add line items before costs are known; business rule validation at estimate submission time ensures no zero costs in final estimates
 - [Phase 17-11]: Zero-check before division for margin calculation — sellingPrice > 0 ternary prevents NaN when costs are zero, returns 0 instead
@@ -418,8 +416,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-17 (Quick Task 18 execution)
-Stopped at: Completed quick-18-SUMMARY.md (logo optimization)
-Last activity: 2026-02-17 - Completed quick task 22: Combine job number and project name in same format
-Resume file: .planning/quick/18-crop-bidaxiom-logo-images-to-remove-tran/18-SUMMARY.md
+Last session: 2026-02-17 (v1.2 Roadmap Creation)
+Stopped at: Roadmap files created, ready to plan Phase 20
+Last activity: 2026-02-17 - v1.2 roadmap created (5 phases: Configuration, Assignment, Validation, Display, Year Rollover)
+Resume: Run `/gsd:plan-phase 20` to create execution plans for Phase 20 (Configuration Foundation)
 
