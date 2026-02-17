@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createProjectSchema, DEFAULT_PROJECT_PHASES, previewJobNumber, createCustomerSchema } from "@construction/shared";
+import { createProjectSchema, DEFAULT_PROJECT_PHASES, previewJobNumber, createCustomerSchema, validateJobNumberFormat } from "@construction/shared";
 import { z } from "zod";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -40,7 +40,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Plus, X, GripVertical, Info } from "lucide-react";
+import { Plus, X, GripVertical, Info, Loader2, ExternalLink } from "lucide-react";
 import { getCustomerDisplayName } from "@construction/shared";
 import {
   Tooltip,
@@ -168,6 +168,8 @@ export function ProjectForm() {
   const utils = trpc.useUtils();
   const [manualJobNumber, setManualJobNumber] = useState(false);
   const [addCustomerOpen, setAddCustomerOpen] = useState(false);
+  const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
+  const [duplicateProject, setDuplicateProject] = useState<{ name: string; slug: string } | null>(null);
 
   // Fetch company profile for job number settings
   const { data: companyProfile } = trpc.company.getCurrent.useQuery();
@@ -244,7 +246,50 @@ export function ProjectForm() {
     },
   });
 
-  const onSubmit = (values: ProjectFormValues) => {
+  const handleJobNumberBlur = async (value: string) => {
+    setDuplicateProject(null);
+    if (!value) {
+      form.clearErrors("jobNumber");
+      return;
+    }
+
+    // Step 1: Format validation (only when auto-gen is enabled)
+    if (jobNumberSettings?.enabled) {
+      if (!validateJobNumberFormat(value, jobNumberSettings.template)) {
+        form.setError("jobNumber", {
+          type: "manual",
+          message: "Job number doesn't match the required format",
+        });
+        return;
+      }
+    }
+
+    // Step 2: Duplicate check (async)
+    form.clearErrors("jobNumber");
+    setIsCheckingDuplicate(true);
+    try {
+      const result = await utils.company.checkJobNumberAvailability.fetch({
+        jobNumber: value,
+        // No excludeProjectId — this is a new project
+      });
+      if (!result.available && result.existingProjectName && result.existingProjectSlug) {
+        setDuplicateProject({ name: result.existingProjectName, slug: result.existingProjectSlug });
+        form.setError("jobNumber", { type: "manual", message: " " }); // space keeps FormMessage visible for layout
+      }
+    } catch {
+      // Don't block submission on network error — backend will catch duplicates
+    } finally {
+      setIsCheckingDuplicate(false);
+    }
+  };
+
+  const onSubmit = async (values: ProjectFormValues) => {
+    // Safety net: re-check if a manual job number is entered
+    if (values.jobNumber) {
+      await handleJobNumberBlur(values.jobNumber);
+      // If errors were set, abort
+      if (form.formState.errors.jobNumber || duplicateProject) return;
+    }
     createMutation.mutate(values);
   };
 
@@ -460,6 +505,8 @@ export function ProjectForm() {
                             onClick={() => {
                               setManualJobNumber(false);
                               field.onChange(undefined);
+                              form.clearErrors("jobNumber");
+                              setDuplicateProject(null);
                             }}
                           >
                             Use Auto-generated
@@ -473,6 +520,10 @@ export function ProjectForm() {
                           placeholder={`e.g., ${previewJobNumber(jobNumberSettings.template, 1)}`}
                           className="font-mono"
                           maxLength={50}
+                          onBlur={(e) => {
+                            field.onBlur(); // preserve RHF blur behavior
+                            handleJobNumberBlur(e.target.value);
+                          }}
                         />
                       </FormControl>
                       <FormDescription className="flex items-start gap-2">
@@ -483,6 +534,27 @@ export function ProjectForm() {
                         </span>
                       </FormDescription>
                       <FormMessage />
+                      {isCheckingDuplicate && (
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Checking availability...
+                        </div>
+                      )}
+                      {duplicateProject && !isCheckingDuplicate && (
+                        <div className="flex items-center gap-1 text-xs text-destructive mt-1">
+                          <span className="font-mono font-medium">{form.getValues("jobNumber")}</span>
+                          <span>is already assigned to</span>
+                          <a
+                            href={`/projects/${duplicateProject.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-medium underline hover:no-underline inline-flex items-center gap-0.5"
+                          >
+                            {duplicateProject.name}
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </div>
+                      )}
                     </FormItem>
                   )}
                 />
@@ -715,7 +787,10 @@ export function ProjectForm() {
           >
             Cancel
           </Button>
-          <Button type="submit" disabled={createMutation.isPending}>
+          <Button
+            type="submit"
+            disabled={createMutation.isPending || isCheckingDuplicate || !!duplicateProject}
+          >
             {createMutation.isPending ? "Creating..." : "Create Project"}
           </Button>
         </div>
