@@ -4,7 +4,7 @@ import { router } from "../trpc.js";
 import { protectedProcedure, authorizedProcedure } from "../procedures.js";
 import { getQboAuthUrl, handleQboCallback } from "../../integrations/quickbooks/oauth.js";
 import { encryptToken } from "../../integrations/quickbooks/crypto.js";
-import { qboSyncQueue } from "../../integrations/quickbooks/queue.js";
+import { getQboSyncQueue } from "../../integrations/quickbooks/queue.js";
 import { eq, sql, and } from "drizzle-orm";
 
 /**
@@ -441,7 +441,7 @@ export const quickbooksRouter = router({
 
           // Queue sync jobs for unmapped entities
           for (const entity of platformEntities) {
-            await qboSyncQueue.add("sync-to-qbo", {
+            await getQboSyncQueue().add("sync-to-qbo", {
               tenantId: tenant.tenantId,
               entityType: type,
               platformId: entity.id,
@@ -457,7 +457,7 @@ export const quickbooksRouter = router({
             .where(eq(tenant.schema.qboEntityMappings.entityType, type));
 
           for (const mapping of mappedEntities) {
-            await qboSyncQueue.add("sync-to-qbo", {
+            await getQboSyncQueue().add("sync-to-qbo", {
               tenantId: tenant.tenantId,
               entityType: type,
               platformId: mapping.platformId,
@@ -493,7 +493,7 @@ export const quickbooksRouter = router({
 
         // Queue sync jobs for unmapped entities
         for (const entity of platformEntities) {
-          await qboSyncQueue.add("sync-to-qbo", {
+          await getQboSyncQueue().add("sync-to-qbo", {
             tenantId: tenant.tenantId,
             entityType,
             platformId: entity.id,
@@ -509,7 +509,7 @@ export const quickbooksRouter = router({
           .where(eq(tenant.schema.qboEntityMappings.entityType, entityType));
 
         for (const mapping of mappedEntities) {
-          await qboSyncQueue.add("sync-to-qbo", {
+          await getQboSyncQueue().add("sync-to-qbo", {
             tenantId: tenant.tenantId,
             entityType,
             platformId: mapping.platformId,

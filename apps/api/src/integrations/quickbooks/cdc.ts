@@ -3,7 +3,7 @@ import { db as publicDb } from '../../db/client.js';
 import { tenants } from '../../db/schema/public.js';
 import { createTenantDb } from '../../db/client.js';
 import { createQboClient, promisifyQbo } from './client.js';
-import { qboSyncQueue } from './queue.js';
+import { getQboSyncQueue } from './queue.js';
 
 /**
  * Run Change Data Capture (CDC) for a specific tenant.
@@ -128,7 +128,7 @@ export async function runCdcForTenant(tenantId: string): Promise<void> {
 
         // Queue sync jobs for each changed entity
         for (const entity of changedEntities) {
-          await qboSyncQueue.add('sync-from-qbo', {
+          await getQboSyncQueue().add('sync-from-qbo', {
             tenantId,
             entityType: platformEntityType,
             qboId: entity.Id,

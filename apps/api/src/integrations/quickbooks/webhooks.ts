@@ -1,6 +1,6 @@
 import { createHmac } from 'crypto';
 import { z } from 'zod';
-import { qboSyncQueue } from './queue.js';
+import { getQboSyncQueue } from './queue.js';
 import { pool } from '../../db/client.js';
 
 /**
@@ -112,7 +112,7 @@ export async function handleQboWebhook(
     }
 
     // Queue sync-from-qbo job
-    await qboSyncQueue.add('sync-from-qbo', {
+    await getQboSyncQueue().add('sync-from-qbo', {
       tenantId,
       entityType: entityType as any, // Type is validated by queue schema
       qboId: entity.id,

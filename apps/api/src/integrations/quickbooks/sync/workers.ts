@@ -1,6 +1,6 @@
 import { Worker, Job } from 'bullmq';
 import { eq, and, desc } from 'drizzle-orm';
-import { qboSyncQueue, redisConnection, type QboSyncJobData } from '../queue.js';
+import { redisConnection, type QboSyncJobData } from '../queue.js';
 import { dispatchSync, type SyncParams } from './mappers/index.js';
 import { createQboClient } from '../client.js';
 import { refreshQboToken } from '../oauth.js';

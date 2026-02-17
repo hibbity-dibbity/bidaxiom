@@ -31,26 +31,33 @@ export const redisConnection: ConnectionOptions = {
 };
 
 /**
- * Scheduled reports queue.
- * Handles automatic report generation and delivery.
+ * Scheduled reports queue — lazy getter.
+ * Defers Redis connection until first use so the server can start without Redis.
  *
  * Configuration:
  * - 3 retry attempts with exponential backoff (5s, 10s, 20s)
  * - Completed jobs retained for 1 day or last 50 jobs
  * - Failed jobs retained for 1 week or last 200 jobs
  */
-export const scheduledReportsQueue = new Queue<ScheduledReportJobData>('scheduled-reports', {
-  connection: redisConnection,
-  defaultJobOptions: {
-    attempts: 3,
-    backoff: {
-      type: 'exponential',
-      delay: 5000, // Start at 5 seconds, doubles each retry
-    },
-    removeOnComplete: { count: 50, age: 86400 },   // Keep 50 or 1 day (in seconds)
-    removeOnFail: { count: 200, age: 604800 },      // Keep 200 or 1 week (in seconds)
-  },
-});
+let _scheduledReportsQueue: Queue<ScheduledReportJobData> | null = null;
+
+export function getScheduledReportsQueue(): Queue<ScheduledReportJobData> {
+  if (!_scheduledReportsQueue) {
+    _scheduledReportsQueue = new Queue<ScheduledReportJobData>('scheduled-reports', {
+      connection: redisConnection,
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 5000, // Start at 5 seconds, doubles each retry
+        },
+        removeOnComplete: { count: 50, age: 86400 },   // Keep 50 or 1 day (in seconds)
+        removeOnFail: { count: 200, age: 604800 },      // Keep 200 or 1 week (in seconds)
+      },
+    });
+  }
+  return _scheduledReportsQueue;
+}
 
 /**
  * Start the BullMQ worker that processes scheduled report jobs.
@@ -204,7 +211,7 @@ export async function scheduleNextReports(): Promise<void> {
 
         // Add each due schedule to the queue
         for (const schedule of dueSchedules) {
-          await scheduledReportsQueue.add(
+          await getScheduledReportsQueue().add(
             'process-scheduled-report',
             {
               tenantId: tenant.id,

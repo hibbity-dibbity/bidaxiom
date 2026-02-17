@@ -19,7 +19,7 @@ import {
 import { router } from '../trpc.js';
 import { protectedProcedure, authorizedProcedure } from '../procedures.js';
 import { calculateNextRun } from '../../services/report-scheduler.js';
-import { scheduledReportsQueue } from '../../jobs/scheduled-reports.js';
+import { getScheduledReportsQueue } from '../../jobs/scheduled-reports.js';
 import { createAuditLog } from '../../audit/logger.js';
 
 /**
@@ -214,7 +214,7 @@ export const reportScheduleRouter = router({
       oneHourFromNow.setHours(oneHourFromNow.getHours() + 1);
 
       if (nextRunAt <= oneHourFromNow && input.isActive !== false) {
-        await scheduledReportsQueue.add(
+        await getScheduledReportsQueue().add(
           'process-scheduled-report',
           {
             tenantId,
@@ -431,7 +431,7 @@ export const reportScheduleRouter = router({
 
       // If activating and next run is due, add to queue
       if (input.isActive && existing.nextRunAt && existing.nextRunAt <= new Date()) {
-        await scheduledReportsQueue.add(
+        await getScheduledReportsQueue().add(
           'process-scheduled-report',
           {
             tenantId,
@@ -494,7 +494,7 @@ export const reportScheduleRouter = router({
       }
 
       // Add immediate job to queue
-      await scheduledReportsQueue.add(
+      await getScheduledReportsQueue().add(
         'process-scheduled-report',
         {
           tenantId,
