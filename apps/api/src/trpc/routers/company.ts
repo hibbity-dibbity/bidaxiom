@@ -125,4 +125,30 @@ export const companyRouter = router({
 
     return history;
   }),
+
+  /**
+   * Check if a job number is already in use.
+   * Used for duplicate validation before project creation.
+   */
+  checkJobNumberAvailability: protectedProcedure
+    .input(z.object({ jobNumber: z.string().min(1) }))
+    .query(async ({ ctx, input }) => {
+      if (!ctx.tenant) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const [existing] = await ctx.tenant.db
+        .select({ id: ctx.tenant.schema.projects.id })
+        .from(ctx.tenant.schema.projects)
+        .where(eq(ctx.tenant.schema.projects.jobNumber, input.jobNumber))
+        .limit(1);
+
+      return {
+        available: !existing,
+        existingProjectId: existing?.id || null,
+      };
+    }),
 });
