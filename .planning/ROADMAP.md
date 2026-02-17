@@ -90,7 +90,11 @@
   1. When a session expires while a user is on any page, they are automatically redirected to the sign-in page without needing to take an action first
   2. After signing in, the user is taken to the page they originally tried to access (not the default dashboard)
   3. Return URL is preserved correctly across the sign-in flow (no loss on page refresh at sign-in)
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 25-01-PLAN.md — Fix return URL (sign-in Server Component refactor + getSafeRedirectUrl + MFA flow)
+- [ ] 25-02-PLAN.md — Session expiry detection (useSessionWatcher hook + tRPC 401 interceptor)
+- [ ] 25-03-PLAN.md — Browser UAT verification of SESS-01 and SESS-02
 
 #### Phase 26: Account Settings & Shell Cleanup
 **Goal**: All account management is in one place at /settings/account, the user dropdown is clean, and the sidebar is static with no toggle complexity.
@@ -166,7 +170,7 @@
 | 22. Validation & Duplicate Prevention | v1.2 | 4/4 | Complete | 2026-02-17 |
 | 23. Display & Integration | v1.2 | 1/1 | Complete | 2026-02-17 |
 | 24. Year Rollover Logic | v1.2 | 2/2 | Complete | 2026-02-17 |
-| 25. Session & Auth Flow | v1.3 | 0/TBD | Not started | - |
+| 25. Session & Auth Flow | v1.3 | 0/3 | Not started | - |
 | 26. Account Settings & Shell Cleanup | v1.3 | 0/TBD | Not started | - |
 | 27. Slug Routing Completion | v1.3 | 0/TBD | Not started | - |
 | 28. Search & Dashboard Enhancements | v1.3 | 0/TBD | Not started | - |
@@ -175,4 +179,4 @@
 ---
 
 *Roadmap created: 2026-02-10 (v1.0)*
-*Last updated: 2026-02-17 — v1.3 roadmap added (Phases 25-29)*
+*Last updated: 2026-02-17 — Phase 25 planned (3 plans: SESS-01, SESS-02)*
