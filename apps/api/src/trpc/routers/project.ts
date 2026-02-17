@@ -16,11 +16,12 @@ import {
 } from "@construction/shared";
 import { createAuditLog } from "../../audit/logger.js";
 import { defineAbilitiesFor } from "../../auth/abilities.js";
-import { eq, desc, inArray, and, like, or, asc, count, sql, gte, lte } from "drizzle-orm";
+import { eq, desc, inArray, and, like, or, asc, count, sql, gte, lte, isNull } from "drizzle-orm";
 import { ForbiddenError } from "@casl/ability";
 import { db as publicDb } from "../../db/client.js";
 import { users } from "../../db/schema/public.js";
 import { generateUniqueProjectSlug } from "../../utils/slug.js";
+import { generateJobNumber } from "../../utils/job-number.js";
 
 /**
  * Load project-level abilities for the current user.
@@ -98,9 +99,47 @@ export const projectRouter = router({
       const { db, schema } = ctx.tenant;
       const userId = ctx.userId;
 
+      // Get company profile for job number settings
+      const [companyProfile] = await db
+        .select()
+        .from(schema.companyProfiles)
+        .where(isNull(schema.companyProfiles.validTo))
+        .limit(1);
+
+      const jobNumberSettings = companyProfile?.jobNumberSettings;
+
+      // Auto-generation and counter increment logic
+      let finalJobNumber = input.jobNumber; // Start with manual input (if provided)
+      let updatedJobSettings = jobNumberSettings;
+
+      if (!finalJobNumber && jobNumberSettings?.enabled) {
+        // Auto-generate job number
+        const result = generateJobNumber(jobNumberSettings);
+        finalJobNumber = result.jobNumber;
+        updatedJobSettings = result.updatedSettings;
+      }
+
+      // If manual job number provided and auto-generation is enabled, increment counter
+      // to prevent future auto-generated numbers from conflicting
+      if (input.jobNumber && jobNumberSettings?.enabled) {
+        // Extract sequence number from manual job number
+        // Example: "26-1234" with template "{YY}-{NNNN}" -> sequence is 1234
+        const sequenceMatch = input.jobNumber.match(/(\d+)$/);
+        if (sequenceMatch) {
+          const manualSequence = parseInt(sequenceMatch[1], 10);
+          // Set nextSequenceNumber to be one higher than manual entry
+          if (manualSequence >= jobNumberSettings.nextSequenceNumber) {
+            updatedJobSettings = {
+              ...jobNumberSettings,
+              nextSequenceNumber: manualSequence + 1,
+            };
+          }
+        }
+      }
+
       // Generate unique slug before creating project
       const projectSlug = await generateUniqueProjectSlug(
-        input.jobNumber || null,
+        finalJobNumber || null,
         input.name,
         db,
         schema
@@ -108,12 +147,20 @@ export const projectRouter = router({
 
       // Transaction: create project + team + folders + phases atomically
       const project = await db.transaction(async (tx) => {
+        // Update company profile with new sequence number if changed
+        if (updatedJobSettings && updatedJobSettings !== jobNumberSettings) {
+          await tx
+            .update(schema.companyProfiles)
+            .set({ jobNumberSettings: updatedJobSettings })
+            .where(isNull(schema.companyProfiles.validTo));
+        }
+
         // Insert project
         const [newProject] = await tx
           .insert(schema.projects)
           .values({
             name: input.name,
-            jobNumber: input.jobNumber || null,
+            jobNumber: finalJobNumber || null,
             slug: projectSlug,
             customerId: input.customerId,
             description: input.description,

@@ -403,22 +403,29 @@ export function ProjectForm() {
           </CardContent>
         </Card>
 
-        {/* Job Number */}
-        {jobNumbersEnabled && jobNumberSettings && (
+        {/* Job Number - Show if settings exist, regardless of enabled state */}
+        {jobNumberSettings && (
           <Card>
             <CardHeader>
               <CardTitle>Job Number</CardTitle>
               <CardDescription>
-                A unique job number will be auto-generated or you can enter one manually
+                {jobNumberSettings.enabled
+                  ? "A unique job number will be auto-generated or you can enter one manually"
+                  : "Job number auto-generation is disabled. You can enter one manually (optional)."}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {!manualJobNumber ? (
+              {!manualJobNumber && jobNumberSettings.enabled ? (
                 <div className="space-y-3">
                   <div className="p-4 bg-muted rounded-md">
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="text-sm font-medium mb-1">Auto-generated</div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="text-sm font-medium">Auto-generated</div>
+                          <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full">
+                            Next available
+                          </span>
+                        </div>
                         <div className="font-mono text-lg text-primary">
                           {previewJobNumber(jobNumberSettings.template, jobNumberSettings.nextSequenceNumber)}
                         </div>
@@ -444,18 +451,20 @@ export function ProjectForm() {
                   render={({ field }) => (
                     <FormItem>
                       <div className="flex items-center justify-between mb-2">
-                        <FormLabel>Job Number</FormLabel>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setManualJobNumber(false);
-                            field.onChange(undefined);
-                          }}
-                        >
-                          Use Auto-generated
-                        </Button>
+                        <FormLabel>Job Number{jobNumberSettings.enabled ? "" : " (Optional)"}</FormLabel>
+                        {manualJobNumber && jobNumberSettings.enabled && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setManualJobNumber(false);
+                              field.onChange(undefined);
+                            }}
+                          >
+                            Use Auto-generated
+                          </Button>
+                        )}
                       </div>
                       <FormControl>
                         <Input
@@ -466,8 +475,12 @@ export function ProjectForm() {
                           maxLength={50}
                         />
                       </FormControl>
-                      <FormDescription>
-                        Must be unique and match format: {jobNumberSettings.template}
+                      <FormDescription className="flex items-start gap-2">
+                        <Info className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                        <span>
+                          Expected format: <code className="text-xs bg-muted px-1 py-0.5 rounded">{jobNumberSettings.template}</code>
+                          {" "}(e.g., {previewJobNumber(jobNumberSettings.template, 1)})
+                        </span>
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
