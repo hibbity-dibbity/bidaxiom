@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
@@ -46,6 +46,7 @@ export default function EditProjectPage({ params }: EditProjectPageProps) {
   const router = useRouter();
   const utils = trpc.useUtils();
 
+  const hasReset = useRef(false);
   const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
   const [duplicateProject, setDuplicateProject] = useState<{
     name: string;
@@ -79,9 +80,12 @@ export default function EditProjectPage({ params }: EditProjectPageProps) {
     },
   });
 
-  // Pre-fill form once project data loads
+  // Pre-fill form once BOTH project data AND customers are loaded.
+  // Waiting for customersData ensures the Customer Select has its options in the DOM
+  // before form.reset() sets the value — otherwise Radix shows a blank trigger.
   useEffect(() => {
-    if (project) {
+    if (project && customersData && !hasReset.current) {
+      hasReset.current = true;
       form.reset({
         name: project.name,
         jobNumber: project.jobNumber ?? undefined,
@@ -104,7 +108,7 @@ export default function EditProjectPage({ params }: EditProjectPageProps) {
         },
       });
     }
-  }, [project]);
+  }, [project, customersData]);
 
   // Save mutation
   const updateMutation = trpc.project.update.useMutation({
@@ -426,6 +430,14 @@ export default function EditProjectPage({ params }: EditProjectPageProps) {
                             placeholder="e.g., ABC-001"
                             className="font-mono pr-8"
                             maxLength={50}
+                            onChange={(e) => {
+                              field.onChange(e);
+                              // Clear duplicate error immediately when user starts typing
+                              if (duplicateProject || form.formState.errors.jobNumber) {
+                                form.clearErrors("jobNumber");
+                                setDuplicateProject(null);
+                              }
+                            }}
                             onBlur={(e) => {
                               field.onBlur();
                               handleJobNumberBlur(e.target.value);

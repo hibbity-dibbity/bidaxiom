@@ -520,6 +520,14 @@ export function ProjectForm() {
                           placeholder={`e.g., ${previewJobNumber(jobNumberSettings.template, 1)}`}
                           className="font-mono"
                           maxLength={50}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            // Clear duplicate error immediately when user starts typing
+                            if (duplicateProject || form.formState.errors.jobNumber) {
+                              form.clearErrors("jobNumber");
+                              setDuplicateProject(null);
+                            }
+                          }}
                           onBlur={(e) => {
                             field.onBlur(); // preserve RHF blur behavior
                             handleJobNumberBlur(e.target.value);
