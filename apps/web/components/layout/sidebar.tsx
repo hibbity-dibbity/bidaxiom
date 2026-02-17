@@ -53,8 +53,8 @@ export function AppSidebar() {
 
   return (
     <ShadcnSidebar collapsible="icon">
-      <SidebarHeader className="h-14 shrink-0 border-b px-4">
-        <div className="flex h-full items-center justify-center">
+      <SidebarHeader className="h-14 shrink-0 border-b">
+        <div className="flex h-full items-center justify-center px-4">
           {/* Full logo when expanded */}
           <Image
             src="/bidaxiom-logo.png"
