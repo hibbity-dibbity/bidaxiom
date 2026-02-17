@@ -692,6 +692,172 @@ export const authRouter = router({
     }),
 
   /**
+   * Change password for authenticated user.
+   * Requires current password verification before applying the new one.
+   * Revokes all refresh tokens on success (forces re-login on other devices).
+   */
+  changePassword: publicProcedure
+    .input(
+      z.object({
+        currentPassword: z.string(),
+        newPassword: z
+          .string()
+          .min(8, "Password must be at least 8 characters")
+          .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+          .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+          .regex(/[0-9]/, "Password must contain at least one number"),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      // Manually verify access token from Authorization header
+      const authHeader = (ctx as any).req?.headers?.["authorization"];
+      const accessToken = authHeader?.replace("Bearer ", "");
+
+      if (!accessToken) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Authentication required",
+        });
+      }
+
+      let payload;
+      try {
+        payload = await verifyAccessToken(accessToken);
+      } catch {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Invalid access token",
+        });
+      }
+
+      // Get user
+      const user = await getAuthDb().query.users.findFirst({
+        where: eq(users.id, payload.userId),
+      });
+
+      if (!user) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "User not found",
+        });
+      }
+
+      // Verify current password
+      const { valid } = await verifyPassword(
+        user.passwordHash,
+        input.currentPassword,
+        user.hashType as "argon2id" | "bcrypt"
+      );
+
+      if (!valid) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Current password is incorrect",
+        });
+      }
+
+      // Hash new password
+      const newPasswordHash = await hashPassword(input.newPassword);
+
+      // Update user password
+      await getAuthDb()
+        .update(users)
+        .set({
+          passwordHash: newPasswordHash,
+          hashType: "argon2id",
+        })
+        .where(eq(users.id, payload.userId));
+
+      // Revoke all refresh tokens for this user (security: force re-login on other devices)
+      await getAuthDb()
+        .update(refreshTokens)
+        .set({ revokedAt: new Date() })
+        .where(eq(refreshTokens.userId, payload.userId));
+
+      return { success: true };
+    }),
+
+  /**
+   * Disable MFA for authenticated user.
+   * Requires password confirmation before disabling.
+   * Nulls out mfaSecret and mfaBackupCodes on success.
+   */
+  disableMfa: publicProcedure
+    .input(
+      z.object({
+        currentPassword: z.string(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      // Manually verify access token from Authorization header
+      const authHeader = (ctx as any).req?.headers?.["authorization"];
+      const accessToken = authHeader?.replace("Bearer ", "");
+
+      if (!accessToken) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Authentication required",
+        });
+      }
+
+      let payload;
+      try {
+        payload = await verifyAccessToken(accessToken);
+      } catch {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Invalid access token",
+        });
+      }
+
+      // Get user
+      const user = await getAuthDb().query.users.findFirst({
+        where: eq(users.id, payload.userId),
+      });
+
+      if (!user) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "User not found",
+        });
+      }
+
+      // Check MFA is currently enabled
+      if (!user.mfaEnabled) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "MFA is not currently enabled",
+        });
+      }
+
+      // Verify current password
+      const { valid } = await verifyPassword(
+        user.passwordHash,
+        input.currentPassword,
+        user.hashType as "argon2id" | "bcrypt"
+      );
+
+      if (!valid) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Current password is incorrect",
+        });
+      }
+
+      // Disable MFA and clear all MFA fields
+      await getAuthDb()
+        .update(users)
+        .set({
+          mfaEnabled: false,
+          mfaSecret: null,
+          mfaBackupCodes: null,
+        })
+        .where(eq(users.id, payload.userId));
+
+      return { success: true };
+    }),
+
+  /**
    * Switch to a different organization.
    */
   switchOrganization: publicProcedure
