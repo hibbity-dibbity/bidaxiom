@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 
 ## Current Position
 
-Phase: Phase 23 (23-display-and-integration) - COMPLETE
-Plan: 23-01 complete
-Status: Complete — Phase 23 done, milestone v1.2 complete
-Last activity: 2026-02-17 - 23-01 complete (JOBDISP code audit + human visual verification passed, all 4 requirements confirmed)
+Phase: Phase 24 (24-year-rollover-logic) - IN PROGRESS
+Plan: 24-01 complete
+Status: In Progress — Phase 24 plan 01 done (startingSequenceNumber year-rollover)
+Last activity: 2026-02-17 - 24-01 complete (startingSequenceNumber added to schema, wired into generateJobNumber, surfaced in company settings UI)
 
-Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [██████████] 100% (7 phases) | v1.2: [██████████] 100% complete (Phase 23 done)
+Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [██████████] 100% (7 phases) | v1.2: [██████████] 100% complete (Phase 23 done) | v1.3: [█░░░░░░░░░] Phase 24 in progress
 
 ## Performance Metrics
 
@@ -151,6 +151,7 @@ Progress: v1.0: [██████████] 100% complete (12 phases) | v1.
 | Phase 22-validation-and-duplicate-prevention P02 | 2 min | 1 task | 1 file |
 | Phase 22-validation-and-duplicate-prevention P03 | 8 min | 1 task | 1 file |
 | Phase 23-display-and-integration P01 | 5 min | 2 tasks | 0 files |
+| Phase 24-year-rollover-logic P01 | 4 | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -404,6 +405,8 @@ Recent decisions affecting current work:
 - [Phase 22-03]: Navigate to updated.slug from mutation response — project.update regenerates slug when name/jobNumber changes; using response slug ensures correct URL after save
 - [Phase 22-03]: Type assertions for status/projectType at form.reset() — Drizzle infers string; form schema expects enum union; cast at call site is the correct fix
 - [Phase 22-03]: editFormSchema omits id and costCodes — id passed separately to mutation, costCodes out of scope for edit form
+- [Phase 24-01]: startingSequenceNumber ?? 1 fallback in generateJobNumber ensures backward compatibility with existing JSONB rows
+- [Phase 24-01]: startingSequenceNumber positioned between template and nextSequenceNumber in JobNumberSettings schema for logical grouping
 
 ### Pending Todos
 
@@ -441,8 +444,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-17 (Phase 23 Execution)
-Stopped at: Completed 23-01-PLAN.md (Phase 23 complete, milestone v1.2 complete)
-Last activity: 2026-02-17 - 23-01 complete (JOBDISP code audit + human visual verification — all 4 requirements confirmed)
-Resume: N/A — Phase 23 and milestone v1.2 are complete
+Last session: 2026-02-17 (Phase 24 Execution)
+Stopped at: Completed 24-01-PLAN.md
+Last activity: 2026-02-17 - 24-01 complete (startingSequenceNumber year-rollover — schema, generateJobNumber reset branch, company settings UI)
+Resume: N/A — 24-01 complete, check for additional phase 24 plans
 
