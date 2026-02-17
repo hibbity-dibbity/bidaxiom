@@ -66,30 +66,30 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SESS-01 | TBD | Pending |
-| SESS-02 | TBD | Pending |
-| ACCT-01 | TBD | Pending |
-| ACCT-02 | TBD | Pending |
-| ACCT-03 | TBD | Pending |
-| ACCT-04 | TBD | Pending |
-| NAV-01 | TBD | Pending |
-| SLUG-01 | TBD | Pending |
-| SLUG-02 | TBD | Pending |
-| SLUG-03 | TBD | Pending |
-| SLUG-04 | TBD | Pending |
-| SRCH-01 | TBD | Pending |
-| SRCH-02 | TBD | Pending |
-| DASH-01 | TBD | Pending |
-| JOBEDIT-01 | TBD | Pending |
-| UX-01 | TBD | Pending |
-| UX-02 | TBD | Pending |
-| UX-03 | TBD | Pending |
+| SESS-01 | Phase 25 | Pending |
+| SESS-02 | Phase 25 | Pending |
+| ACCT-01 | Phase 26 | Pending |
+| ACCT-02 | Phase 26 | Pending |
+| ACCT-03 | Phase 26 | Pending |
+| ACCT-04 | Phase 26 | Pending |
+| NAV-01 | Phase 26 | Pending |
+| SLUG-01 | Phase 27 | Pending |
+| SLUG-02 | Phase 27 | Pending |
+| SLUG-03 | Phase 27 | Pending |
+| SLUG-04 | Phase 27 | Pending |
+| SRCH-01 | Phase 28 | Pending |
+| SRCH-02 | Phase 28 | Pending |
+| DASH-01 | Phase 28 | Pending |
+| JOBEDIT-01 | Phase 29 | Pending |
+| UX-01 | Phase 29 | Pending |
+| UX-02 | Phase 29 | Pending |
+| UX-03 | Phase 29 | Pending |
 
 **Coverage:**
 - v1.3 requirements: 18 total
-- Mapped to phases: TBD (roadmapper fills this)
-- Unmapped: TBD
+- Mapped to phases: 18/18
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-17*
-*Last updated: 2026-02-17 after initial definition*
+*Last updated: 2026-02-17 — traceability filled in after roadmap creation (Phases 25-29)*

@@ -5,6 +5,7 @@
 - ✅ **v1.0 MVP** — Phases 1-12 (shipped Feb 14, 2026)
 - ✅ **v1.1 Enterprise UX Redesign** — Phases 13-19 (shipped Feb 16, 2026)
 - ✅ **v1.2 Job Number System Fixes & Reliability** — Phases 20-24 (shipped Feb 17, 2026)
+- 🚧 **v1.3 Polish & Gap Closure** — Phases 25-29 (started Feb 17, 2026)
 
 ## Shipped Milestones
 
@@ -67,11 +68,111 @@
 
 ---
 
-## Current Milestone
+## Current Milestone: v1.3 Polish & Gap Closure
 
-*No active milestone. Run `/gsd:new-milestone` to start the next milestone.*
+**Milestone Goal:** Complete unfinished routing migrations, fix auth session flows, consolidate account settings, revert to static sidebar, and tighten overall UX reliability across list views, loading states, and error handling.
+
+### Phases
+
+- [ ] **Phase 25: Session & Auth Flow** - Immediate redirect on session expiry; return URL after sign-in
+- [ ] **Phase 26: Account Settings & Shell Cleanup** - Consolidated /settings/account page; static sidebar
+- [ ] **Phase 27: Slug Routing Completion** - Customer and subcontractor detail/edit pages on slug URLs
+- [ ] **Phase 28: Search & Dashboard Enhancements** - Estimates in global search; dashboard KPI click-through with pre-filtering
+- [ ] **Phase 29: UX Polish & Tech Debt** - Empty states, loading states, consistent error toasts, job number counter on edit
+
+### Phase Details
+
+#### Phase 25: Session & Auth Flow
+**Goal**: Users are never silently stuck on a stale page — session expiry redirects immediately to sign-in, and users land back where they intended after signing in.
+**Depends on**: Nothing (first phase of v1.3)
+**Requirements**: SESS-01, SESS-02
+**Success Criteria** (what must be TRUE):
+  1. When a session expires while a user is on any page, they are automatically redirected to the sign-in page without needing to take an action first
+  2. After signing in, the user is taken to the page they originally tried to access (not the default dashboard)
+  3. Return URL is preserved correctly across the sign-in flow (no loss on page refresh at sign-in)
+**Plans**: TBD
+
+#### Phase 26: Account Settings & Shell Cleanup
+**Goal**: All account management is in one place at /settings/account, the user dropdown is clean, and the sidebar is static with no toggle complexity.
+**Depends on**: Phase 25
+**Requirements**: ACCT-01, ACCT-02, ACCT-03, ACCT-04, NAV-01
+**Success Criteria** (what must be TRUE):
+  1. User can navigate to /settings/account and see a single page that consolidates profile, password change, and MFA configuration
+  2. MFA can be enabled, disabled, and reconfigured (QR code setup) from the account settings page
+  3. Password can be changed from the account settings page without visiting a separate URL
+  4. The user dropdown in the top navigation links directly to /settings/account — no separate "Settings" and "MFA" links
+  5. The sidebar is always visible on all pages with no toggle button or dynamic show/hide behavior; legacy dynamic sidebar code is removed
+**Plans**: TBD
+
+#### Phase 27: Slug Routing Completion
+**Goal**: Customer and subcontractor detail and edit pages use human-readable slug URLs, completing the slug routing migration that was finished for projects in v1.1.
+**Depends on**: Phase 26
+**Requirements**: SLUG-01, SLUG-02, SLUG-03, SLUG-04
+**Success Criteria** (what must be TRUE):
+  1. Navigating to a customer's detail page produces a slug-based URL (e.g., /customers/abc-construction) not a UUID URL
+  2. Editing a customer uses a slug-based URL; saving or navigating away preserves the slug URL pattern
+  3. Navigating to a subcontractor's detail page produces a slug-based URL (e.g., /subcontractors/smith-plumbing)
+  4. Editing a subcontractor uses a slug-based URL; the URL does not revert to UUID at any point
+**Plans**: TBD
+
+#### Phase 28: Search & Dashboard Enhancements
+**Goal**: Global search surfaces estimates alongside projects and customers with clear type labels, and dashboard KPI widgets navigate to pre-filtered list pages so clicking a widget is immediately useful.
+**Depends on**: Phase 27
+**Requirements**: SRCH-01, SRCH-02, DASH-01
+**Success Criteria** (what must be TRUE):
+  1. Typing in global search (⌘K) returns estimate results alongside project and customer results
+  2. Each search result displays a type label (Project, Estimate, Customer) so the user can distinguish result types at a glance
+  3. Clicking a dashboard KPI widget navigates to the relevant page with filters pre-applied matching the widget's metric (e.g., "My Active Projects" opens projects list filtered to the current user's active projects)
+**Plans**: TBD
+
+#### Phase 29: UX Polish & Tech Debt
+**Goal**: Every list and table view communicates clearly when empty, loading states are consistent across the app, API errors always surface via toast notifications, and manually editing a job number on the edit page correctly advances the auto-generation counter.
+**Depends on**: Phase 28
+**Requirements**: UX-01, UX-02, UX-03, JOBEDIT-01
+**Success Criteria** (what must be TRUE):
+  1. List and table views with no records display an informative empty state (message and/or call-to-action) instead of a blank table body
+  2. All data-fetching views show a skeleton loader or spinner during fetches rather than blank content areas
+  3. API errors across the app surface as toast notifications with actionable messages rather than silent failures or unformatted console errors
+  4. When a user manually types a job number on the edit project page and saves, the company's auto-generation counter is updated so the next auto-generated number does not conflict
+**Plans**: TBD
+
+---
+
+## Progress
+
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 1. Foundation & Multi-Tenant Infrastructure | v1.0 | 8/8 | Complete | 2026-02-14 |
+| 2. Company Setup & Configuration | v1.0 | 2/2 | Complete | 2026-02-14 |
+| 3. Project Management Core | v1.0 | 5/5 | Complete | 2026-02-14 |
+| 4. Budget & Cost Tracking | v1.0 | 4/4 | Complete | 2026-02-14 |
+| 5. Change Order Management | v1.0 | 4/4 | Complete | 2026-02-14 |
+| 6. Payment Applications | v1.0 | 5/5 | Complete | 2026-02-14 |
+| 7. Bidding & Procurement | v1.0 | 5/5 | Complete | 2026-02-14 |
+| 8. QuickBooks Integration | v1.0 | 5/5 | Complete | 2026-02-14 |
+| 9. Document Management Enhancement | v1.0 | 8/8 | Complete | 2026-02-14 |
+| 10. Reporting & Analytics | v1.0 | 5/5 | Complete | 2026-02-14 |
+| 11. Calendar Integration | v1.0 | 5/5 | Complete | 2026-02-14 |
+| 12. Custom Authentication Migration | v1.0 | 8/8 | Complete | 2026-02-14 |
+| 13. Navigation & Theme Foundation | v1.1 | 11/11 | Complete | 2026-02-16 |
+| 14. Form Standardization & Validation | v1.1 | 8/8 | Complete | 2026-02-16 |
+| 15. Dashboard Redesign | v1.1 | 5/5 | Complete | 2026-02-16 |
+| 16. Projects Interface Redesign | v1.1 | 7/7 | Complete | 2026-02-16 |
+| 17. Estimating Workflow - Setup & Core | v1.1 | 11/11 | Complete | 2026-02-16 |
+| 18. Estimating Workflow - Lifecycle & Conversion | v1.1 | 4/4 | Complete | 2026-02-16 |
+| 19. Component Library & Architecture | v1.1 | 6/6 | Complete | 2026-02-16 |
+| 20. Configuration Foundation | v1.2 | 3/3 | Complete | 2026-02-17 |
+| 21. Assignment & Auto-Generation | v1.2 | 2/2 | Complete | 2026-02-17 |
+| 22. Validation & Duplicate Prevention | v1.2 | 4/4 | Complete | 2026-02-17 |
+| 23. Display & Integration | v1.2 | 1/1 | Complete | 2026-02-17 |
+| 24. Year Rollover Logic | v1.2 | 2/2 | Complete | 2026-02-17 |
+| 25. Session & Auth Flow | v1.3 | 0/TBD | Not started | - |
+| 26. Account Settings & Shell Cleanup | v1.3 | 0/TBD | Not started | - |
+| 27. Slug Routing Completion | v1.3 | 0/TBD | Not started | - |
+| 28. Search & Dashboard Enhancements | v1.3 | 0/TBD | Not started | - |
+| 29. UX Polish & Tech Debt | v1.3 | 0/TBD | Not started | - |
 
 ---
 
 *Roadmap created: 2026-02-10 (v1.0)*
-*Last updated: 2026-02-17 after v1.2 completion*
+*Last updated: 2026-02-17 — v1.3 roadmap added (Phases 25-29)*
