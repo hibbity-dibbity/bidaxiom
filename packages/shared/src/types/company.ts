@@ -54,7 +54,22 @@ export type TradesConfig = z.infer<typeof tradesConfigSchema>;
  */
 export const jobNumberSettingsSchema = z.object({
   enabled: z.boolean(),
-  template: z.string().min(1).max(50),
+  template: z
+    .string()
+    .min(1)
+    .max(50)
+    .refine(
+      (template) => {
+        const result = validateJobNumberTemplate(template);
+        return result.valid;
+      },
+      (template) => {
+        const result = validateJobNumberTemplate(template);
+        return {
+          message: result.valid ? "" : result.error,
+        };
+      }
+    ),
   nextSequenceNumber: z.number().int().min(1).default(1),
   lastGeneratedFormat: z.string().nullable().optional(),
 });
@@ -62,11 +77,93 @@ export const jobNumberSettingsSchema = z.object({
 export type JobNumberSettings = z.infer<typeof jobNumberSettingsSchema>;
 
 /**
+ * Get available template tokens with descriptions.
+ * Used for help text in UI.
+ */
+export function getAvailableTokens(): Array<{ token: string; description: string }> {
+  return [
+    { token: "{YYYY}", description: "4-digit year (2026)" },
+    { token: "{YY}", description: "2-digit year (26)" },
+    { token: "{MM}", description: "2-digit month (01-12)" },
+    { token: "{DD}", description: "2-digit day (01-31)" },
+    { token: "{NNN}", description: "Sequential number (length = number of N's)" },
+  ];
+}
+
+/**
  * Validates that a job number template contains at least one sequence pattern.
  * Template must include {N}, {NN}, {NNN}, etc.
+ *
+ * @param template - Job number template to validate
+ * @returns Validation result with detailed error message if invalid
  */
-export function validateJobNumberTemplate(template: string): boolean {
-  return /\{N+\}/.test(template);
+export function validateJobNumberTemplate(template: string):
+  | { valid: true }
+  | { valid: false; error: string } {
+
+  // Check for unmatched braces first (syntax error)
+  const openBraces = (template.match(/\{/g) || []).length;
+  const closeBraces = (template.match(/\}/g) || []).length;
+  if (openBraces !== closeBraces) {
+    return {
+      valid: false,
+      error: "Template contains unmatched braces. Check that all { have matching }",
+    };
+  }
+
+  // Check for sequence pattern
+  const sequenceMatch = template.match(/\{(N+)\}/);
+  if (!sequenceMatch) {
+    return {
+      valid: false,
+      error: "Template must contain at least one sequence pattern like {NN} or {NNN}",
+    };
+  }
+
+  // Check for minimum sequence length (at least 2 N's)
+  if (sequenceMatch[1].length < 2) {
+    return {
+      valid: false,
+      error: "Sequence pattern must have at least 2 digits (use {NN} or longer)",
+    };
+  }
+
+  // Check for invalid tokens
+  const validTokens = ["{YYYY}", "{YY}", "{MM}", "{DD}"];
+  const tokenPattern = /\{[A-Z]+\}/g;
+  const tokens = template.match(tokenPattern) || [];
+
+  for (const token of tokens) {
+    // Skip sequence patterns {NNN...}
+    if (/\{N+\}/.test(token)) {
+      continue;
+    }
+
+    if (!validTokens.includes(token)) {
+      return {
+        valid: false,
+        error: `Unknown token: ${token}. Valid tokens: {YYYY}, {YY}, {MM}, {DD}, {NNN}`,
+      };
+    }
+  }
+
+  // Check for minimum length (after token validation)
+  if (template.length < 5) {
+    return {
+      valid: false,
+      error: "Template is too short (minimum 5 characters). Example: {YY}-{NN}",
+    };
+  }
+
+  // Check for maximum length (database column limit)
+  if (template.length > 50) {
+    return {
+      valid: false,
+      error: "Template exceeds maximum length of 50 characters",
+    };
+  }
+
+  return { valid: true };
 }
 
 /**
