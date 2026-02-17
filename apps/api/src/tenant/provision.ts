@@ -291,6 +291,8 @@ export async function provisionTenantSchema(
           trades_config JSONB NOT NULL DEFAULT '{"csiDivisions":[],"customTrades":[]}'::jsonb,
           job_number_settings JSONB DEFAULT '{"enabled":false,"template":"{YYYY}-{NNN}","nextSequenceNumber":1,"lastGeneratedFormat":null}'::jsonb,
           retainage_config JSONB DEFAULT '{"defaultRate":10,"progressiveRates":[],"releaseConditions":{"substantialCompletion":true,"punchListComplete":false,"finalAcceptance":false,"lienWaiversRequired":true}}'::jsonb,
+          allow_personal_templates BOOLEAN DEFAULT true,
+          sov_grouping_method TEXT DEFAULT 'csi',
           logo_storage_key TEXT,
           valid_from TIMESTAMPTZ NOT NULL DEFAULT NOW(),
           valid_to TIMESTAMPTZ,
