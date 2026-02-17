@@ -18,7 +18,7 @@ import { SearchProvider, useSearch } from "@/components/search/command-palette";
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <SearchProvider>
-      <SidebarProvider>
+      <SidebarProvider style={{ "--sidebar-width": "12.875rem" } as React.CSSProperties}>
         <AppSidebar />
         <SidebarInset>
           <TopBarWithSearch />
