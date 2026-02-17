@@ -77,10 +77,8 @@ export default function AccountSettingsPage() {
           Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
-          json: {
-            currentPassword: data.currentPassword,
-            newPassword: data.newPassword,
-          },
+          currentPassword: data.currentPassword,
+          newPassword: data.newPassword,
         }),
       });
 
@@ -125,7 +123,7 @@ export default function AccountSettingsPage() {
           Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
-          json: { currentPassword: disableMfaPassword },
+          currentPassword: disableMfaPassword,
         }),
       });
 
