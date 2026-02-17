@@ -410,10 +410,11 @@ None yet.
 | 14 | Fix change order history runtime error | 2026-02-16 | 0bbb083 | [14-fix-change-order-history-runtime-error](./quick/14-fix-change-order-history-runtime-error/) |
 | 15 | Fix Next.js dev server EINVAL readlink error | 2026-02-16 | 75e55cf | [15-fix-next-js-dev-server-einval-readlink-e](./quick/15-fix-next-js-dev-server-einval-readlink-e/) |
 | 16 | Fix slug routing bugs in search and estimate conversion | 2026-02-16 | a6d8f19 | [16-slug-routing-hotfixes](./quick/16-slug-routing-hotfixes/) |
+| 17 | Replace company branding with static BidAxiom logos | 2026-02-16 | 8a9c376 | [17-replace-company-branding-with-static-bid](./quick/17-replace-company-branding-with-static-bid/) |
 
 ## Session Continuity
 
-Last session: 2026-02-16 (Quick Task 16 execution)
-Stopped at: Completed quick-16-PLAN.md (slug routing hotfixes)
-Resume file: .planning/quick/16-slug-routing-hotfixes/16-SUMMARY.md
+Last session: 2026-02-16 (Quick Task 17 execution)
+Stopped at: Completed quick-17-PLAN.md (static BidAxiom branding)
+Resume file: .planning/quick/17-replace-company-branding-with-static-bid/17-SUMMARY.md
 
