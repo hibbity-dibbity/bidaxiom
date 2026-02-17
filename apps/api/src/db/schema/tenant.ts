@@ -100,7 +100,7 @@ export function createTenantSchema(schemaName: string) {
           lienWaiversRequired: true,
         },
       }),
-    logoStorageKey: text("logo_storage_key"), // S3 key: tenants/{tenantId}/branding/logo.{ext}
+    // logoStorageKey: text("logo_storage_key"), // Logo columns removed in quick-17 (static BidAxiom branding)
     allowPersonalTemplates: boolean("allow_personal_templates"), // Allow users to create personal estimate templates (default: true if null)
     sovGroupingMethod: text("sov_grouping_method"), // Default SOV grouping method: csi, phase, payment_schedule (default: csi if null)
     validFrom: timestamp("valid_from", { withTimezone: true }).defaultNow().notNull(),
