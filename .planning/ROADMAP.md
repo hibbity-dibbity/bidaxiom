@@ -148,7 +148,10 @@ Plans:
 3. Job numbers display on project cards if card view exists
 4. Job numbers carry through from estimates to projects after conversion
 
-**Plans**: TBD
+**Plans**: 1 plan in 1 wave
+
+Plans:
+- [ ] 23-01-PLAN.md — Code audit confirming all 4 JOBDISP requirements, then human verification in live app
 
 ---
 
@@ -175,7 +178,7 @@ Plans:
 | 20. Configuration Foundation | 3/3 | Complete    | 2026-02-17 |
 | 21. Assignment & Auto-Generation | 0/2 | Not started | - |
 | 22. Validation & Duplicate Prevention | 0/4 | Complete    | 2026-02-17 |
-| 23. Display & Integration | 0/0 | Not started | - |
+| 23. Display & Integration | 0/1 | Not started | - |
 | 24. Year Rollover Logic | 0/0 | Not started | - |
 
 **Overall Milestone Progress**: 20% (1 of 5 phases complete)
@@ -183,4 +186,4 @@ Plans:
 ---
 
 *Roadmap created: 2026-02-10 (v1.0)*
-*Last updated: 2026-02-17 after Phase 22 planning*
+*Last updated: 2026-02-17 after Phase 23 planning*
