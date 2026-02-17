@@ -84,12 +84,9 @@ export function ProjectHeader({ project, budgetSummary, teamMemberCount }: Proje
       {/* Top row: Job # + Name + Status + Edit button */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
-          {project.jobNumber && (
-            <Badge variant="outline" className="font-mono text-xs px-2 py-0.5">
-              {project.jobNumber}
-            </Badge>
-          )}
-          <h1 className="text-xl font-semibold">{project.name}</h1>
+          <h1 className="text-xl font-semibold">
+            {project.jobNumber ? `${project.jobNumber}-${project.name}` : project.name}
+          </h1>
           <Badge className={statusColors[project.status]} variant="outline">
             {project.status.replace("_", " ")}
           </Badge>
