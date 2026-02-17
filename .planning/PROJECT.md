@@ -10,7 +10,7 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 
 ## Current State
 
-**Shipped:** v1.0 MVP + v1.1 Enterprise UX Redesign (Feb 2026)
+**Shipped:** v1.0 MVP + v1.1 Enterprise UX Redesign + v1.2 Job Number System (Feb 2026)
 
 **What's built:**
 - Complete project financial lifecycle (RFQs → bidding → budget → change orders → payment apps)
@@ -23,10 +23,11 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 - Guided estimate workflow with cost code templates, labor rates, and SOV builder
 - Estimate lifecycle (draft → submitted → bid → won → active project)
 - Slug-based routing, persistent headers, and component library
+- Job number system — auto-generation, manual assignment, duplicate prevention, year rollover
 
 **Tech stack:** Next.js 14, Fastify, tRPC, Drizzle ORM, PostgreSQL (schema-per-tenant), Redis, MinIO (S3), Tailwind CSS
 
-**Codebase:** 142,961 lines of TypeScript across 19 phases (12 v1.0 + 7 v1.1)
+**Codebase:** ~143,000+ lines of TypeScript across 24 phases (12 v1.0 + 7 v1.1 + 5 v1.2)
 
 ## Requirements
 
@@ -61,19 +62,24 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 
 ### Active
 
-<!-- v1.2 Job Number System Fixes -->
+*No active milestone. Run `/gsd:new-milestone` to define v1.3 requirements.*
 
-**Milestone v1.2: Job Number System Fixes & Reliability** (Started: 2026-02-17)
+<details>
+<summary>✅ v1.2 Job Number System Fixes & Reliability — SHIPPED Feb 17, 2026</summary>
 
 **Goal:** Fix broken job number auto-generation system and ensure reliable increment tracking across all project touchpoints.
 
-**Target fixes:**
-- Restore job number field visibility (project creation, company settings)
-- Fix auto-generation assignment to new projects
-- Fix auto-increment after manual job number usage
-- Implement duplicate prevention
-- Handle year rollover sequence resets
-- Ensure job numbers display across project list, detail pages, and estimates
+**Delivered:**
+- Job number configuration (format template, starting sequence, enabled toggle) — JSONB persistence, schema provisioned for all tenants
+- Auto-generation assigns numbers to new projects atomically; manual entry increments counter
+- Duplicate prevention with case-insensitive detection; edit-page self-exclusion
+- Blur validation on create and edit forms with inline error links
+- Job numbers display in project list, detail header, and estimates
+- Year rollover resets sequence to configurable startingSequenceNumber; rollover-aware preview in settings UI
+
+**Archive:** [.planning/milestones/v1.2-ROADMAP.md](.planning/milestones/v1.2-ROADMAP.md)
+
+</details>
 
 ### Out of Scope
 
