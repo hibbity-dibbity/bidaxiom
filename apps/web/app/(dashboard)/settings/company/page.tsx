@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { companyConfigSchema } from "@construction/shared";
 import type { CompanyConfig, JobNumberSettings } from "@construction/shared";
-import { previewJobNumber, validateJobNumberTemplate } from "@construction/shared";
+import { previewJobNumber, validateJobNumberTemplate, getAvailableTokens } from "@construction/shared";
 import { trpc } from "@/lib/trpc";
 import { useAbilities } from "@/lib/abilities";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,8 @@ import { AlertCircle } from "lucide-react";
 export default function CompanySettingsPage() {
   const abilities = useAbilities();
   const canManage = abilities.can("manage", "CompanySettings");
+
+  const [templateError, setTemplateError] = useState<string | null>(null);
 
   const utils = trpc.useUtils();
   const { data, isLoading } = trpc.company.getCurrent.useQuery();
@@ -252,22 +254,42 @@ export default function CompanySettingsPage() {
                   <Input
                     id="job-number-template"
                     value={form.watch("jobNumberSettings.template")}
-                    onChange={(e) =>
-                      form.setValue("jobNumberSettings.template", e.target.value)
-                    }
+                    onChange={(e) => {
+                      form.setValue("jobNumberSettings.template", e.target.value);
+                      // Clear error when user starts typing again
+                      setTemplateError(null);
+                    }}
                     onBlur={(e) => {
                       const template = e.target.value;
-                      if (!validateJobNumberTemplate(template)) {
-                        toast.error("Template must contain at least one sequence pattern (e.g., {NNN})");
+                      const result = validateJobNumberTemplate(template);
+                      if (!result.valid) {
+                        setTemplateError(result.error);
+                        toast.error(result.error);
+                      } else {
+                        setTemplateError(null);
                       }
                     }}
                     disabled={!canManage}
                     placeholder="{YYYY}-{NNN}"
                     className="mt-2"
                   />
+                  {templateError && (
+                    <p className="text-sm text-destructive mt-1">{templateError}</p>
+                  )}
                   <p className="text-sm text-muted-foreground mt-2">
-                    Available tokens: <code className="text-xs bg-muted px-1 py-0.5 rounded">{"{YYYY}"}</code> (year), <code className="text-xs bg-muted px-1 py-0.5 rounded">{"{YY}"}</code> (2-digit year), <code className="text-xs bg-muted px-1 py-0.5 rounded">{"{MM}"}</code> (month), <code className="text-xs bg-muted px-1 py-0.5 rounded">{"{DD}"}</code> (day), <code className="text-xs bg-muted px-1 py-0.5 rounded">{"{NNN...}"}</code> (sequence number)
+                    Template length: {form.watch("jobNumberSettings.template").length}/50 characters
                   </p>
+                  <div className="text-sm text-muted-foreground mt-2">
+                    Available tokens:{" "}
+                    {getAvailableTokens().map((t, i) => (
+                      <span key={t.token}>
+                        {i > 0 && ", "}
+                        <code className="text-xs bg-muted px-1 py-0.5 rounded" title={t.description}>
+                          {t.token}
+                        </code>
+                      </span>
+                    ))}
+                  </div>
                 </div>
 
                 <div>
@@ -292,14 +314,21 @@ export default function CompanySettingsPage() {
                   <Label>Preview</Label>
                   <div className="mt-2 rounded-md bg-muted p-3">
                     <p className="text-sm text-muted-foreground mb-1">
-                      Next job number will be:
+                      Next 3 job numbers will be:
                     </p>
-                    <code className="text-lg font-mono font-semibold">
-                      {previewJobNumber(
-                        form.watch("jobNumberSettings.template"),
-                        form.watch("jobNumberSettings.nextSequenceNumber")
-                      )}
-                    </code>
+                    <div className="space-y-1">
+                      {[0, 1, 2].map((offset) => {
+                        const seqNum = form.watch("jobNumberSettings.nextSequenceNumber") + offset;
+                        return (
+                          <code key={offset} className="text-lg font-mono font-semibold block">
+                            {previewJobNumber(
+                              form.watch("jobNumberSettings.template"),
+                              seqNum
+                            )}
+                          </code>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>
