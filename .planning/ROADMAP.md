@@ -122,7 +122,11 @@ Plans:
   2. Editing a customer uses a slug-based URL; saving or navigating away preserves the slug URL pattern
   3. Navigating to a subcontractor's detail page produces a slug-based URL (e.g., /subcontractors/smith-plumbing)
   4. Editing a subcontractor uses a slug-based URL; the URL does not revert to UUID at any point
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 27-01-PLAN.md — Fix project-header UUID link + add edit dialog to customer detail page
+- [ ] 27-02-PLAN.md — Subcontractor post-rename slug navigation
+- [ ] 27-03-PLAN.md — Browser UAT verification of SLUG-01 through SLUG-04
 
 #### Phase 28: Search & Dashboard Enhancements
 **Goal**: Global search surfaces estimates alongside projects and customers with clear type labels, and dashboard KPI widgets navigate to pre-filtered list pages so clicking a widget is immediately useful.
@@ -153,6 +157,6 @@ Plans:
 |-------|--------|-------|-----------|
 | 25 | ✅ Complete | 3/3 | 2026-02-17 |
 | 26 | ✅ Complete | 3/3 | 2026-02-17 |
-| 27 | ⬜ Not started | TBD | — |
+| 27 | ⬜ Not started | 3 planned | — |
 | 28 | ⬜ Not started | TBD | — |
 | 29 | ⬜ Not started | TBD | — |
