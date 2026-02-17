@@ -122,9 +122,15 @@ export const projectRouter = router({
       // If manual job number provided and auto-generation is enabled, increment counter
       // to prevent future auto-generated numbers from conflicting
       if (input.jobNumber && jobNumberSettings?.enabled) {
-        // Extract sequence number from manual job number
-        // Example: "26-1234" with template "{YY}-{NNNN}" -> sequence is 1234
-        const sequenceMatch = input.jobNumber.match(/(\d+)$/);
+        // Extract only the sequence digits from the manual job number using the template's
+        // {N+} length. E.g. template "{YY}{NNNN}" has 4 N's, so extract exactly 4 trailing
+        // digits from "265000" → "5000" (not all 6 digits → "265000").
+        const templateSeqMatch = jobNumberSettings.template.match(/\{(N+)\}/);
+        const sequenceLength = templateSeqMatch ? templateSeqMatch[1].length : null;
+        const seqRegex = sequenceLength
+          ? new RegExp(`(\\d{${sequenceLength}})$`)
+          : /(\d+)$/;
+        const sequenceMatch = input.jobNumber.match(seqRegex);
         if (sequenceMatch) {
           const manualSequence = parseInt(sequenceMatch[1], 10);
           // Set nextSequenceNumber to be one higher than manual entry
