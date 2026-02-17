@@ -74,9 +74,9 @@ try {
 try {
   await provisionAuthTables(pool);
 } catch (err) {
-  console.error("Auth table provisioning failed:", err);
-  // This is fatal - auth won't work without these tables
-  process.exit(1);
+  // Non-fatal: tables already exist in production, or Postgres is temporarily unavailable.
+  // Auth endpoints will fail at request time if DB is unreachable, not at startup.
+  console.warn("Auth table provisioning failed (PostgreSQL may not be running):", (err as Error).message);
 }
 
 // TODO: Seed report templates - requires public.report_templates table
