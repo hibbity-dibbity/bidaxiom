@@ -232,6 +232,115 @@ export function validateJobNumberFormat(
 }
 
 /**
+ * Compute the actual next sequence number that generateJobNumber() would use,
+ * including rollover detection.
+ *
+ * Mirrors the rollover logic in apps/api/src/utils/job-number.ts so the
+ * settings UI can show the true next job number rather than the raw
+ * nextSequenceNumber (which may be stale if the year has changed).
+ *
+ * @param settings - Current job number settings
+ * @returns The sequence number that will be used for the next job number
+ */
+export function computeNextSequenceNumber(settings: JobNumberSettings): number {
+  const now = new Date();
+
+  // Build the current "format" string (date tokens resolved, {N+} stripped)
+  // This mirrors generateJobNumber's format computation.
+  let format = settings.template
+    .replace(/{YYYY}/g, now.getFullYear().toString())
+    .replace(/{YY}/g, now.getFullYear().toString().slice(-2))
+    .replace(/{MM}/g, (now.getMonth() + 1).toString().padStart(2, "0"))
+    .replace(/{DD}/g, now.getDate().toString().padStart(2, "0"));
+
+  const currentFormat = format.replace(/\{N+\}/, "");
+
+  // Detect year/format rollover: if lastGeneratedFormat is set and differs
+  // from the current format, the sequence resets to startingSequenceNumber.
+  const formatChanged =
+    settings.lastGeneratedFormat !== null &&
+    settings.lastGeneratedFormat !== undefined &&
+    settings.lastGeneratedFormat !== currentFormat;
+
+  if (formatChanged) {
+    return settings.startingSequenceNumber ?? 1;
+  }
+
+  return settings.nextSequenceNumber;
+}
+
+/**
+ * Parse the sequence number out of a formatted job number string,
+ * using the template to locate the {N+} position.
+ *
+ * Token widths:
+ *  {YYYY} = 4 chars, {YY} = 2 chars, {MM} = 2 chars, {DD} = 2 chars
+ *
+ * @param jobNumber - A formatted job number string (e.g. "261002")
+ * @param template  - The job number template (e.g. "{YY}{NNNN}")
+ * @returns The parsed integer sequence, or null if it cannot be extracted
+ */
+export function parseSequenceFromJobNumber(
+  jobNumber: string,
+  template: string
+): number | null {
+  // Token widths for non-sequence tokens
+  const TOKEN_WIDTHS: Record<string, number> = {
+    "{YYYY}": 4,
+    "{YY}": 2,
+    "{MM}": 2,
+    "{DD}": 2,
+  };
+
+  // Find the {N+} token and its position in the template
+  const sequenceMatch = template.match(/\{(N+)\}/);
+  if (!sequenceMatch) {
+    return null;
+  }
+  const seqLength = sequenceMatch[1].length;
+  const seqToken = sequenceMatch[0]; // e.g. "{NNNN}"
+
+  // Walk the template left to right, accumulating the character offset
+  // until we hit the sequence token.
+  let offset = 0;
+  let remaining = template;
+
+  while (remaining.length > 0) {
+    // Check if the sequence token is at the front of remaining
+    if (remaining.startsWith(seqToken)) {
+      break;
+    }
+
+    // Check if a known date token is at the front
+    let matched = false;
+    for (const [token, width] of Object.entries(TOKEN_WIDTHS)) {
+      if (remaining.startsWith(token)) {
+        offset += width;
+        remaining = remaining.slice(token.length);
+        matched = true;
+        break;
+      }
+    }
+
+    if (!matched) {
+      // Literal character — advance by 1 in both template and job number
+      offset += 1;
+      remaining = remaining.slice(1);
+    }
+  }
+
+  // Extract the sequence substring from the job number
+  const extracted = jobNumber.substring(offset, offset + seqLength);
+
+  // Validate: must be exactly the right length and all digits
+  if (extracted.length !== seqLength || !/^\d+$/.test(extracted)) {
+    return null;
+  }
+
+  return parseInt(extracted, 10);
+}
+
+/**
  * Complete company configuration schema.
  * Used for create/update validation on the API.
  */

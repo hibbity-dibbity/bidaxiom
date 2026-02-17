@@ -25,6 +25,8 @@ export {
   getAvailableTokens,
   validateJobNumberFormat,
   parseTemplatePattern,
+  computeNextSequenceNumber,
+  parseSequenceFromJobNumber,
 } from "./types/company";
 
 export {
