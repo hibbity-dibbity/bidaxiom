@@ -49,6 +49,20 @@ function TrpcAndAbilityProvider({ children }: { children: React.ReactNode }) {
             } catch {}
             return {};
           },
+          async fetch(url, options) {
+            const response = await globalThis.fetch(url, options);
+            if (
+              response.status === 401 &&
+              typeof window !== "undefined" &&
+              window.location.pathname !== "/sign-in"
+            ) {
+              const returnUrl = encodeURIComponent(
+                window.location.pathname + window.location.search
+              );
+              window.location.href = `/sign-in?redirect_url=${returnUrl}`;
+            }
+            return response;
+          },
         }),
       ],
     })
