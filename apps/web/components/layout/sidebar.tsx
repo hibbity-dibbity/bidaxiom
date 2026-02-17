@@ -59,9 +59,9 @@ export function AppSidebar() {
           <Image
             src="/bidaxiom-logo.png"
             alt="BidAxiom"
-            width={200}
-            height={46}
-            className="group-data-[collapsible=icon]:hidden dark:invert h-12 w-auto"
+            width={288}
+            height={48}
+            className="group-data-[collapsible=icon]:hidden dark:invert"
             priority
           />
           {/* Icon when collapsed */}
@@ -70,7 +70,7 @@ export function AppSidebar() {
             alt="BidAxiom"
             width={32}
             height={32}
-            className="hidden group-data-[collapsible=icon]:block dark:invert h-8 w-auto"
+            className="hidden group-data-[collapsible=icon]:block dark:invert"
             priority
           />
         </div>
