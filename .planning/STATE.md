@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 ## Current Position
 
 Phase: Phase 22 (22-validation-and-duplicate-prevention)
-Plan: 22-02 complete
-Status: In progress — Plan 02 of 22 complete
-Last activity: 2026-02-17 - Completed 22-02 (blur validation on job number field in project-form)
+Plan: 22-03 complete
+Status: In progress — Plan 03 of 22 complete
+Last activity: 2026-02-17 - Completed 22-03 (edit project page with blur validation and excludeProjectId)
 
-Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [██████████] 100% (7 phases) | v1.2: [████████░░] 75% (Phase 22 in progress)
+Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [██████████] 100% (7 phases) | v1.2: [█████████░] 85% (Phase 22 in progress)
 
 ## Performance Metrics
 
@@ -149,6 +149,7 @@ Progress: v1.0: [██████████] 100% complete (12 phases) | v1.
 | Phase 21-assignment-and-auto-generation P02 | 2 min | 1 task | 0 files |
 | Phase 22-validation-and-duplicate-prevention P01 | 5 min | 2 tasks | 3 files |
 | Phase 22-validation-and-duplicate-prevention P02 | 2 min | 1 task | 1 file |
+| Phase 22-validation-and-duplicate-prevention P03 | 8 min | 1 task | 1 file |
 
 ## Accumulated Context
 
@@ -399,6 +400,9 @@ Recent decisions affecting current work:
 - [Phase 22-02]: Format check runs before duplicate check in handleJobNumberBlur — prevents unnecessary network calls for invalid formats; abort early if format fails
 - [Phase 22-02]: duplicateProject state separate from RHF errors — enables rich UI with clickable project link that FormMessage cannot render; space-character error message keeps layout stable
 - [Phase 22-02]: onSubmit safety net re-runs handleJobNumberBlur — prevents race condition where user submits before blur fires
+- [Phase 22-03]: Navigate to updated.slug from mutation response — project.update regenerates slug when name/jobNumber changes; using response slug ensures correct URL after save
+- [Phase 22-03]: Type assertions for status/projectType at form.reset() — Drizzle infers string; form schema expects enum union; cast at call site is the correct fix
+- [Phase 22-03]: editFormSchema omits id and costCodes — id passed separately to mutation, costCodes out of scope for edit form
 
 ### Pending Todos
 
@@ -437,7 +441,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-17 (Phase 22 Execution)
-Stopped at: Completed 22-02-PLAN.md
-Last activity: 2026-02-17 - Completed plan 22-02 (Blur validation on job number field in project-form)
-Resume: Phase 22 in progress - Plan 02 complete
+Stopped at: Completed 22-03-PLAN.md
+Last activity: 2026-02-17 - Completed plan 22-03 (Edit project page with blur validation and excludeProjectId)
+Resume: Phase 22 in progress - Plan 03 complete
 
