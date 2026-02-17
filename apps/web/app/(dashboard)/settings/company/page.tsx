@@ -5,7 +5,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { companyConfigSchema } from "@construction/shared";
 import type { CompanyConfig, JobNumberSettings } from "@construction/shared";
-import { previewJobNumber, validateJobNumberTemplate, getAvailableTokens } from "@construction/shared";
+import {
+  previewJobNumber,
+  validateJobNumberTemplate,
+  getAvailableTokens,
+  computeNextSequenceNumber,
+  parseSequenceFromJobNumber,
+} from "@construction/shared";
 import { trpc } from "@/lib/trpc";
 import { useAbilities } from "@/lib/abilities";
 import { Button } from "@/components/ui/button";
@@ -29,6 +35,7 @@ export default function CompanySettingsPage() {
   const canManage = abilities.can("manage", "CompanySettings");
 
   const [templateError, setTemplateError] = useState<string | null>(null);
+  const [nextJobNumberInput, setNextJobNumberInput] = useState<string>("");
 
   const utils = trpc.useUtils();
   const { data, isLoading } = trpc.company.getCurrent.useQuery();
@@ -63,19 +70,42 @@ export default function CompanySettingsPage() {
   // Populate form when data loads
   useEffect(() => {
     if (data) {
+      const settings: JobNumberSettings = {
+        enabled: false,
+        template: "{YYYY}-{NNN}",
+        startingSequenceNumber: 1,
+        nextSequenceNumber: 1,
+        lastGeneratedFormat: null,
+        ...(data.jobNumberSettings ?? {}),
+      };
       form.reset({
         companyType: data.companyType as "gc_only" | "sub_only" | "both",
         tradesConfig: data.tradesConfig,
-        jobNumberSettings: data.jobNumberSettings ?? {
-          enabled: false,
-          template: "{YYYY}-{NNN}",
-          startingSequenceNumber: 1,
-          nextSequenceNumber: 1,
-          lastGeneratedFormat: null,
-        },
+        jobNumberSettings: settings,
       });
+      // Compute the true next job number (accounting for rollover)
+      const computedSeq = computeNextSequenceNumber(settings);
+      setNextJobNumberInput(previewJobNumber(settings.template, computedSeq));
     }
   }, [data, form]);
+
+  // Recompute the Next Job Number display whenever relevant settings change
+  useEffect(() => {
+    const subscription = form.watch((values) => {
+      const s = values.jobNumberSettings;
+      if (!s || !s.template) return;
+      const settings: JobNumberSettings = {
+        enabled: s.enabled ?? false,
+        template: s.template ?? "{YYYY}-{NNN}",
+        startingSequenceNumber: s.startingSequenceNumber ?? 1,
+        nextSequenceNumber: s.nextSequenceNumber ?? 1,
+        lastGeneratedFormat: s.lastGeneratedFormat ?? null,
+      };
+      const computedSeq = computeNextSequenceNumber(settings);
+      setNextJobNumberInput(previewJobNumber(settings.template, computedSeq));
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
 
   const onSubmit = (values: CompanyConfig) => {
     updateMutation.mutate(values);
@@ -295,24 +325,6 @@ export default function CompanySettingsPage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="next-sequence-number">Next Sequence Number</Label>
-                  <Input
-                    id="next-sequence-number"
-                    type="number"
-                    min={1}
-                    value={form.watch("jobNumberSettings.nextSequenceNumber")}
-                    onChange={(e) =>
-                      form.setValue("jobNumberSettings.nextSequenceNumber", parseInt(e.target.value, 10) || 1)
-                    }
-                    disabled={!canManage}
-                    className="mt-2"
-                  />
-                  <p className="text-sm text-muted-foreground mt-2">
-                    The starting sequence number for new job numbers
-                  </p>
-                </div>
-
-                <div>
                   <Label htmlFor="starting-sequence-number">Starting Sequence Number</Label>
                   <Input
                     id="starting-sequence-number"
@@ -329,30 +341,45 @@ export default function CompanySettingsPage() {
                     className="mt-2"
                   />
                   <p className="text-sm text-muted-foreground mt-2">
-                    Sequence resets to this number when the year changes (e.g., set to 1001 to start each year at 1001)
+                    The sequence resets to this number at the start of each year (or when the job number format changes)
                   </p>
                 </div>
 
                 <div>
-                  <Label>Preview</Label>
-                  <div className="mt-2 rounded-md bg-muted p-3">
-                    <p className="text-sm text-muted-foreground mb-1">
-                      Next 3 job numbers will be:
-                    </p>
-                    <div className="space-y-1">
-                      {[0, 1, 2].map((offset) => {
-                        const seqNum = form.watch("jobNumberSettings.nextSequenceNumber") + offset;
-                        return (
-                          <code key={offset} className="text-lg font-mono font-semibold block">
-                            {previewJobNumber(
-                              form.watch("jobNumberSettings.template"),
-                              seqNum
-                            )}
-                          </code>
-                        );
-                      })}
-                    </div>
-                  </div>
+                  <Label htmlFor="next-job-number">Next Job Number</Label>
+                  <Input
+                    id="next-job-number"
+                    type="text"
+                    value={nextJobNumberInput}
+                    onChange={(e) => setNextJobNumberInput(e.target.value)}
+                    onBlur={() => {
+                      const template = form.getValues("jobNumberSettings.template");
+                      const parsed = parseSequenceFromJobNumber(nextJobNumberInput, template);
+                      if (parsed !== null) {
+                        form.setValue("jobNumberSettings.nextSequenceNumber", parsed);
+                      } else {
+                        // Reset to the computed preview and notify the user
+                        const currentSettings: JobNumberSettings = {
+                          enabled: form.getValues("jobNumberSettings.enabled"),
+                          template,
+                          startingSequenceNumber: form.getValues("jobNumberSettings.startingSequenceNumber") ?? 1,
+                          nextSequenceNumber: form.getValues("jobNumberSettings.nextSequenceNumber"),
+                          lastGeneratedFormat: form.getValues("jobNumberSettings.lastGeneratedFormat") ?? null,
+                        };
+                        const computedSeq = computeNextSequenceNumber(currentSettings);
+                        setNextJobNumberInput(previewJobNumber(template, computedSeq));
+                        toast.error("Invalid job number format — must match template pattern");
+                      }
+                    }}
+                    disabled={!canManage}
+                    className="mt-2"
+                  />
+                  <p className="text-sm text-muted-foreground mt-2">
+                    The actual job number that will be generated next. Edit to override the current position.
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Computed from sequence position {form.watch("jobNumberSettings.nextSequenceNumber")}
+                  </p>
                 </div>
               </div>
             ) : (
