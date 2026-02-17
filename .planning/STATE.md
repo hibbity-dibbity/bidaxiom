@@ -442,10 +442,11 @@ None yet.
 | 21 | Eliminate gap between sidebar and main content | 2026-02-17 | 7c81b00 | [21-eliminate-sidebar-gap](./quick/21-eliminate-sidebar-gap/) |
 | 22 | Combine job number and project name in same format | 2026-02-17 | c61f47c | [22-combine-job-number-project-name](./quick/22-combine-job-number-project-name/) |
 | 23 | API server graceful startup without Redis/PostgreSQL/MinIO | 2026-02-17 | b3ba3c1 | [23-api-server-will-not-load](./quick/23-api-server-will-not-load/) |
+| 24 | Fix job number preview and redesign settings UI | 2026-02-17 | bf9ee03 | [24-fix-job-number-preview-and-redesign-sett](./quick/24-fix-job-number-preview-and-redesign-sett/) |
 
 ## Session Continuity
 
-Last session: 2026-02-17 (Quick Task 23 Execution)
-Stopped at: Completed quick/23-api-server-will-not-load
-Last activity: 2026-02-17 - quick-23 complete (non-fatal provisionAuthTables, lazy BullMQ queue getters for Redis/PostgreSQL/MinIO startup resilience)
+Last session: 2026-02-17 (Quick Task 24 Execution)
+Stopped at: Completed quick/24-fix-job-number-preview-and-redesign-sett
+Last activity: 2026-02-17 - quick-24 complete (computeNextSequenceNumber + parseSequenceFromJobNumber added to shared package; company settings redesigned with rollover-aware Next Job Number field)
 
