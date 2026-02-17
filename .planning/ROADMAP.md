@@ -82,11 +82,12 @@
 4. Admin can toggle auto-generation on/off via checkbox
 5. Configuration changes save successfully and persist across sessions
 
-**Plans**: 2 plans in 1 wave
+**Plans**: 3 plans in 1 wave
 
 Plans:
-- [ ] 20-01-PLAN.md — Verify and fix configuration persistence (data integrity, mutation logic)
-- [ ] 20-02-PLAN.md — Enhanced validation and preview (error messages, inline feedback)
+- [x] 20-01-PLAN.md — Verify and fix configuration persistence (data integrity, mutation logic)
+- [x] 20-02-PLAN.md — Enhanced validation and preview (error messages, inline feedback)
+- [x] 20-03-PLAN.md — Schema mismatch fix for company settings
 
 ---
 
@@ -104,7 +105,11 @@ Plans:
 4. Auto-generation counter persists correctly across multiple sequential project creations
 5. Job number field is visible and functional on new project form (not hidden)
 
-**Plans**: TBD
+**Plans**: 2 plans in 1 wave
+
+Plans:
+- [ ] 21-01-PLAN.md — Server-side auto-generation and counter increment logic
+- [ ] 21-02-PLAN.md — Job number field visibility and UX improvements
 
 ---
 
@@ -161,15 +166,15 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 20. Configuration Foundation | 0/2 | Complete    | 2026-02-17 |
-| 21. Assignment & Auto-Generation | 0/0 | Not started | - |
+| 20. Configuration Foundation | 3/3 | Complete    | 2026-02-17 |
+| 21. Assignment & Auto-Generation | 0/2 | Not started | - |
 | 22. Validation & Duplicate Prevention | 0/0 | Not started | - |
 | 23. Display & Integration | 0/0 | Not started | - |
 | 24. Year Rollover Logic | 0/0 | Not started | - |
 
-**Overall Milestone Progress**: 0% (0 of 5 phases complete)
+**Overall Milestone Progress**: 20% (1 of 5 phases complete)
 
 ---
 
 *Roadmap created: 2026-02-10 (v1.0)*
-*Last updated: 2026-02-17 after Phase 20 planning*
+*Last updated: 2026-02-17 after Phase 21 planning*
