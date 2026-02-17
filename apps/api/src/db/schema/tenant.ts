@@ -85,6 +85,7 @@ export function createTenantSchema(schemaName: string) {
       .default({
         enabled: false,
         template: "{YYYY}-{NNN}",
+        startingSequenceNumber: 1,
         nextSequenceNumber: 1,
         lastGeneratedFormat: null,
       }),
