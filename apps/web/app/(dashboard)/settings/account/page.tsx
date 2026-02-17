@@ -88,7 +88,7 @@ export default function AccountSettingsPage() {
 
       if (!response.ok) {
         toast.error(
-          result.error?.json?.message || "Failed to update password"
+          result.error?.message || "Failed to update password"
         );
         return;
       }
@@ -132,7 +132,7 @@ export default function AccountSettingsPage() {
       const result = await response.json();
 
       if (!response.ok) {
-        toast.error(result.error?.json?.message || "Failed to disable MFA");
+        toast.error(result.error?.message || "Failed to disable MFA");
         return;
       }
 
