@@ -167,7 +167,11 @@ Plans:
 2. Year component in job number (YY or YYYY) updates automatically for new projects
 3. Existing projects retain their original job numbers after year rollover (no retroactive changes)
 
-**Plans**: TBD
+**Plans**: 2 plans in 2 waves
+
+Plans:
+- [ ] 24-01-PLAN.md — Add startingSequenceNumber to schema, wire into reset branch, add UI input
+- [ ] 24-02-PLAN.md — Human verification of rollover behavior in live app
 
 ---
 
@@ -179,11 +183,11 @@ Plans:
 | 21. Assignment & Auto-Generation | 0/2 | Not started | - |
 | 22. Validation & Duplicate Prevention | 0/4 | Complete    | 2026-02-17 |
 | 23. Display & Integration | 0/1 | Complete    | 2026-02-17 |
-| 24. Year Rollover Logic | 0/0 | Not started | - |
+| 24. Year Rollover Logic | 0/2 | Not started | - |
 
 **Overall Milestone Progress**: 20% (1 of 5 phases complete)
 
 ---
 
 *Roadmap created: 2026-02-10 (v1.0)*
-*Last updated: 2026-02-17 after Phase 23 planning*
+*Last updated: 2026-02-17 after Phase 24 planning*
