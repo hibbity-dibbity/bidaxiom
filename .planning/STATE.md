@@ -414,11 +414,12 @@ None yet.
 | 18 | Crop BidAxiom logo images to remove transparent padding | 2026-02-17 | b72d88e | [18-crop-bidaxiom-logo-images-to-remove-tran](./quick/18-crop-bidaxiom-logo-images-to-remove-tran/) |
 | 20 | Shrink the width of the expanded sidebar by 50px | 2026-02-17 | 3ae04ac | [20-shrink-expanded-sidebar-width](./quick/20-shrink-expanded-sidebar-width/) |
 | 21 | Eliminate gap between sidebar and main content | 2026-02-17 | 7c81b00 | [21-eliminate-sidebar-gap](./quick/21-eliminate-sidebar-gap/) |
+| 22 | Combine job number and project name in same format | 2026-02-17 | c61f47c | [22-combine-job-number-project-name](./quick/22-combine-job-number-project-name/) |
 
 ## Session Continuity
 
 Last session: 2026-02-17 (Quick Task 18 execution)
 Stopped at: Completed quick-18-SUMMARY.md (logo optimization)
-Last activity: 2026-02-17 - Completed quick task 21: Eliminate gap between sidebar and main content
+Last activity: 2026-02-17 - Completed quick task 22: Combine job number and project name in same format
 Resume file: .planning/quick/18-crop-bidaxiom-logo-images-to-remove-tran/18-SUMMARY.md
 
