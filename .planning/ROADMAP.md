@@ -175,7 +175,7 @@ Plans:
 | 23. Display & Integration | v1.2 | 1/1 | Complete | 2026-02-17 |
 | 24. Year Rollover Logic | v1.2 | 2/2 | Complete | 2026-02-17 |
 | 25. Session & Auth Flow | v1.3 | Complete    | 2026-02-17 | - |
-| 26. Account Settings & Shell Cleanup | v1.3 | 0/3 | Not started | - |
+| 26. Account Settings & Shell Cleanup | 1/3 | In Progress|  | - |
 | 27. Slug Routing Completion | v1.3 | 0/TBD | Not started | - |
 | 28. Search & Dashboard Enhancements | v1.3 | 0/TBD | Not started | - |
 | 29. UX Polish & Tech Debt | v1.3 | 0/TBD | Not started | - |

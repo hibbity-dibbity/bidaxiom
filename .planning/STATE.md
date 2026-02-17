@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 
 ## Current Position
 
-Phase: 25 of 29 in v1.3 (Session & Auth Flow) — COMPLETE
-Plan: 3 of 3 in Phase 25 — COMPLETE
-Status: Phase 25 complete; ready for Phase 26
-Last activity: 2026-02-17 — Completed 25-03: UAT verification — SESS-01 and SESS-02 human-verified
+Phase: 26 of 29 in v1.3 (Account Settings & Shell Cleanup) — In Progress
+Plan: 1 of 3 in Phase 26 — COMPLETE
+Status: Phase 26 in progress; Plan 26-01 done, plans 26-02 and 26-03 remaining
+Last activity: 2026-02-17 — Completed 26-01: auth.changePassword and auth.disableMfa mutations
 
-Progress: v1.0: [██████████] 100% (12 phases) | v1.1: [██████████] 100% (7 phases) | v1.2: [██████████] 100% (5 phases) | v1.3: [██░░░░░░░░] ~20% (1/5 phases complete, Phase 26 up next)
+Progress: v1.0: [██████████] 100% (12 phases) | v1.1: [██████████] 100% (7 phases) | v1.2: [██████████] 100% (5 phases) | v1.3: [██░░░░░░░░] ~20% (1/5 phases complete, Phase 26 in progress)
 
 ## Performance Metrics
 
@@ -33,6 +33,7 @@ Progress: v1.0: [██████████] 100% (12 phases) | v1.1: [█�
 | 23 | 1 | 5 min | 5 min |
 | 24 | 2 | ~6 min | ~3 min |
 | 25 | 3 | ~11 min | ~3.7 min |
+| 26 | 1 so far | 2 min | 2 min |
 
 **Recent Trend:**
 - Last 5 plans: 25-03 (~5 min UAT), 25-02 (3 min), 25-01 (3 min), 24-02 (2 min), 24-01 (4 min)
@@ -55,6 +56,8 @@ Recent decisions affecting current work:
 - **window.location.href for session redirects (Phase 25)**: Full page reload ensures middleware re-evaluates iron-session cookie; router.push would leave broken session in place
 - **SessionWatcher client component pattern (Phase 25)**: Dashboard layout stays a Server Component; tiny client wrapper mounts the hook without polluting layout
 - **globalThis.fetch in tRPC interceptor (Phase 25)**: Prevents infinite recursion when custom fetch property overrides global fetch
+- **changePassword revokes refresh tokens, disableMfa does not (Phase 26)**: Password change is a credential rotation event requiring forced re-login on other devices; MFA disable is a settings change that should not disrupt sessions
+- **Manual Bearer token pattern for changePassword/disableMfa (Phase 26)**: Consistent with setupMfa/verifyMfaSetup in same file; both use authHeader?.replace("Bearer ", "") + verifyAccessToken
 
 ### Pending Todos
 
@@ -67,5 +70,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 25-03 — Phase 25 complete; SESS-01 and SESS-02 human-verified via UAT
+Stopped at: Completed 26-01-PLAN.md — auth.changePassword and auth.disableMfa mutations live in authRouter
 Resume file: None
