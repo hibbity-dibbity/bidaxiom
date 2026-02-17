@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-17)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.3 Polish & Gap Closure — Phase 25: Session & Auth Flow
+**Current focus:** v1.3 Polish & Gap Closure — Phase 26 (next phase)
 
 ## Current Position
 
-Phase: 25 of 29 in v1.3 (Session & Auth Flow)
-Plan: 2 of TBD in Phase 25
-Status: In progress
-Last activity: 2026-02-17 — Completed 25-02: session watcher hook + tRPC 401 interceptor
+Phase: 25 of 29 in v1.3 (Session & Auth Flow) — COMPLETE
+Plan: 3 of 3 in Phase 25 — COMPLETE
+Status: Phase 25 complete; ready for Phase 26
+Last activity: 2026-02-17 — Completed 25-03: UAT verification — SESS-01 and SESS-02 human-verified
 
-Progress: v1.0: [██████████] 100% (12 phases) | v1.1: [██████████] 100% (7 phases) | v1.2: [██████████] 100% (5 phases) | v1.3: [░░░░░░░░░░] ~8% (0/5 phases complete, Phase 25 in progress)
+Progress: v1.0: [██████████] 100% (12 phases) | v1.1: [██████████] 100% (7 phases) | v1.2: [██████████] 100% (5 phases) | v1.3: [██░░░░░░░░] ~20% (1/5 phases complete, Phase 26 up next)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 96
+- Total plans completed: 99
 - Average duration: 4.5 min
-- Total execution time: ~8.67 hours
+- Total execution time: ~8.75 hours
 
 **By Phase:**
 
@@ -32,10 +32,10 @@ Progress: v1.0: [██████████] 100% (12 phases) | v1.1: [█�
 | 22 | 4 | ~15 min | ~3.8 min |
 | 23 | 1 | 5 min | 5 min |
 | 24 | 2 | ~6 min | ~3 min |
-| 25 | 2 | ~6 min | ~3 min |
+| 25 | 3 | ~11 min | ~3.7 min |
 
 **Recent Trend:**
-- Last 5 plans: 25-02 (3 min), 25-01 (3 min), 24-02 (2 min), 24-01 (4 min), 23-01 (5 min)
+- Last 5 plans: 25-03 (~5 min UAT), 25-02 (3 min), 25-01 (3 min), 24-02 (2 min), 24-01 (4 min)
 - Trend: Stable — averaging 3 min per plan in v1.3
 
 *Updated after each plan completion*
@@ -48,7 +48,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
 - **Slug-based routing (Phases 16-19)**: Partial — projects done, customers/subs still on UUID routes (Phase 27 completes this)
-- **Custom auth over Clerk (Phase 12)**: JWT + MFA working well; session expiry handling is a gap (Phase 25 addresses)
+- **Custom auth over Clerk (Phase 12)**: JWT + MFA working well; session expiry handling gap closed by Phase 25 (SESS-01 + SESS-02 complete)
 - **Iron-session for encrypted stateless cookies**: 7-day maxAge matching refresh token TTL — expiry detection needed client-side
 - **startingSequenceNumber (Phase 24)**: Year rollover resets to configurable start; counter increment on manual edit-page change is tech debt (JOBEDIT-01, Phase 29)
 - **Component library extraction at 3+ uses (Phase 19)**: Empty state and loading state components will likely qualify for extraction in Phase 29
@@ -67,5 +67,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 25-02 — JWT session watcher hook + tRPC 401 interceptor implemented
+Stopped at: Completed 25-03 — Phase 25 complete; SESS-01 and SESS-02 human-verified via UAT
 Resume file: None
