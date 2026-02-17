@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 ## Current Position
 
 Phase: Phase 22 (22-validation-and-duplicate-prevention)
-Plan: 22-01 complete
-Status: In progress — Plan 01 of 22 complete
-Last activity: 2026-02-17 - Completed 22-01 (backend availability check and shared validation utilities)
+Plan: 22-02 complete
+Status: In progress — Plan 02 of 22 complete
+Last activity: 2026-02-17 - Completed 22-02 (blur validation on job number field in project-form)
 
-Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [██████████] 100% (7 phases) | v1.2: [███████░░░] 70% (Phase 22 in progress)
+Progress: v1.0: [██████████] 100% complete (12 phases) | v1.1: [██████████] 100% (7 phases) | v1.2: [████████░░] 75% (Phase 22 in progress)
 
 ## Performance Metrics
 
@@ -148,6 +148,7 @@ Progress: v1.0: [██████████] 100% complete (12 phases) | v1.
 | Phase 21-assignment-and-auto-generation P01 | 2 min | 2 tasks | 2 files |
 | Phase 21-assignment-and-auto-generation P02 | 2 min | 1 task | 0 files |
 | Phase 22-validation-and-duplicate-prevention P01 | 5 min | 2 tasks | 3 files |
+| Phase 22-validation-and-duplicate-prevention P02 | 2 min | 1 task | 1 file |
 
 ## Accumulated Context
 
@@ -395,6 +396,9 @@ Recent decisions affecting current work:
 - [Phase 22-01]: ilike() over eq() for job number duplicate detection — ABC-001 and abc-001 are the same number; case-insensitive prevents duplicates with different casing
 - [Phase 22-01]: validateJobNumberFormat and parseTemplatePattern added to shared/types/company.ts — pure regex functions with no server-only deps; co-located with other job-number utilities; exportable to web client
 - [Phase 22-01]: excludeProjectId uses ne() in conditions array — edit flow can exclude own project number without separate query path
+- [Phase 22-02]: Format check runs before duplicate check in handleJobNumberBlur — prevents unnecessary network calls for invalid formats; abort early if format fails
+- [Phase 22-02]: duplicateProject state separate from RHF errors — enables rich UI with clickable project link that FormMessage cannot render; space-character error message keeps layout stable
+- [Phase 22-02]: onSubmit safety net re-runs handleJobNumberBlur — prevents race condition where user submits before blur fires
 
 ### Pending Todos
 
@@ -433,7 +437,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-17 (Phase 22 Execution)
-Stopped at: Completed 22-01-PLAN.md
-Last activity: 2026-02-17 - Completed plan 22-01 (Backend availability check and shared validation utilities)
-Resume: Phase 22 in progress - Plan 01 complete
+Stopped at: Completed 22-02-PLAN.md
+Last activity: 2026-02-17 - Completed plan 22-02 (Blur validation on job number field in project-form)
+Resume: Phase 22 in progress - Plan 02 complete
 
