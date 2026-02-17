@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { Loader2, Copy, CheckCircle2, AlertTriangle } from "lucide-react";
+import { getSafeRedirectUrl } from "@/lib/utils/safe-redirect";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
@@ -27,8 +28,10 @@ type SetupData = {
   backupCodes: string[];
 };
 
-export default function MfaSetupPage() {
+function MfaSetupPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get("redirect_url") ?? "/";
 
   const [isLoading, setIsLoading] = useState(true);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -149,7 +152,7 @@ export default function MfaSetupPage() {
       toast.error("Please confirm you've saved your backup codes");
       return;
     }
-    router.push("/");
+    router.push(getSafeRedirectUrl(redirectUrl));
   };
 
   if (isLoading) {
@@ -312,5 +315,13 @@ export default function MfaSetupPage() {
         </CardFooter>
       </form>
     </Card>
+  );
+}
+
+export default function MfaSetupPageWrapper() {
+  return (
+    <Suspense fallback={null}>
+      <MfaSetupPage />
+    </Suspense>
   );
 }
