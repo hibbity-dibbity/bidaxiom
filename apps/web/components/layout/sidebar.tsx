@@ -53,15 +53,15 @@ export function AppSidebar() {
 
   return (
     <ShadcnSidebar collapsible="icon">
-      <SidebarHeader className="border-b px-3 py-2">
-        <div className="flex items-center justify-center">
+      <SidebarHeader className="h-14 shrink-0 border-b px-4">
+        <div className="flex h-full items-center justify-center">
           {/* Full logo when expanded */}
           <Image
             src="/bidaxiom-logo.png"
             alt="BidAxiom"
             width={288}
             height={48}
-            className="group-data-[collapsible=icon]:hidden dark:invert"
+            className="group-data-[collapsible=icon]:hidden dark:invert max-h-full w-auto"
             priority
           />
           {/* Icon when collapsed */}
@@ -70,7 +70,7 @@ export function AppSidebar() {
             alt="BidAxiom"
             width={32}
             height={32}
-            className="hidden group-data-[collapsible=icon]:block dark:invert"
+            className="hidden group-data-[collapsible=icon]:block dark:invert max-h-full w-auto"
             priority
           />
         </div>
