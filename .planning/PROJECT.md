@@ -10,7 +10,7 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 
 ## Current State
 
-**Shipped:** v1.0 MVP + v1.1 Enterprise UX Redesign + v1.2 Job Number System + v1.3 Polish & Gap Closure (Feb 2026)
+**Shipped:** v1.0–v1.4 (all milestones complete as of Feb 18, 2026)
 
 **What's built:**
 - Complete project financial lifecycle (RFQs → bidding → budget → change orders → payment apps)
@@ -19,7 +19,10 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 - Document management with workflows (RFIs, submittals, transmittals)
 - Reporting & analytics with custom builder and scheduled delivery
 - Calendar integration (Google, Microsoft) with bi-directional sync
-- Enterprise-grade UI with dark mode, global search (⌘K with estimates, projects, customers), and company branding
+- Enterprise-grade UI with dark mode, global ⌘K search (projects, customers, estimates, subcontractors)
+- Full BIDAXIOM rebrand — cyan-teal palette, flat design system, BIDAXIOM favicon
+- Company selector in user dropdown (switch companies without page reload)
+- Currency format on blur ($X,XXX.XX) across all 7 amount fields
 - Guided estimate workflow with cost code templates, labor rates, and SOV builder
 - Estimate lifecycle (draft → submitted → bid → won → active project)
 - Slug-based routing for projects, customers, and subcontractors (fully migrated)
@@ -30,7 +33,7 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 
 **Tech stack:** Next.js 14, Fastify, tRPC, Drizzle ORM, PostgreSQL (schema-per-tenant), Redis, MinIO (S3), Tailwind CSS
 
-**Codebase:** ~152,000+ lines of TypeScript across 29 phases
+**Codebase:** ~155,000+ lines of TypeScript across 35 phases
 
 ## Requirements
 
@@ -80,22 +83,18 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 - ✓ Consistent empty states, skeleton loading, and global error toasts — v1.3
 - ✓ Job number counter-advance on manual edit-page save — v1.3
 
+**v1.4 Rebranding & UX Upgrades (Phases 30-35):**
+- ✓ Full BIDAXIOM rebrand — all copy, navigation labels, browser tab titles updated — v1.4
+- ✓ Cyan-teal primary color palette (H=188, 80%, 45%) extracted from logo; slate-blue foreground — v1.4
+- ✓ BIDAXIOM favicon set in browser tab and bookmarks — v1.4
+- ✓ Flat design system — all cards/panels: sharp corners, no borders, no shadows — v1.4
+- ✓ Company selector in user dropdown — org list + active checkmark + "Create new company" — v1.4
+- ✓ CurrencyInput component — $X,XXX.XX format on blur across 7 amount fields — v1.4
+- ✓ Subcontractors in ⌘K global search — "Subcontractors" CommandGroup with slug navigation — v1.4
+
 ### Active
 
-<!-- v1.4 Rebranding & UX Upgrades -->
-
-**Milestone v1.4: Rebranding & UX Upgrades** (Started: 2026-02-18)
-
-**Goal:** Rebrand the platform to BIDAXIOM with a new color palette, flatten the card design system, add live currency formatting to all amount fields, add company selector to user dropdown, include subcontractors in global search, and clean up the sidebar.
-
-**Target features:**
-- BIDAXIOM branding throughout (labels, page titles, color palette from logo)
-- Sign-in logo resized (25% smaller, extra padding)
-- Flat design system — sharp corners, no borders, no shadows on cards
-- Company selector + Create new company in user dropdown
-- Live US currency formatting on all amount input fields
-- Subcontractors in global search (⌘K)
-- Remove version number + divider from sidebar
+<!-- Next milestone to be defined. Run /gsd:new-milestone to start v1.5 planning. -->
 
 ### Out of Scope
 
@@ -114,7 +113,7 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 
 **Market:** Small-to-mid-sized commercial contractors are underserved. Enterprise tools (Procore, Sage) are expensive and complex. Smaller tools lack multi-company collaboration and financial depth. The gap is a platform that handles the full GC↔Sub lifecycle affordably.
 
-**Current status:** v1.3 shipped — all core functionality complete with enterprise-grade UX, reliable session handling, consistent empty/loading/error states, and full slug-based routing. ~152K lines of TypeScript across 29 phases.
+**Current status:** v1.4 shipped — full BIDAXIOM rebrand complete. Cyan-teal palette, flat design system, currency format on blur, company selector in dropdown, subcontractors in search. ~155K lines of TypeScript across 35 phases.
 
 **Known technical debt:**
 - Phase 27 VERIFICATION.md never generated (UAT summary serves as substitute)
@@ -159,6 +158,13 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 | No MutationCache.onError (Phase 29) | Mutations have per-mutation onError; global would double-toast every failure | ✓ Good |
 | startingSequenceNumber floors nextSequenceNumber at maxUsed+1 (Phase 29) | Prevents duplicate job numbers when lowering startingSequenceNumber | ✓ Good |
 | Uniqueness check inside db.transaction (Phase 29) | Load-compare-write has race window; transaction eliminates it | ✓ Good |
+| Primary color = cyan-teal H=188, not slate-blue (Phase 31) | User approved after palette extraction; slate-blue moves to --foreground for body text | ✓ Good |
+| Dashboard tabs show "BIDAXIOM" not "Dashboard \| BIDAXIOM" (Phase 30) | Dashboard layout.tsx has no metadata export; root default applies; user approved | ✓ Good |
+| Flat card hover = background tint not shadow (Phase 32) | hover:bg-muted/50 transition-colors chosen for flat design consistency | ✓ Good |
+| Tier B table wrappers excluded from DESIGN-01 (Phase 32) | "Card and panel components" ≠ data grid containers; intentional scoping | ✓ Good |
+| CompanySwitcher deleted, not hidden (Phase 33) | Merged into UserMenu; no dead code left | ✓ Good |
+| CurrencyInput fires onChange on blur only (Phase 34) | Format-on-blur chosen over live masking; use-mask-input tried and reverted | ✓ Good |
+| Slug backfill migration required for subcontractor search (Phase 35) | isNotNull filter excludes null slugs; add-entity-slugs.ts one-time migration resolves it | ✓ Good |
 
 ---
-*Last updated: 2026-02-18 — started v1.4 milestone*
+*Last updated: 2026-02-18 — v1.4 milestone complete*

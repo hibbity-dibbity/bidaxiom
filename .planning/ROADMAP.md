@@ -6,7 +6,8 @@
 - ✅ **v1.1 Enterprise UX Redesign** — Phases 13-19 (shipped Feb 16, 2026)
 - ✅ **v1.2 Job Number System Fixes & Reliability** — Phases 20-24 (shipped Feb 17, 2026)
 - ✅ **v1.3 Polish & Gap Closure** — Phases 25-29 (shipped Feb 18, 2026)
-- 🚧 **v1.4 Rebranding & UX Upgrades** — Phases 30-35 (in progress)
+- ✅ **v1.4 Rebranding & UX Upgrades** — Phases 30-35 (shipped Feb 18, 2026)
+- 📋 **v1.5** — Planned (next milestone TBD)
 
 ## Shipped Milestones
 
@@ -83,100 +84,22 @@
 
 </details>
 
----
+<details>
+<summary>✅ v1.4 Rebranding & UX Upgrades (Phases 30-35) — SHIPPED Feb 18, 2026</summary>
 
-## Current Milestone: v1.4 Rebranding & UX Upgrades
+**Delivered:** Full BIDAXIOM rebrand with new color palette, flat design system, currency format on blur, company selector in user dropdown, and subcontractors in global search
 
-**Goal:** Fully rebrand the application as BIDAXIOM, apply an extracted color palette, flatten the card design system, add live currency formatting, expose company switching in the user dropdown, and expand global search to include subcontractors.
+**Phases:**
+- [x] Phase 30: Brand Identity & Sidebar Cleanup (3 plans) — BIDAXIOM copy, page titles, logo resize, sidebar cleanup
+- [x] Phase 31: Color Palette & Favicon (2 plans) — Cyan-teal primary palette, BIDAXIOM favicon
+- [x] Phase 32: Flat Design System (2 plans) — Sharp corners, no borders/shadows on all cards/panels
+- [x] Phase 33: Company Selector in User Dropdown (2 plans) — Company switcher + "Create new company" in user menu
+- [x] Phase 34: Currency Format on Blur (5 plans) — CurrencyInput component, $X,XXX.XX display across 7 fields
+- [x] Phase 35: Subcontractors in Global Search (2 plans) — Subcontractors CommandGroup in ⌘K search
 
-### Phases
+**Archive:** [.planning/milestones/v1.4-ROADMAP.md](./milestones/v1.4-ROADMAP.md)
 
-- [x] **Phase 30: Brand Identity & Sidebar Cleanup** — Rename all app copy to BIDAXIOM, set page titles, resize sign-in logo, remove version from sidebar (completed 2026-02-18)
-- [x] **Phase 31: Color Palette & Favicon** — Extract palette from BIDAXIOM logo, present for user approval, apply to Tailwind config and CSS variables, set favicon (completed 2026-02-18)
-- [x] **Phase 32: Flat Design System** — Remove border-radius, borders, and drop shadows from all card/panel components app-wide (completed 2026-02-18)
-- [x] **Phase 33: Company Selector in User Dropdown** — Add company switcher and "Create new company" option below Account Settings in top-nav user menu (completed 2026-02-18)
-- [x] **Phase 34: Currency Format on Blur** — All currency/amount inputs reformat to US currency display when the user leaves the field (completed 2026-02-18)
-- [x] **Phase 35: Subcontractors in Global Search** — Add subcontractor results with "Subcontractor" type label to ⌘K search (completed 2026-02-18)
-
-### Phase Details
-
-#### Phase 30: Brand Identity & Sidebar Cleanup
-**Goal:** Users see "BIDAXIOM" everywhere — in navigation, copy, browser tabs, and the sign-in screen — and the sidebar is free of the version number clutter.
-**Depends on:** Nothing (first phase of milestone)
-**Requirements:** BRAND-01, BRAND-02, BRAND-04, CLEAN-01
-**Success Criteria** (what must be TRUE):
-  1. Every page title in the browser tab reads "{Page Name} | BIDAXIOM" with no prior brand name visible
-  2. All navigation labels, headings, and body copy reference "BIDAXIOM"; no legacy brand names remain
-  3. The sign-in page logo is visibly smaller than before and has extra space below it before the form
-  4. The left sidebar shows no version number and no horizontal divider rule above where it was
-**Plans:** 3/3 plans complete
-
-#### Phase 31: Color Palette & Favicon
-**Goal:** The app's color palette matches the BIDAXIOM logo — extracted programmatically, approved by the user before any code change, then applied globally through Tailwind config and CSS variables. The BIDAXIOM icon is set as the browser favicon.
-**Depends on:** Phase 30
-**Requirements:** BRAND-03, BRAND-05
-**Success Criteria** (what must be TRUE):
-  1. User is presented with the extracted palette (primary, accent, neutral, semantic colors) before any color is changed in the codebase
-  2. After user approval, all primary interactive elements (buttons, links, active states) render in the new brand color
-  3. After user approval, all CSS custom properties and Tailwind config entries reflect the new palette with no hardcoded legacy color values remaining
-  4. The sign-in page, dashboard, and a data-heavy page (e.g., project list) all visually reflect the new palette consistently
-  5. The browser tab and bookmarks display the BIDAXIOM icon (bidaxiom-icon.png) as the favicon
-**Plans:** 2/2 plans complete
-
-#### Phase 32: Flat Design System
-**Goal:** Every card and panel in the application has sharp corners, no border, and no drop shadow — producing a flat, section-based visual language throughout.
-**Depends on:** Phase 31
-**Requirements:** DESIGN-01
-**Success Criteria** (what must be TRUE):
-  1. Cards and panels on the dashboard show no rounded corners, no visible border outline, and no box shadow
-  2. Cards and panels on project pages, estimate pages, and settings pages exhibit the same flat appearance
-  3. No regression: interactive elements (buttons, inputs, badges) that should retain their styling are unaffected
-**Plans:** 2/2 plans complete
-Plans:
-- [ ] 32-01-PLAN.md — Flatten Card primitive + replace hover shadows on interactive cards (6 files)
-- [ ] 32-02-PLAN.md — Patch custom Tier A div panels + human verification checkpoint (5 files)
-
-#### Phase 33: Company Selector in User Dropdown
-**Goal:** A user who belongs to multiple companies can switch between them — and create a new company — without leaving their current page, using the top-nav user dropdown.
-**Depends on:** Phase 30
-**Requirements:** NAV-02
-**Success Criteria** (what must be TRUE):
-  1. Opening the user dropdown reveals a company selector section below Account Settings, listing all companies the user belongs to
-  2. Clicking a different company switches the active tenant context and the UI reflects the new company's data
-  3. A "Create new company" option is present and navigates to the company creation flow
-**Plans:** 2/2 plans complete
-Plans:
-- [ ] 33-01-PLAN.md — Add company selector to UserMenu + remove CompanySwitcher from top bar (3 files)
-- [ ] 33-02-PLAN.md — Human verification checkpoint (0 files)
-
-#### Phase 34: Currency Format on Blur
-**Goal:** Every currency and amount field in the app displays US dollar notation when the user leaves the field, so amounts are always shown formatted without disrupting typing.
-**Depends on:** Phase 30
-**Requirements:** FORM-01
-**Success Criteria** (what must be TRUE):
-  1. After leaving any amount field, the value displays as "$X,XXX.XX"
-  2. The formatted value is correctly parsed and persisted as a numeric value (not a string with symbols) when the form is saved
-  3. Currency fields on estimate line items, budget entries, and change order forms all exhibit this behavior
-**Plans:** 5/5 plans complete
-Plans:
-- [ ] 34-01-PLAN.md — parseCurrencyInput utility + CurrencyInput component (2 files)
-- [ ] 34-02-PLAN.md — RHF forms: change-order-form + commitment-form amountChange/amount (2 files)
-- [ ] 34-03-PLAN.md — Plain-state forms: budget-line-item-table + sov-editor + bid-comparison-table (3 files)
-- [ ] 34-04-PLAN.md — Inline editors: SOVLineItemCard + EstimateLineItemsTable unitCost (2 files)
-- [ ] 34-05-PLAN.md — Human verification checkpoint (0 files)
-
-#### Phase 35: Subcontractors in Global Search
-**Goal:** A user searching via ⌘K can find subcontractor records alongside projects, customers, and estimates, with clear labeling so the result type is immediately obvious.
-**Depends on:** Phase 30
-**Requirements:** SRCH-03
-**Success Criteria** (what must be TRUE):
-  1. Typing a subcontractor name in the ⌘K search palette surfaces matching subcontractor records
-  2. Each subcontractor result displays a "Subcontractor" type label visually distinct from other result types
-  3. Clicking a subcontractor result navigates to the correct subcontractor detail page
-**Plans:** 2/2 plans complete
-Plans:
-- [ ] 35-01-PLAN.md — Add subcontractor query to search API + Subcontractors CommandGroup in command palette (2 files)
-- [ ] 35-02-PLAN.md — Human verification checkpoint (0 files)
+</details>
 
 ---
 
@@ -188,9 +111,4 @@ Plans:
 | 13-19 | v1.1 | 50/50 | ✅ Complete | 2026-02-16 |
 | 20-24 | v1.2 | 12/12 | ✅ Complete | 2026-02-17 |
 | 25-29 | v1.3 | 16/16 | ✅ Complete | 2026-02-18 |
-| 30. Brand Identity & Sidebar Cleanup | v1.4 | Complete    | 2026-02-18 | - |
-| 31. Color Palette | v1.4 | Complete    | 2026-02-18 | - |
-| 32. Flat Design System | v1.4 | Complete    | 2026-02-18 | - |
-| 33. Company Selector in User Dropdown | v1.4 | Complete    | 2026-02-18 | - |
-| 34. Live Currency Formatting | v1.4 | Complete    | 2026-02-18 | - |
-| 35. Subcontractors in Global Search | v1.4 | Complete    | 2026-02-18 | - |
+| 30-35 | v1.4 | 16/16 | ✅ Complete | 2026-02-18 |

@@ -55,3 +55,13 @@
 - Consistent empty states (icon + heading + CTA), skeleton loading, global QueryCache error toasts, job number counter-advance on edit
 
 ---
+
+## v1.4 Rebranding & UX Upgrades (Shipped: 2026-02-18)
+
+**Phases completed:** 35 phases, 152 plans, 53 tasks
+
+**Key accomplishments:**
+- Customer and subcontractor forms using PhoneInput and AddressInput with proper React Hook Form integration
+
+---
+
