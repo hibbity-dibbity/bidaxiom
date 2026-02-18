@@ -7,8 +7,11 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "ConstructionSaaS",
-  description: "Construction management platform for GCs and subcontractors",
+  title: {
+    template: "%s | BIDAXIOM",
+    default: "BIDAXIOM",
+  },
+  description: "Construction management software for general contractors and subcontractors",
 };
 
 export default async function RootLayout({
