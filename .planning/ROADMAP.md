@@ -136,7 +136,11 @@ Plans:
   1. Typing in global search (⌘K) returns estimate results alongside project and customer results
   2. Each search result displays a type label (Project, Estimate, Customer) so the user can distinguish result types at a glance
   3. Clicking a dashboard KPI widget navigates to the relevant page with filters pre-applied matching the widget's metric (e.g., "My Active Projects" opens projects list filtered to the current user's active projects)
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 28-01-PLAN.md — Estimate search + customer URL bug fix + Estimates CommandGroup in command palette
+- [ ] 28-02-PLAN.md — Dashboard KPI widget onClick handlers
+- [ ] 28-03-PLAN.md — Browser UAT verification of SRCH-01, SRCH-02, DASH-01
 
 #### Phase 29: UX Polish & Tech Debt
 **Goal**: Every list and table view communicates clearly when empty, loading states are consistent across the app, API errors always surface via toast notifications, and manually editing a job number on the edit page correctly advances the auto-generation counter.
@@ -158,5 +162,5 @@ Plans:
 | 25 | ✅ Complete | 3/3 | 2026-02-17 |
 | 26 | ✅ Complete | 3/3 | 2026-02-17 |
 | 27 | ✅ Complete | 3/3 | 2026-02-17 |
-| 28 | ⬜ Not started | TBD | — |
+| 28 | ⬜ Not started | 3 planned | — |
 | 29 | ⬜ Not started | TBD | — |
