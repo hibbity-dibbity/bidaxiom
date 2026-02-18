@@ -620,11 +620,53 @@ export const projectRouter = router({
         );
       }
 
-      const [updated] = await db
-        .update(schema.projects)
-        .set(updateValues)
-        .where(eq(schema.projects.id, input.id))
-        .returning();
+      // Load company profile for job number settings
+      const [companyProfile] = await db
+        .select()
+        .from(schema.companyProfiles)
+        .where(isNull(schema.companyProfiles.validTo))
+        .limit(1);
+
+      const jobNumberSettings = companyProfile?.jobNumberSettings;
+      let updatedJobSettings = jobNumberSettings;
+
+      // If manual job number provided and auto-generation is enabled, advance counter
+      // to prevent future auto-generated numbers from conflicting
+      if (input.jobNumber && jobNumberSettings?.enabled) {
+        const templateSeqMatch = jobNumberSettings.template.match(/\{(N+)\}/);
+        const sequenceLength = templateSeqMatch ? templateSeqMatch[1].length : null;
+        const seqRegex = sequenceLength
+          ? new RegExp(`(\\d{${sequenceLength}})$`)
+          : /(\d+)$/;
+        const sequenceMatch = input.jobNumber.match(seqRegex);
+        if (sequenceMatch) {
+          const manualSequence = parseInt(sequenceMatch[1], 10);
+          if (manualSequence >= jobNumberSettings.nextSequenceNumber) {
+            updatedJobSettings = {
+              ...jobNumberSettings,
+              nextSequenceNumber: manualSequence + 1,
+            };
+          }
+        }
+      }
+
+      const updated = await db.transaction(async (tx) => {
+        // Advance job number counter if needed
+        if (updatedJobSettings && updatedJobSettings !== jobNumberSettings) {
+          await tx
+            .update(schema.companyProfiles)
+            .set({ jobNumberSettings: updatedJobSettings })
+            .where(isNull(schema.companyProfiles.validTo));
+        }
+
+        const [updatedProject] = await tx
+          .update(schema.projects)
+          .set(updateValues)
+          .where(eq(schema.projects.id, input.id))
+          .returning();
+
+        return updatedProject;
+      });
 
       // Audit log
       await createAuditLog(db, schema, {
