@@ -6,7 +6,6 @@ import {
   Sidebar as ShadcnSidebar,
   SidebarContent,
   SidebarHeader,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
   SidebarTrigger,
@@ -79,11 +78,6 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t p-2">
-        <div className="text-xs text-muted-foreground px-2 group-data-[collapsible=icon]:hidden">
-          v0.0.1
-        </div>
-      </SidebarFooter>
     </ShadcnSidebar>
   );
 }
