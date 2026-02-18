@@ -5,11 +5,10 @@ import Image from "next/image";
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { CompanySwitcher } from "./company-switcher";
 import { UserMenu } from "./user-menu";
 
 /**
- * Top bar with sidebar trigger, search, company switcher, and user menu.
+ * Top bar with sidebar trigger, search, and user menu.
  * Fixed at top of main content area.
  */
 export function TopBar({ onSearchOpen }: { onSearchOpen?: () => void }) {
@@ -34,7 +33,7 @@ export function TopBar({ onSearchOpen }: { onSearchOpen?: () => void }) {
         )}
       </div>
 
-      {/* Right: Search, Notifications, Company Switcher, User Menu */}
+      {/* Right: Search, Notifications, User Menu */}
       <div className="flex items-center gap-3">
         {/* Global search trigger (Cmd+K hint) */}
         <Button
@@ -57,10 +56,6 @@ export function TopBar({ onSearchOpen }: { onSearchOpen?: () => void }) {
           <Bell className="h-4 w-4" />
           <span className="sr-only">Notifications</span>
         </Button>
-
-        <Separator orientation="vertical" className="h-4" />
-
-        <CompanySwitcher />
 
         <Separator orientation="vertical" className="h-4" />
 
