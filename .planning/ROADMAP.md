@@ -96,7 +96,7 @@
 - [x] **Phase 32: Flat Design System** — Remove border-radius, borders, and drop shadows from all card/panel components app-wide (completed 2026-02-18)
 - [x] **Phase 33: Company Selector in User Dropdown** — Add company switcher and "Create new company" option below Account Settings in top-nav user menu (completed 2026-02-18)
 - [x] **Phase 34: Currency Format on Blur** — All currency/amount inputs reformat to US currency display when the user leaves the field (completed 2026-02-18)
-- [ ] **Phase 35: Subcontractors in Global Search** — Add subcontractor results with "Subcontractor" type label to ⌘K search
+- [x] **Phase 35: Subcontractors in Global Search** — Add subcontractor results with "Subcontractor" type label to ⌘K search (completed 2026-02-18)
 
 ### Phase Details
 
@@ -173,7 +173,7 @@ Plans:
   1. Typing a subcontractor name in the ⌘K search palette surfaces matching subcontractor records
   2. Each subcontractor result displays a "Subcontractor" type label visually distinct from other result types
   3. Clicking a subcontractor result navigates to the correct subcontractor detail page
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 Plans:
 - [ ] 35-01-PLAN.md — Add subcontractor query to search API + Subcontractors CommandGroup in command palette (2 files)
 - [ ] 35-02-PLAN.md — Human verification checkpoint (0 files)
@@ -193,4 +193,4 @@ Plans:
 | 32. Flat Design System | v1.4 | Complete    | 2026-02-18 | - |
 | 33. Company Selector in User Dropdown | v1.4 | Complete    | 2026-02-18 | - |
 | 34. Live Currency Formatting | v1.4 | Complete    | 2026-02-18 | - |
-| 35. Subcontractors in Global Search | v1.4 | 0/2 | Not started | - |
+| 35. Subcontractors in Global Search | v1.4 | Complete    | 2026-02-18 | - |
