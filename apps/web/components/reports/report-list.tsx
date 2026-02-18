@@ -154,7 +154,7 @@ export function ReportList({ reports, loading, onReportClick }: ReportListProps)
     <>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {reports.map((report) => (
-          <Card key={report.id} className="hover:shadow-md transition-shadow">
+          <Card key={report.id} className="hover:bg-muted/50 transition-colors">
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="flex-1">

@@ -105,7 +105,7 @@ export default function ReportTemplatesPage() {
       ) : templates && templates.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {templates.map((template) => (
-            <Card key={template.id} className="hover:shadow-md transition-shadow">
+            <Card key={template.id} className="hover:bg-muted/50 transition-colors">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div>

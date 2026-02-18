@@ -30,7 +30,7 @@ const bidStatusColors: Record<BidStatus, string> = {
 export function BidCard({ bid, onClick }: BidCardProps) {
   return (
     <Card
-      className={`cursor-pointer hover:shadow-md transition-shadow ${
+      className={`cursor-pointer hover:bg-muted/50 transition-colors ${
         onClick ? "hover:border-primary" : ""
       }`}
       onClick={onClick}

@@ -258,7 +258,7 @@ export default function CustomerDetailPage({
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {customer.projects.map((project: any) => (
                 <Link key={project.id} href={`/projects/${project.slug || project.id}`}>
-                  <Card className="h-full hover:shadow-md transition-shadow cursor-pointer">
+                  <Card className="h-full hover:bg-muted/50 transition-colors cursor-pointer">
                     <CardHeader>
                       <div className="flex items-start justify-between gap-2">
                         <CardTitle className="text-lg line-clamp-2">

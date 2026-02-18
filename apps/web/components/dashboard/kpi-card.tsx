@@ -33,7 +33,7 @@ export function KpiCard({
   return (
     <Card
       className={cn(
-        onClick && "cursor-pointer hover:shadow-sm transition-shadow",
+        onClick && "cursor-pointer hover:bg-muted/50 transition-colors",
         className
       )}
       onClick={onClick}
