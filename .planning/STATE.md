@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-18)
 
 ## Current Position
 
-Phase: 30 (Brand Identity & Sidebar Cleanup) — not started
-Plan: —
-Status: Roadmap defined; 6 phases (30-35); ready to begin Phase 30
-Last activity: 2026-02-18 — v1.4 roadmap created; 9 requirements mapped across 6 phases
+Phase: 30 (Brand Identity & Sidebar Cleanup) — in progress
+Plan: 01 complete (1/N)
+Status: Plan 30-01 complete; root layout rebranded to BIDAXIOM, sidebar version footer removed
+Last activity: 2026-02-18 — Plan 30-01 executed; 2 tasks, 2 files modified
 
-Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [░░░░░░░░░░] 0%
+Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [█░░░░░░░░░] ~3%
 
 ## Performance Metrics
 
@@ -37,6 +37,7 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 | 27 | 3 | ~13 min | ~4.3 min |
 | 28 | 3 | ~12 min | ~4 min |
 | 29 | 4 | ~10 min + UAT | ~3.3 min (excl. UAT) |
+| 30 | 1 | ~1 min | ~1 min |
 
 **Recent Trend:**
 - Last 5 plans: 29-03 (~4 min), 29-02 (~3 min), 29-01 (~3 min), 28-02 (~2 min), 28-01 (~8 min)
@@ -50,7 +51,9 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 
 Decisions are logged in PROJECT.md Key Decisions table (full log, 29 phases).
 
-Fresh decisions for v1.4 will be added here as work progresses.
+**v1.4 decisions:**
+- 30-01: Used Next.js `title.template` object so child pages inherit "Page | BIDAXIOM" without per-page changes
+- 30-01: Removed `SidebarFooter` block entirely (rather than hiding) to avoid dead code
 
 ### Pending Todos
 
@@ -64,5 +67,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: v1.4 roadmap defined; 6 phases (30-35); 9/9 requirements mapped; ready for `/gsd:plan-phase 30`
+Stopped at: Plan 30-01 complete — BIDAXIOM title template + sidebar version footer removed
 Resume file: None
