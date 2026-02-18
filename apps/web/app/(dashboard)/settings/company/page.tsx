@@ -39,9 +39,11 @@ export default function CompanySettingsPage() {
 
   const utils = trpc.useUtils();
   const { data, isLoading } = trpc.company.getCurrent.useQuery();
+  const { data: maxUsedData } = trpc.company.getMaxUsedJobSequence.useQuery();
   const updateMutation = trpc.company.update.useMutation({
     onSuccess: () => {
       utils.company.getCurrent.invalidate();
+      utils.company.getMaxUsedJobSequence.invalidate();
       toast.success("Company configuration saved");
     },
     onError: (error) => {
@@ -334,9 +336,11 @@ export default function CompanySettingsPage() {
                     onChange={(e) => {
                       const newVal = parseInt(e.target.value, 10) || 1;
                       form.setValue("jobNumberSettings.startingSequenceNumber", newVal);
-                      // Keep nextSequenceNumber in sync: changing the starting point
-                      // should update where the counter will sit
-                      form.setValue("jobNumberSettings.nextSequenceNumber", newVal);
+                      // nextSequenceNumber must be at least max(newVal, highestUsed + 1)
+                      // so the counter never points at an already-issued job number
+                      const maxUsed = maxUsedData?.maxSequence ?? 0;
+                      const safeNext = Math.max(newVal, maxUsed + 1);
+                      form.setValue("jobNumberSettings.nextSequenceNumber", safeNext);
                     }}
                     disabled={!canManage}
                     className="mt-2"

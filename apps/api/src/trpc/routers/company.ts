@@ -2,11 +2,11 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router } from "../trpc.js";
 import { protectedProcedure, authorizedProcedure } from "../procedures.js";
-import { companyConfigSchema, AuditAction } from "@construction/shared";
+import { companyConfigSchema, AuditAction, parseSequenceFromJobNumber } from "@construction/shared";
 import { asOfDate } from "../../lib/effective-dating.js";
 import { withAuditLog } from "../middleware/audit.js";
 import { requirePermission } from "../middleware/authorize.js";
-import { isNull, desc, eq, ilike, and, ne } from "drizzle-orm";
+import { isNull, isNotNull, desc, eq, ilike, and, ne, like } from "drizzle-orm";
 
 /**
  * Company configuration router.
@@ -65,6 +65,7 @@ export const companyRouter = router({
     .use(withAuditLog({ entityType: "CompanyProfile", action: AuditAction.UPDATE }))
     .input(companyConfigSchema)
     .mutation(async ({ ctx, input }) => {
+      console.log("[DEBUG company.update] jobNumberSettings received:", JSON.stringify(input.jobNumberSettings));
       // Validate business rule: subs must have at least one trade
       if (
         input.companyType === "sub_only" &&
@@ -164,4 +165,62 @@ export const companyRouter = router({
         existingProjectSlug: existing?.slug ?? null,
       };
     }),
+
+  /**
+   * Get the highest sequence number already used by a project for the current
+   * year/format. Used by company settings to floor nextSequenceNumber above
+   * any already-issued job number when startingSequenceNumber is changed.
+   *
+   * Only considers job numbers that match the current-year format prefix so
+   * sequences from previous years (which reset) don't falsely constrain the
+   * current counter.
+   */
+  getMaxUsedJobSequence: protectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.tenant) {
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+    }
+
+    const [profile] = await ctx.tenant.db
+      .select()
+      .from(ctx.tenant.schema.companyProfiles)
+      .where(isNull(ctx.tenant.schema.companyProfiles.validTo))
+      .limit(1);
+
+    const settings = profile?.jobNumberSettings;
+    if (!settings?.enabled || !settings.template) return { maxSequence: 0 };
+
+    // Build the portion of the template before the {N+} token with date tokens
+    // resolved to the current date. This is the year/format prefix used to
+    // filter out job numbers from previous years.
+    const now = new Date();
+    const resolvedPrefix = settings.template
+      .replace(/{YYYY}/g, now.getFullYear().toString())
+      .replace(/{YY}/g, now.getFullYear().toString().slice(-2))
+      .replace(/{MM}/g, (now.getMonth() + 1).toString().padStart(2, "0"))
+      .replace(/{DD}/g, now.getDate().toString().padStart(2, "0"))
+      .replace(/\{N+\}.*$/, ""); // strip from {NNNN} onwards
+
+    // Fetch all job numbers that start with the current-year prefix
+    const projects = await ctx.tenant.db
+      .select({ jobNumber: ctx.tenant.schema.projects.jobNumber })
+      .from(ctx.tenant.schema.projects)
+      .where(
+        and(
+          isNotNull(ctx.tenant.schema.projects.jobNumber),
+          resolvedPrefix
+            ? like(ctx.tenant.schema.projects.jobNumber, resolvedPrefix + "%")
+            : isNotNull(ctx.tenant.schema.projects.jobNumber)
+        )
+      );
+
+    // Parse sequence digits from each matching job number and find the max
+    let maxSequence = 0;
+    for (const { jobNumber } of projects) {
+      if (!jobNumber) continue;
+      const seq = parseSequenceFromJobNumber(jobNumber, settings.template);
+      if (seq !== null && seq > maxSequence) maxSequence = seq;
+    }
+
+    return { maxSequence };
+  }),
 });
