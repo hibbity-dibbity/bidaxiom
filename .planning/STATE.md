@@ -9,17 +9,17 @@ See: .planning/PROJECT.md (updated 2026-02-18)
 
 ## Current Position
 
-Phase: 34 (Live Currency Formatting) — COMPLETE
-Plan: 34-05 complete — Human-verified end-to-end confirmation that all 7 currency fields format as $X,XXX.XX on blur; FORM-01 closed
-Status: Phase 34 complete. All 5 plans executed (34-01 through 34-05). All 7 currency input fields now format as $X,XXX.XX on blur — user-verified in running app.
-Last activity: 2026-02-18 — Quick task 28: slate-blue primary buttons + avatar; round checkboxes with bold slate-blue checkmark
+Phase: 35 (Subcontractors in Global Search) — IN PROGRESS
+Plan: 35-01 complete — Subcontractor records added to global command palette search (shared Zod enum, API router query, UI CommandGroup with Building2 icon)
+Status: Phase 35 plan 01 complete. SRCH-03 satisfied — users can now search subcontractors via ⌘K palette alongside projects, customers, and estimates.
+Last activity: 2026-02-18 — Phase 35-01: subcontractors in global search
 
-Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████░░░░] ~30%
+Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [███████░░░] ~35%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 112
+- Total plans completed: 113
 - Average duration: 4.3 min
 - Total execution time: ~9.0 hours
 
@@ -42,6 +42,7 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 | 32 | 2 | ~20 min (incl. human verify) | ~10 min |
 | 33 | 2 | ~4 min | ~2 min |
 | 34 | 5 | ~18 min | ~3.6 min |
+| 35 | 1 | ~2 min | ~2 min |
 
 **Recent Trend:**
 - Last 5 plans: 34-05 (~5 min human verify), 34-04 (~5 min), 34-03 (~5 min est), 34-02 (~5 min), 34-01 (~3 min)
@@ -60,6 +61,7 @@ Decisions are logged in PROJECT.md Key Decisions table (full log, 29 phases).
 - 34-03: adjustmentAmount optional semantics preserved via n===0 ? undefined : n mapping in onChange — CurrencyInput returns 0 when cleared, maps to undefined for mutation; parseCurrencyInput not needed after refactor
 - 34-02: RHF Controller pattern used for CurrencyInput fields — Controller wraps CurrencyInput; field.onChange(n) stores numeric value; valueAsNumber not usable with type=text inputs
 - 34-01: CurrencyInput uses type="text" inputMode="decimal" + isFocusedRef; raw number shown on focus, $X,XXX.XX formatted on blur; parseCurrencyInput strips $, commas, whitespace via regex
+- 35-01: Zod enum in shared package updated first (before API/web) so TypeScript accepts `type: "subcontractor" as const`; isNotNull(slug) filter on subcontractorDirectory prevents null URL construction
 - 34: FORM-01 changed from live-as-you-type to format-on-blur — live masking (use-mask-input) was tried and reverted; format-on-blur (onBlur handler with Intl.NumberFormat) is the chosen approach
 - 33-01: Company selector merged into UserMenu (trpc.organization.list.useQuery + opacity Check icon pattern); CompanySwitcher deleted; top bar simplified to Search → Bell → UserMenu
 - 30-01: Used Next.js `title.template` object so child pages inherit "Page | BIDAXIOM" without per-page changes
@@ -91,5 +93,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 34-05-PLAN.md — FORM-01 satisfied; Phase 34 fully closed
+Stopped at: Completed 35-01-PLAN.md — SRCH-03 satisfied; subcontractors added to global ⌘K search
 Resume file: None
