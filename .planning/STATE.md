@@ -57,6 +57,7 @@ Decisions are logged in PROJECT.md Key Decisions table (full log, 29 phases).
 
 **v1.4 decisions:**
 - 34-04: SOVLineItemCard CurrencyInput onChange fires on blur — all state updates handled inline in onChange; no separate onBlur needed; isCurrency opt-in prop on EditableCell routes unitCost through CurrencyInput while quantity and customMarkupPercent remain plain number inputs
+- 34-03: adjustmentAmount optional semantics preserved via n===0 ? undefined : n mapping in onChange — CurrencyInput returns 0 when cleared, maps to undefined for mutation; parseCurrencyInput not needed after refactor
 - 34-02: RHF Controller pattern used for CurrencyInput fields — Controller wraps CurrencyInput; field.onChange(n) stores numeric value; valueAsNumber not usable with type=text inputs
 - 34-01: CurrencyInput uses type="text" inputMode="decimal" + isFocusedRef; raw number shown on focus, $X,XXX.XX formatted on blur; parseCurrencyInput strips $, commas, whitespace via regex
 - 34: FORM-01 changed from live-as-you-type to format-on-blur — live masking (use-mask-input) was tried and reverted; format-on-blur (onBlur handler with Intl.NumberFormat) is the chosen approach
@@ -82,5 +83,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 34-04-PLAN.md — SOVLineItemCard and EstimateLineItemsTable inline currency formatting done; Phase 34 complete (all 4 plans)
+Stopped at: Completed 34-03-PLAN.md — CurrencyInput in budget-line-item-table (budgetedAmount), sov-editor (scheduledValue), bid-comparison-table (adjustmentAmount with optional semantics); Phase 34 plan 3 of 4 done
 Resume file: None
