@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-17)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.3 Polish & Gap Closure — Phase 27 (next phase)
+**Current focus:** v1.3 Polish & Gap Closure — Phase 28 (next phase)
 
 ## Current Position
 
-Phase: 27 of 29 in v1.3 (Slug Routing Completion) — In progress
-Plan: 2 of 3 in Phase 27 — Plans 27-01 and 27-02 complete
-Status: Phase 27 in progress; 27-02 complete (2026-02-18)
-Last activity: 2026-02-18 — Completed 27-02: SubcontractorForm onSuccess threads slug for post-rename navigation
+Phase: 28 of 29 in v1.3 (Search & Dashboard Enhancements) — Ready for planning
+Plan: 0 of TBD in Phase 28 — Not started
+Status: Phase 27 complete (verified 2026-02-17); Phase 28 ready for planning
+Last activity: 2026-02-17 — Completed Phase 27: slug routing for customers and subcontractors; fixed UUID prefix bug in slug generation
 
-Progress: v1.0: [██████████] 100% (12 phases) | v1.1: [██████████] 100% (7 phases) | v1.2: [██████████] 100% (5 phases) | v1.3: [████░░░░░░] ~40% (2/5 phases complete)
+Progress: v1.0: [██████████] 100% (12 phases) | v1.1: [██████████] 100% (7 phases) | v1.2: [██████████] 100% (5 phases) | v1.3: [██████░░░░] ~60% (3/5 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 102
-- Average duration: 4.5 min
-- Total execution time: ~8.75 hours
+- Total plans completed: 105
+- Average duration: 4.4 min
+- Total execution time: ~8.97 hours
 
 **By Phase:**
 
@@ -34,10 +34,11 @@ Progress: v1.0: [██████████] 100% (12 phases) | v1.1: [█�
 | 24 | 2 | ~6 min | ~3 min |
 | 25 | 3 | ~11 min | ~3.7 min |
 | 26 | 3 | ~40 min | ~13 min |
+| 27 | 3 | ~13 min | ~4.3 min |
 
 **Recent Trend:**
-- Last 5 plans: 26-03 (~30 min, 5 bugs fixed), 26-02 (8 min), 26-01 (2 min), 25-03 (~5 min UAT), 25-02 (3 min)
-- Trend: Phase 26 took longer due to 5 auto-corrected bugs during plan 03 execution
+- Last 5 plans: 27-03 (~5 min UAT + slug fix), 27-02 (3 min), 27-01 (5 min), 26-03 (~30 min), 26-02 (8 min)
+- Trend: Phase 27 was lean — 2 plans executed in parallel, UAT surfaced one slug format bug fixed inline
 
 *Updated after each plan completion*
 
@@ -48,7 +49,8 @@ Progress: v1.0: [██████████] 100% (12 phases) | v1.1: [█�
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- **Slug-based routing (Phases 16-19)**: Partial — projects done, customers/subs still on UUID routes (Phase 27 completes this)
+- **Slug-based routing (Phases 16-27)**: Complete — projects, customers, and subcontractors all use human-readable slug URLs
+- **generateNameSlug vs generateSlug (Phase 27)**: Customers and subcontractors use name-only slugs (no UUID prefix); projects continue using job-number prefix via generateProjectSlug. The UUID prefix pattern was a uniqueness mechanism that produced ugly URLs — removed in favor of clean name slugs.
 - **Custom auth over Clerk (Phase 12)**: JWT + MFA working well; session expiry handling gap closed by Phase 25 (SESS-01 + SESS-02 complete)
 - **Iron-session for encrypted stateless cookies**: 7-day maxAge matching refresh token TTL — expiry detection needed client-side
 - **startingSequenceNumber (Phase 24)**: Year rollover resets to configurable start; counter increment on manual edit-page change is tech debt (JOBEDIT-01, Phase 29)
@@ -74,6 +76,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-18
-Stopped at: Completed 27-02 — SubcontractorForm post-rename slug navigation; 27-03 is next
+Last session: 2026-02-17
+Stopped at: Completed Phase 27 — all 3 plans done, UAT passed (10/10), slug UUID prefix bug fixed
 Resume file: None
