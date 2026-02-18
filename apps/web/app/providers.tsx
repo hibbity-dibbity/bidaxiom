@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, QueryCache } from "@tanstack/react-query";
 import { httpBatchLink } from "@trpc/react-query";
 import { trpc } from "@/lib/trpc";
 import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import { AbilityContext, defineAbilitiesFor } from "@/lib/abilities";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { ThemeProvider } from "@/components/providers/theme-provider";
@@ -23,6 +24,13 @@ function TrpcAndAbilityProvider({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
     () =>
       new QueryClient({
+        queryCache: new QueryCache({
+          onError: (error) => {
+            toast.error("Failed to load data", {
+              description: error instanceof Error ? error.message : "An unexpected error occurred",
+            });
+          },
+        }),
         defaultOptions: {
           queries: {
             staleTime: 5 * 60 * 1000,
