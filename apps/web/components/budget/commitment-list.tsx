@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, FileText } from "lucide-react";
 import { CSI_DIVISIONS } from "@construction/shared";
 import type { CommitmentType, CommitmentStatus } from "@construction/shared";
 
@@ -113,13 +113,23 @@ export function CommitmentList({ projectId }: CommitmentListProps) {
       </div>
 
       {!filteredCommitments || filteredCommitments.length === 0 ? (
-        <div className="text-center py-12 border rounded-lg border-dashed">
-          <p className="text-muted-foreground">
-            {typeFilter !== "all" || statusFilter !== "all"
-              ? "No commitments match the selected filters"
-              : "No commitments yet"}
-          </p>
-        </div>
+        typeFilter !== "all" || statusFilter !== "all" ? (
+          <div className="text-center py-12 border rounded-lg border-dashed">
+            <p className="text-muted-foreground">No commitments match the selected filters</p>
+          </div>
+        ) : (
+          <div className="text-center py-12 border rounded-lg border-dashed">
+            <div className="flex flex-col items-center gap-3">
+              <div className="rounded-full bg-muted p-3">
+                <FileText className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg">No commitments yet</h3>
+                <p className="text-sm text-muted-foreground mt-1">Subcontracts and purchase orders will appear here</p>
+              </div>
+            </div>
+          </div>
+        )
       ) : (
         <div className="space-y-3">
           {filteredCommitments.map((commitment) => {

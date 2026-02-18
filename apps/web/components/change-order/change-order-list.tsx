@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus } from "lucide-react";
+import { Plus, FilePlus } from "lucide-react";
 import type { ChangeOrderStatus, ChangeOrderType } from "@construction/shared";
 
 interface ChangeOrderListProps {
@@ -124,13 +124,27 @@ export function ChangeOrderList({ projectId, projectSlug }: ChangeOrderListProps
       </div>
 
       {!changeOrders || changeOrders.length === 0 ? (
-        <div className="text-center py-12 border rounded-lg border-dashed">
-          <p className="text-muted-foreground">
-            {statusFilter !== "all" || typeFilter !== "all"
-              ? "No change orders match the selected filters"
-              : "No change orders yet. Create your first change order above."}
-          </p>
-        </div>
+        statusFilter !== "all" || typeFilter !== "all" ? (
+          <div className="text-center py-12 border rounded-lg border-dashed">
+            <p className="text-muted-foreground">No change orders match the selected filters</p>
+          </div>
+        ) : (
+          <div className="text-center py-12 border rounded-lg border-dashed">
+            <div className="flex flex-col items-center gap-3">
+              <div className="rounded-full bg-muted p-3">
+                <FilePlus className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg">No change orders yet</h3>
+                <p className="text-sm text-muted-foreground mt-1">Track scope changes and amendments to the original contract</p>
+              </div>
+              <Button onClick={handleNavigateToNew}>
+                <Plus className="h-4 w-4 mr-2" />
+                New Change Order
+              </Button>
+            </div>
+          </div>
+        )
       ) : (
         <div className="space-y-3">
           {changeOrders.map((co) => (

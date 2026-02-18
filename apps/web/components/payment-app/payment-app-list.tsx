@@ -21,7 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, AlertTriangle } from "lucide-react";
+import { Plus, AlertTriangle, Receipt } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface PaymentAppListProps {
@@ -235,13 +235,29 @@ export function PaymentAppList({ projectId, projectSlug }: PaymentAppListProps) 
           </CardContent>
         </Card>
       ) : (
-        <Card>
-          <CardContent className="py-8">
-            <p className="text-center text-muted-foreground">
-              No payment applications yet
-            </p>
-          </CardContent>
-        </Card>
+        <div className="text-center py-12 border rounded-lg border-dashed">
+          <div className="flex flex-col items-center gap-3">
+            <div className="rounded-full bg-muted p-3">
+              <Receipt className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-lg">No payment applications yet</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                {hasSovItems
+                  ? "Create your first payment application to begin billing"
+                  : "Set up a Schedule of Values before creating payment applications"}
+              </p>
+            </div>
+            {hasSovItems && (
+              <Button asChild>
+                <Link href={`/projects/${projectSlug}/payment-apps/new`}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  New Payment Application
+                </Link>
+              </Button>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
