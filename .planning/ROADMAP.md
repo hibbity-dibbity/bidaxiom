@@ -77,7 +77,7 @@
 - [x] **Phase 25: Session & Auth Flow** - Immediate redirect on session expiry; return URL after sign-in (completed 2026-02-17)
 - [x] **Phase 26: Account Settings & Shell Cleanup** - Consolidated /settings/account page; static sidebar (completed 2026-02-17)
 - [x] **Phase 27: Slug Routing Completion** - Customer and subcontractor detail/edit pages on slug URLs (completed 2026-02-17)
-- [ ] **Phase 28: Search & Dashboard Enhancements** - Estimates in global search; dashboard KPI click-through with pre-filtering
+- [x] **Phase 28: Search & Dashboard Enhancements** - Estimates in global search; dashboard KPI click-through with pre-filtering (completed 2026-02-18)
 - [ ] **Phase 29: UX Polish & Tech Debt** - Empty states, loading states, consistent error toasts, job number counter on edit
 
 ### Phase Details
@@ -162,5 +162,5 @@ Plans:
 | 25 | ✅ Complete | 3/3 | 2026-02-17 |
 | 26 | ✅ Complete | 3/3 | 2026-02-17 |
 | 27 | ✅ Complete | 3/3 | 2026-02-17 |
-| 28 | ⬜ Not started | 3 planned | — |
+| 28 | ⬜ Not started | Complete    | 2026-02-18 |
 | 29 | ⬜ Not started | TBD | — |
