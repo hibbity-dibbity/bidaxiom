@@ -9,10 +9,10 @@
 
 ### Branding
 
-- [ ] **BRAND-01**: All site labels, navigation text, and copy reference "BIDAXIOM" (replacing any prior brand name references throughout the app)
-- [ ] **BRAND-02**: Browser/tab page titles use format "{Page Name} | BIDAXIOM" across all pages and routes
+- [x] **BRAND-01**: All site labels, navigation text, and copy reference "BIDAXIOM" (replacing any prior brand name references throughout the app)
+- [x] **BRAND-02**: Browser/tab page titles use format "{Page Name} | BIDAXIOM" across all pages and routes
 - [ ] **BRAND-03**: Color palette updated to match BIDAXIOM logo colors — palette extracted from logo, reviewed by user, then applied to Tailwind config and CSS variables
-- [ ] **BRAND-04**: Sign-in page logo is rendered 25% smaller than its current size with 25px of additional bottom padding below the logo
+- [x] **BRAND-04**: Sign-in page logo is rendered 25% smaller than its current size with 25px of additional bottom padding below the logo
 
 ### Design System
 
@@ -32,7 +32,7 @@
 
 ### Cleanup
 
-- [ ] **CLEAN-01**: Version number display and the horizontal divider rule above it are removed from the left sidebar
+- [x] **CLEAN-01**: Version number display and the horizontal divider rule above it are removed from the left sidebar
 
 ## Out of Scope
 
@@ -49,10 +49,10 @@ Items explicitly excluded from v1.4:
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BRAND-01 | Phase 30 | Pending |
-| BRAND-02 | Phase 30 | Pending |
-| BRAND-04 | Phase 30 | Pending |
-| CLEAN-01 | Phase 30 | Pending |
+| BRAND-01 | Phase 30 | Complete |
+| BRAND-02 | Phase 30 | Complete |
+| BRAND-04 | Phase 30 | Complete |
+| CLEAN-01 | Phase 30 | Complete |
 | BRAND-03 | Phase 31 | Pending |
 | DESIGN-01 | Phase 32 | Pending |
 | NAV-02 | Phase 33 | Pending |
