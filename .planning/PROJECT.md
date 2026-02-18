@@ -94,7 +94,20 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 
 ### Active
 
-<!-- Next milestone to be defined. Run /gsd:new-milestone to start v1.5 planning. -->
+<!-- v1.5 Project Lifecycle Redesign & Document Engine -->
+
+**Milestone v1.5: Project Lifecycle Redesign & Document Engine** (Started: 2026-02-18)
+
+**Goal:** Replace the current flat project status model with a 9-phase state machine (Opportunity → Estimating → Submitted → Awarded → Active → Substantial Completion → Closed → Warranty → Archived), add Simple vs GC complexity modes, generate professional PDF documents from within the app, redesign the document management system, and add project deletion.
+
+**Target features:**
+- 9-phase project lifecycle state machine with full auto-advance on key system events
+- Simple mode (lump sum/draws/T&M) vs GC/Advanced mode (CSI + SOV + sub management) toggle at project creation
+- Project deletion with confirmation dialog and safeguards (prevent deletion for Awarded/Active/etc. projects)
+- PDF generation for proposals/estimates, change orders, invoices/pay apps, and RFQs with company-branded default templates
+- Document naming convention system in Company Profile (static text + job number + incremental counter)
+- Custom PDF/Word/Excel template import with visual field mapping
+- Document system redesign: flat table view with metadata filters, replacing the current folder/tab structure
 
 ### Out of Scope
 
@@ -167,4 +180,4 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 | Slug backfill migration required for subcontractor search (Phase 35) | isNotNull filter excludes null slugs; add-entity-slugs.ts one-time migration resolves it | ✓ Good |
 
 ---
-*Last updated: 2026-02-18 — v1.4 milestone complete*
+*Last updated: 2026-02-18 — v1.5 milestone started*
