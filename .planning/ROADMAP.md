@@ -151,7 +151,12 @@ Plans:
   2. All data-fetching views show a skeleton loader or spinner during fetches rather than blank content areas
   3. API errors across the app surface as toast notifications with actionable messages rather than silent failures or unformatted console errors
   4. When a user manually types a job number on the edit project page and saves, the company's auto-generation counter is updated so the next auto-generated number does not conflict
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 29-01-PLAN.md — Add QueryCache global error handler to providers.tsx (UX-03)
+- [ ] 29-02-PLAN.md — Add job number counter-advance logic to project.update (JOBEDIT-01)
+- [ ] 29-03-PLAN.md — Upgrade empty states and skeleton loading across 4 frontend components (UX-01, UX-02)
+- [ ] 29-04-PLAN.md — Browser UAT verification of UX-01, UX-02, UX-03, JOBEDIT-01
 
 ---
 
@@ -163,4 +168,4 @@ Plans:
 | 26 | ✅ Complete | 3/3 | 2026-02-17 |
 | 27 | ✅ Complete | 3/3 | 2026-02-17 |
 | 28 | ⬜ Not started | Complete    | 2026-02-18 |
-| 29 | ⬜ Not started | TBD | — |
+| 29 | ⬜ Not started | 4 plans | — |
