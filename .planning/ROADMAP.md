@@ -144,7 +144,10 @@ Plans:
   1. Opening the user dropdown reveals a company selector section below Account Settings, listing all companies the user belongs to
   2. Clicking a different company switches the active tenant context and the UI reflects the new company's data
   3. A "Create new company" option is present and navigates to the company creation flow
-**Plans:** TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 33-01-PLAN.md — Add company selector to UserMenu + remove CompanySwitcher from top bar (3 files)
+- [ ] 33-02-PLAN.md — Human verification checkpoint (0 files)
 
 #### Phase 34: Live Currency Formatting
 **Goal:** Every currency and amount field in the app formats itself to US dollar notation in real time as the user types, with no manual formatting required.
@@ -179,6 +182,6 @@ Plans:
 | 30. Brand Identity & Sidebar Cleanup | v1.4 | Complete    | 2026-02-18 | - |
 | 31. Color Palette | v1.4 | Complete    | 2026-02-18 | - |
 | 32. Flat Design System | v1.4 | Complete    | 2026-02-18 | - |
-| 33. Company Selector in User Dropdown | v1.4 | 0/? | Not started | - |
+| 33. Company Selector in User Dropdown | v1.4 | 0/2 | Not started | - |
 | 34. Live Currency Formatting | v1.4 | 0/? | Not started | - |
 | 35. Subcontractors in Global Search | v1.4 | 0/? | Not started | - |
