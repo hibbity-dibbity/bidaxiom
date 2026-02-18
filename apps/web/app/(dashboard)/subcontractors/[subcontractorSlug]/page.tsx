@@ -295,7 +295,16 @@ export default function SubcontractorDetailPage({ params }: { params: { subcontr
               trades: subcontractor.trades,
               notes: subcontractor.notes,
             }}
-            onSuccess={() => setIsEditing(false)}
+            onSuccess={(updated) => {
+              setIsEditing(false);
+              // If slug regenerated due to name change, navigate to new URL
+              if (updated?.slug && updated.slug !== params.subcontractorSlug) {
+                router.replace(`/subcontractors/${updated.slug}`);
+              } else {
+                // Refresh data for the current slug
+                utils.subcontractor.getBySlug.invalidate({ slug: params.subcontractorSlug });
+              }
+            }}
           />
         </DialogContent>
       </Dialog>

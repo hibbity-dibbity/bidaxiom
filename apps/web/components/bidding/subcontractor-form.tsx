@@ -32,7 +32,7 @@ interface SubcontractorFormProps {
     state?: string | null;
     zip?: string | null;
   };
-  onSuccess?: () => void;
+  onSuccess?: (updated?: { slug: string; id: string }) => void;
 }
 
 export function SubcontractorForm({ mode, defaultValues, onSuccess }: SubcontractorFormProps) {
@@ -74,12 +74,12 @@ export function SubcontractorForm({ mode, defaultValues, onSuccess }: Subcontrac
   });
 
   const updateMutation = trpc.subcontractor.update.useMutation({
-    onSuccess: () => {
+    onSuccess: (updated) => {
       utils.subcontractor.list.invalidate();
       utils.subcontractor.getById.invalidate();
       toast.success("Subcontractor updated successfully");
       if (onSuccess) {
-        onSuccess();
+        onSuccess(updated as { slug: string; id: string });
       }
     },
     onError: (error) => {
