@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-18)
 ## Current Position
 
 Phase: 34 (Live Currency Formatting) — COMPLETE
-Plan: 34-04 complete — CurrencyInput wired into SOVLineItemCard amount and EstimateLineItemsTable unitCost column via isCurrency prop
-Status: Phase 34 complete. All 4 plans executed (34-01 through 34-04). All 7 currency input fields now format as $X,XXX.XX on blur.
-Last activity: 2026-02-18 — Plan 34-04 complete; SOVLineItemCard and EstimateLineItemsTable inline currency formatting done
+Plan: 34-05 complete — Human-verified end-to-end confirmation that all 7 currency fields format as $X,XXX.XX on blur; FORM-01 closed
+Status: Phase 34 complete. All 5 plans executed (34-01 through 34-05). All 7 currency input fields now format as $X,XXX.XX on blur — user-verified in running app.
+Last activity: 2026-02-18 — Plan 34-05 complete; FORM-01 satisfied via human verification checkpoint
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████░░░░] ~30%
 
@@ -41,11 +41,11 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 | 31 | 2 | ~35 min (incl. human review) | ~17.5 min |
 | 32 | 2 | ~20 min (incl. human verify) | ~10 min |
 | 33 | 2 | ~4 min | ~2 min |
-| 34 | 4 | ~13 min | ~3.3 min |
+| 34 | 5 | ~18 min | ~3.6 min |
 
 **Recent Trend:**
-- Last 5 plans: 34-04 (~5 min), 34-03 (~5 min est), 34-02 (~5 min), 34-01 (~3 min), 33-02 (~2 min human verify)
-- Trend: Phase 34 complete — all 7 currency fields formatted; SOV amounts and unit costs now show $X,XXX.XX on blur
+- Last 5 plans: 34-05 (~5 min human verify), 34-04 (~5 min), 34-03 (~5 min est), 34-02 (~5 min), 34-01 (~3 min)
+- Trend: Phase 34 fully closed — all 5 plans done; all 7 currency fields formatted and user-verified; FORM-01 satisfied
 
 *Updated after each plan completion*
 
@@ -83,5 +83,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: 34-05-PLAN.md Task 1 complete — pre-flight checks passed (TS errors pre-existing, not in currency files; use-mask-input only in phone-input; all 7 currency fields confirmed); awaiting human-verify checkpoint (Task 2)
+Stopped at: Completed 34-05-PLAN.md — FORM-01 satisfied; Phase 34 fully closed
 Resume file: None
