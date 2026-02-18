@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-17)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.3 Polish & Gap Closure — Phase 28 (in progress)
+**Current focus:** v1.3 Polish & Gap Closure — Phase 29 (in progress)
 
 ## Current Position
 
-Phase: 28 of 29 in v1.3 (Search & Dashboard Enhancements) — In progress
-Plan: 2 of 3 in Phase 28 — Plan 28-02 complete
-Status: Phase 28 in progress; Plans 28-01 and 28-02 complete (2026-02-18)
-Last activity: 2026-02-18 — Completed Plan 28-02: dashboard KPI widget onClick navigation handlers
+Phase: 29 of 29 in v1.3 (UX Polish & Tech Debt) — In progress
+Plan: 1 of 4 in Phase 29 — Plan 29-01 complete
+Status: Phase 29 in progress; Plan 29-01 complete (2026-02-18)
+Last activity: 2026-02-18 — Completed Plan 29-01: global QueryCache.onError handler for tRPC query error toasts
 
-Progress: v1.0: [██████████] 100% (12 phases) | v1.1: [██████████] 100% (7 phases) | v1.2: [██████████] 100% (5 phases) | v1.3: [██████░░░░] ~65% (3/5 phases + 2/3 plans in Phase 28)
+Progress: v1.0: [██████████] 100% (12 phases) | v1.1: [██████████] 100% (7 phases) | v1.2: [██████████] 100% (5 phases) | v1.3: [████████░░] ~80% (4/5 phases + 1/4 plans in Phase 29)
 
 ## Performance Metrics
 
@@ -35,11 +35,12 @@ Progress: v1.0: [██████████] 100% (12 phases) | v1.1: [█�
 | 25 | 3 | ~11 min | ~3.7 min |
 | 26 | 3 | ~40 min | ~13 min |
 | 27 | 3 | ~13 min | ~4.3 min |
-| 28 | 2 (of 3) | ~10 min | ~5 min |
+| 28 | 3 | ~12 min | ~4 min |
+| 29 | 1 (of 4) | ~3 min | ~3 min |
 
 **Recent Trend:**
-- Last 5 plans: 28-02 (~2 min), 28-01 (~8 min), 27-03 (~5 min UAT + slug fix), 27-02 (3 min), 27-01 (5 min)
-- Trend: Phase 28 plans are surgical — no deviations, fast execution
+- Last 5 plans: 29-01 (~3 min), 28-02 (~2 min), 28-01 (~8 min), 27-03 (~5 min UAT + slug fix), 27-02 (3 min)
+- Trend: Phase 29 plans are surgical UX polish — no deviations, fast execution
 
 *Updated after each plan completion*
 
@@ -71,6 +72,8 @@ Recent decisions affecting current work:
 - **Customer search URL: c.slug not c.id (Phase 28)**: Customer results in global search now navigate to /customers/{slug} matching the slug-based routing from Phase 27; was previously using UUID producing 404s
 - **EstimatingPipeline no onClick (Phase 28)**: Placeholder data (always 0), no top-level estimates list page exists yet — widget intentionally left non-clickable
 - **MyTodo no onClick (Phase 28)**: Spans 3 sub-resource types (change orders, pay apps, workflows) with no unified inbox page — no clean single navigation target
+- **QueryCache.onError not defaultOptions.queries.onError (Phase 29)**: v5 react-query API; defaultOptions.queries.onError silently no-ops in v5. QueryCache.onError is the correct global catch for query failures.
+- **No MutationCache.onError in global handler (Phase 29)**: Mutations already handle errors via per-mutation onError callbacks; adding global mutation handler would double-toast every failure
 
 ### Pending Todos
 
@@ -83,5 +86,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed Plan 28-02 — dashboard KPI widget onClick navigation; Phase 28 in progress (2/3 plans done)
+Stopped at: Completed Plan 29-01 — global QueryCache.onError handler for tRPC query error toasts; Phase 29 in progress (1/4 plans done)
 Resume file: None
