@@ -5,15 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-18)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** Planning v1.4 — run `/gsd:new-milestone` to define requirements and roadmap
+**Current focus:** v1.4 Rebranding & UX Upgrades — defining roadmap
 
 ## Current Position
 
-Milestone: v1.3 Polish & Gap Closure — COMPLETE (shipped 2026-02-18)
-Status: v1.3 archived; REQUIREMENTS.md deleted; git tag v1.3 pending; ready for v1.4 planning
-Last activity: 2026-02-18 — v1.3 milestone archived (roadmap, requirements, audit, MILESTONES.md, PROJECT.md all updated)
+Phase: Not started (defining roadmap)
+Plan: —
+Status: Requirements defined; spawning roadmapper
+Last activity: 2026-02-18 — Milestone v1.4 started; 9 requirements defined across BRAND, DESIGN, NAV, FORM, SRCH, CLEAN
 
-Progress: v1.0: [██████████] 100% (12 phases) | v1.1: [██████████] 100% (7 phases) | v1.2: [██████████] 100% (5 phases) | v1.3: [██████████] 100% (5/5 phases, 16/16 plans)
+Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 

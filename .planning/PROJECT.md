@@ -82,9 +82,20 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 
 ### Active
 
-<!-- v1.4 — not yet defined. Run /gsd:new-milestone to define next milestone. -->
+<!-- v1.4 Rebranding & UX Upgrades -->
 
-(No active requirements — planning next milestone)
+**Milestone v1.4: Rebranding & UX Upgrades** (Started: 2026-02-18)
+
+**Goal:** Rebrand the platform to BIDAXIOM with a new color palette, flatten the card design system, add live currency formatting to all amount fields, add company selector to user dropdown, include subcontractors in global search, and clean up the sidebar.
+
+**Target features:**
+- BIDAXIOM branding throughout (labels, page titles, color palette from logo)
+- Sign-in logo resized (25% smaller, extra padding)
+- Flat design system — sharp corners, no borders, no shadows on cards
+- Company selector + Create new company in user dropdown
+- Live US currency formatting on all amount input fields
+- Subcontractors in global search (⌘K)
+- Remove version number + divider from sidebar
 
 ### Out of Scope
 
@@ -150,4 +161,4 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 | Uniqueness check inside db.transaction (Phase 29) | Load-compare-write has race window; transaction eliminates it | ✓ Good |
 
 ---
-*Last updated: 2026-02-18 after v1.3 milestone*
+*Last updated: 2026-02-18 — started v1.4 milestone*
