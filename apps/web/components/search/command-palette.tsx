@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, createContext, useContext } from "react";
 import { useRouter } from "next/navigation";
-import { Search, FileText, User, Loader2 } from "lucide-react";
+import { Search, FileText, User, Loader2, Calculator } from "lucide-react";
 import {
   CommandDialog,
   CommandEmpty,
@@ -161,6 +161,29 @@ function CommandPalette({ open, setOpen }: CommandPaletteProps) {
                   </CommandItem>
                 ))}
             </CommandGroup>
+            {results.some((r) => r.type === "estimate") && (
+              <CommandGroup heading="Estimates">
+                {results
+                  .filter((r) => r.type === "estimate")
+                  .map((result) => (
+                    <CommandItem
+                      key={result.id}
+                      value={result.title}
+                      onSelect={() => handleSelect(result.url)}
+                    >
+                      <Calculator className="mr-2 h-4 w-4" />
+                      <div className="flex flex-col">
+                        <span>{result.title}</span>
+                        {result.subtitle && (
+                          <span className="text-xs text-muted-foreground">
+                            {result.subtitle}
+                          </span>
+                        )}
+                      </div>
+                    </CommandItem>
+                  ))}
+              </CommandGroup>
+            )}
           </>
         )}
       </CommandList>
