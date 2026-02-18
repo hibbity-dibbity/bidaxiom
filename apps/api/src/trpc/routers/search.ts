@@ -1,7 +1,7 @@
 import { router } from "../trpc.js";
 import { authorizedProcedure } from "../procedures.js";
 import { globalSearchInputSchema } from "@construction/shared";
-import { ilike, or } from "drizzle-orm";
+import { ilike, or, and, isNotNull, eq } from "drizzle-orm";
 
 export const searchRouter = router({
   global: authorizedProcedure
@@ -15,7 +15,7 @@ export const searchRouter = router({
         throw new Error("Tenant context missing");
       }
 
-      const { projects, customers } = ctx.tenant.schema;
+      const { projects, customers, estimates } = ctx.tenant.schema;
 
       // Search projects (job number, name)
       const projectResults = await ctx.tenant.db
@@ -41,12 +41,33 @@ export const searchRouter = router({
           id: customers.id,
           companyName: customers.companyName,
           contactName: customers.contactName,
+          slug: customers.slug,
         })
         .from(customers)
         .where(
           or(
             ilike(customers.companyName, searchPattern),
             ilike(customers.contactName, searchPattern)
+          )
+        )
+        .limit(limit);
+
+      // Search estimates (name), joined with projects for URL construction
+      const estimateResults = await ctx.tenant.db
+        .select({
+          id: estimates.id,
+          name: estimates.name,
+          status: estimates.status,
+          slug: estimates.slug,
+          projectSlug: projects.slug,
+          projectName: projects.name,
+        })
+        .from(estimates)
+        .innerJoin(projects, eq(estimates.projectId, projects.id))
+        .where(
+          and(
+            ilike(estimates.name, searchPattern),
+            isNotNull(estimates.slug)
           )
         )
         .limit(limit);
@@ -65,7 +86,14 @@ export const searchRouter = router({
           id: c.id,
           title: c.companyName || c.contactName,
           subtitle: c.companyName ? c.contactName : null,
-          url: `/customers/${c.id}`,
+          url: `/customers/${c.slug}`,
+        })),
+        ...estimateResults.map((e) => ({
+          type: "estimate" as const,
+          id: e.id,
+          title: e.name,
+          subtitle: e.projectName,
+          url: `/projects/${e.projectSlug}/estimates/${e.slug}`,
         })),
       ];
 
