@@ -55,13 +55,22 @@ export function AppSidebar() {
     <ShadcnSidebar collapsible="icon" style={{ "--sidebar-width": "12.875rem" } as React.CSSProperties}>
       <SidebarHeader className="h-14 shrink-0 border-b">
         <div className="flex h-full items-center justify-center px-4">
-          {/* Full logo when expanded */}
+          {/* Full logo when expanded — light mode */}
           <Image
-            src="/bidaxiom-logo.png"
+            src="/BIDAXIOM-Logo-Dark-TransparentBG.png"
             alt="BIDAXIOM"
-            width={192}
-            height={32}
-            className="group-data-[collapsible=icon]:hidden dark:invert h-10 w-auto"
+            width={172}
+            height={40}
+            className="group-data-[collapsible=icon]:hidden block dark:hidden h-10 w-auto"
+            priority
+          />
+          {/* Full logo when expanded — dark mode */}
+          <Image
+            src="/BIDAXIOM-Logo-Light-TransparentBG.png"
+            alt="BIDAXIOM"
+            width={172}
+            height={40}
+            className="group-data-[collapsible=icon]:hidden hidden dark:block h-10 w-auto"
             priority
           />
           {/* Collapse/expand trigger when collapsed */}

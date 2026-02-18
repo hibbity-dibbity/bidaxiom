@@ -22,14 +22,24 @@ export function TopBar({ onSearchOpen }: { onSearchOpen?: () => void }) {
         {open && <SidebarTrigger className="-ml-1" />}
         {/* Logo appears here when sidebar is collapsed */}
         {!open && (
-          <Image
-            src="/bidaxiom-logo.png"
-            alt="BIDAXIOM"
-            width={192}
-            height={32}
-            className="dark:invert h-10 w-auto"
-            priority
-          />
+          <>
+            <Image
+              src="/BIDAXIOM-Logo-Dark-TransparentBG.png"
+              alt="BIDAXIOM"
+              width={172}
+              height={40}
+              className="block dark:hidden h-10 w-auto"
+              priority
+            />
+            <Image
+              src="/BIDAXIOM-Logo-Light-TransparentBG.png"
+              alt="BIDAXIOM"
+              width={172}
+              height={40}
+              className="hidden dark:block h-10 w-auto"
+              priority
+            />
+          </>
         )}
       </div>
 

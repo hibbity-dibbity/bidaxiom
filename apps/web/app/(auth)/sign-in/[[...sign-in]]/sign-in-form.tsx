@@ -168,11 +168,19 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
         {/* BIDAXIOM logo */}
         <div className="flex justify-center pb-[25px]">
           <Image
-            src="/bidaxiom-logo.png"
+            src="/BIDAXIOM-Logo-Dark-TransparentBG.png"
             alt="BIDAXIOM"
             width={320}
             height={74}
-            className="mx-auto dark:invert"
+            className="mx-auto block dark:hidden"
+            priority
+          />
+          <Image
+            src="/BIDAXIOM-Logo-Light-TransparentBG.png"
+            alt="BIDAXIOM"
+            width={320}
+            height={74}
+            className="mx-auto hidden dark:block"
             priority
           />
         </div>
@@ -232,11 +240,19 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
       {/* BIDAXIOM logo */}
       <div className="flex justify-center pb-[25px]">
         <Image
-          src="/bidaxiom-logo.png"
+          src="/BIDAXIOM-Logo-Dark-TransparentBG.png"
           alt="BIDAXIOM"
           width={320}
           height={74}
-          className="mx-auto dark:invert"
+          className="mx-auto block dark:hidden"
+          priority
+        />
+        <Image
+          src="/BIDAXIOM-Logo-Light-TransparentBG.png"
+          alt="BIDAXIOM"
+          width={320}
+          height={74}
+          className="mx-auto hidden dark:block"
           priority
         />
       </div>
