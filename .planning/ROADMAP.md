@@ -94,7 +94,7 @@
 - [x] **Phase 30: Brand Identity & Sidebar Cleanup** — Rename all app copy to BIDAXIOM, set page titles, resize sign-in logo, remove version from sidebar (completed 2026-02-18)
 - [x] **Phase 31: Color Palette & Favicon** — Extract palette from BIDAXIOM logo, present for user approval, apply to Tailwind config and CSS variables, set favicon (completed 2026-02-18)
 - [x] **Phase 32: Flat Design System** — Remove border-radius, borders, and drop shadows from all card/panel components app-wide (completed 2026-02-18)
-- [ ] **Phase 33: Company Selector in User Dropdown** — Add company switcher and "Create new company" option below Account Settings in top-nav user menu
+- [x] **Phase 33: Company Selector in User Dropdown** — Add company switcher and "Create new company" option below Account Settings in top-nav user menu (completed 2026-02-18)
 - [ ] **Phase 34: Live Currency Formatting** — All currency/amount inputs reformat to US currency live as user types
 - [ ] **Phase 35: Subcontractors in Global Search** — Add subcontractor results with "Subcontractor" type label to ⌘K search
 
@@ -144,7 +144,7 @@ Plans:
   1. Opening the user dropdown reveals a company selector section below Account Settings, listing all companies the user belongs to
   2. Clicking a different company switches the active tenant context and the UI reflects the new company's data
   3. A "Create new company" option is present and navigates to the company creation flow
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 Plans:
 - [ ] 33-01-PLAN.md — Add company selector to UserMenu + remove CompanySwitcher from top bar (3 files)
 - [ ] 33-02-PLAN.md — Human verification checkpoint (0 files)
@@ -182,6 +182,6 @@ Plans:
 | 30. Brand Identity & Sidebar Cleanup | v1.4 | Complete    | 2026-02-18 | - |
 | 31. Color Palette | v1.4 | Complete    | 2026-02-18 | - |
 | 32. Flat Design System | v1.4 | Complete    | 2026-02-18 | - |
-| 33. Company Selector in User Dropdown | v1.4 | 0/2 | Not started | - |
+| 33. Company Selector in User Dropdown | v1.4 | Complete    | 2026-02-18 | - |
 | 34. Live Currency Formatting | v1.4 | 0/? | Not started | - |
 | 35. Subcontractors in Global Search | v1.4 | 0/? | Not started | - |
