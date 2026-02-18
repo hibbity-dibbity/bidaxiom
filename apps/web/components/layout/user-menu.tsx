@@ -1,7 +1,8 @@
 "use client";
 
 import { useAuth } from "@/lib/auth-context";
-import { LogOut, Settings } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { Check, LogOut, Plus, Settings } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -18,11 +19,13 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
  * Custom user menu replacing Clerk UserButton.
  *
  * Displays user avatar with initials, profile info, and sign-out option.
+ * Includes integrated company selector below Account Settings.
  * Uses custom auth context for user data and logout functionality.
  */
 export function UserMenu() {
-  const { user } = useAuth();
+  const { user, orgId, switchOrg } = useAuth();
   const router = useRouter();
+  const { data: organizations } = trpc.organization.list.useQuery();
 
   // Generate initials from user name or email
   const getInitials = () => {
@@ -49,6 +52,12 @@ export function UserMenu() {
     }
   };
 
+  const handleSwitch = async (newOrgId: string) => {
+    if (newOrgId !== orgId) {
+      await switchOrg(newOrgId);
+    }
+  };
+
   const displayName = user?.firstName && user?.lastName
     ? `${user.firstName} ${user.lastName}`
     : user?.email || "User";
@@ -64,7 +73,7 @@ export function UserMenu() {
           </Avatar>
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
+      <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">{displayName}</p>
@@ -78,6 +87,25 @@ export function UserMenu() {
           <Link href="/settings/account" className="cursor-pointer">
             <Settings className="mr-2 h-4 w-4" />
             <span>Account Settings</span>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        {/* Company selector */}
+        {organizations?.map((org) => (
+          <DropdownMenuItem
+            key={org.id}
+            onClick={() => handleSwitch(org.id)}
+            className="cursor-pointer"
+          >
+            <Check className={`mr-2 h-4 w-4 ${org.id === orgId ? "opacity-100" : "opacity-0"}`} />
+            <span className="truncate">{org.name}</span>
+          </DropdownMenuItem>
+        ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/onboarding" className="cursor-pointer">
+            <Plus className="mr-2 h-4 w-4" />
+            <span>Create new company</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
