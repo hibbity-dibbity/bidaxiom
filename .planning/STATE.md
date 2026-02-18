@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2026-02-18)
 
 ## Current Position
 
-Phase: 31 (Color Palette & Favicon) — COMPLETE
-Plan: 02 complete — Phase 31 fully done
-Status: Both plans complete. globals.css updated with BIDAXIOM brand colors (cyan-teal primary 188 80% 45%/50%, slate-blue body text 210 25% 25%), button.tsx outline variant repointed to brand primary, favicon wired via app/icon.png + layout.tsx metadata.icons. User visually verified all checks.
-Last activity: 2026-02-18 — Plan 31-02 palette applied and favicon set; user typed "verified" at visual checkpoint
+Phase: 32 (Flat Design System) — IN PROGRESS
+Plan: 32-01 complete — Card primitive flattened; hover:bg-muted/50 on interactive cards
+Status: card.tsx base class is "bg-card text-card-foreground" (no rounded-xl/border/shadow). Five interactive card call sites patched. button.tsx, input.tsx, badge.tsx, select.tsx untouched.
+Last activity: 2026-02-18 — Plan 32-01 executed; flat card design applied
 
-Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [████░░░░░░] ~20%
+Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [█████░░░░░] ~25%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 109
+- Total plans completed: 110
 - Average duration: 4.3 min
-- Total execution time: ~8.99 hours
+- Total execution time: ~9.0 hours
 
 **By Phase:**
 
@@ -39,10 +39,11 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 | 29 | 4 | ~10 min + UAT | ~3.3 min (excl. UAT) |
 | 30 | 3 | ~12 min | ~4 min |
 | 31 | 2 | ~35 min (incl. human review) | ~17.5 min |
+| 32 | 1 (so far) | ~5 min | ~5 min |
 
 **Recent Trend:**
-- Last 5 plans: 31-02 (~15 min), 31-01 (~20 min), 30-03 (~4 min), 30-02 (~4 min), 30-01 (~4 min)
-- Trend: Phase 31 included human visual verification checkpoints; execution time higher due to approval gates
+- Last 5 plans: 32-01 (~5 min), 31-02 (~15 min), 31-01 (~20 min), 30-03 (~4 min), 30-02 (~4 min)
+- Trend: Phase 32 Plan 01 was fast surgical CSS class change with zero TypeScript errors introduced
 
 *Updated after each plan completion*
 
@@ -60,6 +61,7 @@ Decisions are logged in PROJECT.md Key Decisions table (full log, 29 phases).
 - 30-03: User prefers plain "BIDAXIOM" in dashboard tabs over "Dashboard | BIDAXIOM" — removed layout-level title, root layout default applies; sign-in retains "Sign In | BIDAXIOM"
 - 31-01: Primary action color = cyan-teal (H=188, 80%, 45%/50%) not slate-blue; slate-blue moves to --foreground for body text in light mode; dark mode primary stays vivid L=50% not L=65%; outline buttons need button.tsx update (border-input→border-primary)
 - 31-02: Outline button variant uses border-primary text-primary (not border-input text-foreground) so secondary actions display in brand cyan-teal; dual favicon: app/icon.png (file-based auto-detection) + metadata.icons (belt-and-suspenders for PWA/bookmarks)
+- 32-01: Card base class: remove tokens entirely (not add rounded-none/shadow-none/border-none) to avoid CSS specificity problems; hover affordance = hover:bg-muted/50 transition-colors (background tint, not shadow) for flat design consistency
 
 ### Pending Todos
 
@@ -72,5 +74,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 31-02-PLAN.md — Phase 31 fully complete; both plans done; user visually verified palette and favicon
+Stopped at: Completed 32-01-PLAN.md — Card primitive flattened, five interactive card call sites patched with hover:bg-muted/50
 Resume file: None
