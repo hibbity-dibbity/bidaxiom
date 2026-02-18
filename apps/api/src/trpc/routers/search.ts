@@ -15,7 +15,7 @@ export const searchRouter = router({
         throw new Error("Tenant context missing");
       }
 
-      const { projects, customers, estimates } = ctx.tenant.schema;
+      const { projects, customers, estimates, subcontractorDirectory } = ctx.tenant.schema;
 
       // Search projects (job number, name)
       const projectResults = await ctx.tenant.db
@@ -72,6 +72,22 @@ export const searchRouter = router({
         )
         .limit(limit);
 
+      // Search subcontractors (company name)
+      const subcontractorResults = await ctx.tenant.db
+        .select({
+          id: subcontractorDirectory.id,
+          companyName: subcontractorDirectory.companyName,
+          slug: subcontractorDirectory.slug,
+        })
+        .from(subcontractorDirectory)
+        .where(
+          and(
+            ilike(subcontractorDirectory.companyName, searchPattern),
+            isNotNull(subcontractorDirectory.slug)
+          )
+        )
+        .limit(limit);
+
       // Transform to SearchResult[]
       const results = [
         ...projectResults.map((p) => ({
@@ -94,6 +110,13 @@ export const searchRouter = router({
           title: e.name,
           subtitle: e.projectName,
           url: `/projects/${e.projectSlug}/estimates/${e.slug}`,
+        })),
+        ...subcontractorResults.map((s) => ({
+          type: "subcontractor" as const,
+          id: s.id,
+          title: s.companyName,
+          subtitle: null,
+          url: `/subcontractors/${s.slug}`,
         })),
       ];
 

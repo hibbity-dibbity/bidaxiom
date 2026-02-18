@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const searchResultSchema = z.object({
-  type: z.enum(["project", "customer", "estimate"]),
+  type: z.enum(["project", "customer", "estimate", "subcontractor"]),
   id: z.string(),
   title: z.string(), // Project name or customer company name
   subtitle: z.string().nullable(), // Job number or customer contact
