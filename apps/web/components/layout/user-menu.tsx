@@ -90,7 +90,10 @@ export function UserMenu() {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        {/* Company selector */}
+        {/* Company selector group */}
+        <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-2 py-1.5">
+          Company
+        </DropdownMenuLabel>
         {organizations?.map((org) => (
           <DropdownMenuItem
             key={org.id}
@@ -101,7 +104,6 @@ export function UserMenu() {
             <span className="truncate">{org.name}</span>
           </DropdownMenuItem>
         ))}
-        <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link href="/onboarding" className="cursor-pointer">
             <Plus className="mr-2 h-4 w-4" />

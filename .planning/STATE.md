@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-02-18)
 Phase: 34 (Live Currency Formatting) — COMPLETE
 Plan: 34-05 complete — Human-verified end-to-end confirmation that all 7 currency fields format as $X,XXX.XX on blur; FORM-01 closed
 Status: Phase 34 complete. All 5 plans executed (34-01 through 34-05). All 7 currency input fields now format as $X,XXX.XX on blur — user-verified in running app.
-Last activity: 2026-02-18 — Quick task 26: restored ThemeToggle (Light/Dark/System) to /settings/account
+Last activity: 2026-02-18 — Quick task 27: grouped company items under "Company" heading in user dropdown
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████░░░░] ~30%
 
@@ -77,6 +77,7 @@ Decisions are logged in PROJECT.md Key Decisions table (full log, 29 phases).
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 26 | restore dark/light/system mode toggle to settings/account page | 2026-02-18 | (see git) | [26-restore-dark-light-system-mode-toggle-to](./quick/26-restore-dark-light-system-mode-toggle-to/) |
+| 27 | redesign user dropdown layout with grouped company section | 2026-02-18 | (see git) | [27-redesign-user-dropdown-layout-with-group](./quick/27-redesign-user-dropdown-layout-with-group/) |
 
 ### Pending Todos
 
