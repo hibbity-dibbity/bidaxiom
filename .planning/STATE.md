@@ -9,17 +9,17 @@ See: .planning/PROJECT.md (updated 2026-02-18)
 
 ## Current Position
 
-Phase: 32 (Flat Design System) — IN PROGRESS
-Plan: 32-01 complete — Card primitive flattened; hover:bg-muted/50 on interactive cards
-Status: card.tsx base class is "bg-card text-card-foreground" (no rounded-xl/border/shadow). Five interactive card call sites patched. button.tsx, input.tsx, badge.tsx, select.tsx untouched.
-Last activity: 2026-02-18 — Plan 32-01 executed; flat card design applied
+Phase: 32 (Flat Design System) — COMPLETE
+Plan: 32-02 complete — Five Tier A custom div panels patched flat; human verified all pages; zero regressions on interactive elements
+Status: Full flat design system applied app-wide. Card primitive flat (Plan 01). All five custom panel files flat (Plan 02). Buttons, inputs, badges, dropdowns unaffected. Phase 32 complete.
+Last activity: 2026-02-18 — Plan 32-02 executed; human verification approved
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [█████░░░░░] ~25%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 110
+- Total plans completed: 111
 - Average duration: 4.3 min
 - Total execution time: ~9.0 hours
 
@@ -39,11 +39,11 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 | 29 | 4 | ~10 min + UAT | ~3.3 min (excl. UAT) |
 | 30 | 3 | ~12 min | ~4 min |
 | 31 | 2 | ~35 min (incl. human review) | ~17.5 min |
-| 32 | 1 (so far) | ~5 min | ~5 min |
+| 32 | 2 | ~20 min (incl. human verify) | ~10 min |
 
 **Recent Trend:**
-- Last 5 plans: 32-01 (~5 min), 31-02 (~15 min), 31-01 (~20 min), 30-03 (~4 min), 30-02 (~4 min)
-- Trend: Phase 32 Plan 01 was fast surgical CSS class change with zero TypeScript errors introduced
+- Last 5 plans: 32-02 (~15 min incl. human verify), 32-01 (~5 min), 31-02 (~15 min), 31-01 (~20 min), 30-03 (~4 min)
+- Trend: Phase 32 complete — flat design system applied app-wide in two surgical plans; zero TypeScript errors introduced across either plan
 
 *Updated after each plan completion*
 
@@ -62,6 +62,7 @@ Decisions are logged in PROJECT.md Key Decisions table (full log, 29 phases).
 - 31-01: Primary action color = cyan-teal (H=188, 80%, 45%/50%) not slate-blue; slate-blue moves to --foreground for body text in light mode; dark mode primary stays vivid L=50% not L=65%; outline buttons need button.tsx update (border-input→border-primary)
 - 31-02: Outline button variant uses border-primary text-primary (not border-input text-foreground) so secondary actions display in brand cyan-teal; dual favicon: app/icon.png (file-based auto-detection) + metadata.icons (belt-and-suspenders for PWA/bookmarks)
 - 32-01: Card base class: remove tokens entirely (not add rounded-none/shadow-none/border-none) to avoid CSS specificity problems; hover affordance = hover:bg-muted/50 transition-colors (background tint, not shadow) for flat design consistency
+- 32-02: Tier B table wrappers deferred (not part of DESIGN-01 scope); chart tooltips and floating overlays intentionally kept rounded (floating UI elements, not card panels); settings Link panels use hover:bg-muted/50 transition-colors to preserve click affordance
 
 ### Pending Todos
 
@@ -74,5 +75,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 32-01-PLAN.md — Card primitive flattened, five interactive card call sites patched with hover:bg-muted/50
+Stopped at: Completed 32-02-PLAN.md — Five Tier A custom panels patched flat; human verification approved; Phase 32 complete
 Resume file: None
