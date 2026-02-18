@@ -13,6 +13,7 @@
 - [x] **BRAND-02**: Browser/tab page titles use format "{Page Name} | BIDAXIOM" across all pages and routes
 - [ ] **BRAND-03**: Color palette updated to match BIDAXIOM logo colors — palette extracted from logo, reviewed by user, then applied to Tailwind config and CSS variables
 - [x] **BRAND-04**: Sign-in page logo is rendered 25% smaller than its current size with 25px of additional bottom padding below the logo
+- [ ] **BRAND-05**: Site icon/favicon is set to the BIDAXIOM icon (`bidaxiom-icon.png`) so the browser tab and bookmarks display the BIDAXIOM icon
 
 ### Design System
 
@@ -54,14 +55,15 @@ Items explicitly excluded from v1.4:
 | BRAND-04 | Phase 30 | Complete |
 | CLEAN-01 | Phase 30 | Complete |
 | BRAND-03 | Phase 31 | Pending |
+| BRAND-05 | Phase 31 | Pending |
 | DESIGN-01 | Phase 32 | Pending |
 | NAV-02 | Phase 33 | Pending |
 | FORM-01 | Phase 34 | Pending |
 | SRCH-03 | Phase 35 | Pending |
 
 **Coverage:**
-- v1.4 requirements: 9 total
-- Mapped to phases: 9/9
+- v1.4 requirements: 10 total
+- Mapped to phases: 10/10
 - Unmapped: 0 ✓
 
 ---

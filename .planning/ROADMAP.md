@@ -92,7 +92,7 @@
 ### Phases
 
 - [x] **Phase 30: Brand Identity & Sidebar Cleanup** — Rename all app copy to BIDAXIOM, set page titles, resize sign-in logo, remove version from sidebar (completed 2026-02-18)
-- [ ] **Phase 31: Color Palette** — Extract palette from BIDAXIOM logo, present for user approval, then apply to Tailwind config and CSS variables
+- [ ] **Phase 31: Color Palette & Favicon** — Extract palette from BIDAXIOM logo, present for user approval, apply to Tailwind config and CSS variables, set favicon
 - [ ] **Phase 32: Flat Design System** — Remove border-radius, borders, and drop shadows from all card/panel components app-wide
 - [ ] **Phase 33: Company Selector in User Dropdown** — Add company switcher and "Create new company" option below Account Settings in top-nav user menu
 - [ ] **Phase 34: Live Currency Formatting** — All currency/amount inputs reformat to US currency live as user types
@@ -111,15 +111,16 @@
   4. The left sidebar shows no version number and no horizontal divider rule above where it was
 **Plans:** 3/3 plans complete
 
-#### Phase 31: Color Palette
-**Goal:** The app's color palette matches the BIDAXIOM logo — extracted programmatically, approved by the user before any code change, then applied globally through Tailwind config and CSS variables.
+#### Phase 31: Color Palette & Favicon
+**Goal:** The app's color palette matches the BIDAXIOM logo — extracted programmatically, approved by the user before any code change, then applied globally through Tailwind config and CSS variables. The BIDAXIOM icon is set as the browser favicon.
 **Depends on:** Phase 30
-**Requirements:** BRAND-03
+**Requirements:** BRAND-03, BRAND-05
 **Success Criteria** (what must be TRUE):
   1. User is presented with the extracted palette (primary, accent, neutral, semantic colors) before any color is changed in the codebase
   2. After user approval, all primary interactive elements (buttons, links, active states) render in the new brand color
   3. After user approval, all CSS custom properties and Tailwind config entries reflect the new palette with no hardcoded legacy color values remaining
   4. The sign-in page, dashboard, and a data-heavy page (e.g., project list) all visually reflect the new palette consistently
+  5. The browser tab and bookmarks display the BIDAXIOM icon (bidaxiom-icon.png) as the favicon
 **Plans:** TBD
 
 #### Phase 32: Flat Design System
