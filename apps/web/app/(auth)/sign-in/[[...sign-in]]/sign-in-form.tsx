@@ -165,13 +165,13 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
   if (mfaRequired) {
     return (
       <div className="space-y-8">
-        {/* BidAxiom logo */}
-        <div className="flex justify-center">
+        {/* BIDAXIOM logo */}
+        <div className="flex justify-center pb-[25px]">
           <Image
             src="/bidaxiom-logo.png"
-            alt="BidAxiom"
-            width={320}
-            height={74}
+            alt="BIDAXIOM"
+            width={240}
+            height={56}
             className="mx-auto dark:invert"
             priority
           />
@@ -229,13 +229,13 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
 
   return (
     <div className="space-y-8">
-      {/* BidAxiom logo */}
-      <div className="flex justify-center">
+      {/* BIDAXIOM logo */}
+      <div className="flex justify-center pb-[25px]">
         <Image
           src="/bidaxiom-logo.png"
-          alt="BidAxiom"
-          width={320}
-          height={74}
+          alt="BIDAXIOM"
+          width={240}
+          height={56}
           className="mx-auto dark:invert"
           priority
         />
