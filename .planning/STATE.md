@@ -9,17 +9,17 @@ See: .planning/PROJECT.md (updated 2026-02-18)
 
 ## Current Position
 
-Phase: 32 (Flat Design System) — COMPLETE
-Plan: 32-02 complete — Five Tier A custom div panels patched flat; human verified all pages; zero regressions on interactive elements
-Status: Full flat design system applied app-wide. Card primitive flat (Plan 01). All five custom panel files flat (Plan 02). Buttons, inputs, badges, dropdowns unaffected. Phase 32 complete.
-Last activity: 2026-02-18 — Plan 32-02 executed; human verification approved
+Phase: 33 (Company Selector in User Dropdown) — IN PROGRESS
+Plan: 33-01 complete — Company selector integrated into UserMenu; CompanySwitcher removed from top bar and deleted
+Status: Plan 33-01 executed. UserMenu now renders org list with Check icon pattern and "Create new company" link. TopBar cleaned to Search → Bell → UserMenu. company-switcher.tsx deleted.
+Last activity: 2026-02-18 — Plan 33-01 executed; TypeScript clean, all verifications passed
 
-Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [█████░░░░░] ~25%
+Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████░░░░] ~30%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 111
+- Total plans completed: 112
 - Average duration: 4.3 min
 - Total execution time: ~9.0 hours
 
@@ -40,10 +40,11 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 | 30 | 3 | ~12 min | ~4 min |
 | 31 | 2 | ~35 min (incl. human review) | ~17.5 min |
 | 32 | 2 | ~20 min (incl. human verify) | ~10 min |
+| 33 | 1 (so far) | ~2 min | ~2 min |
 
 **Recent Trend:**
-- Last 5 plans: 32-02 (~15 min incl. human verify), 32-01 (~5 min), 31-02 (~15 min), 31-01 (~20 min), 30-03 (~4 min)
-- Trend: Phase 32 complete — flat design system applied app-wide in two surgical plans; zero TypeScript errors introduced across either plan
+- Last 5 plans: 33-01 (~2 min), 32-02 (~15 min incl. human verify), 32-01 (~5 min), 31-02 (~15 min), 31-01 (~20 min)
+- Trend: Phase 33 underway — company selector consolidated into UserMenu in 2 min; zero TypeScript errors introduced
 
 *Updated after each plan completion*
 
@@ -54,6 +55,7 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 Decisions are logged in PROJECT.md Key Decisions table (full log, 29 phases).
 
 **v1.4 decisions:**
+- 33-01: Company selector merged into UserMenu (trpc.organization.list.useQuery + opacity Check icon pattern); CompanySwitcher deleted; top bar simplified to Search → Bell → UserMenu
 - 30-01: Used Next.js `title.template` object so child pages inherit "Page | BIDAXIOM" without per-page changes
 - 30-01: Removed `SidebarFooter` block entirely (rather than hiding) to avoid dead code
 - 30-02: Added metadata at layout level so client-component pages (which cannot export metadata per Next.js 14 rules) still get meaningful BIDAXIOM tab titles through inheritance
@@ -75,5 +77,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 32-02-PLAN.md — Five Tier A custom panels patched flat; human verification approved; Phase 32 complete
+Stopped at: Completed 33-01-PLAN.md — Company selector integrated into UserMenu; CompanySwitcher removed from top bar and deleted
 Resume file: None
