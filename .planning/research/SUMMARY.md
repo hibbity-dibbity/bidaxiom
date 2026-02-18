@@ -1,393 +1,364 @@
-# Project Research Summary
+# Research Summary: v1.5 Project Lifecycle Redesign & Document Engine
 
-**Project:** Enterprise UI/UX Enhancement — Construction Management SaaS
-**Domain:** Construction Management Software (Multi-tenant B2B SaaS)
-**Researched:** 2026-02-14
-**Confidence:** HIGH (stack, features, UI/UX pitfalls), MEDIUM (architecture patterns)
+**Project:** BIDAXIOM — Construction Management SaaS
+**Milestone:** v1.5
+**Domain:** Construction SaaS — project lifecycle state management, PDF generation, document engine
+**Researched:** 2026-02-18
+**Synthesized:** 2026-02-18
+**Overall Confidence:** MEDIUM-HIGH
+**Supersedes:** Previous SUMMARY.md (v1.1 enterprise UI research — now stale)
+
+---
 
 ## Executive Summary
 
-This research covers transforming an existing Next.js 14 construction management SaaS from functional to enterprise-grade. The current stack (Next.js 14, Tailwind, shadcn/ui, tRPC, PostgreSQL multi-tenant) is already enterprise-ready — this redesign is about strategic additions, not replacements. Research shows the platform needs Procore-style navigation patterns, global search, standardized forms, and professional polish to compete in the commercial/industrial construction market targeting solo operators and small general contractors.
+v1.5 is a foundational milestone that adds the operational scaffolding construction companies need to run projects end-to-end: a structured 9-phase lifecycle replacing the current flat 4-status field, a document engine that generates PDFs from live project data, and a flat metadata-first document system replacing the folder hierarchy. These three concerns are tightly coupled — lifecycle state gates document generation (change orders only generate in execution phase), and document metadata references lifecycle phase as a core filter tag — so build order matters significantly.
 
-The recommended approach is UI/UX-first enhancement: unified top navigation, contextual sidebar, global search, dashboard with KPIs, dark mode, and company branding. All additions are non-breaking and layer on top of existing architecture. The existing schema-per-tenant multi-tenant architecture is sound, requiring no changes for UI improvements. Key risk: UI redesigns in construction software fail when they break muscle memory and learned workflows. Mitigation: preserve secondary navigation paths during transition, test with actual construction PMs, and provide gradual rollout.
+The recommended approach is additive and non-breaking. Introduce a `project_lifecycle_state` table alongside the existing `projects.status` column (kept in sync as a read-only backward-compat field), add metadata columns to the existing `documents` table rather than rebuilding it, and generate PDFs in-process using pdfmake for structured AIA forms and Puppeteer via BullMQ workers for custom template imports. All state transitions run through tRPC mutations with `SELECT FOR UPDATE` locking — not DB triggers — so they carry user context, are auditable, and can be tested cleanly. The entire effort builds on the existing Fastify + tRPC + Drizzle + PostgreSQL + Redis + MinIO stack with five focused library additions.
 
-Critical finding: Most "enterprise UI" pitfalls are preventable with upfront design — dark mode FOUC, navigation state leaks, global search performance degradation, and form validation breaking existing data are the top four destroyers of trust. All require specific technical patterns that must be implemented from day one, not retrofitted.
+The top risk by severity is the status migration: mapping existing `active / on_hold / completed / archived` to a 9-phase lifecycle is lossy, and if done incorrectly it blocks every downstream phase. The second-ranked risk is sequence number race conditions on concurrent document generation — a silent defect that creates duplicate document numbers and breaks audit trails. Both must be solved in Phase 1, before any PDF generation or document naming work begins.
+
+---
 
 ## Key Findings
 
 ### Recommended Stack
 
-**All required libraries are already installed.** The existing stack (Next.js 14, Tailwind, shadcn/ui, Clerk, tRPC, PostgreSQL) is enterprise-ready. Strategic additions needed:
+Five new libraries augment the existing stack. No architectural changes required. Redis and MinIO already in production; BullMQ and PDF generation layer directly on top.
 
-**Immediate additions (HIGH priority):**
-- **nuqs** (^2.8.8) — Type-safe URL state management for filters, sorting, pagination. Used by Sentry, Supabase, Vercel. Enables shareable filter states and deep linking.
-- **@tanstack/react-table** (^8.21.3) — Headless table library for budget tables, change order lists, payment grids. Industry-leading solution for data-heavy views.
-- **shadcn Drawer component** (via CLI) — Mobile-first drawer powered by vaul. Essential for responsive modal/drawer patterns.
-- **react-imask** (^7.6.1) — Input masking for currency, phone numbers, percentages. Reduces data entry errors.
+**New library additions:**
 
-**Recommended upgrades:**
-- **zod** (^3.25.76 → ^4.3.5) — Latest features and type system improvements
-- **date-fns** (^2.30.0 → ^4.1.0) — Better tree-shaking and performance
+| Library | Version | Purpose | Rationale |
+|---------|---------|---------|-----------|
+| **pdfmake** | 0.3.4 | Structured PDF generation (RFQs, AIA forms, invoices) | Declarative JSON → PDF; no browser overhead; safe in-process for standard forms |
+| **Puppeteer** | 24.37.3 | Custom HTML/PDF template rendering | Full Chromium rendering for user-imported branded templates; handles complex CSS layouts |
+| **docxtemplater** | 3.68.1 | DOCX/XLSX template merge with field substitution | Industry standard; handles simple AND complex OOXML merge fields; covers DOCX + XLSX + PPTX |
+| **officeparser** | 6.0.4 | Extract `{placeholder}` fields from uploaded templates | AST-based output; safe for both simple and formatted fields; Dec 2025 release |
+| **BullMQ** | 5.67.3 | Async job queue for PDF generation and email delivery | Successor to deprecated Bull; TypeScript-first; uses existing Redis; built-in monitoring |
+| **Nodemailer** | 8.0.1 | SMTP email delivery with PDF attachments | Zero dependencies; custom-domain SMTP; no third-party ESP required by requirement |
 
-**Already installed (no action needed):**
-- next-themes (dark mode), react-hook-form (forms), cmdk (command palette), sonner (toasts), recharts (charts), lucide-react (icons)
+**PDF approach is dual-track — choose the right tool per document type:**
+- **pdfmake:** Auto-generated standard documents (payment apps, RFQs, change orders with predictable structure). Runs in-process in tRPC mutation. Fast, no browser overhead.
+- **Puppeteer:** User-imported custom branded templates (proposals with company letterhead, non-standard layouts). Always runs via BullMQ worker — never synchronously in a request handler (100-200MB RAM per instance).
 
-**Key insight:** This is an additive stack strategy. No replacements, no architectural changes. All new libraries integrate seamlessly with existing tRPC + PostgreSQL backend.
+**State machine:** Simple TypeScript enum + transition table — NOT XState. The 9-phase lifecycle is mostly linear with limited branching. XState overhead is not justified until v2 when parallel approval states may emerge.
+
+**Sequence counters:** Counter table + `SELECT FOR UPDATE` — NOT PostgreSQL native SEQUENCES. SEQUENCES do not guarantee uniqueness across concurrent transactions without application-level locking. Counter table with explicit lock is the correct pattern for tenant-scoped auto-increment.
+
+See `.planning/research/STACK.md` for installation commands, environment variable setup, and integration code samples.
+
+---
 
 ### Expected Features
 
-**Must have for v1 (table stakes — enterprise UI redesign incomplete without these):**
-- Unified Top Navigation — Foundation for all navigation; users expect consistent global actions
-- Contextual Sidebar Navigation — Procore NGX vertical nav is 2026 standard; enables fast module switching
-- Global Search (Basic) — Search projects, jobs, customers; most-requested efficiency feature
-- Dashboard with KPIs — Executives/PMs need at-a-glance project health
-- Multiple View Modes (List + Kanban) — Pipeline management requires kanban; power users need table view
-- Form Standardization — Consistent phone/address/date inputs reduce errors
-- Contextual Project Header — Persistent project context reduces navigation
-- Company Branding (Logo + Colors) — Professional output critical for solo operator credibility
-- Dark Mode Support — Low complexity, high retention value for users working early/late
+**Must have (table stakes — missing these breaks feature parity with Procore/Buildertrend):**
 
-**Should have for v1.x (differentiators for solo operators):**
-- Guided Estimating Workflow — Solo operators need step-by-step guidance (Procore assumes expertise)
-- Optional Spreadsheet Mode — Power users want bulk entry after learning workflow
-- Bulk Edit Operations — Productivity multiplier for repetitive data entry
-- Task + Pipeline Dashboard Widgets — Combined view saves context switching
-- Workflow Automation (Basic) — Auto-update project status based on milestones
-- Global Search (Enhanced) — Add document content indexing
-- Mobile-Responsive Enhancements — Optimize touch targets, offline sync
-- Financial Snapshot Widget — Cash position + AR aging visible without drilling into reports
+| Feature | Why It's Table Stakes |
+|---------|----------------------|
+| 9-phase project lifecycle with manual transitions | AIA contracts define Substantial Completion as a contractual milestone; construction industry expects structured phase tracking |
+| Audit trail for all state changes | Compliance requirement (FAR 4.7); who changed what, when, and why |
+| Backward-transition safeguards | Prevent accidental regression (Closed → Active); require confirmation + reason log |
+| Project soft delete + 30-day trash restore | Federal contractor records retention minimum (3 years, FAR 4.7) |
+| Simple vs. GC (Advanced) mode selector at project creation | Reduces cognitive load for residential contractors; Buildertrend vs. Procore dichotomy |
+| Feature gating by mode | Change orders, lien waivers, subcontractor management: GC mode only |
+| Flat document list with metadata filters | Replaces folder hierarchy; Procore pattern; ISO 19650 taxonomy |
 
-**Defer to v2+ (future consideration):**
-- Real-Time Collaboration — Requires WebSocket infrastructure; polling adequate initially
-- Offline-First Field Mode — High complexity; validate field usage patterns first
-- OCR Invoice Processing — Third-party API costs; validate invoice volume justifies automation
-- Quick-Add from Anywhere — Nice-to-have; users can navigate to forms initially
-- Calendar View — Kanban + list cover 80% of use cases
+**Should have (differentiators for v1.5):**
 
-**Anti-features (commonly requested, often problematic for solo operators):**
-- Multi-Company Accounting, Asset Lifecycle Tracking, BIM Integration, Gantt Chart Scheduling — All add complexity without value for target market
+| Feature | Value Proposition |
+|---------|------------------|
+| Proposal PDF generation | Client-ready proposals from estimates; eliminates manual Word export |
+| Change Order PDF generation | AIA-compliant CO documents from existing CO entries; required fields verified against AIA standards |
+| AIA G702/G703 payment application PDF | Auto-populate from payment app entries; G702 contract sections + G703 SOV breakdown |
+| RFQ PDF generation | Subcontractor/supplier request documents; lowest complexity of the four types |
+| Configurable document naming convention | `CO-{JOB-NUMBER}-{SEQ}`, `{jobNumber}-PA-{seq}`; auto-increment per doc type |
+| Document metadata tagging | ISO 19650-inspired: documentType, relatedEntityType, phase, cost code, revision |
+
+**Defer to v1.5.1 / v2:**
+
+| Feature | Why Defer |
+|---------|----------|
+| Custom template import (Word/PDF upload with field mapping UI) | Field mapping UX is the most complex user-facing feature; validate core PDF gen first |
+| Bulk metadata operations | Single-doc tagging sufficient for MVP |
+| Document relationship links (RFI → Submittal → Approval chain) | Medium complexity; not blocking for document discovery |
+| XState for state machine | 9-phase lifecycle is linear; upgrade if parallel approval states emerge |
+| XLSX repeating-row templates with formulas | Formula cell references break on row duplication; defer until DOCX templates proven |
+
+See `.planning/research/FEATURES.md` for full feature dependency map, user flows, and complexity matrix.
+
+---
 
 ### Architecture Approach
 
-**Existing architecture is sound.** Multi-tenant schema-per-tenant with PostgreSQL + Clerk auth + tRPC API is appropriate. UI redesign requires NO architectural changes. Research focused on multi-tenant patterns for reference, but UI enhancement is purely presentation layer.
+v1.5 architecture is purely additive — new tables, new columns, no rewrites. The existing tRPC + Drizzle + schema-per-tenant pattern handles all three pillars without modification.
 
-**Major components (existing):**
-1. **API Layer** — tRPC + Fastify, JWT verification, role-based access control (RBAC)
-2. **Data Layer** — PostgreSQL schema-per-tenant, connection pooling with search_path
-3. **Auth Layer** — Clerk v5 (compact JWT with org claims)
-4. **Frontend** — Next.js 14 App Router, React Query (tRPC), shadcn/ui
+**Major components and their responsibilities:**
 
-**UI enhancement adds (presentation layer only):**
-1. **Theme Management** — next-themes with cookie-based storage (prevents FOUC)
-2. **Form Layer** — react-hook-form + zod for standardized validation
-3. **Data Tables** — TanStack Table for budget/change order grids
-4. **Navigation State** — nuqs for URL-based filters/sorting
-5. **Global Search** — cmdk command palette with debounced tRPC queries
+| Component | Type | Responsibility |
+|-----------|------|---------------|
+| `project_lifecycle_state` | New table | Current 9-phase state, `enteredPhaseAt`, transition history JSONB array |
+| `advanceProjectPhase` mutation | tRPC | SELECT FOR UPDATE → validate transition → run pre-flight checks → audit log → update state |
+| `documents.documentType` / `relatedEntityType` / `relatedEntityId` | New columns | Enable flat metadata discovery without folder navigation |
+| `document_templates` | New table | Field mapping configs (JSONB), naming conventions, MinIO storage keys |
+| `document_naming_conventions` | New table | Per-company, per-doc-type naming format + sequence counter |
+| PDF generation service | In-process + BullMQ | pdfmake for standard forms (in-process); Puppeteer for custom templates (BullMQ worker, concurrency=2) |
+| BullMQ workers | Async workers | PDF generation, email delivery — prevent tRPC event loop blocking |
+| `folder_archive` | New table | Preserve original folder-document mapping for rollback and audit trail |
 
-**Key pattern:** Server Components for data fetching, Client Components for interactivity. Keep layouts stateless (structural only). Move page-specific state to page components.
+**Key architectural rules (non-negotiable):**
+- State transitions go through tRPC mutations only — never DB triggers. Mutations carry user context, appear in application logs, and can call external services (webhooks, QBO).
+- `SELECT FOR UPDATE` in all phase transitions AND sequence counter increments — mandatory for concurrent request safety.
+- Puppeteer always runs via BullMQ worker — never synchronously in a tRPC route.
+- `projects.status` stays read-only, synced from lifecycle state — zero breaking changes to existing API.
+- Template configs stored as JSONB on `document_templates.config` (field mappings, naming format, layout, signature block positions).
+
+**Migration strategy for existing data:**
+- `project_lifecycle_state` table added as non-breaking addition; backfill existing projects with status mapping
+- `documents` table gets new columns via `ALTER TABLE`; backfill `documentType` from existing `category` enum
+- Original folder mapping preserved in `folder_archive` for rollback
+- `folderId` deprecated (nullable, not dropped) for gradual transition
+
+See `.planning/research/ARCHITECTURE-V1.5.md` for full table DDL, migration SQL, tRPC mutation examples, and data flow diagrams.
+
+---
 
 ### Critical Pitfalls
 
-**Top 5 UI/UX-specific pitfalls that destroy trust:**
+Ranked by severity and the order in which they can kill the milestone.
 
-1. **Flash of Unstyled Content (FOUC) in Dark Mode**
-   - **Problem:** Users see brief flash of light theme before dark theme applies on page load
-   - **Prevention:** Use cookie-based theme storage (not localStorage), inject blocking script in `<head>` before styles load, use `next-themes` with `suppressHydrationWarning`
-   - **Phase impact:** Must be correct in Phase 11 (Enterprise UI/UX) from day one
+**Tier 1 — Blocking (cause full rollback or rewrite if ignored):**
 
-2. **Layout State Persistence Breaking Navigation**
-   - **Problem:** Persistent layouts in App Router preserve React state between navigations; filters/search from one page appear on unrelated pages
-   - **Prevention:** Keep layouts stateless for structure only; move interactive state to page components; use URL parameters for filters
-   - **Phase impact:** Must audit all layout state before migration
+| # | Pitfall | Phase | Prevention |
+|---|---------|-------|-----------|
+| 1 | **State machine migration maps existing projects to wrong phase** | Phase 1 | Audit `SELECT DISTINCT(status) FROM projects` before writing migration SQL; map 100% of values including `on_hold`; transaction-wrap entire migration; keep `status_legacy` column for 3 releases; dry-run on staging first |
+| 2 | **No rollback plan for failed migration** | Phase 1 | Test rollback procedure on staging before production run; backup database before migration; validate doc-count-before == doc-count-after; wrap in single transaction |
+| 3 | **Sequence number race conditions on concurrent document generation** | Phase 2 | Use `SELECT FOR UPDATE` on counter table — never read-then-write without DB lock; load test with k6 at 10+ concurrent generations; monitor for duplicates with detection query |
+| 4 | **PDF layout shifts push Terms & Conditions off-page** | Phase 2 | Use flow-based layout with CSS `page-break-before: always` for T&C; test with 1-item, 5-item, and 50-item proposals; never use absolute Y-pixel positioning for critical sections |
 
-3. **Global Search Performance Degradation**
-   - **Problem:** Naive implementation queries all tables on every keystroke without debouncing; slow responses, database load spikes
-   - **Prevention:** Debounce 300-500ms, use PostgreSQL full-text search indexes, limit scope to current project by default, configure React Query to avoid aggressive refetching
-   - **Phase impact:** Must include performance testing with realistic data (100+ projects, 5000+ documents)
+**Tier 2 — High (significant rework, erodes user trust):**
 
-4. **Form Validation Migration Breaking Existing Data**
-   - **Problem:** Centralizing validation with stricter rules breaks existing forms that saved "invalid" data; users can't edit old records
-   - **Prevention:** Audit existing data before adding schemas, use schema versioning, test against production data samples, add data migration to normalize outliers
-   - **Phase impact:** Requires data audit and backward compatibility testing
+| # | Pitfall | Phase | Prevention |
+|---|---------|-------|-----------|
+| 5 | **Existing projects default to wrong complexity mode** | Phase 1 | Analyze actual feature usage BEFORE adding column; default `GC` mode is safer (existing users have complex workflows); log `mode_assigned_at` + `mode_assigned_by` for audit trail |
+| 6 | **State machine + complexity mode interactions create invalid states** | Phase 1-2 | Design state machine independent of mode; validate current state compatibility before any mode change; prevent mode change when project is in incompatible state |
+| 7 | **Merge field detection fails on formatted DOCX fields** | Phase 3 | Use `docxtemplater` (handles complex OOXML split-tag fields) — never regex-scan for `{{field}}`; test with bolded, italicized, and mixed-format template fields |
+| 8 | **Unmapped template fields silently generate as blank in output** | Phase 3 | Show mapping progress "12/15 fields mapped"; require explicit handling (map, set default, or mark skip) for all unmapped fields before save; validate before committing |
 
-5. **Navigation Redesign Breaking User Workflows**
-   - **Problem:** Reorganizing navigation breaks muscle memory; construction users rely on speed and familiarity
-   - **Prevention:** Test with 3-5 actual construction PMs, preserve secondary navigation paths for 2-3 releases, add "Recently Viewed" and command palette, communicate changes 2+ weeks ahead
-   - **Phase impact:** Requires user testing, communication plan, gradual rollout strategy
+**Tier 3 — Moderate (require rework, manageable with process):**
 
-**Additional critical pitfall (financial):**
-6. **Budget/Estimating Workflow Redesign Breaking Financial Calculations**
-   - **Prevention:** DO NOT change data model during UI redesign — only presentation layer. Use decimal.js for money calculations, never floating point. Test edge cases comprehensively.
+| # | Pitfall | Phase | Prevention |
+|---|---------|-------|-----------|
+| 9 | **Folder → metadata migration loses document context** | Phase 4 | Pre-migration audit of all folder naming patterns; keep `folder_path_legacy` column; validate doc count before == after migration |
+| 10 | **File handle leaks under concurrent PDF load** | Phase 2 | Always close file streams in `finally` blocks; cache template buffers in memory (not file handles); set BullMQ Puppeteer worker concurrency = 2 |
+| 11 | **Template versioning not tracked** | Phase 3 | Store `template_id` + `template_version` on every generated document; only archive templates, never delete |
+| 12 | **International characters garbled in template import** | Phase 3 | Explicit `utf-8` encoding in all XML parsers; normalize field names before matching; test with German (ä, ö, ü), French (é), Spanish (ñ) templates |
+
+See `.planning/research/PITFALLS.md` for detection queries, example failure scenarios, and phase-by-phase warning matrix.
+
+---
 
 ## Implications for Roadmap
 
-Based on research, suggested phase structure for Enterprise UI/UX Enhancement:
+Research across all four files points to a clear 4-phase structure with explicit gates between phases.
 
-### Phase 1: Navigation Foundation (Week 1)
-**Rationale:** Navigation is the skeleton of enterprise UI. Everything depends on this being correct. Top bar + sidebar establish the structure for all other features.
+### Dependency Map
 
-**Delivers:**
-- Unified top navigation with logo, global actions, notifications, user menu
-- Contextual sidebar navigation with project/company context switching
-- Route groups for layout organization (`(dashboard)`, `(auth)`, `(public)`)
-- Dark mode with FOUC prevention (cookie-based theme)
-
-**Addresses features:**
-- Unified Top Navigation (must-have)
-- Contextual Sidebar Navigation (must-have)
-- Dark Mode Support (must-have)
-
-**Avoids pitfalls:**
-- Layout state persistence (keep layouts stateless from start)
-- Dark mode FOUC (cookie-based theme with blocking script)
-- Navigation routing conflicts (route group organization)
-
-**Stack used:** next-themes, existing Next.js 14 App Router patterns
-
-**Research flag:** Standard patterns, no deeper research needed
+```
+Phase 1: Lifecycle Foundation + Mode Setup
+  |
+  +-- gates --> Phase 2: PDF Generation (Standard Documents)
+                  |
+                  +-- gates --> Phase 3: Custom Template Import
+                                  |
+Phase 4: Document Metadata Redesign <-- depends on stable documentType taxonomy from Phase 2-3
+```
 
 ---
 
-### Phase 2: Global Search & Discovery (Week 1-2)
-**Rationale:** Search is the #1 requested efficiency feature. Needs navigation foundation in place (search bar lives in top bar). Must be performant from day one to avoid degradation pitfall.
+### Phase 1: Lifecycle Foundation + Mode Setup
+
+**Rationale:** Everything downstream depends on valid lifecycle state. PDF generation references phase (change order PDFs are only valid in execution phase). Feature gating requires mode to be assigned. The complexity mode default decision for existing projects cannot be undone safely after users are live — it must be decided and audited before the column ships.
 
 **Delivers:**
-- Global search command palette (Cmd+K) with cmdk
-- Search across projects, jobs, customers
-- Debounced API calls with React Query optimization
-- PostgreSQL full-text search indexes
+- `project_lifecycle_state` table + indexes
+- tRPC mutations: `advanceProjectPhase`, `revertProjectPhase` (with SELECT FOR UPDATE)
+- Pre-flight checks before advancing (no open COs before close_out, all bids awarded before execution)
+- Transition audit log in `auditLogs` table (user, timestamp, reason, from/to phase)
+- Backward compat: `projects.status` synced from lifecycle state as read-only
+- Simple vs. GC mode selector on project creation form
+- Feature gating by mode (change orders, lien waivers, subcontractor mgmt)
+- Project soft delete (`deleted_at`, `deleted_by`) + 30-day trash restore
+- Hard delete gate: admin-only, zero financial records, multi-step confirmation
 
-**Addresses features:**
-- Global Search (Basic) (must-have)
+**Features from FEATURES.md:** 9-phase lifecycle, Simple/GC mode, project deletion safeguards
 
-**Avoids pitfalls:**
-- Global search performance degradation (debouncing, indexes, scope limiting)
-- React Query refetch loops (configure staleTime, refetchOnWindowFocus)
+**Pitfalls this phase must avoid:**
+- Run `SELECT DISTINCT(status) FROM projects` on production before writing any migration SQL (Pitfall 2)
+- Transaction-wrap the entire backfill; dry-run on staging (Pitfall 15)
+- Analyze existing project feature usage before assigning mode default (Pitfall 5)
+- Design state machine independent of mode from day one (Pitfall 6)
 
-**Stack used:** cmdk (already installed), nuqs for search state in URL, PostgreSQL full-text indexes
-
-**Research flag:** Standard patterns, no deeper research needed
+**Research flag: YES — stakeholder validation required.** Transition trigger rules (what data gates each of the 9 transitions) are BIDAXIOM-specific and cannot be resolved by external research. Document explicit entry/exit criteria per phase before implementation starts. See FEATURES.md validation gaps #1 and #2.
 
 ---
 
-### Phase 3: Dashboard & KPIs (Week 2)
-**Rationale:** Dashboard provides at-a-glance project health. Depends on navigation (renders in main content area) but independent of search. Can be parallelized with Phase 2.
+### Phase 2: PDF Generation (Standard Documents)
+
+**Rationale:** PDF generation is the top differentiator for v1.5 and depends on stable lifecycle state (PDFs reference project phase; only certain doc types are valid per phase). Build standard document types first using pdfmake (structured, predictable) before extending to custom template imports via Puppeteer. This validates the field-mapping architecture against known AIA document structures before facing arbitrary user templates.
 
 **Delivers:**
-- Dashboard with KPI widgets (revenue, margin, active projects, tasks)
-- Role-based widget visibility
-- Recharts integration for visual KPIs
+- Proposal PDF (project summary, SOV breakdown, pricing, terms, signature blocks, company branding)
+- Change Order PDF (description, cost impact, schedule impact, AIA signature blocks)
+- AIA G702/G703 Payment Application PDF (auto-populate from payment app entries; G702 contract sections + G703 SOV by cost code)
+- RFQ PDF (scope items, qty, unit, deadline, vendor info)
+- Document naming convention system (`{jobNumber}-PA-{seq}`, `CO-{year}-{seq}`)
+- Counter table (`document_naming_conventions`) with `SELECT FOR UPDATE` increment
+- BullMQ queue infrastructure: pdf-generation queue, email queue, export queue
+- BullMQ workers: PDF worker (concurrency=2 for Puppeteer; unlimited for pdfmake)
+- Bull Board monitoring dashboard at `/admin/queues`
+- Email delivery via Nodemailer + BullMQ (queued with retry + exponential backoff)
 
-**Addresses features:**
-- Dashboard with KPIs (must-have)
-- Task + Pipeline Dashboard Widgets (should-have)
+**Stack from STACK.md:** pdfmake, BullMQ, Nodemailer, MinIO (existing), Redis (existing)
 
-**Avoids pitfalls:**
-- None specific to dashboard; follows established patterns
+**Pitfalls this phase must avoid:**
+- Implement sequence locking BEFORE first document generation goes live — not as a follow-up (Pitfall 1)
+- Use flow-based PDF layout; test with 1-item, 5-item, 50-item content sizes (Pitfall 4)
+- Load test concurrent generation before launch; set Puppeteer worker concurrency = 2 (Pitfall 10/12)
+- pdfmake runs in-process; Puppeteer always via BullMQ worker — enforce this boundary strictly
 
-**Stack used:** recharts (already installed), existing tRPC queries for data
-
-**Research flag:** Standard patterns, no deeper research needed
+**Research flag: NO.** AIA G702/G703 required fields are documented and verified. pdfmake + BullMQ are established patterns. Standard phase — no phase research needed.
 
 ---
 
-### Phase 4: Form Standardization (Week 2-3)
-**Rationale:** Forms are everywhere (projects, change orders, payments). Standardizing early prevents inconsistency. Requires data audit before adding strict validation.
+### Phase 3: Custom Template Import
+
+**Rationale:** Custom template import is architecturally distinct from standard PDF generation (Puppeteer vs. pdfmake, file upload vs. in-memory data, field detection vs. fixed schema). Deferred to Phase 3 so the core pipeline is validated before facing arbitrary user-supplied templates. Field mapping UI is the highest-complexity user-facing feature in v1.5 and needs a stable document generation foundation beneath it.
 
 **Delivers:**
-- Standardized input components (phone, address, date, currency)
-- react-hook-form + zod validation shared client/server
-- Input masking with react-imask
-- Data audit script to find outliers before strict validation
+- DOCX/XLSX template upload endpoint
+- Field detection via officeparser (AST-based, handles both simple and complex OOXML fields)
+- Field mapping UI: "12/15 fields mapped" progress; must explicitly handle all unmapped fields
+- Template merge and DOCX/XLSX output via docxtemplater
+- Puppeteer-based rendering for HTML/PDF custom templates (via BullMQ worker)
+- Template versioning: `template_version` stored on every generated document; templates archive-only
+- UTF-8 encoding enforcement in all XML parsing paths
+- `document_templates` table with JSONB config (field mappings, layout, signature block positions)
 
-**Addresses features:**
-- Form Standardization (must-have)
+**Stack from STACK.md:** docxtemplater, officeparser, Puppeteer (via BullMQ worker)
 
-**Avoids pitfalls:**
-- Form validation breaking existing data (data audit, schema versioning)
-- Known React Hook Form issue with form.reset() (use setValue instead)
+**Pitfalls this phase must avoid:**
+- Never regex-scan for merge fields — use docxtemplater to handle complex OOXML split-tag fields (Pitfall 3)
+- Require explicit handling of ALL unmapped fields before save; show progress indicator (Pitfall 7)
+- Implement template versioning before any user-facing template editing is possible (Pitfall 11)
+- Explicit UTF-8 encoding in all XML parsing paths (Pitfall 12)
 
-**Stack used:** react-hook-form (installed), zod (upgrade to v4), react-imask (add), @hookform/resolvers (installed)
-
-**Research flag:** Need to audit production data before deployment
+**Research flag: YES — design spike required.** Field mapping UX has no established construction SaaS reference pattern. The mapping interface (drag-drop vs. dropdown vs. `{field}` syntax) significantly impacts adoption. A UX design spike or prototype review should precede Phase 3 planning.
 
 ---
 
-### Phase 5: Data Tables & Views (Week 3)
-**Rationale:** Budget tables, change order lists, payment grids need enterprise-grade sorting/filtering. Depends on forms (table cells use standardized inputs) and navigation (tables render in main content area).
+### Phase 4: Document Metadata Redesign (Flat System)
+
+**Rationale:** Document metadata redesign is last because it depends on the `documentType` taxonomy finalized in Phases 2-3. Migrating folder → metadata requires knowing which document types exist and what their metadata fields are. Doing this earlier would require re-migrating existing documents as types are added. Phase 4 also has the highest data-loss rollback risk and must run on stable infrastructure.
 
 **Delivers:**
-- TanStack Table integration for budget/change order/payment grids
-- List + Kanban view modes
-- URL-based filtering/sorting with nuqs
-- Bulk edit operations
+- New columns on `documents`: `documentType`, `relatedEntityType`, `relatedEntityId`, `isTemplate`, `templateConfig` (JSONB)
+- Flat document list UI replacing folder tree navigation
+- Faceted filter by: document type, status, phase, cost code, date range, author, approval status
+- ISO 19650-inspired taxonomy (document type enum, status codes, revision, discipline)
+- `folder_archive` table preserving original folder-document mapping for rollback/audit
+- Backfill migration: infer `documentType` from existing `category` + folder name context
+- Soft-deprecation of `folderId`: nullable, not dropped, kept for gradual transition
 
-**Addresses features:**
-- Multiple View Modes (must-have)
-- Bulk Edit Operations (should-have)
+**Pitfalls this phase must avoid:**
+- Pre-migration audit of all folder naming patterns before writing migration SQL (Pitfall 8)
+- Dry-run migration on 100 test documents; validate doc count before == after
+- Keep `folder_path_legacy` column for at least 3 releases
+- Defer DROP COLUMN `folderId` to v1.6 minimum
 
-**Avoids pitfalls:**
-- URL state breaking navigation (nuqs handles shallow routing correctly)
-- Component migration inconsistency (establish table patterns early)
-
-**Stack used:** @tanstack/react-table (add), nuqs (add), existing shadcn/ui components
-
-**Research flag:** Standard patterns, no deeper research needed
-
----
-
-### Phase 6: Branding & Polish (Week 3-4)
-**Rationale:** Professional output (proposals, reports) requires company branding. Final polish phase ensures consistent component usage before launch.
-
-**Delivers:**
-- Company logo upload + color picker
-- Branding applied to reports, proposals, PDFs
-- Contextual project header (persistent project info)
-- Component library audit (ensure consistent shadcn/ui usage)
-- Visual regression testing
-
-**Addresses features:**
-- Company Branding (must-have)
-- Contextual Project Header (must-have)
-
-**Avoids pitfalls:**
-- Component migration creating inconsistent UI (audit all pages, visual regression tests)
-- URL structure changes breaking links (no URL changes in this phase, but verify)
-
-**Stack used:** Existing Next.js patterns, shadcn/ui component audit
-
-**Research flag:** Manual visual review required, no technical research needed
+**Research flag: YES — data audit required.** Existing folder naming patterns in production are unknown and will determine migration complexity and classification accuracy. Run `SELECT DISTINCT name FROM folders ORDER BY name` before Phase 4 planning begins. Do not write migration SQL without this data.
 
 ---
 
 ### Phase Ordering Rationale
 
-**Dependencies drive order:**
-1. Navigation foundation enables all other features (search bar, sidebar nav, main content area)
-2. Search/dashboard can be parallelized (both depend on navigation, not each other)
-3. Forms must come before data tables (tables use form inputs in cells)
-4. Branding/polish comes last (ensures consistency across all implemented features)
+- **Phase 1 is an absolute prerequisite.** Lifecycle state is referenced by PDFs (phase gates doc type), feature gating (mode gates UI), and document metadata (phase is a filter tag). No other phase can ship correctly without valid lifecycle state.
+- **Phase 2 precedes Phase 3** because the field-mapping architecture needs validation on known AIA document structures (fixed schema, well-documented requirements) before being extended to arbitrary user templates. Bugs in field mapping are much cheaper to fix with known inputs.
+- **Phase 4 is intentionally last** because `documentType` enum values must be finalized before migrating existing documents to them. An incomplete taxonomy requires a second migration, which is expensive and risky.
+- PITFALLS.md explicitly warns against building template import before state machine migration (Anti-Pattern 1), adding complexity mode without existing data analysis (Anti-Pattern 2), and document metadata redesign before core document stability (Anti-Pattern 3).
 
-**Complexity drives order:**
-- Start with structural changes (navigation, layouts)
-- Add interactive features (search, dashboard, forms)
-- End with polish (branding, visual audit)
+---
 
-**Risk mitigation:**
-- Early phases address critical pitfalls (FOUC, layout state, search performance)
-- Data audit happens before form validation (Phase 4)
-- Visual regression testing happens in final phase (Phase 6) to catch inconsistencies
+### Research Flags Summary
 
-**Estimated timeline:** 3-4 weeks for full v1 enterprise UI redesign
+| Phase | Research Needed | Reason | Who Resolves |
+|-------|----------------|--------|-------------|
+| Phase 1: Lifecycle transition triggers | YES — stakeholder validation | Entry/exit criteria per phase are BIDAXIOM-specific; no external research resolves them | Product owner + lead developer workshop |
+| Phase 1: Complexity mode default | YES — data audit | Must analyze real feature usage patterns before schema change | Data audit query on production |
+| Phase 2: Standard PDF generation | NO | AIA G702/G703 fields documented; pdfmake + BullMQ are standard patterns | N/A |
+| Phase 3: Custom template import | YES — design spike | Field mapping UX has no established construction SaaS reference pattern | UX prototyping before planning |
+| Phase 4: Document metadata | YES — data audit | Existing folder naming patterns unknown; migration SQL cannot be written blind | Data audit query on production |
 
-### Research Flags
-
-**Phases needing deeper research during planning:**
-- **None** — All phases use well-documented patterns (Next.js App Router, shadcn/ui, TanStack libraries)
-
-**Phases requiring non-research validation:**
-- **Phase 4 (Forms):** Requires production data audit before deployment
-- **Phase 6 (Polish):** Requires manual visual review and user testing (not technical research)
-
-**Phases with standard patterns (skip research-phase):**
-- **All phases** — Next.js 14 App Router, shadcn/ui, TanStack ecosystem are mature with extensive documentation
-
-**Phase-specific testing requirements:**
-- Phase 1: Test dark mode FOUC in incognito with hard refresh
-- Phase 2: Load test search with 100+ projects, 5000+ documents
-- Phase 4: Test validation against production data export
-- Phase 6: Visual regression test all pages across viewports
+---
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | All recommended libraries are official, mature, widely adopted. Version compatibility verified. |
-| Features | MEDIUM-HIGH | Based on construction software UX research (Procore, Buildertrend) and enterprise UI best practices. Solo operator focus is niche but well-reasoned. |
-| Architecture | HIGH | UI redesign requires no architecture changes. Existing multi-tenant schema-per-tenant is sound. Presentation layer additions are standard patterns. |
-| Pitfalls | HIGH | UI/UX pitfalls sourced from official Next.js App Router migration guides, library documentation, and construction software implementation case studies. |
+| **Stack** | HIGH | All six library additions verified (versions, Node.js compatibility, TypeScript support, integration patterns). Dual-track PDF approach (pdfmake + Puppeteer) is well-established. BullMQ + existing Redis is drop-in. |
+| **Features** | MEDIUM | Core standards (AIA G702/G703, ISO 19650, FAR 4.7) documented and verified. BIDAXIOM-specific transition triggers and exact Simple mode feature list need stakeholder definition — no external source can resolve these. |
+| **Architecture** | HIGH | All patterns (tRPC mutations, SELECT FOR UPDATE, JSONB configs, schema-per-tenant extensions) verified against the existing codebase. No novel architecture introduced. Migration strategy is additive and reversible. |
+| **Pitfalls** | MEDIUM-HIGH | State migration and sequence race condition risks are well-documented (CWE-362, PostgreSQL docs, cybertec-postgresql.com). PDF layout and OOXML template pitfalls verified via library GitHub issues and specs. No construction SaaS-specific post-mortems found — general enterprise SaaS patterns applied. |
 
-**Overall confidence:** HIGH
-
-### Gaps to Address
-
-**Data migration and validation:**
-- Need to audit production data before deploying strict form validation (Phase 4)
-- Unknown how many existing records would fail new validation schemas
-- **Mitigation:** Run audit script on production export before Phase 4; create data migration for outliers
-
-**User workflow disruption:**
-- Unknown which navigation changes will cause most friction for existing users
-- Need to test with actual construction PMs before deploying navigation redesign
-- **Mitigation:** User testing in Phase 1; preserve secondary navigation paths; gradual rollout
-
-**Performance at scale:**
-- Unknown actual search performance with customer's data volumes
-- Need to verify 100+ projects, 5000+ documents is representative
-- **Mitigation:** Load test in Phase 2 with realistic data; add indexes proactively
-
-**Financial calculation risk:**
-- UI redesign MUST NOT change financial calculation logic
-- Need to verify no data model changes required for new UI
-- **Mitigation:** Explicit rule: Phase 1-6 are presentation layer ONLY; no data model changes
-
-**Component migration completeness:**
-- Unknown extent of existing custom components that need shadcn/ui replacement
-- Risk of incomplete migration leaving hybrid UI
-- **Mitigation:** Component audit before Phase 1; establish "no new custom components" rule; visual regression testing in Phase 6
-
-## Sources
-
-### Primary (HIGH confidence)
-
-**Stack research:**
-- [next-themes GitHub](https://github.com/pacocoursey/next-themes) — Dark mode implementation
-- [shadcn/ui Documentation](https://ui.shadcn.com/docs) — Component library patterns
-- [nuqs Official Docs](https://nuqs.dev/) — URL state management
-- [TanStack Table Docs](https://tanstack.com/table/latest) — Data table library
-- [react-hook-form Documentation](https://react-hook-form.com/docs) — Form state management
-- [Zod Documentation](https://zod.dev/) — Schema validation
-
-**Feature research:**
-- [Procore Navigation Patterns 2026](https://www.procore.com/whats-new) — Enterprise construction software UX
-- [Procore NGX Design Enhancements](https://support.procore.com/product-releases) — Industry standards
-- [Enterprise UX Design Best Practices 2026](https://fuselabcreative.com/enterprise-ux-design-guide-2026-best-practices/) — Enterprise UI patterns
-- [Construction Dashboard Software with KPIs](https://anterratech.com/modules/dashboards/) — Dashboard requirements
-
-**Pitfall research:**
-- [App Router Pitfalls: Common Next.js Mistakes](https://imidef.com/en/2026-02-11-app-router-pitfalls) — Next.js App Router patterns
-- [Next.js App Router Migration Guide](https://www.flightcontrol.dev/blog/nextjs-app-router-migration-the-good-bad-and-ugly) — Migration gotchas
-- [Fixing Dark Mode FOUC in Next.js](https://notanumber.in/blog/fixing-react-dark-mode-flickering) — FOUC prevention
-- [React Hook Form Issue #13110](https://github.com/react-hook-form/react-hook-form/issues/13110) — Known validation bug in Next.js 16
-
-### Secondary (MEDIUM confidence)
-
-**Feature research:**
-- [Buildertrend vs Sage 300 Interface Comparison](https://www.selecthub.com/construction-management-software/buildertrend-vs-sage-300-construction/) — Competitor analysis
-- [Construction Estimating Software vs Spreadsheets](https://123worx.com/blog/construction-estimating-software-vs-spreadsheets/) — Estimating workflows
-- [Mobile-First Design for Construction Management](https://altersquare.medium.com/mobile-first-design-for-construction-management-software-field-usability-guide-3f52adf45b02) — Field operations
-
-**Pitfall research:**
-- [Pro Tips for Design System Migration](https://medium.com/@houhoucoop/pro-tips-for-ui-library-migration-in-large-projects-d54f0fbcd083) — Component migration patterns
-- [Navigation UX Best Practices for SaaS](https://www.pencilandpaper.io/articles/ux-pattern-analysis-navigation) — Navigation design
-- [SaaS Product Redesign: Avoiding User Disruptions](https://whatfix.com/blog/saas-product-redesign/) — Change management
-
-### Tertiary (LOW confidence)
-
-**Architecture research:**
-- Multi-tenant SaaS architecture patterns — General patterns, not construction-specific
-- PostgreSQL schema-per-tenant patterns — Standard database patterns
-- Construction-specific workflows (RFIs, submittals) — Needs validation with actual contractors
-
-**Not verified (but flagged for validation):**
-- Actual construction PM workflow preferences for navigation
-- Solo operator pain points in estimating (guided workflow assumption)
-- Production data validation edge cases
+**Overall confidence: MEDIUM-HIGH**
 
 ---
 
-*Research completed: 2026-02-14*
+### Gaps to Address During Planning or Before Coding
+
+| Gap | If Unresolved | How to Handle |
+|-----|--------------|---------------|
+| **Lifecycle transition triggers** — what data/events gate each of the 9 transitions? | Pre-flight checks are guessed; wrong checks cause state machine to be either too permissive or frustratingly strict | Stakeholder workshop before Phase 1 planning; document explicit entry/exit criteria per phase |
+| **Simple mode feature list** — exact set of features visible/hidden vs. GC mode | Feature gating implementation is undefined; any code written is speculative | Define feature matrix (mode × feature) before Phase 1 planning; decisions lock at mode-column-add |
+| **Existing project status distribution** — current status values and any outliers | Migration SQL is guessed; `on_hold` alone may map to multiple phases | Run `SELECT status, COUNT(*) FROM projects GROUP BY status` on production before Phase 1 |
+| **Existing folder naming patterns** — how folders are currently named and nested | Folder → metadata migration accuracy unknown; classification will be incomplete | Run `SELECT DISTINCT name FROM folders ORDER BY name` before Phase 4 planning |
+| **PDF branding preferences** — logo placement, color scheme, signature block layout per doc type | Phase 2 output documents have wrong layout; rework required | Stakeholder review of sample PDF mock-ups before Phase 2 implementation starts |
+| **Mode upgrade path for existing projects** — allow Simple → GC mid-project or lock at creation? | If unlocked: Pitfall 6 (state + mode interaction) triggers; if locked: user frustration when scope expands | Decision required before Phase 1 ships; default recommendation is lock at creation with documented escalation path |
+
+---
+
+## Sources
+
+### Primary (HIGH confidence — official documentation and specifications)
+
+- [AIA G702/G703 Payment Application Standards](https://help.aiacontracts.com/hc/en-us/articles/1500009308242) — required fields for payment applications; G702/G703 structure
+- [AIA: Substantial Completion definition](https://learn.aiacontracts.com/articles/substantial-completion-vs-final-completion-understanding-key-construction-milestones/) — contractual lifecycle milestone
+- [FAR 4.7 — Federal Contractor Records Retention](https://www.acquisition.gov/far/subpart-4.7) — 3-year minimum retention
+- [CWE-362 — Concurrent Execution Improper Synchronization](https://cwe.mitre.org/data/definitions/362.html) — race condition classification
+- [PostgreSQL SELECT FOR UPDATE documentation](https://www.postgresql.org/docs/current/sql-select.html#SQL-FOR-UPDATE-SHARE) — row-level locking for concurrent safety
+- [Cybertec: Gaps in PostgreSQL Sequences](https://www.cybertec-postgresql.com/en/gaps-in-sequences-postgresql/) — why SEQUENCE objects don't prevent duplicate numbering
+- [BullMQ Official Documentation](https://docs.bullmq.io/) — queue architecture, concurrency controls, monitoring
+- [docxtemplater Official Documentation](https://docxtemplater.com/docs/) — DOCX/XLSX merge field handling, complex field support
+- [Puppeteer Official Documentation](https://pptr.dev/) — headless Chrome PDF rendering
+- [Open-XML-SDK Issue #275](https://github.com/OfficeDev/Open-XML-SDK/issues/275) — confirmed complex merge field detection failure in OOXML
+
+### Secondary (MEDIUM confidence — multiple sources in agreement)
+
+- [Procore Document Management Naming Standards](https://support.procore.com/faq/what-is-a-naming-standard-in-the-document-management-tool) — naming convention patterns; ISO 19650 reference
+- [Autodesk: 6 Stages of Construction](https://www.autodesk.com/blogs/construction/the-6-stages-of-construction/) — lifecycle phase reference model
+- [Blackwater Tech: Document Metadata Best Practices](https://blackwater.tech/metadata-tagging-best-practices-for-construction-industry-document-management/) — ISO 19650 taxonomy for construction
+- [Nodemailer Official Documentation](https://nodemailer.com/) — SMTP transport, DKIM, attachments
+- [AIDI: Differences between Construction Owner and GC Software](https://www.aidi.io/blog/the-differences-between-construction-owner-and-gc-software) — Simple vs. Advanced mode justification
+
+### Tertiary (MEDIUM-LOW — general enterprise patterns applied to construction context)
+
+- SharePoint metadata vs. folder migration patterns — general enterprise DMS patterns applied to construction document migration; not construction-specific
+- Procore/Buildertrend Simple vs. GC mode patterns — inferred from public product documentation; not verified via direct API inspection or construction PM interviews
+
+---
+
+*Research completed: 2026-02-18*
+*Synthesized: 2026-02-18*
 *Ready for roadmap: yes*
-*Recommended phases: 6 (3-4 weeks total)*
-*Research flags: None (all standard patterns)*
-*Validation required: Production data audit (Phase 4), User testing (Phase 1), Load testing (Phase 2)*
+*Suggested phases: 4*
+*Research flags: Phase 1 (stakeholder validation + data audit), Phase 3 (UX design spike), Phase 4 (data audit)*
+*Standard phases (no research needed): Phase 2*

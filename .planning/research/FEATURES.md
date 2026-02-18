@@ -1,244 +1,252 @@
-# Feature Research
+# Feature Landscape: v1.5 Project Lifecycle Redesign & Document Engine
 
-**Domain:** Enterprise Construction Management UI/UX
-**Researched:** 2026-02-14
-**Confidence:** MEDIUM
+**Domain:** Construction SaaS — Project lifecycle state management, document generation/management
+**Researched:** 2026-02-18
+**Confidence:** MEDIUM (core standards verified via Procore/Buildertrend patterns and AIA forms; specific BIDAXIOM lifecycle transitions need validation)
 
-## Feature Landscape
+---
 
-### Table Stakes (Users Expect These)
+## Table Stakes
 
-Features users assume exist. Missing these = product feels incomplete.
+Features users expect from construction project management software. Missing these = feature parity loss.
 
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| **Unified Top Navigation** | All enterprise construction software (Procore, Buildertrend, Sage) uses persistent top bar for global actions | LOW | Logo, global search, notifications, user menu |
-| **Contextual Sidebar Navigation** | Procore NGX vertical navigation pane is standard; users expect module switching without page reload | MEDIUM | Must support project-level and company-level contexts |
-| **Global Search** | Users expect to search across projects, jobs, customers, documents from anywhere | MEDIUM | Job number, project name, customer name minimum; document content nice-to-have |
-| **Dashboard with KPIs** | 83% of reviewers rate centralized dashboards as critical; users expect at-a-glance project health | MEDIUM | Revenue, margin, active projects, upcoming tasks minimum |
-| **Multiple View Modes** | Procore, Buildertrend, ProjectManager all offer kanban, list, calendar views | MEDIUM | At minimum: kanban/pipeline, list/table, calendar |
-| **Document Management with Search** | 83% rate document management critical; unlimited storage + version control + global search expected | MEDIUM | Already have basic system; need enhanced search + version control UI |
-| **Mobile-Responsive Design** | Field teams expect mobile access; 2026 standard is iPad multi-column layouts | HIGH | Offline support, glove-friendly touch targets, one-handed operation |
-| **Form Standardization** | Users expect consistent phone (___-___-____), address (USPS standard), date formats across all forms | LOW | Use input masking + validation; reduces data entry errors |
-| **Role-Based Views** | Enterprise software serves multiple roles; users expect role-appropriate default views | MEDIUM | Already have RBAC; need UI to respect roles (PM vs field vs admin) |
-| **Bulk Edit Operations** | Data-dense enterprise UIs require bulk actions to avoid repetitive work | MEDIUM | Select multiple items, apply changes to all |
-| **Automated Reporting** | Users expect software to generate reports without manual data assembly | MEDIUM | Already have reporting; need auto-scheduling + templates |
-| **Real-Time Collaboration** | Field + office expect to see updates immediately; no refresh required | HIGH | WebSocket layer + optimistic updates |
+### Project Lifecycle State Machine (9 Phases)
 
-### Differentiators (Competitive Advantage)
+| Feature | Why Expected | Complexity | Dependencies | Notes |
+|---------|-------------|------------|--------------|-------|
+| **9-phase state machine** (Opportunity → Estimating → Submitted → Awarded → Active → Substantial Completion → Closed → Warranty → Archived) | Industry standard in Procore, Buildertrend, and construction workflows. AIA contracts define Substantial Completion as a contractual milestone triggering warranty, insurance, and payment finality. | High | None (new) | **Confidence: MEDIUM**. Standard construction phases documented; specific transition triggers for BIDAXIOM need definition. |
+| **Manual state transitions** | Users must control advancement (e.g., mark project "Awarded" after winning bid, "Active" when construction starts). No ambiguity should force auto-advancement. | Low | Exists (status field today) | Users click button to transition; UI validates allowable next states. |
+| **State-scoped data visibility** | Different states show/hide features. E.g., budget tracking not needed in Opportunity phase; change orders only in Active phase. | Medium | Exists (phase-aware feature gating) | Reduces UI clutter, improves UX clarity. |
+| **Backward-transition safeguards** | Prevent accidental regression (e.g., cannot revert from Closed to Active without explicit unlock). | Low | Exists (soft delete patterns) | Require confirmation + reason log for backward moves. |
+| **Audit trail for state changes** | Track who changed status, when, and why (required for compliance). | Low | Exists (audit log table) | Store in state_transitions table with user_id, old_state, new_state, reason, timestamp. |
 
-Features that set the product apart. Not required, but valuable for solo operators.
+### Simple vs. Advanced Contractor Mode
 
-| Feature | Value Proposition | Complexity | Notes |
-|---------|-------------------|------------|-------|
-| **Guided Estimating Workflow** | Procore/Sage assume estimating expertise; solo operators need step-by-step guidance | MEDIUM | Wizard-style with CSI divisions, suggested line items, validation |
-| **Optional Spreadsheet Mode** | Power users want spreadsheet-style bulk entry after learning workflow | LOW | Toggle between guided and table view for estimates |
-| **Task + Pipeline Dashboard Widgets** | Solo operators juggle estimating, bidding, execution; combined view saves context switching | LOW | Pipeline = bid opportunities; Tasks = action items across projects |
-| **Smart Job Numbering** | Auto-generate job numbers with configurable patterns; reduces admin overhead | LOW | Already implemented in Phase 2; expose in UI prominently |
-| **Company Branding Throughout** | Solo operators want professional proposal output with their logo/colors | LOW | Logo upload + color picker; apply to reports, proposals, client portal |
-| **Dark Mode Support** | Solo operators work early/late; reduces eye strain | LOW | CSS variables + theme toggle; improves retention |
-| **Contextual Project Header** | Pin project name, job number, margin at top of all project pages; reduces navigation | LOW | Persistent header when in project context |
-| **Workflow Automation** | Solo operators need software to automate routine tasks (status updates, notifications) | MEDIUM | Start with: auto-update project status based on milestones |
-| **OCR for Invoice Processing** | Solo operators manually enter vendor invoices; OCR extracts line items | HIGH | Use third-party OCR API; validate + allow manual correction |
-| **Quick-Add from Anywhere** | Solo operators need to capture tasks/expenses immediately without navigation | LOW | Global keyboard shortcut or floating action button |
-| **Offline-First Field Mode** | Spotty connectivity on sites; field data entry must work offline + sync later | HIGH | IndexedDB + sync queue + conflict resolution |
-| **Financial Snapshot Widget** | Solo operators need cash position + AR aging visible without drilling into reports | LOW | Simple dashboard widget with drill-down |
+| Feature | Why Expected | Complexity | Dependencies | Notes |
+|---------|-------------|------------|--------------|-------|
+| **Mode selector at project creation** | Contractors choose scope: Simple (residential/small jobs, minimal features) vs. Advanced/GC (large projects, full feature set). Industry pattern in Buildertrend (residential-focused) vs. Procore (enterprise). | Low | None (new) | **Confidence: MEDIUM**. Pattern exists but BIDAXIOM needs mode definitions. |
+| **Feature hiding based on mode** | Advanced mode shows: change orders, subcontractor management, multi-phase budgets, lien waivers. Simple mode hides these (users see: estimates, basic payments, documents). | Medium | Exists (feature gates, role-based permissions) | Use feature flags or mode column in projects table. |
+| **Mode badge in persistent header** | Show current mode (Simple/Advanced) in top nav so users know active scope. | Low | Exists (UI component system) | One-liner in dashboard/project header. |
+| **Mode change lock** | Cannot change mode mid-project (e.g., once "Active" status). Switching requires new project. | Low | None | Safeguard: prevents mid-project feature surprises. |
 
-### Anti-Features (Commonly Requested, Often Problematic)
+### Project Deletion with Safeguards
 
-Features that seem good but create problems for solo operators.
+| Feature | Why Expected | Complexity | Dependencies | Notes |
+|---------|-------------|------------|--------------|-------|
+| **Soft-delete flag** | Mark projects as deleted without destroying data (compliance: federal contractors must retain records for 3+ years). | Low | Exists (soft_delete pattern) | Add deleted_at, deleted_by timestamps. Exclude from list views. |
+| **Hard-delete with confirmations** | Only allow hard delete if: (1) project in Opportunity/Estimating, (2) no financial records, (3) 3+ confirmations, (4) admin only. | Medium | Exists (cascading deletes) | Validate: zero change orders, zero payment apps, zero documents before allowing delete. |
+| **Restore from trash** | 30-day retention; users see deleted projects in "Trash" section, can restore or permanently delete. | Low | Soft delete + restore logic | Query deleted_at < 30 days for restore. |
+| **Deletion audit trail** | Log what was deleted, by whom, when, and why. Non-repudiable record. | Low | Exists (audit table) | deletion_log(project_id, deleted_by, deleted_at, reason, deleted_records_snapshot). |
 
-| Feature | Why Requested | Why Problematic | Alternative |
-|---------|---------------|-----------------|-------------|
-| **Multi-Company Accounting** | Enterprise platforms have it | Solo operators manage one company; adds UI complexity without value | Single company focus; use tenant isolation for multi-entity contractors |
-| **Asset Lifecycle Tracking** | "Procore has it" | Relevant for large GCs with equipment fleets; solo operators rent | Link to rental agreements in documents; don't build asset module |
-| **Capital Project Management** | Seen in CMiC/Sage 300 | Designed for developers managing construction + long-term operations; overkill for contractors | Standard project lifecycle (bid → execute → closeout) |
-| **BIM Integration** | Sounds cutting-edge | Solo operators rarely use BIM; file size + complexity issues | Support PDF/DWG uploads; skip native BIM viewer |
-| **Advanced Analytics** | "Data-driven decisions" | Solo operators need KPIs, not BI tools; slow down workflows | Pre-built dashboard widgets with 3-5 critical KPIs |
-| **Real-Time Everything** | "Feels modern" | WebSocket overhead for features that don't need it; polling adequate for most | Real-time only for: collaboration, notifications, dashboard updates |
-| **Customizable Everything** | "Enterprise expects flexibility" | Configuration complexity overwhelms solo operators | Opinionated defaults with minimal essential settings |
-| **Multi-Location Coordination** | Large contractors have it | Solo operators work locally; adds unnecessary coordination overhead | Single primary location; support job site addresses per project |
-| **Gantt Chart Scheduling** | Traditional PM software has it | Solo operators use simpler milestone + deadline approach | Kanban + calendar views; skip Gantt complexity |
+---
+
+## Differentiators
+
+Features that set BIDAXIOM apart. Not expected industry-wide; valued by power users.
+
+### PDF Generation (Multi-Document Type)
+
+| Feature | Value Proposition | Complexity | Dependencies | Notes |
+|---------|-------------------|------------|--------------|-------|
+| **Proposal PDF generation** | Automatically generate client-ready proposals from estimates. Includes: project summary, SOV breakdown, pricing, terms, logo/branding. Eliminates manual Word export. | Medium | Estimate workflow, branding/company settings | **Confidence: HIGH** (AIA standards + Procore patterns). Required fields: project name, address, estimate items with quantities/rates, subtotal, tax, total, company logo, company info. Layout: header (company info), project details table, itemized cost table, summary/terms section. |
+| **Change Order PDF generation** | Auto-generate CO documents from BIDAXIOM CO entries. Includes: original contract sum, CO description, cost impact, schedule impact, signature blocks. | Medium | Change order workflow, approval routing | **Confidence: HIGH** (AIA patterns). Required fields: project name/number, CO description, reason, cost breakdown (labor/materials), impact on contract sum and schedule, signature blocks (contractor/owner/PM), date, CO number. |
+| **Invoice/Payment Application PDF** | Generate AIA G702/G703-compliant payment applications directly from payment app entries. Auto-populate with phase breakdown, retainage, prior amounts. | High | Payment application workflow, cost tracking | **Confidence: HIGH** (AIA G702/G703 documented). Required G702 sections: (1) Project info (owner, contractor, architect, dates), (2) Contract price + changes, (3) Work completed to date, (4) Retainage %, (5) Current payment due. G703 continues with SOV breakdown by cost code/phase. Requires notarization fields. |
+| **RFQ PDF generation** | Generate RFQ documents to subcontractors/suppliers. Includes: project scope, item list, quantity, unit, deadline, return instructions. | Low | Cost estimate/budget module | **Confidence: MEDIUM** (standard templates exist; BIDAXIOM integration needs definition). Required fields: project name/address, RFQ items (description, qty, unit), delivery date, payment terms, supplier info section. |
+| **Custom template import** | Users upload Word/PDF/Excel templates, map fields (e.g., {{project_name}}, {{total_cost}}) to BIDAXIOM data, generate customized PDFs. Supports company-specific branding. | High | PDF rendering engine, field mapping UI | **Confidence: MEDIUM** (Aspose/LibreOffice patterns; native implementation is heavy). Field mapping UX critical: drag-drop or {field} syntax to bind document placeholders to BIDAXIOM columns. |
+
+### Document Naming Convention System
+
+| Feature | Value Proposition | Complexity | Dependencies | Notes |
+|---------|-------------------|------------|--------------|-------|
+| **Configurable naming template** | Users define naming rules: e.g., `CO-{JOB-NUMBER}-{SEQ}` or `RFQ-{YEAR}-{SEQ}-{VENDOR}`. Auto-applies to generated documents. | Medium | Document storage, sequence counter | **Confidence: HIGH** (Procore supports ISO 19650 + custom patterns). Patterns to support: {JOB-NUMBER}, {PROJECT-NAME}, {DOC-TYPE}, {SEQ}, {YEAR}, {MONTH}, {DATE}, {VENDOR/SUBCONTRACTOR}, {PHASE}. Backend: parse template, substitute variables, auto-increment sequence. |
+| **Automatic sequence numbering** | Per-document-type counters (CO sequence, RFQ sequence, etc.). Resets annually or per-project. | Low | Counter/sequence table | Global + per-project options. |
+| **Naming conflict prevention** | If document name exists, auto-append (1), (2), etc. or require user override. | Low | Document existence check | Validation on upload + generation. |
+
+### Document System Redesign (Flat Table + Metadata Filters)
+
+| Feature | Value Proposition | Complexity | Dependencies | Notes |
+|---------|-------------------|------------|--------------|-------|
+| **Flat document list** | Replace folder tree with a single searchable table. All documents (RFIs, submittals, transmittals, change orders, invoices) in one view with sortable/filterable columns. | Medium | Document storage refactor, metadata schema | **Confidence: HIGH** (Procore pattern; AIA submittals require structured metadata). Replaces folder hierarchy (common pain point: "Where did I save that RFI?"). |
+| **Metadata tagging per document type** | ISO 19650-inspired taxonomy: status (S1-ready, D1-approved, A-construction-ready), revision code, discipline, document type, phase, cost code. CSI MasterFormat division mapping. | Medium | Metadata schema, taxonomy automation | **Confidence: HIGH** (industry standard). Core fields: document_type (enum: RFI/Submittal/Transmittal/CO/Invoice/RFQ/etc.), phase (from project lifecycle), cost_code (from budget), status (Draft/Submitted/Approved/Rejected), revision, author, created_date, modified_date, approval_status. |
+| **Faceted search/filter** | Filter by: document type, status, phase, cost code, date range, author, approval status. Multi-select. Saves common filter sets. | Medium | Search backend (full-text or faceted index), filter persistence | Users can save filter "Show me all Approved submittals for Phase 3" as a view. |
+| **Bulk metadata operations** | Apply tags/status to multiple docs: Select N documents, set status=Approved, phase=Active, cost_code=3000. | Low | Bulk update API, permission checks | Speeds workflow; requires audit log for compliance. |
+| **Document relationship links** | Link related docs: e.g., RFI → Submittal → Transmittal → Approval. Visualize dependency chain. | Medium | Document relationship graph | Improves traceability. |
+
+---
+
+## Anti-Features
+
+Features explicitly NOT to build (scope safeguards).
+
+| Anti-Feature | Why Avoid | What to Do Instead |
+|--------------|-----------|-------------------|
+| **Folder-based document storage** | Causes "lost document" UX problems. Deep nesting hides files. Doesn't scale with multi-disciplinary projects. | Use flat table + metadata filters (already planned). Folders become views/saved filters. |
+| **Manual PDF generation (no templating)** | Users manually create/edit PDFs in Word/Acrobat. Duplicates effort, introduces errors, breaks branding consistency. | Implement auto-generation with templates + custom import. |
+| **Auto-transition state machine** | Tempting but dangerous: "Auto-advance to Active when first change order approved" → unexpected state shifts → compliance issues. | Keep all transitions manual + logged. Optional auto-triggers (future) only after 2+ phases of validation. |
+| **Unlimited backward transitions** | Users revert project state casually, losing audit trail integrity and confusing financial records. | Safeguard: backward transitions require approval + reason. Track in audit log. |
+| **Hard delete (unrestricted)** | Violates federal retention requirements (3-year minimum). Creates compliance risk. | Soft delete + trash/restore pattern. Hard delete only with multi-step confirmation and admin role. |
+| **Mode switching mid-project** | Changes feature availability mid-lifecycle → user confusion, broken workflows. "Wait, where did my change order form go?" | Lock mode at creation. If scope expands, require new project or explicit escalation. |
+| **Unstructured document metadata** | Free-text "tags" → inconsistency → search failure. "Phase 1" vs "Phase-1" vs "P1". | Enforce controlled vocabulary. Dropdown/enum for all core fields. |
+
+---
 
 ## Feature Dependencies
 
-```
-[Global Search]
-    └──requires──> [Unified Top Navigation]
-    └──requires──> [Database Indexing]
+### Phase 1: Project Lifecycle State Machine
+- **Depends on:** Existing project table + status field
+- **Blocks:** State-scoped feature visibility, simple/advanced mode gating
+- **Data schema:** Add state_transitions audit table, locked_until timestamp
 
-[Contextual Sidebar Navigation]
-    └──requires──> [Unified Top Navigation]
-    └──requires──> [Role-Based Views]
+### Phase 2: Simple vs. Advanced Mode
+- **Depends on:** Project lifecycle state machine
+- **Blocks:** Feature flag configuration, role-based permissions
+- **Data schema:** Add mode column (enum: simple/advanced), mode_locked_at
 
-[Dashboard with KPIs]
-    └──requires──> [Automated Reporting]
-    └──requires──> [Financial Snapshot Widget]
+### Phase 3: Project Deletion with Safeguards
+- **Depends on:** Existing soft-delete pattern, audit logging
+- **Blocks:** None (orthogonal)
+- **Data schema:** Add deleted_at, deleted_by, expand deletion_log table
 
-[Guided Estimating Workflow]
-    └──requires──> [Form Standardization]
-    └──requires──> [CSI Division Data]
-    └──enhances──> [Optional Spreadsheet Mode]
+### Phase 4: PDF Generation (Core Types)
+- **Depends on:** Estimate, change order, payment app, budget modules (exist)
+- **Blocks:** Custom template import, document naming
+- **Tech:** PDF library (e.g., PDFKit, LibreOffice, Aspose)
 
-[Mobile-Responsive Design]
-    └──requires──> [Offline-First Field Mode]
-    └──requires──> [Bulk Edit Operations] (for field efficiency)
+### Phase 5: Custom Template Import
+- **Depends on:** PDF generation core types
+- **Blocks:** None
+- **Tech:** Field mapping UI, template validation
 
-[Real-Time Collaboration]
-    └──requires──> [WebSocket Infrastructure]
-    └──enhances──> [Dashboard with KPIs]
+### Phase 6: Document Naming Convention
+- **Depends on:** Document storage, PDF generation
+- **Blocks:** Document management redesign
+- **Data schema:** Add naming_template (company), sequence counters per doc type
 
-[Company Branding]
-    └──requires──> [Logo Upload]
-    └──enhances──> [Automated Reporting]
+### Phase 7: Document Management Redesign
+- **Depends on:** All above features (naming, metadata, PDF gen)
+- **Blocks:** None (final polish)
+- **Data schema:** Major refactor: flat documents table, metadata columns, ISO 19650 fields
 
-[OCR Invoice Processing]
-    └──requires──> [Document Management]
-    └──enhances──> [Automated Reporting]
+---
 
-[Workflow Automation]
-    └──conflicts──> [Over-Customization] (keep simple)
-```
+## MVP Recommendation
 
-### Dependency Notes
+### Build First (MVP)
+1. **Project Lifecycle State Machine** (9 phases)
+   - Establishes foundation for all downstream features
+   - Minimal UI: dropdown to change state, confirmation dialog
+   - Dependency: None
+   - Complexity: Low-Medium
 
-- **Global Search requires Unified Top Navigation:** Search bar lives in top bar for global access; needs indexing layer for performance
-- **Contextual Sidebar requires Role-Based Views:** Sidebar content changes based on user role (PM sees different tools than field crew)
-- **Guided Estimating enhances Spreadsheet Mode:** Users start with guided workflow, graduate to bulk entry when comfortable
-- **Mobile-Responsive requires Offline-First:** Field teams work on sites with spotty connectivity; offline support is non-negotiable
-- **Real-Time Collaboration enhances Dashboard:** Live KPI updates improve situational awareness; not critical for all features
-- **Workflow Automation conflicts with Over-Customization:** Keep automation simple + opinionated; avoid "workflow builder" complexity trap
+2. **Simple vs. Advanced Mode** (feature gating)
+   - Unlock advanced features (change orders, lien waivers) for GC mode only
+   - Simplify UX for residential/small contractors
+   - Dependency: State machine (for context)
+   - Complexity: Low
 
-## MVP Definition
+3. **PDF Generation (Proposal + Change Order + Invoice)**
+   - High-value differentiator; enables modern workflows
+   - Start with templated output; custom import in v1.5.1
+   - Dependency: Existing estimate/CO/payment modules
+   - Complexity: Medium
 
-### Launch With (v1) - Enterprise UI Redesign
+4. **Document Metadata & Flat List**
+   - Redesign document discovery (flat table > folder chaos)
+   - ISO 19650 core fields (status, revision, phase, cost code)
+   - Dependency: None (orthogonal to state machine)
+   - Complexity: Medium
 
-Minimum viable product — what's needed for Procore-style experience.
+### Defer (Post-MVP)
+- **Custom Template Import:** Complex field mapping UI. Build after core PDF gen is validated in production.
+- **Document Naming Convention Customization:** Phase 2 feature; most users accept auto-naming. Configurable naming is power-user feature.
+- **Bulk metadata operations:** Phase 2. Single-doc tagging sufficient for MVP.
 
-- [ ] **Unified Top Navigation** — Foundation for all other navigation features; users expect consistent global actions
-- [ ] **Contextual Sidebar Navigation** — Vertical nav is 2026 standard (Procore NGX); enables fast module switching
-- [ ] **Global Search (Basic)** — Search projects, jobs, customers; most-requested feature for efficiency
-- [ ] **Dashboard with KPIs** — Executives + PMs need at-a-glance project health; table stakes for enterprise
-- [ ] **Multiple View Modes (List + Kanban)** — Pipeline management requires kanban; power users need table view
-- [ ] **Form Standardization** — Consistent phone/address/date inputs reduce errors; foundational for data quality
-- [ ] **Contextual Project Header** — Solo operators context-switch frequently; persistent header reduces navigation
-- [ ] **Company Branding (Logo + Colors)** — Professional output critical for solo operator credibility
-- [ ] **Dark Mode Support** — Low complexity, high retention value for users working early/late
+---
 
-### Add After Validation (v1.x)
+## Complexity Analysis
 
-Features to add once core is working.
+| Feature | Frontend | Backend | Data Schema | Testing | Priority |
+|---------|----------|---------|-------------|---------|----------|
+| State machine (manual transitions) | ★★☆ (dropdown UI) | ★★☆ (validation, audit) | ★★☆ (audit table) | ★★★ (edge cases: backward transitions) | 1 (blocker for other features) |
+| Simple/Advanced mode | ★★☆ (feature toggles) | ★★☆ (role checks, queries) | ★☆☆ (mode enum) | ★★☆ (permission tests) | 2 (unlocks advanced features) |
+| Project deletion | ★☆☆ (confirm dialog) | ★★☆ (cascade logic) | ★☆☆ (soft delete flags) | ★★★ (data integrity) | 3 (polishing, compliance) |
+| PDF generation | ★★★ (template rendering) | ★★★ (templating engine) | ★★☆ (template table) | ★★★ (PDF output samples) | 4 (differentiator) |
+| Custom template import | ★★★ (field mapper UI) | ★★★ (PDF rendering, validation) | ★★☆ (template storage) | ★★★ (template parsing) | 7 (power-user feature, defer) |
+| Document naming | ★★☆ (UI optional) | ★★☆ (sequence logic, parsing) | ★★☆ (counter table, template) | ★★☆ (name collision tests) | 5 (after PDF gen) |
+| Document system redesign | ★★★ (table + filters) | ★★★ (indexing, faceted search) | ★★★ (metadata columns, refactor) | ★★★ (search accuracy) | 6 (final polish) |
 
-- [ ] **Guided Estimating Workflow** — Trigger: User feedback on estimating pain points; differentiator for solo operators
-- [ ] **Optional Spreadsheet Mode** — Trigger: Users request faster estimate entry after learning workflow
-- [ ] **Bulk Edit Operations** — Trigger: Users report repetitive data entry; productivity multiplier
-- [ ] **Task + Pipeline Dashboard Widgets** — Trigger: Dashboard v1 validated; add role-specific widgets
-- [ ] **Workflow Automation (Basic)** — Trigger: Identify top 3 repetitive tasks from usage data
-- [ ] **Global Search (Enhanced)** — Trigger: Document search requested; add full-text document content indexing
-- [ ] **Mobile-Responsive Enhancements** — Trigger: Field team feedback; optimize touch targets, offline sync
-- [ ] **Financial Snapshot Widget** — Trigger: CFO/owner requests cash visibility; add AR aging + cash position
+---
 
-### Future Consideration (v2+)
+## User Flows
 
-Features to defer until product-market fit is established.
+### Flow 1: Create Project & Select Mode
+1. User clicks "New Project"
+2. Form appears: Name, Address, Client, Mode selector (Simple/Advanced radio)
+3. User selects Advanced → form shows additional fields (GC name, Estimator, etc.)
+4. User creates project → Project starts in Opportunity state
 
-- [ ] **Real-Time Collaboration** — Why defer: Requires WebSocket infrastructure + complexity; polling adequate initially
-- [ ] **Offline-First Field Mode** — Why defer: High complexity; validate field usage patterns first
-- [ ] **OCR Invoice Processing** — Why defer: Third-party API costs; validate invoice volume justifies automation
-- [ ] **Quick-Add from Anywhere** — Why defer: Nice-to-have; users can navigate to forms initially
-- [ ] **Calendar View** — Why defer: Kanban + list cover 80% of use cases; calendar is v2 polish
-- [ ] **Automated Report Scheduling** — Why defer: Manual reports adequate; add when usage patterns emerge
+### Flow 2: Advance Project Through Lifecycle
+1. User views project dashboard
+2. Current state badge shown: "Opportunity"
+3. User clicks "Mark as Estimating" → confirmation dialog → state transitions to Estimating
+4. Estimate workflow becomes available; change order form hidden (until Active)
+5. Once estimate submitted → user clicks "Mark as Submitted"
+6. Later, user clicks "Mark as Awarded" (job won)
+7. At construction start → "Mark as Active" → change orders + payment apps now visible
 
-## Feature Prioritization Matrix
+### Flow 3: Generate Proposal PDF
+1. User completes estimate in SOV builder
+2. "Export as Proposal PDF" button appears
+3. Click → PDF rendered with: company logo, project summary, itemized SOV, terms, signature blocks
+4. PDF downloads; user emails to client
 
-| Feature | User Value | Implementation Cost | Priority |
-|---------|------------|---------------------|----------|
-| Unified Top Navigation | HIGH | LOW | P1 |
-| Contextual Sidebar Navigation | HIGH | MEDIUM | P1 |
-| Global Search (Basic) | HIGH | MEDIUM | P1 |
-| Dashboard with KPIs | HIGH | MEDIUM | P1 |
-| Form Standardization | HIGH | LOW | P1 |
-| Company Branding | MEDIUM | LOW | P1 |
-| Dark Mode | MEDIUM | LOW | P1 |
-| Contextual Project Header | MEDIUM | LOW | P1 |
-| Multiple View Modes | HIGH | MEDIUM | P1 |
-| Guided Estimating Workflow | HIGH | MEDIUM | P2 |
-| Bulk Edit Operations | HIGH | MEDIUM | P2 |
-| Task + Pipeline Widgets | MEDIUM | LOW | P2 |
-| Financial Snapshot Widget | MEDIUM | LOW | P2 |
-| Workflow Automation | MEDIUM | MEDIUM | P2 |
-| Mobile-Responsive Enhancements | HIGH | MEDIUM | P2 |
-| Global Search (Enhanced) | MEDIUM | MEDIUM | P2 |
-| Real-Time Collaboration | MEDIUM | HIGH | P3 |
-| Offline-First Field Mode | HIGH | HIGH | P3 |
-| OCR Invoice Processing | MEDIUM | HIGH | P3 |
-| Quick-Add from Anywhere | LOW | LOW | P3 |
-| Calendar View | LOW | MEDIUM | P3 |
+### Flow 4: Generate Change Order PDF
+1. User creates change order (UI exists)
+2. "Generate PDF" button → PDF rendered: description, cost impact, schedule impact, approval signature blocks
+3. PDF emailed to stakeholders for approval
+4. Returned signed → uploaded back to system, status → Approved
 
-**Priority key:**
-- P1: Must have for launch — enterprise UI redesign incomplete without these
-- P2: Should have, add when possible — differentiators for solo operators
-- P3: Nice to have, future consideration — validate usage before building
+### Flow 5: Browse Documents (New Flat UI)
+1. User navigates to Documents section
+2. Flat list shown: 47 documents in project
+3. Filter by: "Document Type = Submittal, Status = Pending Review" → 5 results
+4. User selects one → preview + metadata sidebar (phase, cost code, author, revision)
+5. Can tag/update status in bulk
 
-## Competitor Feature Analysis
-
-| Feature | Procore | Buildertrend | Our Approach (Solo Operator Focus) |
-|---------|---------|--------------|-------------------------------------|
-| **Navigation** | NGX vertical sidebar + top bar | Intuitive but feature-rich | Copy Procore NGX pattern; simplify module list for solo operator |
-| **Dashboard** | Role-based hubs (2026); customizable widgets | Pipeline + daily logs | Opinionated widgets (KPI + tasks + pipeline); minimal customization |
-| **Estimating** | Assumes expertise; integrates with Esticom | Proposal builder with templates | Guided workflow (step-by-step) + spreadsheet mode toggle |
-| **Mobile** | Multi-column iPad layouts; offline support | Mobile-first; client portal app | Responsive web (no separate app); offline for critical field ops |
-| **Search** | Global search across modules | Search within tools | Global search (projects, jobs, customers, documents) from top bar |
-| **Branding** | Enterprise white-label options | Logo on proposals/invoices | Simple logo upload + color picker; apply to all output |
-| **Views** | NGX list views with filters, bulk actions | Kanban for sales, Gantt for schedule | Kanban (pipeline) + table (list) + calendar (v2); skip Gantt |
-| **Automation** | Workflow engine with conditions | Automated client updates, surveys | Start simple: auto-status updates, notification rules (v1.x) |
-| **Dark Mode** | Not standard (as of 2025) | Not mentioned | Built-in theme toggle; CSS variables for easy switching |
-| **Forms** | Standardized across modules | Rich forms with e-signatures | Input masking (phone, address); validation; e-signatures (v2) |
+---
 
 ## Sources
 
-**Enterprise Construction Software UX:**
-- [Procore Navigation Patterns 2026](https://www.procore.com/whats-new)
-- [Procore NGX Design Enhancements](https://support.procore.com/product-releases/weekly-release-notes/august-2025)
-- [Enterprise UX Design Best Practices 2026](https://fuselabcreative.com/enterprise-ux-design-guide-2026-best-practices/)
-- [Enterprise Construction Management Software Guide](https://www.ingenious.build/blog-posts/enterprise-construction-management-software)
-
-**Competitor Analysis:**
-- [Buildertrend vs Sage 300 Interface Comparison](https://www.selecthub.com/construction-management-software/buildertrend-vs-sage-300-construction/)
-- [Procore Software Overview 2026](https://www.softwareadvice.com/construction/procore-profile/)
-
-**Dashboard and KPIs:**
-- [Construction Dashboard Software with KPIs](https://anterratech.com/modules/dashboards/)
-- [Construction Project Performance Dashboard](https://www.simplekpi.com/KPI-Dashboard-Examples/construction-project-performance-dashboard-example)
-- [What Should Be In a Construction Project Dashboard](https://ciposoftware.com/2025/07/10/what-should-be-in-a-construction-project-dashboard/)
-
-**Estimating Workflows:**
-- [Construction Estimating Software vs Spreadsheets 2025](https://123worx.com/blog/construction-estimating-software-vs-spreadsheets/)
-- [Excel vs Estimating Software for Construction](https://www.rib-software.com/en/blogs/spreadsheets-vs-estimating-software)
-- [What Top Home Builders Look for in Estimating Software](https://buildertrend.com/blog/which-construction-estimating-software-to-use/)
-
-**Mobile and Field Operations:**
-- [Mobile-First Design for Construction Management Software](https://altersquare.medium.com/mobile-first-design-for-construction-management-software-field-usability-guide-3f52adf45b02)
-- [Construction Field Management Software Guide](https://struxhub.com/blog/best-guide-to-construction-field-management-software-how-to-choose-the-right-construction-site-operations-solutions/)
-
-**Data Entry and Efficiency:**
-- [Streamlining Construction Operations: Reducing Manual Data Entry](https://aedo.com/streamlining-construction-operations-an-operations-leaders-guide-on-ways-to-reduce-manual-data-entry-2/)
-- [Form Standardization: Phone Number Best Practices](https://designsystem.digital.gov/patterns/create-a-user-profile/phone-number/)
-- [Address Standardization Software](https://dataladder.com/address-standardization-software/)
-
-**Small Contractor Focus:**
-- [Construction Management Software for Small Businesses](https://buildern.com/resources/blog/construction-management-software-for-small-businesses/)
-- [Unlock Growth with Small Business Contractor Software](https://cmicglobal.com/resources/article/Empowering-Small-Businesses-with-Contractor-Software-What-to-Look-for)
-- [Construction Software Mistakes to Avoid](https://blog.constructiononline.com/construction-management-software-mistakes-investing-without-implementation)
-
-**Dark Mode and Branding:**
-- [Dark Mode for Enterprise UI Design](https://www.edl.dk/feed/how-to-design-a-dark-mode-friendly-colour-system-for-enterprise-ui)
-- [Implementing Dark Theme in Enterprise Web Applications](https://mehdisolhan.medium.com/implementing-dark-theme-in-enterprise-web-applications-6d5c2b63f998)
-
-**Task Management and Views:**
-- [Pipeline CRM Kanban View](https://pipelinecrm.com/features/kanban/)
-- [Best Kanban Software for Teams 2026](https://www.wrike.com/kanban-guide/kanban-tools-software/)
+- [Procore Document Management Naming Standards](https://support.procore.com/faq/what-is-a-naming-standard-in-the-document-management-tool)
+- [AIA G702/G703 Payment Application Standards](https://help.aiacontracts.com/hc/en-us/articles/1500009308242-Instructions-G702-1992-Application-and-Certificate-for-Payment)
+- [Construction Project Lifecycle Phases (Autodesk)](https://www.autodesk.com/blogs/construction/the-6-stages-of-construction/)
+- [Construction Document Metadata Best Practices (Blackwater Tech)](https://blackwater.tech/metadata-tagging-best-practices-for-construction-industry-document-management/)
+- [ISO 19650 Metadata Standards](https://www.procore.com/faq/what-is-a-naming-standard-in-the-document-management-tool)
+- [Construction Software: Simple vs. Advanced Features](https://www.aidi.io/blog/the-differences-between-construction-owner-and-gc-software)
+- [Federal Contractor Records Retention (FAR 4.7)](https://www.acquisition.gov/far/subpart-4.7)
+- [Substantial Completion (AIA Contract Documents)](https://learn.aiacontracts.com/articles/substantial-completion-vs-final-completion-understanding-key-construction-milestones/)
 
 ---
-*Feature research for: Enterprise Construction Management UI/UX*
-*Researched: 2026-02-14*
+
+## Validation Gaps
+
+These require phase-specific research or stakeholder validation:
+
+1. **Lifecycle transition triggers:** What data/events auto-trigger or should manually trigger transitions? (e.g., "Does first payment app automatically advance to Active, or always manual?")
+2. **Simple mode hidden features:** Exact feature list for residential vs. GC. (e.g., Is lien waiver visible in Simple mode?)
+3. **PDF template structure:** BIDAXIOM-specific branding/layout preferences. (e.g., Logo placement, color scheme, required signature blocks per document type.)
+4. **Document metadata mapping:** Which cost codes/phases matter most for filtering? (e.g., Should documents filter by CSI division or BIDAXIOM cost code?)
+5. **Mode upgrade path:** If user starts Simple, can they upgrade to Advanced mid-project, or requires new project? (Compliance / UX implication.)
+
+---
+
+## Confidence Summary
+
+| Area | Level | Reason |
+|------|-------|--------|
+| **Lifecycle phases** | MEDIUM | Standard 9-phase construction model documented; specific BIDAXIOM triggers need validation. |
+| **Simple/Advanced modes** | MEDIUM | Pattern confirmed in Buildertrend/Procore; feature list needs BIDAXIOM specifics. |
+| **PDF standards (G702/G703)** | HIGH | AIA standards documented; proposal/invoice/CO required fields verified. |
+| **Document naming (ISO 19650)** | MEDIUM | Standards exist; Procore implementation confirmed; BIDAXIOM template syntax needs definition. |
+| **Document metadata taxonomy** | MEDIUM | Industry best practices verified; BIDAXIOM metadata schema needs alignment with cost codes/phases. |
+| **Deletion safeguards** | MEDIUM | Federal retention (3-year) confirmed; soft-delete pattern is standard; specific BIDAXIOM policy needs definition. |
