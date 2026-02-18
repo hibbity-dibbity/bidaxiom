@@ -95,7 +95,7 @@
 - [x] **Phase 31: Color Palette & Favicon** — Extract palette from BIDAXIOM logo, present for user approval, apply to Tailwind config and CSS variables, set favicon (completed 2026-02-18)
 - [x] **Phase 32: Flat Design System** — Remove border-radius, borders, and drop shadows from all card/panel components app-wide (completed 2026-02-18)
 - [x] **Phase 33: Company Selector in User Dropdown** — Add company switcher and "Create new company" option below Account Settings in top-nav user menu (completed 2026-02-18)
-- [ ] **Phase 34: Currency Format on Blur** — All currency/amount inputs reformat to US currency display when the user leaves the field
+- [x] **Phase 34: Currency Format on Blur** — All currency/amount inputs reformat to US currency display when the user leaves the field (completed 2026-02-18)
 - [ ] **Phase 35: Subcontractors in Global Search** — Add subcontractor results with "Subcontractor" type label to ⌘K search
 
 ### Phase Details
@@ -157,7 +157,7 @@ Plans:
   1. After leaving any amount field, the value displays as "$X,XXX.XX"
   2. The formatted value is correctly parsed and persisted as a numeric value (not a string with symbols) when the form is saved
   3. Currency fields on estimate line items, budget entries, and change order forms all exhibit this behavior
-**Plans:** 5 plans
+**Plans:** 5/5 plans complete
 Plans:
 - [ ] 34-01-PLAN.md — parseCurrencyInput utility + CurrencyInput component (2 files)
 - [ ] 34-02-PLAN.md — RHF forms: change-order-form + commitment-form amountChange/amount (2 files)
@@ -189,5 +189,5 @@ Plans:
 | 31. Color Palette | v1.4 | Complete    | 2026-02-18 | - |
 | 32. Flat Design System | v1.4 | Complete    | 2026-02-18 | - |
 | 33. Company Selector in User Dropdown | v1.4 | Complete    | 2026-02-18 | - |
-| 34. Live Currency Formatting | v1.4 | 0/5 | In progress | - |
+| 34. Live Currency Formatting | v1.4 | Complete    | 2026-02-18 | - |
 | 35. Subcontractors in Global Search | v1.4 | 0/? | Not started | - |
