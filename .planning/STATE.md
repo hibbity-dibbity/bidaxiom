@@ -9,17 +9,17 @@ See: .planning/PROJECT.md (updated 2026-02-18)
 
 ## Current Position
 
-Phase: 31 (Color Palette & Favicon)
-Plan: 01 complete — awaiting 31-02 execution
-Status: Plan 31-01 complete (read-only palette extraction + user approval); approved HSL values recorded in 31-01-SUMMARY.md; Plan 31-02 ready to apply values to globals.css and button.tsx
-Last activity: 2026-02-18 — Plan 31-01 palette approved; cyan-teal primary (188 80% 45%/50%), slate-blue foreground text (210 25% 25%), button.tsx outline variant update deferred to 31-02
+Phase: 31 (Color Palette & Favicon) — COMPLETE
+Plan: 02 complete — Phase 31 fully done
+Status: Both plans complete. globals.css updated with BIDAXIOM brand colors (cyan-teal primary 188 80% 45%/50%, slate-blue body text 210 25% 25%), button.tsx outline variant repointed to brand primary, favicon wired via app/icon.png + layout.tsx metadata.icons. User visually verified all checks.
+Last activity: 2026-02-18 — Plan 31-02 palette applied and favicon set; user typed "verified" at visual checkpoint
 
-Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [███░░░░░░░] ~15%
+Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [████░░░░░░] ~20%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 107
+- Total plans completed: 109
 - Average duration: 4.3 min
 - Total execution time: ~8.99 hours
 
@@ -38,10 +38,11 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 | 28 | 3 | ~12 min | ~4 min |
 | 29 | 4 | ~10 min + UAT | ~3.3 min (excl. UAT) |
 | 30 | 3 | ~12 min | ~4 min |
+| 31 | 2 | ~35 min (incl. human review) | ~17.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 29-03 (~4 min), 29-02 (~3 min), 29-01 (~3 min), 28-02 (~2 min), 28-01 (~8 min)
-- Trend: Phase 29 plans are surgical UX polish/tech debt — no deviations, fast execution
+- Last 5 plans: 31-02 (~15 min), 31-01 (~20 min), 30-03 (~4 min), 30-02 (~4 min), 30-01 (~4 min)
+- Trend: Phase 31 included human visual verification checkpoints; execution time higher due to approval gates
 
 *Updated after each plan completion*
 
@@ -58,6 +59,7 @@ Decisions are logged in PROJECT.md Key Decisions table (full log, 29 phases).
 - 30-02: Dashboard layout title set to "Dashboard" because all dashboard page.tsx files are "use client" components — per-route titles not achievable without converting them to server components
 - 30-03: User prefers plain "BIDAXIOM" in dashboard tabs over "Dashboard | BIDAXIOM" — removed layout-level title, root layout default applies; sign-in retains "Sign In | BIDAXIOM"
 - 31-01: Primary action color = cyan-teal (H=188, 80%, 45%/50%) not slate-blue; slate-blue moves to --foreground for body text in light mode; dark mode primary stays vivid L=50% not L=65%; outline buttons need button.tsx update (border-input→border-primary)
+- 31-02: Outline button variant uses border-primary text-primary (not border-input text-foreground) so secondary actions display in brand cyan-teal; dual favicon: app/icon.png (file-based auto-detection) + metadata.icons (belt-and-suspenders for PWA/bookmarks)
 
 ### Pending Todos
 
@@ -70,5 +72,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Plan 31-01 complete — palette approved by user; Plan 31-02 (apply palette to globals.css + button.tsx) is next
+Stopped at: Completed 31-02-PLAN.md — Phase 31 fully complete; both plans done; user visually verified palette and favicon
 Resume file: None
