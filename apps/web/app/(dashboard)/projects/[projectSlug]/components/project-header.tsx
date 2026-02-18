@@ -22,6 +22,7 @@ interface ProjectHeaderProps {
     slug: string;
     status: ProjectStatus;
     customerId: string;
+    customerSlug?: string | null;
     customerName?: string | null;
     street1?: string | null;
     city?: string | null;
@@ -102,7 +103,7 @@ export function ProjectHeader({ project, budgetSummary, teamMemberCount }: Proje
       <div className="flex items-center gap-6 text-sm text-muted-foreground mb-3">
         {project.customerName && (
           <Link
-            href={`/customers/${project.customerId}`}
+            href={`/customers/${project.customerSlug || project.customerId}`}
             className="hover:text-foreground hover:underline flex items-center gap-1.5"
           >
             <Building2 className="h-4 w-4" />

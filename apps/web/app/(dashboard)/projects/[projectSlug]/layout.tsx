@@ -69,6 +69,7 @@ export default function ProjectLayout({ children, params }: ProjectLayoutProps) 
           slug: project.slug ?? "",
           status: project.status as "active" | "on_hold" | "completed" | "archived",
           customerId: project.customerId,
+          customerSlug: project.customer?.slug ?? null,
           customerName: project.customer?.companyName || project.customer?.contactName || null,
           street1: project.street1,
           city: project.city,

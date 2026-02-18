@@ -1,13 +1,39 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronRight, Building2, User, Mail, Phone, MapPin, Briefcase } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from "@/components/ui/form";
+import { PhoneInput } from "@/components/ui/phone-input";
+import { AddressInput } from "@/components/ui/address-input";
+import { ChevronRight, Building2, User, Mail, Phone, MapPin, Briefcase, Edit } from "lucide-react";
+import { toast } from "sonner";
+import { createCustomerSchema } from "@construction/shared";
 import type { ProjectStatus } from "@construction/shared";
+import type { z } from "zod";
 
 const statusColors: Record<ProjectStatus, string> = {
   active: "bg-green-500/10 text-green-700 border-green-200",
@@ -16,13 +42,80 @@ const statusColors: Record<ProjectStatus, string> = {
   archived: "bg-gray-500/10 text-gray-700 border-gray-200",
 };
 
+type CustomerFormData = z.infer<typeof createCustomerSchema>;
+
 export default function CustomerDetailPage({
   params,
 }: {
   params: { customerSlug: string };
 }) {
   const { customerSlug } = params;
+  const router = useRouter();
   const { data: customer, isLoading } = trpc.customer.getBySlug.useQuery({ slug: customerSlug });
+
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const utils = trpc.useUtils();
+
+  const form = useForm<CustomerFormData>({
+    resolver: zodResolver(createCustomerSchema),
+    defaultValues: {
+      companyName: "",
+      contactName: "",
+      phone: "",
+      email: "",
+      address: { street1: "", street2: "", city: "", state: "", zipCode: "" },
+    },
+  });
+
+  const updateMutation = trpc.customer.update.useMutation({
+    onSuccess: (updated) => {
+      utils.customer.getBySlug.invalidate({ slug: customerSlug });
+      utils.customer.list.invalidate();
+      toast.success("Customer updated successfully");
+      setEditDialogOpen(false);
+      if (updated.slug && updated.slug !== customerSlug) {
+        router.replace(`/customers/${updated.slug}`);
+      }
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to update customer");
+    },
+  });
+
+  const handleEdit = () => {
+    if (!customer) return;
+    form.reset({
+      companyName: customer.companyName || "",
+      contactName: customer.contactName,
+      phone: customer.phone || "",
+      email: customer.email || "",
+      address: {
+        street1: customer.street1 || "",
+        street2: customer.street2 || "",
+        city: customer.city || "",
+        state: customer.state || "",
+        zipCode: customer.zip || "",
+      },
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleSubmitEdit = (data: CustomerFormData) => {
+    if (!customer) return;
+    updateMutation.mutate({
+      id: customer.id,
+      companyName: data.companyName,
+      contactName: data.contactName,
+      phone: data.phone,
+      email: data.email,
+      address: data.address,
+      street1: data.address?.street1,
+      street2: data.address?.street2,
+      city: data.address?.city,
+      state: data.address?.state,
+      zip: data.address?.zipCode,
+    });
+  };
 
   if (isLoading) {
     return (
@@ -92,9 +185,15 @@ export default function CustomerDetailPage({
             <p className="text-muted-foreground">Contact: {customer.contactName}</p>
           )}
         </div>
-        <Button variant="outline" asChild>
-          <Link href="/customers">Back to Customers</Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleEdit}>
+            <Edit className="mr-2 h-4 w-4" />
+            Edit
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/customers">Back to Customers</Link>
+          </Button>
+        </div>
       </div>
 
       {/* Customer Info Cards */}
@@ -193,6 +292,62 @@ export default function CustomerDetailPage({
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Customer Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Customer</DialogTitle>
+            <DialogDescription>Update customer information</DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmitEdit)} className="space-y-4 py-4">
+              <FormField control={form.control} name="companyName" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Company Name (Optional)</FormLabel>
+                  <FormControl><Input placeholder="ABC Construction Inc." {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="contactName" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Contact Name *</FormLabel>
+                  <FormControl><Input placeholder="John Doe" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField control={form.control} name="phone" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone</FormLabel>
+                    <FormControl><PhoneInput {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="email" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email *</FormLabel>
+                    <FormControl><Input type="email" placeholder="john@example.com" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium">Address</h4>
+                <AddressInput form={form} prefix="address" />
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={updateMutation.isPending}>
+                  {updateMutation.isPending ? "Saving..." : "Save Changes"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
