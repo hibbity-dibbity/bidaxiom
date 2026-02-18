@@ -118,8 +118,9 @@ export default function EditProjectPage({ params }: EditProjectPageProps) {
       const newSlug = updated?.slug ?? projectSlug;
       utils.project.getBySlug.invalidate({ slug: newSlug });
       utils.project.list.invalidate();
-      // Invalidate company profile so job number counter reflects any counter advance
+      // Invalidate company profile and max-used sequence so settings page is fresh
       utils.company.getCurrent.invalidate();
+      utils.company.getMaxUsedJobSequence.invalidate();
       toast.success("Project updated");
       router.push(`/projects/${newSlug}`);
     },
