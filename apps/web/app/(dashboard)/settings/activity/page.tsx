@@ -31,7 +31,7 @@ export default function ActivityLogPage() {
       </div>
 
       {/* Activity Feed */}
-      <div className="rounded-lg border bg-card p-6">
+      <div className="bg-card p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Activity className="h-5 w-5 text-muted-foreground" />

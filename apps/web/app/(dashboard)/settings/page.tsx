@@ -20,7 +20,7 @@ export default function SettingsPage() {
       <div className="grid gap-4 md:grid-cols-2">
         <Link
           href="/settings/account"
-          className="rounded-lg border bg-card p-6 hover:shadow-sm transition-shadow"
+          className="bg-card p-6 hover:bg-muted/50 transition-colors"
         >
           <div className="flex items-center gap-3 mb-2">
             <User className="h-5 w-5 text-primary" />
@@ -33,7 +33,7 @@ export default function SettingsPage() {
 
         <Link
           href="/settings/members"
-          className="rounded-lg border bg-card p-6 hover:shadow-sm transition-shadow"
+          className="bg-card p-6 hover:bg-muted/50 transition-colors"
         >
           <div className="flex items-center gap-3 mb-2">
             <Users className="h-5 w-5 text-primary" />
@@ -46,7 +46,7 @@ export default function SettingsPage() {
 
         <Link
           href="/settings/company"
-          className="rounded-lg border bg-card p-6 hover:shadow-sm transition-shadow"
+          className="bg-card p-6 hover:bg-muted/50 transition-colors"
         >
           <div className="flex items-center gap-3 mb-2">
             <Building2 className="h-5 w-5 text-primary" />
@@ -59,7 +59,7 @@ export default function SettingsPage() {
 
         <Link
           href="/settings/integrations"
-          className="rounded-lg border bg-card p-6 hover:shadow-sm transition-shadow"
+          className="bg-card p-6 hover:bg-muted/50 transition-colors"
         >
           <div className="flex items-center gap-3 mb-2">
             <Plug className="h-5 w-5 text-primary" />
@@ -72,7 +72,7 @@ export default function SettingsPage() {
 
         <Link
           href="/settings/activity"
-          className="rounded-lg border bg-card p-6 hover:shadow-sm transition-shadow"
+          className="bg-card p-6 hover:bg-muted/50 transition-colors"
         >
           <div className="flex items-center gap-3 mb-2">
             <Activity className="h-5 w-5 text-primary" />

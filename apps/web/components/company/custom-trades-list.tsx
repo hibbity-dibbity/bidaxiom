@@ -160,7 +160,7 @@ export function CustomTradesList({ value, onChange }: CustomTradesListProps) {
           {value.map((trade) => (
             <div
               key={trade.id}
-              className="flex items-center justify-between rounded-lg border bg-card p-3"
+              className="flex items-center justify-between bg-card p-3"
             >
               <div>
                 <div className="font-medium">{trade.name}</div>

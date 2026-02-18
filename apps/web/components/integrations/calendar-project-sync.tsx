@@ -62,7 +62,7 @@ export function CalendarProjectSync({
   }
 
   return (
-    <div className="rounded-lg border p-4 space-y-4">
+    <div className="p-4 space-y-4">
       <Button
         variant="ghost"
         className="w-full justify-between"

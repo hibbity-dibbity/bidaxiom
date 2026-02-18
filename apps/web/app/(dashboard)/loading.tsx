@@ -16,7 +16,7 @@ export default function DashboardLoading() {
       {/* Stats grid skeleton */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="rounded-lg border bg-card p-6">
+          <div key={i} className="bg-card p-6">
             <div className="flex items-center justify-between">
               <Skeleton className="h-4 w-24" />
               <Skeleton className="h-4 w-4" />
@@ -30,7 +30,7 @@ export default function DashboardLoading() {
       </div>
 
       {/* Activity section skeleton */}
-      <div className="rounded-lg border bg-card p-6">
+      <div className="bg-card p-6">
         <Skeleton className="h-5 w-36 mb-4" />
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
