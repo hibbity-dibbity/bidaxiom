@@ -25,7 +25,7 @@ export function TopBar({ onSearchOpen }: { onSearchOpen?: () => void }) {
         {!open && (
           <Image
             src="/bidaxiom-logo.png"
-            alt="BidAxiom"
+            alt="BIDAXIOM"
             width={192}
             height={32}
             className="dark:invert h-8 w-auto"

@@ -58,7 +58,7 @@ export function AppSidebar() {
           {/* Full logo when expanded */}
           <Image
             src="/bidaxiom-logo.png"
-            alt="BidAxiom"
+            alt="BIDAXIOM"
             width={192}
             height={32}
             className="group-data-[collapsible=icon]:hidden dark:invert h-8 w-auto"
