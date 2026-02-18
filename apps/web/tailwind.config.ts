@@ -65,6 +65,11 @@ const config: Config = {
   			construction: {
   				DEFAULT: 'hsl(var(--accent-construction))',
   				foreground: 'hsl(var(--accent-construction-foreground))'
+  			},
+  			// Slate-blue for primary action buttons and avatar
+  			'brand-slate': {
+  				DEFAULT: 'hsl(var(--brand-slate))',
+  				foreground: 'hsl(var(--brand-slate-foreground))',
   			}
   		},
   		borderRadius: {
