@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-02-18)
 
 ## Current Position
 
-Phase: 35 (Subcontractors in Global Search) — IN PROGRESS
-Plan: 35-01 complete — Subcontractor records added to global command palette search (shared Zod enum, API router query, UI CommandGroup with Building2 icon)
-Status: Phase 35 plan 01 complete. SRCH-03 satisfied — users can now search subcontractors via ⌘K palette alongside projects, customers, and estimates.
-Last activity: 2026-02-18 — Phase 35-01: subcontractors in global search
+Phase: 35 (Subcontractors in Global Search) — COMPLETE
+Plan: 35-02 complete — Human-verified subcontractors appear in ⌘K global search under "Subcontractors" heading; navigation to /subcontractors/{slug} confirmed; SRCH-03 closed
+Status: Phase 35 complete. All 2 plans done. SRCH-03 satisfied and human-verified.
+Last activity: 2026-02-18 — Phase 35-02: human verification of subcontractors in global search
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [███████░░░] ~35%
 
@@ -42,7 +42,7 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 | 32 | 2 | ~20 min (incl. human verify) | ~10 min |
 | 33 | 2 | ~4 min | ~2 min |
 | 34 | 5 | ~18 min | ~3.6 min |
-| 35 | 1 | ~2 min | ~2 min |
+| 35 | 2 | ~7 min | ~3.5 min |
 
 **Recent Trend:**
 - Last 5 plans: 34-05 (~5 min human verify), 34-04 (~5 min), 34-03 (~5 min est), 34-02 (~5 min), 34-01 (~3 min)
@@ -62,6 +62,7 @@ Decisions are logged in PROJECT.md Key Decisions table (full log, 29 phases).
 - 34-02: RHF Controller pattern used for CurrencyInput fields — Controller wraps CurrencyInput; field.onChange(n) stores numeric value; valueAsNumber not usable with type=text inputs
 - 34-01: CurrencyInput uses type="text" inputMode="decimal" + isFocusedRef; raw number shown on focus, $X,XXX.XX formatted on blur; parseCurrencyInput strips $, commas, whitespace via regex
 - 35-01: Zod enum in shared package updated first (before API/web) so TypeScript accepts `type: "subcontractor" as const`; isNotNull(slug) filter on subcontractorDirectory prevents null URL construction
+- 35-02: slug backfill migration (add-entity-slugs.ts) required for existing subcontractor records when isNotNull(slug) filter is added — null slugs on existing rows silently exclude them from results; one-time migration is the standard resolution
 - 34: FORM-01 changed from live-as-you-type to format-on-blur — live masking (use-mask-input) was tried and reverted; format-on-blur (onBlur handler with Intl.NumberFormat) is the chosen approach
 - 33-01: Company selector merged into UserMenu (trpc.organization.list.useQuery + opacity Check icon pattern); CompanySwitcher deleted; top bar simplified to Search → Bell → UserMenu
 - 30-01: Used Next.js `title.template` object so child pages inherit "Page | BIDAXIOM" without per-page changes
@@ -93,5 +94,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 35-01-PLAN.md — SRCH-03 satisfied; subcontractors added to global ⌘K search
+Stopped at: Completed 35-02-PLAN.md — Phase 35 complete; SRCH-03 human-verified; subcontractors confirmed in ⌘K search
 Resume file: None
