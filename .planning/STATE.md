@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 
 ## Current Position
 
-Phase: 27 of 29 in v1.3 (Slug Routing Completion) — Ready for planning
-Plan: 0 of TBD in Phase 27 — Not started
-Status: Phase 26 complete (verified 2026-02-17); Phase 27 ready for planning
-Last activity: 2026-02-17 — Completed Phase 26: account settings consolidated, shell cleaned up, NAV-01 fixed
+Phase: 27 of 29 in v1.3 (Slug Routing Completion) — In progress
+Plan: 2 of 3 in Phase 27 — Plans 27-01 and 27-02 complete
+Status: Phase 27 in progress; 27-02 complete (2026-02-18)
+Last activity: 2026-02-18 — Completed 27-02: SubcontractorForm onSuccess threads slug for post-rename navigation
 
 Progress: v1.0: [██████████] 100% (12 phases) | v1.1: [██████████] 100% (7 phases) | v1.2: [██████████] 100% (5 phases) | v1.3: [████░░░░░░] ~40% (2/5 phases complete)
 
@@ -61,6 +61,8 @@ Recent decisions affecting current work:
 - **tRPC fetch body: no { json: {} } wrapper (Phase 26)**: Without superjson transformer, tRPC REST handler expects raw input directly, not wrapped in { json: {...} }; affects all manual fetch calls to tRPC endpoints
 - **collapsible="icon" not "none" (Phase 26)**: "icon" enables icon-only collapse mode (sidebar collapses to icon strip); "none" disables collapse entirely. Phase goal was always-visible with collapse toggle intact, so "icon" is correct
 - **sidebar-nav.tsx fix (Phase 26)**: NAV-01 root cause was projectNav context-switching in sidebar-nav.tsx, not the collapsible prop. Fixed by removing the project-context detection branch; sidebar-nav now always renders mainNav
+- **router.replace for post-rename slug navigation (Phase 27)**: After companyName change regenerates slug, router.replace navigates to new URL so old slug is not left in back-stack history
+- **onSuccess type widened with optional arg (Phase 27)**: SubcontractorForm onSuccess prop accepts optional { slug, id } so update caller can receive new slug without requiring it; create caller omits arg, remaining compatible
 
 ### Pending Todos
 
@@ -72,6 +74,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-17
-Stopped at: Completed Phase 26 — all 3 plans done, UAT passed (7/7), verification complete
+Last session: 2026-02-18
+Stopped at: Completed 27-02 — SubcontractorForm post-rename slug navigation; 27-03 is next
 Resume file: None
