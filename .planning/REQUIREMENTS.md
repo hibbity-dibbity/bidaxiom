@@ -51,13 +51,13 @@ Items explicitly excluded from v1.4:
 |-------------|-------|--------|
 | BRAND-01 | Phase 30 | Pending |
 | BRAND-02 | Phase 30 | Pending |
-| BRAND-03 | Phase 30 | Pending |
 | BRAND-04 | Phase 30 | Pending |
-| DESIGN-01 | Phase 31 | Pending |
-| NAV-02 | Phase 32 | Pending |
-| FORM-01 | Phase 33 | Pending |
-| SRCH-03 | Phase 34 | Pending |
 | CLEAN-01 | Phase 30 | Pending |
+| BRAND-03 | Phase 31 | Pending |
+| DESIGN-01 | Phase 32 | Pending |
+| NAV-02 | Phase 33 | Pending |
+| FORM-01 | Phase 34 | Pending |
+| SRCH-03 | Phase 35 | Pending |
 
 **Coverage:**
 - v1.4 requirements: 9 total
@@ -66,4 +66,4 @@ Items explicitly excluded from v1.4:
 
 ---
 *Requirements defined: 2026-02-18*
-*Last updated: 2026-02-18 — initial definition*
+*Last updated: 2026-02-18 — traceability updated with final phase assignments (Phases 30-35)*
