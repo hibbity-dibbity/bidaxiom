@@ -5,7 +5,8 @@
 - ✅ **v1.0 MVP** — Phases 1-12 (shipped Feb 14, 2026)
 - ✅ **v1.1 Enterprise UX Redesign** — Phases 13-19 (shipped Feb 16, 2026)
 - ✅ **v1.2 Job Number System Fixes & Reliability** — Phases 20-24 (shipped Feb 17, 2026)
-- 🚧 **v1.3 Polish & Gap Closure** — Phases 25-29 (started Feb 17, 2026)
+- ✅ **v1.3 Polish & Gap Closure** — Phases 25-29 (shipped Feb 18, 2026)
+- 📋 **v1.4** — Planning next milestone
 
 ## Shipped Milestones
 
@@ -66,106 +67,35 @@
 
 </details>
 
+<details>
+<summary>✅ v1.3 Polish & Gap Closure (Phases 25-29) — SHIPPED Feb 18, 2026</summary>
+
+**Delivered:** Session expiry detection, consolidated account settings, slug routing for customers/subs, estimates in search, dashboard click-through, and consistent empty states/loading/error handling
+
+**Phases:**
+- [x] Phase 25: Session & Auth Flow (3 plans) — SessionWatcher, tRPC 401 interceptor, return URL preservation
+- [x] Phase 26: Account Settings & Shell Cleanup (3 plans) — /settings/account, static sidebar, password change + MFA management
+- [x] Phase 27: Slug Routing Completion (3 plans) — Customer/sub slug URLs, generateNameSlug (no UUID prefix)
+- [x] Phase 28: Search & Dashboard Enhancements (3 plans) — Estimates in ⌘K search, 9 KPI widgets with pre-filtered navigation
+- [x] Phase 29: UX Polish & Tech Debt (4 plans) — Empty states, skeleton loading, global error toasts, job number counter-advance
+
+**Archive:** [.planning/milestones/v1.3-ROADMAP.md](./milestones/v1.3-ROADMAP.md)
+
+</details>
+
 ---
 
-## Current Milestone: v1.3 Polish & Gap Closure
+## Current Milestone: v1.4
 
-**Milestone Goal:** Complete unfinished routing migrations, fix auth session flows, consolidate account settings, revert to static sidebar, and tighten overall UX reliability across list views, loading states, and error handling.
-
-### Phases
-
-- [x] **Phase 25: Session & Auth Flow** - Immediate redirect on session expiry; return URL after sign-in (completed 2026-02-17)
-- [x] **Phase 26: Account Settings & Shell Cleanup** - Consolidated /settings/account page; static sidebar (completed 2026-02-17)
-- [x] **Phase 27: Slug Routing Completion** - Customer and subcontractor detail/edit pages on slug URLs (completed 2026-02-17)
-- [x] **Phase 28: Search & Dashboard Enhancements** - Estimates in global search; dashboard KPI click-through with pre-filtering (completed 2026-02-18)
-- [x] **Phase 29: UX Polish & Tech Debt** - Empty states, loading states, consistent error toasts, job number counter on edit (completed 2026-02-18)
-
-### Phase Details
-
-#### Phase 25: Session & Auth Flow
-**Goal**: Users are never silently stuck on a stale page — session expiry redirects immediately to sign-in, and users land back where they intended after signing in.
-**Depends on**: Nothing (first phase of v1.3)
-**Requirements**: SESS-01, SESS-02
-**Success Criteria** (what must be TRUE):
-  1. When a session expires while a user is on any page, they are automatically redirected to the sign-in page without needing to take an action first
-  2. After signing in, the user is taken to the page they originally tried to access (not the default dashboard)
-  3. Return URL is preserved correctly across the sign-in flow (no loss on page refresh at sign-in)
-**Plans**: 3 plans
-Plans:
-- [x] 25-01-PLAN.md — Fix return URL (sign-in Server Component refactor + getSafeRedirectUrl + MFA flow)
-- [x] 25-02-PLAN.md — Session expiry detection (useSessionWatcher hook + tRPC 401 interceptor)
-- [x] 25-03-PLAN.md — Browser UAT verification of SESS-01 and SESS-02
-
-#### Phase 26: Account Settings & Shell Cleanup
-**Goal**: All account management is in one place at /settings/account, the user dropdown is clean, and the sidebar always shows the same global navigation items (no project-context switching) while keeping collapse/expand toggle.
-**Depends on**: Phase 25
-**Requirements**: ACCT-01, ACCT-02, ACCT-03, ACCT-04, NAV-01
-**Completed**: 2026-02-17
-**Success Criteria** (what must be TRUE):
-  1. User can navigate to /settings/account and see a single page that consolidates profile, password change, and MFA configuration
-  2. MFA can be enabled, disabled, and reconfigured (QR code setup) from the account settings page
-  3. Password can be changed from the account settings page without visiting a separate URL
-  4. The user dropdown in the top navigation links directly to /settings/account — no separate "Settings" and "MFA" links
-  5. The sidebar always shows global navigation on all pages with no project-context switching; icon-only collapse preserved
-**Plans**: 3 plans
-Plans:
-- [x] 26-01-PLAN.md — API mutations: auth.changePassword and auth.disableMfa
-- [x] 26-02-PLAN.md — Shell cleanup: static sidebar, user dropdown consolidation, MFA bug fix, Account Settings card
-- [x] 26-03-PLAN.md — Account settings page: Profile, Password Change, MFA sections + human verify
-
-#### Phase 27: Slug Routing Completion
-**Goal**: Customer and subcontractor detail and edit pages use human-readable slug URLs, completing the slug routing migration that was finished for projects in v1.1.
-**Depends on**: Phase 26
-**Requirements**: SLUG-01, SLUG-02, SLUG-03, SLUG-04
-**Success Criteria** (what must be TRUE):
-  1. Navigating to a customer's detail page produces a slug-based URL (e.g., /customers/abc-construction) not a UUID URL
-  2. Editing a customer uses a slug-based URL; saving or navigating away preserves the slug URL pattern
-  3. Navigating to a subcontractor's detail page produces a slug-based URL (e.g., /subcontractors/smith-plumbing)
-  4. Editing a subcontractor uses a slug-based URL; the URL does not revert to UUID at any point
-**Plans**: 3 plans
-Plans:
-- [ ] 27-01-PLAN.md — Fix project-header UUID link + add edit dialog to customer detail page
-- [ ] 27-02-PLAN.md — Subcontractor post-rename slug navigation
-- [ ] 27-03-PLAN.md — Browser UAT verification of SLUG-01 through SLUG-04
-
-#### Phase 28: Search & Dashboard Enhancements
-**Goal**: Global search surfaces estimates alongside projects and customers with clear type labels, and dashboard KPI widgets navigate to pre-filtered list pages so clicking a widget is immediately useful.
-**Depends on**: Phase 27
-**Requirements**: SRCH-01, SRCH-02, DASH-01
-**Success Criteria** (what must be TRUE):
-  1. Typing in global search (⌘K) returns estimate results alongside project and customer results
-  2. Each search result displays a type label (Project, Estimate, Customer) so the user can distinguish result types at a glance
-  3. Clicking a dashboard KPI widget navigates to the relevant page with filters pre-applied matching the widget's metric (e.g., "My Active Projects" opens projects list filtered to the current user's active projects)
-**Plans**: 3 plans
-Plans:
-- [ ] 28-01-PLAN.md — Estimate search + customer URL bug fix + Estimates CommandGroup in command palette
-- [ ] 28-02-PLAN.md — Dashboard KPI widget onClick handlers
-- [ ] 28-03-PLAN.md — Browser UAT verification of SRCH-01, SRCH-02, DASH-01
-
-#### Phase 29: UX Polish & Tech Debt
-**Goal**: Every list and table view communicates clearly when empty, loading states are consistent across the app, API errors always surface via toast notifications, and manually editing a job number on the edit page correctly advances the auto-generation counter.
-**Depends on**: Phase 28
-**Requirements**: UX-01, UX-02, UX-03, JOBEDIT-01
-**Success Criteria** (what must be TRUE):
-  1. List and table views with no records display an informative empty state (message and/or call-to-action) instead of a blank table body
-  2. All data-fetching views show a skeleton loader or spinner during fetches rather than blank content areas
-  3. API errors across the app surface as toast notifications with actionable messages rather than silent failures or unformatted console errors
-  4. When a user manually types a job number on the edit project page and saves, the company's auto-generation counter is updated so the next auto-generated number does not conflict
-**Plans**: 4 plans
-Plans:
-- [ ] 29-01-PLAN.md — Add QueryCache global error handler to providers.tsx (UX-03)
-- [ ] 29-02-PLAN.md — Add job number counter-advance logic to project.update (JOBEDIT-01)
-- [ ] 29-03-PLAN.md — Upgrade empty states and skeleton loading across 4 frontend components (UX-01, UX-02)
-- [ ] 29-04-PLAN.md — Browser UAT verification of UX-01, UX-02, UX-03, JOBEDIT-01
+*Planning in progress — run `/gsd:new-milestone` to define requirements and roadmap.*
 
 ---
 
 ## Progress
 
-| Phase | Status | Plans | Completed |
-|-------|--------|-------|-----------|
-| 25 | ✅ Complete | 3/3 | 2026-02-17 |
-| 26 | ✅ Complete | 3/3 | 2026-02-17 |
-| 27 | ✅ Complete | 3/3 | 2026-02-17 |
-| 28 | ⬜ Not started | Complete    | 2026-02-18 |
-| 29 | ⬜ Not started | Complete    | 2026-02-18 |
+| Phase | Milestone | Plans | Status | Completed |
+|-------|-----------|-------|--------|-----------|
+| 1-12 | v1.0 | 60/60 | ✅ Complete | 2026-02-14 |
+| 13-19 | v1.1 | 50/50 | ✅ Complete | 2026-02-16 |
+| 20-24 | v1.2 | 12/12 | ✅ Complete | 2026-02-17 |
+| 25-29 | v1.3 | 16/16 | ✅ Complete | 2026-02-18 |

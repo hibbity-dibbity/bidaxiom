@@ -10,7 +10,7 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 
 ## Current State
 
-**Shipped:** v1.0 MVP + v1.1 Enterprise UX Redesign + v1.2 Job Number System (Feb 2026)
+**Shipped:** v1.0 MVP + v1.1 Enterprise UX Redesign + v1.2 Job Number System + v1.3 Polish & Gap Closure (Feb 2026)
 
 **What's built:**
 - Complete project financial lifecycle (RFQs → bidding → budget → change orders → payment apps)
@@ -19,21 +19,24 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 - Document management with workflows (RFIs, submittals, transmittals)
 - Reporting & analytics with custom builder and scheduled delivery
 - Calendar integration (Google, Microsoft) with bi-directional sync
-- Enterprise-grade UI with dark mode, global search, and company branding
+- Enterprise-grade UI with dark mode, global search (⌘K with estimates, projects, customers), and company branding
 - Guided estimate workflow with cost code templates, labor rates, and SOV builder
 - Estimate lifecycle (draft → submitted → bid → won → active project)
-- Slug-based routing, persistent headers, and component library
+- Slug-based routing for projects, customers, and subcontractors (fully migrated)
 - Job number system — auto-generation, manual assignment, duplicate prevention, year rollover
+- Session expiry detection with immediate redirect + return URL preservation
+- Consolidated account settings (/settings/account) with password change and MFA management
+- Consistent empty states, skeleton loading, and global API error toast handling
 
 **Tech stack:** Next.js 14, Fastify, tRPC, Drizzle ORM, PostgreSQL (schema-per-tenant), Redis, MinIO (S3), Tailwind CSS
 
-**Codebase:** ~143,000+ lines of TypeScript across 24 phases (12 v1.0 + 7 v1.1 + 5 v1.2)
+**Codebase:** ~152,000+ lines of TypeScript across 29 phases
 
 ## Requirements
 
 ### Validated
 
-<!-- Shipped in v1.0 and v1.1. See archived REQUIREMENTS.md for full details. -->
+<!-- Shipped through v1.3. See archived REQUIREMENTS.md files for full details. -->
 
 **v1.0 Core Platform (Phases 1-12):**
 - ✓ Multi-tenant authentication with MFA and organization management — v1.0
@@ -60,40 +63,28 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 - ✓ Estimate lifecycle management (draft → bid → won → active project) — v1.1
 - ✓ Reusable component library with CVA variants and formatting utilities — v1.1
 
+**v1.2 Job Number System (Phases 20-24):**
+- ✓ Job number auto-generation with configurable template and atomic counter — v1.2
+- ✓ Manual job number assignment with duplicate prevention (ilike) — v1.2
+- ✓ Blur validation on create/edit forms with inline conflict links — v1.2
+- ✓ Year rollover with configurable startingSequenceNumber — v1.2
+
+**v1.3 Polish & Gap Closure (Phases 25-29):**
+- ✓ Session expiry detection with immediate redirect to sign-in (SessionWatcher + tRPC 401 interceptor) — v1.3
+- ✓ Return URL preservation through sign-in flow (getSafeRedirectUrl) — v1.3
+- ✓ Consolidated /settings/account page (profile, password change, MFA) — v1.3
+- ✓ Static sidebar with icon-only collapse; no project-context switching — v1.3
+- ✓ Slug-based routing for customers and subcontractors (generateNameSlug) — v1.3
+- ✓ Estimates in global search (⌘K) with type labels — v1.3
+- ✓ Dashboard KPI widgets navigate to pre-filtered list pages — v1.3
+- ✓ Consistent empty states, skeleton loading, and global error toasts — v1.3
+- ✓ Job number counter-advance on manual edit-page save — v1.3
+
 ### Active
 
-<!-- v1.3 Polish & Gap Closure -->
+<!-- v1.4 — not yet defined. Run /gsd:new-milestone to define next milestone. -->
 
-**Milestone v1.3: Polish & Gap Closure** (Started: 2026-02-17)
-
-**Goal:** Complete unfinished routing migrations, fix auth session flows, consolidate account settings, revert to static sidebar, and tighten overall UX reliability.
-
-**Target features:**
-- Session expiry detection with immediate redirect to sign-in + return URL support
-- Consolidated /settings/account page (MFA, password change); updated user dropdown
-- Static sidebar (revert dynamic sidebar)
-- Slug-based routing for customer and subcontractor detail/edit pages
-- Estimates included in global search results
-- Dashboard KPI widget click-through with pre-filtering
-- Job number counter increment on manual edit-page change (v1.2 tech debt)
-- Consistent empty states, loading states, and error handling across the app
-
-<details>
-<summary>✅ v1.2 Job Number System Fixes & Reliability — SHIPPED Feb 17, 2026</summary>
-
-**Goal:** Fix broken job number auto-generation system and ensure reliable increment tracking across all project touchpoints.
-
-**Delivered:**
-- Job number configuration (format template, starting sequence, enabled toggle) — JSONB persistence, schema provisioned for all tenants
-- Auto-generation assigns numbers to new projects atomically; manual entry increments counter
-- Duplicate prevention with case-insensitive detection; edit-page self-exclusion
-- Blur validation on create and edit forms with inline error links
-- Job numbers display in project list, detail header, and estimates
-- Year rollover resets sequence to configurable startingSequenceNumber; rollover-aware preview in settings UI
-
-**Archive:** [.planning/milestones/v1.2-ROADMAP.md](.planning/milestones/v1.2-ROADMAP.md)
-
-</details>
+(No active requirements — planning next milestone)
 
 ### Out of Scope
 
@@ -112,12 +103,12 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 
 **Market:** Small-to-mid-sized commercial contractors are underserved. Enterprise tools (Procore, Sage) are expensive and complex. Smaller tools lack multi-company collaboration and financial depth. The gap is a platform that handles the full GC↔Sub lifecycle affordably.
 
-**Current status:** v1.0 + v1.1 shipped with full project financial lifecycle, enterprise-grade UX, and guided estimate workflow. Platform handles budget tracking, change orders, payment applications, RFQ management, and bi-directional QuickBooks sync. 142K lines of TypeScript across 19 phases.
+**Current status:** v1.3 shipped — all core functionality complete with enterprise-grade UX, reliable session handling, consistent empty/loading/error states, and full slug-based routing. ~152K lines of TypeScript across 29 phases.
 
 **Known technical debt:**
-- Frontend slug routing incomplete for customers and subcontractors (backend ready, frontend not migrated from UUID routes)
-- Dashboard KPI widgets don't auto-filter target pages (e.g., "My Active Projects" doesn't pre-filter to user's projects)
-- Global search doesn't include estimates (only projects and customers)
+- Phase 27 VERIFICATION.md never generated (UAT summary serves as substitute)
+- Sign-in page: `redirect_url` unvalidated at page level (getSafeRedirectUrl only fires at router.push time — no current exposure, defense-in-depth gap)
+- MFA `hasMfa` state refresh lag after `disableMfa` — shows stale "Enabled" until re-login/refresh
 
 **Go-to-market:** Both GCs and subs need to find value from day one. GCs use the platform to issue RFQs and manage project financials. Subs use it to respond to RFQs and manage their own projects/bids. Free sub accounts (profile + RFQ response + limited projects) create network effects.
 
@@ -140,14 +131,23 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Schema-per-company DB isolation | Strong data isolation without per-company DB instance ops overhead | ✓ Proven — works well across 19 phases |
+| Schema-per-company DB isolation | Strong data isolation without per-company DB instance ops overhead | ✓ Good — proven across 29 phases |
 | Custom auth over Clerk (Phase 12) | Eliminate third-party dependency, reduce costs, full control over flows | ✓ Good — JWT + MFA working well |
 | Cookie-based theme storage (Phase 13) | Prevents FOUC by ensuring server HTML matches client hydration | ✓ Good — no flash on load |
-| Slug-based routing (Phases 16-19) | Bookmarkable URLs, SEO-friendly, human-readable | ⚠️ Revisit — partial (projects done, customers/subs deferred) |
+| Slug-based routing (Phases 16-27) | Bookmarkable URLs, SEO-friendly, human-readable | ✓ Complete — projects, customers, subs all migrated |
 | Guided estimate workflow over spreadsheet-first (Phase 17) | Reduces cognitive load for solo operators, clear next steps | ✓ Good — user preference toggle available |
 | Component library extraction at 3+ uses (Phase 19) | Prevents premature abstraction while encouraging reuse | ✓ Good — StatusBadge, CurrencyDisplay proven |
 | QuickBooks as v1 ERP target | Most common ERP among target market (small-mid commercial contractors) | ✓ Good — bi-directional sync working |
 | Responsive web (no native mobile) for v1 | Faster to ship; field use works via mobile browser until usage patterns justify native | ✓ Good — mobile browser working well |
+| window.location.href for session redirects (Phase 25) | Full page reload ensures middleware re-evaluates iron-session cookie | ✓ Good — router.push would leave broken session |
+| SessionWatcher client component pattern (Phase 25) | Dashboard layout stays a Server Component; tiny client wrapper mounts the hook | ✓ Good — clean separation |
+| changePassword revokes refresh tokens, disableMfa does not (Phase 26) | Password change = credential rotation; MFA disable = settings change | ✓ Good — correct security model |
+| generateNameSlug (no UUID prefix) for customers/subs (Phase 27) | UUID prefix pattern was a uniqueness mechanism that produced ugly URLs | ✓ Good — clean name-based slugs |
+| router.replace for post-rename slug navigation (Phase 27) | Old slug not left in browser back-stack history | ✓ Good |
+| QueryCache.onError for global error toasts (Phase 29) | v5 react-query API; defaultOptions.queries.onError silently no-ops in v5 | ✓ Good |
+| No MutationCache.onError (Phase 29) | Mutations have per-mutation onError; global would double-toast every failure | ✓ Good |
+| startingSequenceNumber floors nextSequenceNumber at maxUsed+1 (Phase 29) | Prevents duplicate job numbers when lowering startingSequenceNumber | ✓ Good |
+| Uniqueness check inside db.transaction (Phase 29) | Load-compare-write has race window; transaction eliminates it | ✓ Good |
 
 ---
-*Last updated: 2026-02-17 after starting v1.3 milestone*
+*Last updated: 2026-02-18 after v1.3 milestone*
