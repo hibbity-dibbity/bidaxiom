@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { createCommitmentSchema, CSI_DIVISIONS } from "@construction/shared";
 import type { z } from "zod";
 import { Plus, Trash2, AlertCircle } from "lucide-react";
@@ -288,14 +289,17 @@ export function CommitmentForm({ projectId, onSuccess }: CommitmentFormProps) {
 
               <div className="space-y-2">
                 <Label>Amount *</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  {...register(`lineItems.${index}.amount`, {
-                    valueAsNumber: true,
-                  })}
-                  placeholder="0.00"
+                <Controller
+                  name={`lineItems.${index}.amount`}
+                  control={control}
+                  render={({ field }) => (
+                    <CurrencyInput
+                      value={Number(field.value) || 0}
+                      onChange={(n) => field.onChange(n)}
+                      onBlur={field.onBlur}
+                      placeholder="0.00"
+                    />
+                  )}
                 />
                 {errors.lineItems?.[index]?.amount && (
                   <p className="text-sm text-red-600">
