@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-02-18)
 
 ## Current Position
 
-Phase: 33 (Company Selector in User Dropdown) — COMPLETE
-Plan: 33-02 complete — Human verified all 6 visual checks; company selector in UserMenu confirmed production-ready
-Status: Phase 33 complete. All 2 plans executed. UserMenu contains org list with Check icon pattern. Top bar cleaned. Human verification passed 2026-02-18.
-Last activity: 2026-02-18 — Plan 33-02 human verification approved; all 6 checks passed
+Phase: 34 (Live Currency Formatting) — IN PROGRESS
+Plan: 34-01 complete — parseCurrencyInput utility and CurrencyInput component created; foundation ready for plans 02-04
+Status: Phase 34 in progress. Plan 34-01 executed. Infrastructure (parseCurrencyInput + CurrencyInput) ready for all 7 currency input fields.
+Last activity: 2026-02-18 — Plan 34-01 complete; format utility and CurrencyInput component committed
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████░░░░] ~30%
 
@@ -41,10 +41,11 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 | 31 | 2 | ~35 min (incl. human review) | ~17.5 min |
 | 32 | 2 | ~20 min (incl. human verify) | ~10 min |
 | 33 | 2 | ~4 min | ~2 min |
+| 34 | 1 (of 4) | ~3 min | ~3 min |
 
 **Recent Trend:**
-- Last 5 plans: 33-02 (~2 min human verify), 33-01 (~2 min), 32-02 (~15 min incl. human verify), 32-01 (~5 min), 31-02 (~15 min)
-- Trend: Phase 33 complete — company selector consolidated into UserMenu; human verification passed; top bar simplified
+- Last 5 plans: 34-01 (~3 min), 33-02 (~2 min human verify), 33-01 (~2 min), 32-02 (~15 min incl. human verify), 32-01 (~5 min)
+- Trend: Phase 34 started — currency formatting infrastructure (parseCurrencyInput + CurrencyInput) complete; 3 plans remain
 
 *Updated after each plan completion*
 
@@ -55,6 +56,7 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 Decisions are logged in PROJECT.md Key Decisions table (full log, 29 phases).
 
 **v1.4 decisions:**
+- 34-01: CurrencyInput uses type="text" inputMode="decimal" + isFocusedRef; raw number shown on focus, $X,XXX.XX formatted on blur; parseCurrencyInput strips $, commas, whitespace via regex
 - 34: FORM-01 changed from live-as-you-type to format-on-blur — live masking (use-mask-input) was tried and reverted; format-on-blur (onBlur handler with Intl.NumberFormat) is the chosen approach
 - 33-01: Company selector merged into UserMenu (trpc.organization.list.useQuery + opacity Check icon pattern); CompanySwitcher deleted; top bar simplified to Search → Bell → UserMenu
 - 30-01: Used Next.js `title.template` object so child pages inherit "Page | BIDAXIOM" without per-page changes
@@ -78,5 +80,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 33-02-PLAN.md — Human verification passed; Phase 33 complete
+Stopped at: Completed 34-01-PLAN.md — parseCurrencyInput + CurrencyInput infrastructure committed; Phase 34 plan 1 of 4 done
 Resume file: None
