@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-18)
 
 ## Current Position
 
-Phase: 30 (Brand Identity & Sidebar Cleanup) — in progress
-Plan: 02 complete (2/N)
-Status: Plan 30-02 complete; per-page metadata titles added — sign-in shows "Sign In | BIDAXIOM", dashboard shows "Dashboard | BIDAXIOM"
-Last activity: 2026-02-18 — Plan 30-02 executed; 2 tasks, 3 files modified
+Phase: 30 (Brand Identity & Sidebar Cleanup) — COMPLETE
+Plan: 03 complete (3/3)
+Status: Plan 30-03 complete; sign-in logo resized (240x56 + 25px padding), dashboard tabs show plain "BIDAXIOM" (removed layout-level title), all 4 phase requirements verified by user (BRAND-01, BRAND-02, BRAND-04, CLEAN-01)
+Last activity: 2026-02-18 — Plan 30-03 executed; 2 tasks, 2 files modified
 
-Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [█░░░░░░░░░] ~3%
+Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██░░░░░░░░] ~10%
 
 ## Performance Metrics
 
@@ -37,7 +37,7 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 | 27 | 3 | ~13 min | ~4.3 min |
 | 28 | 3 | ~12 min | ~4 min |
 | 29 | 4 | ~10 min + UAT | ~3.3 min (excl. UAT) |
-| 30 | 2 | ~2 min | ~1 min |
+| 30 | 3 | ~12 min | ~4 min |
 
 **Recent Trend:**
 - Last 5 plans: 29-03 (~4 min), 29-02 (~3 min), 29-01 (~3 min), 28-02 (~2 min), 28-01 (~8 min)
@@ -56,6 +56,7 @@ Decisions are logged in PROJECT.md Key Decisions table (full log, 29 phases).
 - 30-01: Removed `SidebarFooter` block entirely (rather than hiding) to avoid dead code
 - 30-02: Added metadata at layout level so client-component pages (which cannot export metadata per Next.js 14 rules) still get meaningful BIDAXIOM tab titles through inheritance
 - 30-02: Dashboard layout title set to "Dashboard" because all dashboard page.tsx files are "use client" components — per-route titles not achievable without converting them to server components
+- 30-03: User prefers plain "BIDAXIOM" in dashboard tabs over "Dashboard | BIDAXIOM" — removed layout-level title, root layout default applies; sign-in retains "Sign In | BIDAXIOM"
 
 ### Pending Todos
 
@@ -69,5 +70,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Plan 30-02 complete — per-page metadata titles; sign-in "Sign In | BIDAXIOM", dashboard "Dashboard | BIDAXIOM"
+Stopped at: Plan 30-03 complete — Phase 30 fully complete; all 4 brand/cleanup requirements verified; Phase 31 (Color Palette) is next
 Resume file: None
