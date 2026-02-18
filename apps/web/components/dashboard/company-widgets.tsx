@@ -3,6 +3,7 @@
 import { KpiCard, KpiCardSkeleton } from "./kpi-card";
 import { trpc } from "@/lib/trpc";
 import { Building2, Gavel, Receipt, Target, DollarSign, Layers, Calculator } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -12,6 +13,7 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
 });
 
 export function TotalActiveProjects() {
+  const router = useRouter();
   const { data, isLoading, error } = trpc.dashboard.totalActiveProjects.useQuery(undefined, {
     retry: false,
   });
@@ -38,11 +40,13 @@ export function TotalActiveProjects() {
       description="Across all teams"
       icon={Building2}
       status="neutral"
+      onClick={() => router.push("/projects?status=active")}
     />
   );
 }
 
 export function CompanyOpenBids() {
+  const router = useRouter();
   const { data, isLoading, error } = trpc.dashboard.openBids.useQuery(undefined, {
     retry: false,
   });
@@ -71,11 +75,13 @@ export function CompanyOpenBids() {
       description={description}
       icon={Gavel}
       status="neutral"
+      onClick={() => router.push("/projects")}
     />
   );
 }
 
 export function PendingPayApps() {
+  const router = useRouter();
   const { data, isLoading, error } = trpc.dashboard.pendingPayApps.useQuery(undefined, {
     retry: false,
   });
@@ -107,11 +113,13 @@ export function PendingPayApps() {
       description={description}
       icon={Receipt}
       status={status}
+      onClick={() => router.push("/projects")}
     />
   );
 }
 
 export function BidOpportunities() {
+  const router = useRouter();
   const { data, isLoading, error } = trpc.dashboard.bidOpportunities.useQuery(undefined, {
     retry: false,
   });
@@ -140,11 +148,13 @@ export function BidOpportunities() {
       description={description}
       icon={Target}
       status="neutral"
+      onClick={() => router.push("/projects")}
     />
   );
 }
 
 export function RevenueInProgress() {
+  const router = useRouter();
   const { data, isLoading, error } = trpc.dashboard.revenueInProgress.useQuery(undefined, {
     retry: false,
   });
@@ -171,11 +181,13 @@ export function RevenueInProgress() {
       description="Total budgeted on active projects"
       icon={DollarSign}
       status="neutral"
+      onClick={() => router.push("/projects?status=active")}
     />
   );
 }
 
 export function Backlog() {
+  const router = useRouter();
   const { data, isLoading, error } = trpc.dashboard.backlog.useQuery(undefined, {
     retry: false,
   });
@@ -204,6 +216,7 @@ export function Backlog() {
       description="Committed less earned"
       icon={Layers}
       status={status}
+      onClick={() => router.push("/projects?status=active")}
     />
   );
 }
