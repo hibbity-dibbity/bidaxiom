@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, createContext, useContext } from "react";
 import { useRouter } from "next/navigation";
-import { Search, FileText, User, Loader2, Calculator } from "lucide-react";
+import { Search, FileText, User, Loader2, Calculator, Building2 } from "lucide-react";
 import {
   CommandDialog,
   CommandEmpty,
@@ -94,7 +94,7 @@ function CommandPalette({ open, setOpen }: CommandPaletteProps) {
   return (
     <CommandDialog open={open} onOpenChange={setOpen} shouldFilter={false} onKeyDown={handleKeyDown}>
       <CommandInput
-        placeholder="Search projects, customers, jobs..."
+        placeholder="Search projects, customers, subcontractors..."
         value={query}
         onValueChange={setQuery}
       />
@@ -179,6 +179,24 @@ function CommandPalette({ open, setOpen }: CommandPaletteProps) {
                             {result.subtitle}
                           </span>
                         )}
+                      </div>
+                    </CommandItem>
+                  ))}
+              </CommandGroup>
+            )}
+            {results.some((r) => r.type === "subcontractor") && (
+              <CommandGroup heading="Subcontractors">
+                {results
+                  .filter((r) => r.type === "subcontractor")
+                  .map((result) => (
+                    <CommandItem
+                      key={result.id}
+                      value={result.title}
+                      onSelect={() => handleSelect(result.url)}
+                    >
+                      <Building2 className="mr-2 h-4 w-4" />
+                      <div className="flex flex-col">
+                        <span>{result.title}</span>
                       </div>
                     </CommandItem>
                   ))}
