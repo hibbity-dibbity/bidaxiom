@@ -12,6 +12,11 @@ export const metadata: Metadata = {
     default: "BIDAXIOM",
   },
   description: "Construction management software for general contractors and subcontractors",
+  icons: {
+    icon: '/bidaxiom-icon.png',
+    shortcut: '/bidaxiom-icon.png',
+    apple: '/bidaxiom-icon.png',
+  },
 };
 
 export default async function RootLayout({
