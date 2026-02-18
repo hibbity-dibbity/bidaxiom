@@ -4,6 +4,7 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import {
   Table,
   TableBody,
@@ -49,7 +50,7 @@ export function BudgetLineItemTable({ projectId }: BudgetLineItemTableProps) {
   const [formData, setFormData] = useState({
     costCodeId: "",
     description: "",
-    budgetedAmount: "",
+    budgetedAmount: 0,
   });
 
   const utils = trpc.useUtils();
@@ -63,7 +64,7 @@ export function BudgetLineItemTable({ projectId }: BudgetLineItemTableProps) {
       utils.budget.getProjectSummary.invalidate({ projectId });
       toast.success("Budget line item created");
       setAddDialogOpen(false);
-      setFormData({ costCodeId: "", description: "", budgetedAmount: "" });
+      setFormData({ costCodeId: "", description: "", budgetedAmount: 0 });
     },
     onError: (error) => {
       toast.error(error.message || "Failed to create budget line item");
@@ -99,7 +100,7 @@ export function BudgetLineItemTable({ projectId }: BudgetLineItemTableProps) {
       projectId,
       costCodeId: parseInt(formData.costCodeId),
       description: formData.description,
-      budgetedAmount: parseFloat(formData.budgetedAmount),
+      budgetedAmount: formData.budgetedAmount,
     });
   };
 
@@ -108,7 +109,7 @@ export function BudgetLineItemTable({ projectId }: BudgetLineItemTableProps) {
     updateMutation.mutate({
       id: selectedItem.id,
       description: formData.description,
-      budgetedAmount: parseFloat(formData.budgetedAmount),
+      budgetedAmount: formData.budgetedAmount,
     });
   };
 
@@ -127,7 +128,7 @@ export function BudgetLineItemTable({ projectId }: BudgetLineItemTableProps) {
     setFormData({
       costCodeId: item.costCodeId.toString(),
       description: item.description,
-      budgetedAmount: item.budgetedAmount.toString(),
+      budgetedAmount: Number(item.budgetedAmount),
     });
     setEditDialogOpen(true);
   };
@@ -203,15 +204,10 @@ export function BudgetLineItemTable({ projectId }: BudgetLineItemTableProps) {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="budgetedAmount">Budgeted Amount</Label>
-                <Input
+                <CurrencyInput
                   id="budgetedAmount"
-                  type="number"
-                  step="0.01"
-                  min="0"
                   value={formData.budgetedAmount}
-                  onChange={(e) =>
-                    setFormData({ ...formData, budgetedAmount: e.target.value })
-                  }
+                  onChange={(n) => setFormData({ ...formData, budgetedAmount: n })}
                   placeholder="0.00"
                 />
               </div>
@@ -332,15 +328,10 @@ export function BudgetLineItemTable({ projectId }: BudgetLineItemTableProps) {
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-budgetedAmount">Budgeted Amount</Label>
-              <Input
+              <CurrencyInput
                 id="edit-budgetedAmount"
-                type="number"
-                step="0.01"
-                min="0"
                 value={formData.budgetedAmount}
-                onChange={(e) =>
-                  setFormData({ ...formData, budgetedAmount: e.target.value })
-                }
+                onChange={(n) => setFormData({ ...formData, budgetedAmount: n })}
               />
             </div>
             <div className="flex justify-end gap-2">
