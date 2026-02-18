@@ -27,7 +27,7 @@ export function TopBar({ onSearchOpen }: { onSearchOpen?: () => void }) {
             alt="BIDAXIOM"
             width={192}
             height={32}
-            className="dark:invert h-8 w-auto"
+            className="dark:invert h-10 w-auto"
             priority
           />
         )}

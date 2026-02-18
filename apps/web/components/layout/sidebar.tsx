@@ -61,7 +61,7 @@ export function AppSidebar() {
             alt="BIDAXIOM"
             width={192}
             height={32}
-            className="group-data-[collapsible=icon]:hidden dark:invert h-8 w-auto"
+            className="group-data-[collapsible=icon]:hidden dark:invert h-10 w-auto"
             priority
           />
           {/* Collapse/expand trigger when collapsed */}

@@ -170,8 +170,8 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
           <Image
             src="/bidaxiom-logo.png"
             alt="BIDAXIOM"
-            width={240}
-            height={56}
+            width={320}
+            height={74}
             className="mx-auto dark:invert"
             priority
           />
@@ -234,8 +234,8 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
         <Image
           src="/bidaxiom-logo.png"
           alt="BIDAXIOM"
-          width={240}
-          height={56}
+          width={320}
+          height={74}
           className="mx-auto dark:invert"
           priority
         />
