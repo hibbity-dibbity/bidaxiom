@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 
 ## Current Position
 
-Phase: 29 of 29 in v1.3 (UX Polish & Tech Debt) — In progress
-Plan: 3 of 4 in Phase 29 — Plan 29-03 complete
-Status: Phase 29 in progress; Plans 29-01, 29-02, and 29-03 complete (2026-02-17)
-Last activity: 2026-02-17 — Completed Plan 29-03: empty state upgrades and skeleton loading across 4 components (UX-01, UX-02 closed)
+Phase: 29 of 29 in v1.3 (UX Polish & Tech Debt) — Complete
+Plan: 4 of 4 in Phase 29 — Plan 29-04 complete
+Status: Phase 29 complete; All plans 29-01 through 29-04 complete (2026-02-17); v1.3 milestone complete
+Last activity: 2026-02-17 — Completed Plan 29-04: human UAT sign-off with 6 hotfixes (toast dedup, cache invalidation, job number uniqueness in transactions, startingSequenceNumber floor logic)
 
-Progress: v1.0: [██████████] 100% (12 phases) | v1.1: [██████████] 100% (7 phases) | v1.2: [██████████] 100% (5 phases) | v1.3: [█████████░] ~88% (4/5 phases + 3/4 plans in Phase 29)
+Progress: v1.0: [██████████] 100% (12 phases) | v1.1: [██████████] 100% (7 phases) | v1.2: [██████████] 100% (5 phases) | v1.3: [██████████] 100% (5/5 phases + 4/4 plans in Phase 29)
 
 ## Performance Metrics
 
@@ -36,7 +36,7 @@ Progress: v1.0: [██████████] 100% (12 phases) | v1.1: [█�
 | 26 | 3 | ~40 min | ~13 min |
 | 27 | 3 | ~13 min | ~4.3 min |
 | 28 | 3 | ~12 min | ~4 min |
-| 29 | 3 (of 4) | ~10 min | ~3.3 min |
+| 29 | 4 | ~10 min + UAT | ~3.3 min (excl. UAT) |
 
 **Recent Trend:**
 - Last 5 plans: 29-03 (~4 min), 29-02 (~3 min), 29-01 (~3 min), 28-02 (~2 min), 28-01 (~8 min)
@@ -79,6 +79,10 @@ Recent decisions affecting current work:
 - **payment-app-list empty state CTA gated on hasSovItems (Phase 29)**: When SOV not set up, description explains prerequisite; matches existing disabled-button pattern at top of page
 - **Members invite CTA focuses email input (Phase 29)**: document.getElementById("email")?.focus() scrolls user to invite form rather than duplicating form inline in empty state
 - **Filter-active empty states stay text-only (Phase 29)**: Icon pattern reserved for true empty states; filtered-to-zero uses simpler text message
+- **Toast deduplication via stable id (Phase 29 UAT)**: QueryCache.onError fires per re-render; passing a stable id to toast() deduplicates so only one toast appears per error type regardless of retry count
+- **Invalidate companyProfile on project save (Phase 29 UAT)**: project.create and project.update both advance nextSequenceNumber server-side; Settings page must invalidate companyProfile cache after saves to display accurate counter
+- **startingSequenceNumber floors nextSequenceNumber at maxUsed+1 (Phase 29 UAT)**: Lowering startingSequenceNumber cannot reduce nextSequenceNumber below highest-ever-issued sequence; floor computed via getMaxUsedJobSequence to prevent duplicate job numbers
+- **Uniqueness check inside DB transaction (Phase 29 UAT)**: Load-compare-write uniqueness has a race window; moved collision check inside transaction for both auto-generate and manual-edit paths
 
 ### Pending Todos
 
@@ -91,5 +95,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed Plan 29-03 — empty state upgrades and skeleton loading (UX-01, UX-02); Phase 29 in progress (3/4 plans done)
+Stopped at: Completed Plan 29-04 — human UAT sign-off; Phase 29 complete; v1.3 milestone complete
 Resume file: None
