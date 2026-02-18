@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-02-18)
 
 ## Current Position
 
-Phase: 34 (Live Currency Formatting) — IN PROGRESS
-Plan: 34-02 complete — Controller + CurrencyInput wired into change-order-form amountChange and commitment-form amount fields
-Status: Phase 34 in progress. Plans 34-01 and 34-02 executed. 2 of estimated 4 plans complete; plans 34-03 and 34-04 remain.
-Last activity: 2026-02-18 — Plan 34-02 complete; change-order-form and commitment-form currency fields formatted
+Phase: 34 (Live Currency Formatting) — COMPLETE
+Plan: 34-04 complete — CurrencyInput wired into SOVLineItemCard amount and EstimateLineItemsTable unitCost column via isCurrency prop
+Status: Phase 34 complete. All 4 plans executed (34-01 through 34-04). All 7 currency input fields now format as $X,XXX.XX on blur.
+Last activity: 2026-02-18 — Plan 34-04 complete; SOVLineItemCard and EstimateLineItemsTable inline currency formatting done
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████░░░░] ~30%
 
@@ -41,11 +41,11 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 | 31 | 2 | ~35 min (incl. human review) | ~17.5 min |
 | 32 | 2 | ~20 min (incl. human verify) | ~10 min |
 | 33 | 2 | ~4 min | ~2 min |
-| 34 | 2 (of 4) | ~8 min | ~4 min |
+| 34 | 4 | ~13 min | ~3.3 min |
 
 **Recent Trend:**
-- Last 5 plans: 34-02 (~5 min), 34-01 (~3 min), 33-02 (~2 min human verify), 33-01 (~2 min), 32-02 (~15 min incl. human verify)
-- Trend: Phase 34 progressing — change-order and commitment forms converted; 2 plans remain (34-03, 34-04)
+- Last 5 plans: 34-04 (~5 min), 34-03 (~5 min est), 34-02 (~5 min), 34-01 (~3 min), 33-02 (~2 min human verify)
+- Trend: Phase 34 complete — all 7 currency fields formatted; SOV amounts and unit costs now show $X,XXX.XX on blur
 
 *Updated after each plan completion*
 
@@ -56,6 +56,7 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 Decisions are logged in PROJECT.md Key Decisions table (full log, 29 phases).
 
 **v1.4 decisions:**
+- 34-04: SOVLineItemCard CurrencyInput onChange fires on blur — all state updates handled inline in onChange; no separate onBlur needed; isCurrency opt-in prop on EditableCell routes unitCost through CurrencyInput while quantity and customMarkupPercent remain plain number inputs
 - 34-02: RHF Controller pattern used for CurrencyInput fields — Controller wraps CurrencyInput; field.onChange(n) stores numeric value; valueAsNumber not usable with type=text inputs
 - 34-01: CurrencyInput uses type="text" inputMode="decimal" + isFocusedRef; raw number shown on focus, $X,XXX.XX formatted on blur; parseCurrencyInput strips $, commas, whitespace via regex
 - 34: FORM-01 changed from live-as-you-type to format-on-blur — live masking (use-mask-input) was tried and reverted; format-on-blur (onBlur handler with Intl.NumberFormat) is the chosen approach
@@ -81,5 +82,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 34-02-PLAN.md — change-order-form and commitment-form currency fields converted with Controller + CurrencyInput; Phase 34 plan 2 of 4 done
+Stopped at: Completed 34-04-PLAN.md — SOVLineItemCard and EstimateLineItemsTable inline currency formatting done; Phase 34 complete (all 4 plans)
 Resume file: None
