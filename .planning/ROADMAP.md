@@ -157,7 +157,13 @@ Plans:
   1. After leaving any amount field, the value displays as "$X,XXX.XX"
   2. The formatted value is correctly parsed and persisted as a numeric value (not a string with symbols) when the form is saved
   3. Currency fields on estimate line items, budget entries, and change order forms all exhibit this behavior
-**Plans:** TBD
+**Plans:** 5 plans
+Plans:
+- [ ] 34-01-PLAN.md — parseCurrencyInput utility + CurrencyInput component (2 files)
+- [ ] 34-02-PLAN.md — RHF forms: change-order-form + commitment-form amountChange/amount (2 files)
+- [ ] 34-03-PLAN.md — Plain-state forms: budget-line-item-table + sov-editor + bid-comparison-table (3 files)
+- [ ] 34-04-PLAN.md — Inline editors: SOVLineItemCard + EstimateLineItemsTable unitCost (2 files)
+- [ ] 34-05-PLAN.md — Human verification checkpoint (0 files)
 
 #### Phase 35: Subcontractors in Global Search
 **Goal:** A user searching via ⌘K can find subcontractor records alongside projects, customers, and estimates, with clear labeling so the result type is immediately obvious.
@@ -183,5 +189,5 @@ Plans:
 | 31. Color Palette | v1.4 | Complete    | 2026-02-18 | - |
 | 32. Flat Design System | v1.4 | Complete    | 2026-02-18 | - |
 | 33. Company Selector in User Dropdown | v1.4 | Complete    | 2026-02-18 | - |
-| 34. Live Currency Formatting | v1.4 | 0/? | Not started | - |
+| 34. Live Currency Formatting | v1.4 | 0/5 | In progress | - |
 | 35. Subcontractors in Global Search | v1.4 | 0/? | Not started | - |
