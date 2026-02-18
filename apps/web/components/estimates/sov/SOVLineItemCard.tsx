@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Trash2, GripVertical } from "lucide-react";
@@ -37,23 +38,12 @@ export function SOVLineItemCard({
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [isEditingAmount, setIsEditingAmount] = useState(false);
   const [descriptionValue, setDescriptionValue] = useState(sovLineItem.description);
-  const [amountValue, setAmountValue] = useState(String(sovLineItem.amount));
+  const [amountValue, setAmountValue] = useState(sovLineItem.amount);
 
   const handleDescriptionBlur = () => {
     setIsEditingDescription(false);
     if (descriptionValue !== sovLineItem.description) {
       onUpdate(sovLineItem.id, { description: descriptionValue });
-    }
-  };
-
-  const handleAmountBlur = () => {
-    setIsEditingAmount(false);
-    const newAmount = parseFloat(amountValue);
-    if (!isNaN(newAmount) && newAmount !== sovLineItem.amount) {
-      onUpdate(sovLineItem.id, { amount: newAmount });
-    } else {
-      // Reset if invalid
-      setAmountValue(String(sovLineItem.amount));
     }
   };
 
@@ -101,18 +91,15 @@ export function SOVLineItemCard({
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Amount:</span>
               {isEditable && isEditingAmount ? (
-                <Input
-                  type="number"
-                  step="0.01"
+                <CurrencyInput
                   value={amountValue}
-                  onChange={(e) => setAmountValue(e.target.value)}
-                  onBlur={handleAmountBlur}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleAmountBlur();
+                  onChange={(n) => {
+                    setAmountValue(n);
+                    setIsEditingAmount(false);
+                    if (n !== sovLineItem.amount) {
+                      onUpdate(sovLineItem.id, { amount: n });
                     }
                   }}
-                  autoFocus
                   className="w-32"
                 />
               ) : (
