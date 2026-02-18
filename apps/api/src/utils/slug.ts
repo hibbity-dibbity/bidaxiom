@@ -16,6 +16,18 @@ export function generateSlug(identifier: string, name: string): string {
 }
 
 /**
+ * Generate URL-safe slug from a name only (no identifier prefix).
+ * Use for customers and subcontractors where a clean human-readable URL is desired.
+ * Examples:
+ *   - "Cool Beans Bro" → "cool-beans-bro"
+ *   - "Rigo Ortiz" → "rigo-ortiz"
+ *   - "ABC Construction, Inc." → "abc-construction-inc"
+ */
+export function generateNameSlug(name: string): string {
+  return slug(name, { lower: true });
+}
+
+/**
  * Parse slug back to identifier
  * Examples:
  *   - "24001-main-street-renovation" → "24001"

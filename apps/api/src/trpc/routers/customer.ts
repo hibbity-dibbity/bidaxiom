@@ -9,7 +9,7 @@ import {
 } from "@construction/shared";
 import { createAuditLog } from "../../audit/logger.js";
 import { eq, desc, or, like, sql } from "drizzle-orm";
-import { generateSlug, isValidSlug } from "../../utils/slug.js";
+import { generateSlug, generateNameSlug, isValidSlug } from "../../utils/slug.js";
 
 /**
  * Customer management router.
@@ -212,7 +212,7 @@ export const customerRouter = router({
 
       // Generate slug using ID and name
       const name = input.companyName || input.contactName;
-      const finalSlug = generateSlug(`cust-${customer.id.slice(0, 8)}`, name);
+      const finalSlug = generateNameSlug(name);
 
       // Update with final slug
       const [updatedCustomer] = await db
@@ -289,7 +289,7 @@ export const customerRouter = router({
         const newCompanyName = input.companyName ?? existingCustomer.companyName;
         const newContactName = input.contactName ?? existingCustomer.contactName;
         const name = newCompanyName || newContactName;
-        updateValues.slug = generateSlug(`cust-${existingCustomer.id.slice(0, 8)}`, name);
+        updateValues.slug = generateNameSlug(name);
       }
 
       const [updated] = await db

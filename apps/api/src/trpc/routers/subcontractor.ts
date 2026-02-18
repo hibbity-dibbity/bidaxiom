@@ -12,7 +12,7 @@ import { createAuditLog } from "../../audit/logger.js";
 import { defineAbilitiesFor } from "../../auth/abilities.js";
 import { eq, desc, and, sql, or, ilike, inArray } from "drizzle-orm";
 import { ForbiddenError } from "@casl/ability";
-import { generateSlug, isValidSlug } from "../../utils/slug.js";
+import { generateSlug, generateNameSlug, isValidSlug } from "../../utils/slug.js";
 
 /**
  * Subcontractor directory router.
@@ -63,7 +63,7 @@ export const subcontractorRouter = router({
         .returning();
 
       // Generate and update slug
-      const finalSlug = generateSlug(`sub-${subcontractor.id.slice(0, 8)}`, input.companyName);
+      const finalSlug = generateNameSlug(input.companyName);
       const [updatedSubcontractor] = await db
         .update(schema.subcontractorDirectory)
         .set({ slug: finalSlug })
@@ -382,7 +382,7 @@ export const subcontractorRouter = router({
 
       // Regenerate slug if company name changed
       if (input.companyName !== undefined) {
-        updateValues.slug = generateSlug(`sub-${existingSubcontractor.id.slice(0, 8)}`, input.companyName);
+        updateValues.slug = generateNameSlug(input.companyName);
       }
 
       // Update subcontractor
