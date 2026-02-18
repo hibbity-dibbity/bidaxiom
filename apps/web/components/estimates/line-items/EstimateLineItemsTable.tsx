@@ -11,6 +11,7 @@ import {
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import {
   Table,
   TableBody,
@@ -137,11 +138,13 @@ export function EstimateLineItemsTable({
     row,
     column,
     type = "text",
+    isCurrency = false,
   }: {
     value: any;
     row: any;
     column: any;
     type?: "text" | "number";
+    isCurrency?: boolean;
   }) {
     const [value, setValue] = useState(initialValue ?? "");
     const [isEditing, setIsEditing] = useState(false);
@@ -169,8 +172,27 @@ export function EstimateLineItemsTable({
           onClick={() => setIsEditing(true)}
           className="cursor-pointer hover:bg-muted/50 p-2 rounded min-h-[32px]"
         >
-          {type === "number" && initialValue ? Number(initialValue).toFixed(type === "number" ? 2 : 0) : value || "-"}
+          {isCurrency
+            ? formatCurrency(Number(initialValue) || 0)
+            : type === "number" && initialValue
+            ? Number(initialValue).toFixed(2)
+            : value || "-"}
         </div>
+      );
+    }
+
+    if (isCurrency) {
+      return (
+        <CurrencyInput
+          value={Number(initialValue) || 0}
+          onChange={(n) => {
+            const updates: any = { id: row.original.id };
+            updates[column.id] = n;
+            updateLineItem.mutate(updates);
+            setIsEditing(false);
+          }}
+          className="h-8"
+        />
       );
     }
 
@@ -273,7 +295,7 @@ export function EstimateLineItemsTable({
     columnHelper.accessor("unitCost", {
       header: "Unit Cost",
       cell: ({ getValue, row, column }) => (
-        <EditableCell value={getValue()} row={row} column={column} type="number" />
+        <EditableCell value={getValue()} row={row} column={column} type="number" isCurrency />
       ),
     }),
     columnHelper.accessor("costType", {
