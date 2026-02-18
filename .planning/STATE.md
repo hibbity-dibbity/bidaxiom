@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-18)
 
 ## Current Position
 
-Phase: 30 (Brand Identity & Sidebar Cleanup) — COMPLETE
-Plan: 03 complete (3/3)
-Status: Plan 30-03 complete; sign-in logo resized (240x56 + 25px padding), dashboard tabs show plain "BIDAXIOM" (removed layout-level title), all 4 phase requirements verified by user (BRAND-01, BRAND-02, BRAND-04, CLEAN-01)
-Last activity: 2026-02-18 — Plan 30-03 executed; 2 tasks, 2 files modified
+Phase: 31 (Color Palette & Favicon)
+Plan: 01 complete — awaiting 31-02 execution
+Status: Plan 31-01 complete (read-only palette extraction + user approval); approved HSL values recorded in 31-01-SUMMARY.md; Plan 31-02 ready to apply values to globals.css and button.tsx
+Last activity: 2026-02-18 — Plan 31-01 palette approved; cyan-teal primary (188 80% 45%/50%), slate-blue foreground text (210 25% 25%), button.tsx outline variant update deferred to 31-02
 
-Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██░░░░░░░░] ~10%
+Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [███░░░░░░░] ~15%
 
 ## Performance Metrics
 
@@ -57,6 +57,7 @@ Decisions are logged in PROJECT.md Key Decisions table (full log, 29 phases).
 - 30-02: Added metadata at layout level so client-component pages (which cannot export metadata per Next.js 14 rules) still get meaningful BIDAXIOM tab titles through inheritance
 - 30-02: Dashboard layout title set to "Dashboard" because all dashboard page.tsx files are "use client" components — per-route titles not achievable without converting them to server components
 - 30-03: User prefers plain "BIDAXIOM" in dashboard tabs over "Dashboard | BIDAXIOM" — removed layout-level title, root layout default applies; sign-in retains "Sign In | BIDAXIOM"
+- 31-01: Primary action color = cyan-teal (H=188, 80%, 45%/50%) not slate-blue; slate-blue moves to --foreground for body text in light mode; dark mode primary stays vivid L=50% not L=65%; outline buttons need button.tsx update (border-input→border-primary)
 
 ### Pending Todos
 
@@ -65,10 +66,9 @@ None.
 ### Blockers/Concerns
 
 - Clerk webhook secret is still placeholder (`whsec_xxx`). Tenant auto-provisioning via webhooks won't work until configured with real secret from Clerk dashboard.
-- Phase 31 (Color Palette) has a mandatory human checkpoint: palette must be extracted and presented to user for approval before any color is applied to the codebase. Plan-phase must encode this as a UAT gate between extraction and application steps.
 
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Plan 30-03 complete — Phase 30 fully complete; all 4 brand/cleanup requirements verified; Phase 31 (Color Palette) is next
+Stopped at: Plan 31-01 complete — palette approved by user; Plan 31-02 (apply palette to globals.css + button.tsx) is next
 Resume file: None
