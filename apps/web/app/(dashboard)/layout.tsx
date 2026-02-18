@@ -1,9 +1,3 @@
-import type { Metadata } from "next";
-
-export const metadata: Metadata = {
-  title: "Dashboard",
-};
-
 import { AppShell } from "@/components/layout/app-shell";
 import { SessionWatcher } from "@/components/session-watcher";
 
