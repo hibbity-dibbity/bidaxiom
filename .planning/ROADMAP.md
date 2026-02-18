@@ -131,7 +131,10 @@
   1. Cards and panels on the dashboard show no rounded corners, no visible border outline, and no box shadow
   2. Cards and panels on project pages, estimate pages, and settings pages exhibit the same flat appearance
   3. No regression: interactive elements (buttons, inputs, badges) that should retain their styling are unaffected
-**Plans:** TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 32-01-PLAN.md — Flatten Card primitive + replace hover shadows on interactive cards (6 files)
+- [ ] 32-02-PLAN.md — Patch custom Tier A div panels + human verification checkpoint (5 files)
 
 #### Phase 33: Company Selector in User Dropdown
 **Goal:** A user who belongs to multiple companies can switch between them — and create a new company — without leaving their current page, using the top-nav user dropdown.
@@ -175,7 +178,7 @@
 | 25-29 | v1.3 | 16/16 | ✅ Complete | 2026-02-18 |
 | 30. Brand Identity & Sidebar Cleanup | v1.4 | Complete    | 2026-02-18 | - |
 | 31. Color Palette | v1.4 | Complete    | 2026-02-18 | - |
-| 32. Flat Design System | v1.4 | 0/? | Not started | - |
+| 32. Flat Design System | v1.4 | 0/2 | Not started | - |
 | 33. Company Selector in User Dropdown | v1.4 | 0/? | Not started | - |
 | 34. Live Currency Formatting | v1.4 | 0/? | Not started | - |
 | 35. Subcontractors in Global Search | v1.4 | 0/? | Not started | - |
