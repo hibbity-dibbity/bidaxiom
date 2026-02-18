@@ -4,9 +4,11 @@ import { KpiCard, KpiCardSkeleton } from "./kpi-card";
 import { trpc } from "@/lib/trpc";
 import { FolderKanban, Gavel, ClipboardCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
 
 export function MyActiveProjects() {
   const router = useRouter();
+  const { userId } = useAuth();
   const { data, isLoading, error } = trpc.dashboard.myActiveProjects.useQuery(undefined, {
     retry: false,
   });
@@ -39,12 +41,17 @@ export function MyActiveProjects() {
       description={description}
       icon={FolderKanban}
       status={status}
-      onClick={() => router.push("/projects")}
+      onClick={() => {
+        const params = new URLSearchParams({ status: "active" });
+        if (userId) params.set("assignedUser", userId);
+        router.push(`/projects?${params.toString()}`);
+      }}
     />
   );
 }
 
 export function MyOpenBids() {
+  const router = useRouter();
   const { data, isLoading, error } = trpc.dashboard.myOpenBids.useQuery(undefined, {
     retry: false,
   });
@@ -75,6 +82,7 @@ export function MyOpenBids() {
       description={description}
       icon={Gavel}
       status={status}
+      onClick={() => router.push("/projects")}
     />
   );
 }
