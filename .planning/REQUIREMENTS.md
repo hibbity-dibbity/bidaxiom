@@ -25,7 +25,7 @@
 
 ### Forms
 
-- [ ] **FORM-01**: All currency and amount input fields reformat to US currency live as the user types (e.g., typing "12500" produces "$12,500.00"), following the same live-format pattern as phone number input fields
+- [ ] **FORM-01**: All currency and amount input fields reformat to US currency format on blur (when the user leaves the field), displaying the value as "$X,XXX.XX" after the user finishes typing
 
 ### Search
 

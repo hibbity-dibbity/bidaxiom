@@ -95,7 +95,7 @@
 - [x] **Phase 31: Color Palette & Favicon** — Extract palette from BIDAXIOM logo, present for user approval, apply to Tailwind config and CSS variables, set favicon (completed 2026-02-18)
 - [x] **Phase 32: Flat Design System** — Remove border-radius, borders, and drop shadows from all card/panel components app-wide (completed 2026-02-18)
 - [x] **Phase 33: Company Selector in User Dropdown** — Add company switcher and "Create new company" option below Account Settings in top-nav user menu (completed 2026-02-18)
-- [ ] **Phase 34: Live Currency Formatting** — All currency/amount inputs reformat to US currency live as user types
+- [ ] **Phase 34: Currency Format on Blur** — All currency/amount inputs reformat to US currency display when the user leaves the field
 - [ ] **Phase 35: Subcontractors in Global Search** — Add subcontractor results with "Subcontractor" type label to ⌘K search
 
 ### Phase Details
@@ -149,12 +149,12 @@ Plans:
 - [ ] 33-01-PLAN.md — Add company selector to UserMenu + remove CompanySwitcher from top bar (3 files)
 - [ ] 33-02-PLAN.md — Human verification checkpoint (0 files)
 
-#### Phase 34: Live Currency Formatting
-**Goal:** Every currency and amount field in the app formats itself to US dollar notation in real time as the user types, with no manual formatting required.
+#### Phase 34: Currency Format on Blur
+**Goal:** Every currency and amount field in the app displays US dollar notation when the user leaves the field, so amounts are always shown formatted without disrupting typing.
 **Depends on:** Phase 30
 **Requirements:** FORM-01
 **Success Criteria** (what must be TRUE):
-  1. Typing a number into any amount field immediately displays it as "$X,XXX.XX" without the user pressing Tab or Enter
+  1. After leaving any amount field, the value displays as "$X,XXX.XX"
   2. The formatted value is correctly parsed and persisted as a numeric value (not a string with symbols) when the form is saved
   3. Currency fields on estimate line items, budget entries, and change order forms all exhibit this behavior
 **Plans:** TBD

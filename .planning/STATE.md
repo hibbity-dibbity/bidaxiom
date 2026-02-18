@@ -55,6 +55,7 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 Decisions are logged in PROJECT.md Key Decisions table (full log, 29 phases).
 
 **v1.4 decisions:**
+- 34: FORM-01 changed from live-as-you-type to format-on-blur — live masking (use-mask-input) was tried and reverted; format-on-blur (onBlur handler with Intl.NumberFormat) is the chosen approach
 - 33-01: Company selector merged into UserMenu (trpc.organization.list.useQuery + opacity Check icon pattern); CompanySwitcher deleted; top bar simplified to Search → Bell → UserMenu
 - 30-01: Used Next.js `title.template` object so child pages inherit "Page | BIDAXIOM" without per-page changes
 - 30-01: Removed `SidebarFooter` block entirely (rather than hiding) to avoid dead code
