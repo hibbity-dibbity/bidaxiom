@@ -78,7 +78,7 @@
 - [x] **Phase 26: Account Settings & Shell Cleanup** - Consolidated /settings/account page; static sidebar (completed 2026-02-17)
 - [x] **Phase 27: Slug Routing Completion** - Customer and subcontractor detail/edit pages on slug URLs (completed 2026-02-17)
 - [x] **Phase 28: Search & Dashboard Enhancements** - Estimates in global search; dashboard KPI click-through with pre-filtering (completed 2026-02-18)
-- [ ] **Phase 29: UX Polish & Tech Debt** - Empty states, loading states, consistent error toasts, job number counter on edit
+- [x] **Phase 29: UX Polish & Tech Debt** - Empty states, loading states, consistent error toasts, job number counter on edit (completed 2026-02-18)
 
 ### Phase Details
 
@@ -168,4 +168,4 @@ Plans:
 | 26 | ✅ Complete | 3/3 | 2026-02-17 |
 | 27 | ✅ Complete | 3/3 | 2026-02-17 |
 | 28 | ⬜ Not started | Complete    | 2026-02-18 |
-| 29 | ⬜ Not started | 4 plans | — |
+| 29 | ⬜ Not started | Complete    | 2026-02-18 |
