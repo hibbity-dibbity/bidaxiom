@@ -27,6 +27,7 @@ function TrpcAndAbilityProvider({ children }: { children: React.ReactNode }) {
         queryCache: new QueryCache({
           onError: (error) => {
             toast.error("Failed to load data", {
+              id: "query-error",
               description: error instanceof Error ? error.message : "An unexpected error occurred",
             });
           },

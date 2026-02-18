@@ -118,6 +118,8 @@ export default function EditProjectPage({ params }: EditProjectPageProps) {
       const newSlug = updated?.slug ?? projectSlug;
       utils.project.getBySlug.invalidate({ slug: newSlug });
       utils.project.list.invalidate();
+      // Invalidate company profile so job number counter reflects any counter advance
+      utils.company.getCurrent.invalidate();
       toast.success("Project updated");
       router.push(`/projects/${newSlug}`);
     },
