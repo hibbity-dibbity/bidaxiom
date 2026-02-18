@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 ## Current Position
 
 Phase: 28 of 29 in v1.3 (Search & Dashboard Enhancements) — In progress
-Plan: 1 of 3 in Phase 28 — Plan 28-01 complete
-Status: Phase 28 in progress; Plan 28-01 complete (2026-02-17)
-Last activity: 2026-02-17 — Completed Plan 28-01: estimate results in global search + customer URL fix
+Plan: 2 of 3 in Phase 28 — Plan 28-02 complete
+Status: Phase 28 in progress; Plans 28-01 and 28-02 complete (2026-02-18)
+Last activity: 2026-02-18 — Completed Plan 28-02: dashboard KPI widget onClick navigation handlers
 
-Progress: v1.0: [██████████] 100% (12 phases) | v1.1: [██████████] 100% (7 phases) | v1.2: [██████████] 100% (5 phases) | v1.3: [██████░░░░] ~60% (3/5 phases complete)
+Progress: v1.0: [██████████] 100% (12 phases) | v1.1: [██████████] 100% (7 phases) | v1.2: [██████████] 100% (5 phases) | v1.3: [██████░░░░] ~65% (3/5 phases + 2/3 plans in Phase 28)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 106
-- Average duration: 4.4 min
-- Total execution time: ~8.97 hours
+- Total plans completed: 107
+- Average duration: 4.3 min
+- Total execution time: ~8.99 hours
 
 **By Phase:**
 
@@ -35,11 +35,11 @@ Progress: v1.0: [██████████] 100% (12 phases) | v1.1: [█�
 | 25 | 3 | ~11 min | ~3.7 min |
 | 26 | 3 | ~40 min | ~13 min |
 | 27 | 3 | ~13 min | ~4.3 min |
-| 28 | 1 (of 3) | ~8 min | ~8 min |
+| 28 | 2 (of 3) | ~10 min | ~5 min |
 
 **Recent Trend:**
-- Last 5 plans: 28-01 (~8 min), 27-03 (~5 min UAT + slug fix), 27-02 (3 min), 27-01 (5 min), 26-03 (~30 min)
-- Trend: Phase 28-01 clean execution — 2 tasks, 3 files, no deviations
+- Last 5 plans: 28-02 (~2 min), 28-01 (~8 min), 27-03 (~5 min UAT + slug fix), 27-02 (3 min), 27-01 (5 min)
+- Trend: Phase 28 plans are surgical — no deviations, fast execution
 
 *Updated after each plan completion*
 
@@ -69,6 +69,8 @@ Recent decisions affecting current work:
 - **Estimate search: .some() guard on CommandGroup (Phase 28)**: Estimates CommandGroup uses .some() guard to avoid rendering empty heading when no estimates match; Projects/Customers groups always render (consistent with prior behavior for those types)
 - **isNotNull slug guard in estimate search query (Phase 28)**: Estimates without slugs are excluded at DB query level — prevents URL construction failures and avoids fetching data that would be filtered in JS
 - **Customer search URL: c.slug not c.id (Phase 28)**: Customer results in global search now navigate to /customers/{slug} matching the slug-based routing from Phase 27; was previously using UUID producing 404s
+- **EstimatingPipeline no onClick (Phase 28)**: Placeholder data (always 0), no top-level estimates list page exists yet — widget intentionally left non-clickable
+- **MyTodo no onClick (Phase 28)**: Spans 3 sub-resource types (change orders, pay apps, workflows) with no unified inbox page — no clean single navigation target
 
 ### Pending Todos
 
@@ -80,6 +82,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-17
-Stopped at: Completed Plan 28-01 — estimate search results + customer URL fix; Phase 28 in progress (1/3 plans done)
+Last session: 2026-02-18
+Stopped at: Completed Plan 28-02 — dashboard KPI widget onClick navigation; Phase 28 in progress (2/3 plans done)
 Resume file: None
