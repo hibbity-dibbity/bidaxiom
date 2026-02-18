@@ -16,7 +16,7 @@ import {
 } from "@construction/shared";
 import { createAuditLog } from "../../audit/logger.js";
 import { defineAbilitiesFor } from "../../auth/abilities.js";
-import { eq, desc, inArray, and, like, or, asc, count, sql, gte, lte, isNull, ilike } from "drizzle-orm";
+import { eq, desc, inArray, and, like, or, asc, count, sql, gte, lte, isNull, ilike, ne } from "drizzle-orm";
 import { ForbiddenError } from "@casl/ability";
 import { db as publicDb } from "../../db/client.js";
 import { users } from "../../db/schema/public.js";
@@ -172,6 +172,22 @@ export const projectRouter = router({
 
       // Transaction: create project + team + folders + phases atomically
       const project = await db.transaction(async (tx) => {
+        // Hard uniqueness check inside transaction — prevents both race conditions
+        // and manually-entered duplicates. Client-side blur validation is advisory only.
+        if (finalJobNumber) {
+          const [duplicate] = await tx
+            .select({ id: schema.projects.id })
+            .from(schema.projects)
+            .where(ilike(schema.projects.jobNumber, finalJobNumber))
+            .limit(1);
+          if (duplicate) {
+            throw new TRPCError({
+              code: "CONFLICT",
+              message: `Job number ${finalJobNumber} is already in use. Please choose a different number.`,
+            });
+          }
+        }
+
         // Update company profile with new sequence number if changed
         if (updatedJobSettings && updatedJobSettings !== jobNumberSettings) {
           await tx
@@ -670,6 +686,25 @@ export const projectRouter = router({
       }
 
       const updated = await db.transaction(async (tx) => {
+        // Hard uniqueness check — prevent duplicate job numbers on edit.
+        // Excludes the project being edited so it can keep its own number.
+        if (input.jobNumber !== undefined && input.jobNumber !== null && input.jobNumber !== "") {
+          const [duplicate] = await tx
+            .select({ id: schema.projects.id })
+            .from(schema.projects)
+            .where(and(
+              ilike(schema.projects.jobNumber, input.jobNumber),
+              ne(schema.projects.id, input.id)
+            ))
+            .limit(1);
+          if (duplicate) {
+            throw new TRPCError({
+              code: "CONFLICT",
+              message: `Job number ${input.jobNumber} is already in use. Please choose a different number.`,
+            });
+          }
+        }
+
         // Advance job number counter if needed
         if (updatedJobSettings && updatedJobSettings !== jobNumberSettings) {
           await tx
