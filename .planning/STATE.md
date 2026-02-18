@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-02-17)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.3 Polish & Gap Closure — Phase 28 (next phase)
+**Current focus:** v1.3 Polish & Gap Closure — Phase 28 (in progress)
 
 ## Current Position
 
-Phase: 28 of 29 in v1.3 (Search & Dashboard Enhancements) — Ready for planning
-Plan: 0 of TBD in Phase 28 — Not started
-Status: Phase 27 complete (verified 2026-02-17); Phase 28 ready for planning
-Last activity: 2026-02-17 — Completed Phase 27: slug routing for customers and subcontractors; fixed UUID prefix bug in slug generation
+Phase: 28 of 29 in v1.3 (Search & Dashboard Enhancements) — In progress
+Plan: 1 of 3 in Phase 28 — Plan 28-01 complete
+Status: Phase 28 in progress; Plan 28-01 complete (2026-02-17)
+Last activity: 2026-02-17 — Completed Plan 28-01: estimate results in global search + customer URL fix
 
 Progress: v1.0: [██████████] 100% (12 phases) | v1.1: [██████████] 100% (7 phases) | v1.2: [██████████] 100% (5 phases) | v1.3: [██████░░░░] ~60% (3/5 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 105
+- Total plans completed: 106
 - Average duration: 4.4 min
 - Total execution time: ~8.97 hours
 
@@ -35,10 +35,11 @@ Progress: v1.0: [██████████] 100% (12 phases) | v1.1: [█�
 | 25 | 3 | ~11 min | ~3.7 min |
 | 26 | 3 | ~40 min | ~13 min |
 | 27 | 3 | ~13 min | ~4.3 min |
+| 28 | 1 (of 3) | ~8 min | ~8 min |
 
 **Recent Trend:**
-- Last 5 plans: 27-03 (~5 min UAT + slug fix), 27-02 (3 min), 27-01 (5 min), 26-03 (~30 min), 26-02 (8 min)
-- Trend: Phase 27 was lean — 2 plans executed in parallel, UAT surfaced one slug format bug fixed inline
+- Last 5 plans: 28-01 (~8 min), 27-03 (~5 min UAT + slug fix), 27-02 (3 min), 27-01 (5 min), 26-03 (~30 min)
+- Trend: Phase 28-01 clean execution — 2 tasks, 3 files, no deviations
 
 *Updated after each plan completion*
 
@@ -65,6 +66,9 @@ Recent decisions affecting current work:
 - **sidebar-nav.tsx fix (Phase 26)**: NAV-01 root cause was projectNav context-switching in sidebar-nav.tsx, not the collapsible prop. Fixed by removing the project-context detection branch; sidebar-nav now always renders mainNav
 - **router.replace for post-rename slug navigation (Phase 27)**: After companyName change regenerates slug, router.replace navigates to new URL so old slug is not left in back-stack history
 - **onSuccess type widened with optional arg (Phase 27)**: SubcontractorForm onSuccess prop accepts optional { slug, id } so update caller can receive new slug without requiring it; create caller omits arg, remaining compatible
+- **Estimate search: .some() guard on CommandGroup (Phase 28)**: Estimates CommandGroup uses .some() guard to avoid rendering empty heading when no estimates match; Projects/Customers groups always render (consistent with prior behavior for those types)
+- **isNotNull slug guard in estimate search query (Phase 28)**: Estimates without slugs are excluded at DB query level — prevents URL construction failures and avoids fetching data that would be filtered in JS
+- **Customer search URL: c.slug not c.id (Phase 28)**: Customer results in global search now navigate to /customers/{slug} matching the slug-based routing from Phase 27; was previously using UUID producing 404s
 
 ### Pending Todos
 
@@ -77,5 +81,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed Phase 27 — all 3 plans done, UAT passed (10/10), slug UUID prefix bug fixed
+Stopped at: Completed Plan 28-01 — estimate search results + customer URL fix; Phase 28 in progress (1/3 plans done)
 Resume file: None
