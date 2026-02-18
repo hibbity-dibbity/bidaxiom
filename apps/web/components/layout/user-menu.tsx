@@ -100,7 +100,7 @@ export function UserMenu() {
             onClick={() => handleSwitch(org.id)}
             className="cursor-pointer"
           >
-            <Check className={`mr-2 h-4 w-4 ${org.id === orgId ? "opacity-100" : "opacity-0"}`} />
+            <Check className={`mr-2 h-4 w-4 text-primary ${org.id === orgId ? "opacity-100" : "opacity-0"}`} />
             <span className="truncate">{org.name}</span>
           </DropdownMenuItem>
         ))}
