@@ -93,7 +93,7 @@
 
 - [x] **Phase 30: Brand Identity & Sidebar Cleanup** — Rename all app copy to BIDAXIOM, set page titles, resize sign-in logo, remove version from sidebar (completed 2026-02-18)
 - [x] **Phase 31: Color Palette & Favicon** — Extract palette from BIDAXIOM logo, present for user approval, apply to Tailwind config and CSS variables, set favicon (completed 2026-02-18)
-- [ ] **Phase 32: Flat Design System** — Remove border-radius, borders, and drop shadows from all card/panel components app-wide
+- [x] **Phase 32: Flat Design System** — Remove border-radius, borders, and drop shadows from all card/panel components app-wide (completed 2026-02-18)
 - [ ] **Phase 33: Company Selector in User Dropdown** — Add company switcher and "Create new company" option below Account Settings in top-nav user menu
 - [ ] **Phase 34: Live Currency Formatting** — All currency/amount inputs reformat to US currency live as user types
 - [ ] **Phase 35: Subcontractors in Global Search** — Add subcontractor results with "Subcontractor" type label to ⌘K search
@@ -131,7 +131,7 @@
   1. Cards and panels on the dashboard show no rounded corners, no visible border outline, and no box shadow
   2. Cards and panels on project pages, estimate pages, and settings pages exhibit the same flat appearance
   3. No regression: interactive elements (buttons, inputs, badges) that should retain their styling are unaffected
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 Plans:
 - [ ] 32-01-PLAN.md — Flatten Card primitive + replace hover shadows on interactive cards (6 files)
 - [ ] 32-02-PLAN.md — Patch custom Tier A div panels + human verification checkpoint (5 files)
@@ -178,7 +178,7 @@ Plans:
 | 25-29 | v1.3 | 16/16 | ✅ Complete | 2026-02-18 |
 | 30. Brand Identity & Sidebar Cleanup | v1.4 | Complete    | 2026-02-18 | - |
 | 31. Color Palette | v1.4 | Complete    | 2026-02-18 | - |
-| 32. Flat Design System | v1.4 | 0/2 | Not started | - |
+| 32. Flat Design System | v1.4 | Complete    | 2026-02-18 | - |
 | 33. Company Selector in User Dropdown | v1.4 | 0/? | Not started | - |
 | 34. Live Currency Formatting | v1.4 | 0/? | Not started | - |
 | 35. Subcontractors in Global Search | v1.4 | 0/? | Not started | - |
