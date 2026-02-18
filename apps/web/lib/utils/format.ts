@@ -77,3 +77,22 @@ export function formatDate(date: Date | string, format: "short" | "long" = "shor
     day: "2-digit",
   });
 }
+
+/**
+ * Parse a user-typed currency string into a number.
+ * Strips "$", commas, and whitespace before parsing.
+ *
+ * @param value - Raw input string (e.g. "$1,234.56", "1234.56", "")
+ * @returns Numeric value, or 0 for empty/invalid input
+ *
+ * @example
+ * parseCurrencyInput("$1,234.56") // 1234.56
+ * parseCurrencyInput("") // 0
+ * parseCurrencyInput("abc") // 0
+ */
+export function parseCurrencyInput(value: string): number {
+  const cleaned = value.replace(/[$,\s]/g, "").trim();
+  if (cleaned === "" || cleaned === "-") return 0;
+  const n = parseFloat(cleaned);
+  return isNaN(n) ? 0 : n;
+}
