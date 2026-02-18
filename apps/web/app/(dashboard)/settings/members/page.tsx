@@ -13,7 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Trash2, UserPlus } from "lucide-react";
+import { Trash2, UserPlus, Users } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 /**
  * Custom member management page replacing Clerk OrganizationProfile.
@@ -225,7 +226,11 @@ export default function MembersPage() {
         </CardHeader>
         <CardContent>
           {membersLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Loading members...</div>
+            <div className="space-y-2">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-14 w-full" />
+              ))}
+            </div>
           ) : members && members.length > 0 ? (
             <Table>
               <TableHeader>
@@ -299,8 +304,22 @@ export default function MembersPage() {
               </TableBody>
             </Table>
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              No members yet. Invite team members to get started!
+            <div className="text-center py-12 border rounded-lg border-dashed">
+              <div className="flex flex-col items-center gap-3">
+                <div className="rounded-full bg-muted p-3">
+                  <Users className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">No members yet</h3>
+                  <p className="text-sm text-muted-foreground mt-1">Invite team members to collaborate on projects</p>
+                </div>
+                {isAdmin && (
+                  <Button onClick={() => document.getElementById("email")?.focus()}>
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Invite Member
+                  </Button>
+                )}
+              </div>
             </div>
           )}
         </CardContent>
@@ -317,7 +336,11 @@ export default function MembersPage() {
           </CardHeader>
           <CardContent>
             {invitationsLoading ? (
-              <div className="text-center py-8 text-muted-foreground">Loading invitations...</div>
+              <div className="space-y-2">
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <Skeleton key={i} className="h-14 w-full" />
+                ))}
+              </div>
             ) : invitations && invitations.filter(i => i.status === "pending").length > 0 ? (
               <Table>
                 <TableHeader>
@@ -353,8 +376,16 @@ export default function MembersPage() {
                 </TableBody>
               </Table>
             ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                No pending invitations
+              <div className="text-center py-12 border rounded-lg border-dashed">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="rounded-full bg-muted p-3">
+                    <UserPlus className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg">No pending invitations</h3>
+                    <p className="text-sm text-muted-foreground mt-1">Invited members will appear here until they accept</p>
+                  </div>
+                </div>
               </div>
             )}
           </CardContent>
