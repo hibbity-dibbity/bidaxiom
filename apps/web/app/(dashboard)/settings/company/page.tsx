@@ -331,12 +331,13 @@ export default function CompanySettingsPage() {
                     type="number"
                     min={1}
                     value={form.watch("jobNumberSettings.startingSequenceNumber") ?? 1}
-                    onChange={(e) =>
-                      form.setValue(
-                        "jobNumberSettings.startingSequenceNumber",
-                        parseInt(e.target.value, 10) || 1
-                      )
-                    }
+                    onChange={(e) => {
+                      const newVal = parseInt(e.target.value, 10) || 1;
+                      form.setValue("jobNumberSettings.startingSequenceNumber", newVal);
+                      // Keep nextSequenceNumber in sync: changing the starting point
+                      // should update where the counter will sit
+                      form.setValue("jobNumberSettings.nextSequenceNumber", newVal);
+                    }}
                     disabled={!canManage}
                     className="mt-2"
                   />
