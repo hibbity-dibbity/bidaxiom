@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-18)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — defining requirements
+**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 36 ready to plan
 
 ## Current Position
 
-Phase: Not started (defining requirements for v1.5)
+Phase: 36 (ready to plan)
 Plan: —
-Status: Defining requirements — milestone v1.5 started
-Last activity: 2026-02-18 — Milestone v1.5 started; questioning complete
+Status: Roadmap defined — v1.5 ready for /gsd:plan-phase 36
+Last activity: 2026-02-18 — v1.5 requirements + roadmap complete (5 phases, ~21 plans)
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100%
 
@@ -61,5 +61,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: v1.4 milestone complete — archived, PROJECT.md evolved, git tag v1.4 created
+Stopped at: v1.5 milestone started — requirements + roadmap defined, Phase 36 ready
 Resume file: None
