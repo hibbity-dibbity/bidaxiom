@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -60,7 +61,7 @@ export function BidComparisonTable({ rfqId, projectId, projectSlug }: BidCompari
   const [selectedBidId, setSelectedBidId] = useState<string | null>(null);
   const [levelingCategory, setLevelingCategory] = useState<LevelingCategory>("scope_gap");
   const [levelingNote, setLevelingNote] = useState("");
-  const [adjustmentAmount, setAdjustmentAmount] = useState("");
+  const [adjustmentAmount, setAdjustmentAmount] = useState<number | undefined>(undefined);
   const [convertToCommitment, setConvertToCommitment] = useState(true);
   const [commitmentDescription, setCommitmentDescription] = useState("");
 
@@ -72,7 +73,7 @@ export function BidComparisonTable({ rfqId, projectId, projectSlug }: BidCompari
       toast.success("Leveling note added");
       setLevelingDialogOpen(false);
       setLevelingNote("");
-      setAdjustmentAmount("");
+      setAdjustmentAmount(undefined);
     },
     onError: (error) => {
       toast.error(error.message || "Failed to add leveling note");
@@ -123,7 +124,7 @@ export function BidComparisonTable({ rfqId, projectId, projectSlug }: BidCompari
       bidId: selectedBidId,
       category: levelingCategory,
       note: levelingNote.trim(),
-      adjustmentAmount: adjustmentAmount ? parseFloat(adjustmentAmount) : undefined,
+      adjustmentAmount: adjustmentAmount,
     });
   };
 
@@ -434,12 +435,10 @@ export function BidComparisonTable({ rfqId, projectId, projectSlug }: BidCompari
 
             <div className="space-y-2">
               <Label htmlFor="adjustment">Adjustment Amount (optional)</Label>
-              <Input
+              <CurrencyInput
                 id="adjustment"
-                type="number"
-                step="0.01"
-                value={adjustmentAmount}
-                onChange={(e) => setAdjustmentAmount(e.target.value)}
+                value={adjustmentAmount ?? 0}
+                onChange={(n) => setAdjustmentAmount(n === 0 ? undefined : n)}
                 placeholder="0.00"
               />
               <p className="text-xs text-muted-foreground">
