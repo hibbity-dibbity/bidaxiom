@@ -92,7 +92,7 @@
 ### Phases
 
 - [x] **Phase 30: Brand Identity & Sidebar Cleanup** — Rename all app copy to BIDAXIOM, set page titles, resize sign-in logo, remove version from sidebar (completed 2026-02-18)
-- [ ] **Phase 31: Color Palette & Favicon** — Extract palette from BIDAXIOM logo, present for user approval, apply to Tailwind config and CSS variables, set favicon
+- [x] **Phase 31: Color Palette & Favicon** — Extract palette from BIDAXIOM logo, present for user approval, apply to Tailwind config and CSS variables, set favicon (completed 2026-02-18)
 - [ ] **Phase 32: Flat Design System** — Remove border-radius, borders, and drop shadows from all card/panel components app-wide
 - [ ] **Phase 33: Company Selector in User Dropdown** — Add company switcher and "Create new company" option below Account Settings in top-nav user menu
 - [ ] **Phase 34: Live Currency Formatting** — All currency/amount inputs reformat to US currency live as user types
@@ -121,7 +121,7 @@
   3. After user approval, all CSS custom properties and Tailwind config entries reflect the new palette with no hardcoded legacy color values remaining
   4. The sign-in page, dashboard, and a data-heavy page (e.g., project list) all visually reflect the new palette consistently
   5. The browser tab and bookmarks display the BIDAXIOM icon (bidaxiom-icon.png) as the favicon
-**Plans:** TBD
+**Plans:** 2/2 plans complete
 
 #### Phase 32: Flat Design System
 **Goal:** Every card and panel in the application has sharp corners, no border, and no drop shadow — producing a flat, section-based visual language throughout.
@@ -174,7 +174,7 @@
 | 20-24 | v1.2 | 12/12 | ✅ Complete | 2026-02-17 |
 | 25-29 | v1.3 | 16/16 | ✅ Complete | 2026-02-18 |
 | 30. Brand Identity & Sidebar Cleanup | v1.4 | Complete    | 2026-02-18 | - |
-| 31. Color Palette | v1.4 | 0/? | Not started | - |
+| 31. Color Palette | v1.4 | Complete    | 2026-02-18 | - |
 | 32. Flat Design System | v1.4 | 0/? | Not started | - |
 | 33. Company Selector in User Dropdown | v1.4 | 0/? | Not started | - |
 | 34. Live Currency Formatting | v1.4 | 0/? | Not started | - |
