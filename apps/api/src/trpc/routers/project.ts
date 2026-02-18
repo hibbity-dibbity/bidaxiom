@@ -16,7 +16,7 @@ import {
 } from "@construction/shared";
 import { createAuditLog } from "../../audit/logger.js";
 import { defineAbilitiesFor } from "../../auth/abilities.js";
-import { eq, desc, inArray, and, like, or, asc, count, sql, gte, lte, isNull } from "drizzle-orm";
+import { eq, desc, inArray, and, like, or, asc, count, sql, gte, lte, isNull, ilike } from "drizzle-orm";
 import { ForbiddenError } from "@casl/ability";
 import { db as publicDb } from "../../db/client.js";
 import { users } from "../../db/schema/public.js";
@@ -113,8 +113,27 @@ export const projectRouter = router({
       let updatedJobSettings = jobNumberSettings;
 
       if (!finalJobNumber && jobNumberSettings?.enabled) {
-        // Auto-generate job number
-        const result = generateJobNumber(jobNumberSettings);
+        // Auto-generate job number, skipping any already-used numbers
+        let result = generateJobNumber(jobNumberSettings);
+        const MAX_ATTEMPTS = 1000;
+        let attempts = 0;
+        while (attempts < MAX_ATTEMPTS) {
+          const [existing] = await db
+            .select({ id: schema.projects.id })
+            .from(schema.projects)
+            .where(ilike(schema.projects.jobNumber, result.jobNumber))
+            .limit(1);
+          if (!existing) break; // unique — use this number
+          // Already taken — advance counter and try next
+          result = generateJobNumber(result.updatedSettings);
+          attempts++;
+        }
+        if (attempts >= MAX_ATTEMPTS) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Unable to generate a unique job number. Please reset the sequence in company settings.",
+          });
+        }
         finalJobNumber = result.jobNumber;
         updatedJobSettings = result.updatedSettings;
       }

@@ -238,6 +238,8 @@ export function ProjectForm() {
   const createMutation = trpc.project.create.useMutation({
     onSuccess: (data) => {
       utils.project.list.invalidate();
+      // Invalidate company profile so job number counter reflects the advance
+      utils.company.getCurrent.invalidate();
       toast.success("Project created successfully");
       router.push(`/projects/${data.slug}`);
     },
