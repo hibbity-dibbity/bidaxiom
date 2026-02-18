@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-02-18)
 Phase: 34 (Live Currency Formatting) — COMPLETE
 Plan: 34-05 complete — Human-verified end-to-end confirmation that all 7 currency fields format as $X,XXX.XX on blur; FORM-01 closed
 Status: Phase 34 complete. All 5 plans executed (34-01 through 34-05). All 7 currency input fields now format as $X,XXX.XX on blur — user-verified in running app.
-Last activity: 2026-02-18 — Plan 34-05 complete; FORM-01 satisfied via human verification checkpoint
+Last activity: 2026-02-18 — Quick task 26: restored ThemeToggle (Light/Dark/System) to /settings/account
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████░░░░] ~30%
 
@@ -71,6 +71,12 @@ Decisions are logged in PROJECT.md Key Decisions table (full log, 29 phases).
 - 31-02: Outline button variant uses border-primary text-primary (not border-input text-foreground) so secondary actions display in brand cyan-teal; dual favicon: app/icon.png (file-based auto-detection) + metadata.icons (belt-and-suspenders for PWA/bookmarks)
 - 32-01: Card base class: remove tokens entirely (not add rounded-none/shadow-none/border-none) to avoid CSS specificity problems; hover affordance = hover:bg-muted/50 transition-colors (background tint, not shadow) for flat design consistency
 - 32-02: Tier B table wrappers deferred (not part of DESIGN-01 scope); chart tooltips and floating overlays intentionally kept rounded (floating UI elements, not card panels); settings Link panels use hover:bg-muted/50 transition-colors to preserve click affordance
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 26 | restore dark/light/system mode toggle to settings/account page | 2026-02-18 | (see git) | [26-restore-dark-light-system-mode-toggle-to](./quick/26-restore-dark-light-system-mode-toggle-to/) |
 
 ### Pending Todos
 

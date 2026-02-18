@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2, Shield } from "lucide-react";
+import { ThemeToggle } from "@/components/settings/theme-toggle";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
@@ -150,7 +151,7 @@ export default function AccountSettingsPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Account Settings</h1>
         <p className="text-muted-foreground">
-          Manage your profile, password, and two-factor authentication
+          Manage your profile, password, two-factor authentication, and appearance
         </p>
       </div>
 
@@ -243,7 +244,10 @@ export default function AccountSettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Section 3: Two-Factor Authentication */}
+      {/* Section 3: Appearance */}
+      <ThemeToggle />
+
+      {/* Section 4: Two-Factor Authentication */}
       <Card>
         <CardHeader>
           <CardTitle>Two-Factor Authentication</CardTitle>
