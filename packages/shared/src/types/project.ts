@@ -135,6 +135,7 @@ export const updateProjectSchema = z.object({
 // List projects input schema with advanced filters
 export const listProjectsSchema = z.object({
   status: projectStatusEnum.optional(),
+  lifecyclePhase: lifecyclePhaseEnum.optional(),
   search: z.string().optional(),
   customerId: z.string().uuid().optional(),
   assignedUserId: z.string().optional(),

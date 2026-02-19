@@ -10,12 +10,19 @@ import {
   projectRoleEnum,
   projectStatusEnum,
   listProjectsSchema,
+  transitionLifecyclePhaseSchema,
+  setProjectModeSchema,
+  lifecyclePhaseEnum,
+  projectModeEnum,
+  LIFECYCLE_ORDER,
+  type LifecyclePhase,
   DEFAULT_PROJECT_FOLDERS,
   DEFAULT_PROJECT_PHASES,
   AuditAction,
 } from "@construction/shared";
 import { createAuditLog } from "../../audit/logger.js";
 import { defineAbilitiesFor } from "../../auth/abilities.js";
+import { isValidTransition, tryAutoAdvance } from "../../lib/lifecycle-state-machine.js";
 import { eq, desc, inArray, and, like, or, asc, count, sql, gte, lte, isNull, ilike, ne } from "drizzle-orm";
 import { ForbiddenError } from "@casl/ability";
 import { db as publicDb } from "../../db/client.js";
@@ -162,6 +169,19 @@ export const projectRouter = router({
         }
       }
 
+      // Resolve projectMode: use input value, or fall back to user's defaultProjectMode preference
+      let projectMode: string = input.projectMode ?? "gc_advanced";
+      if (!input.projectMode) {
+        const [profile] = await db
+          .select({ defaultProjectMode: schema.userProfiles.defaultProjectMode })
+          .from(schema.userProfiles)
+          .where(eq(schema.userProfiles.clerkUserId, userId))
+          .limit(1);
+        if (profile?.defaultProjectMode) {
+          projectMode = profile.defaultProjectMode;
+        }
+      }
+
       // Generate unique slug before creating project
       const projectSlug = await generateUniqueProjectSlug(
         finalJobNumber || null,
@@ -216,6 +236,7 @@ export const projectRouter = router({
             endDate: input.endDate ? new Date(input.endDate) : null,
             costCodes: input.costCodes,
             createdBy: userId,
+            projectMode: projectMode as "simple" | "gc_advanced",
           })
           .returning();
 
@@ -316,6 +337,10 @@ export const projectRouter = router({
         conditions.push(eq(schema.projects.status, input.status));
       }
 
+      if (input.lifecyclePhase) {
+        conditions.push(eq(schema.projects.lifecyclePhase, input.lifecyclePhase));
+      }
+
       if (input.search) {
         conditions.push(
           or(
@@ -405,6 +430,8 @@ export const projectRouter = router({
             zip: schema.projects.zip,
             projectType: schema.projects.projectType,
             status: schema.projects.status,
+            lifecyclePhase: schema.projects.lifecyclePhase,
+            projectMode: schema.projects.projectMode,
             startDate: schema.projects.startDate,
             endDate: schema.projects.endDate,
             budget: schema.projects.budget,
@@ -974,5 +1001,169 @@ export const projectRouter = router({
       });
 
       return phases;
+    }),
+
+  /**
+   * Manually transition a project to a different lifecycle phase.
+   * Forward transitions must be exactly one step. Backward transitions require a reason.
+   * RBAC: org:admin, or project-level estimator or project_administrator.
+   */
+  transitionLifecyclePhase: protectedProcedure
+    .input(transitionLifecyclePhaseSchema)
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+      }
+
+      const { db, schema } = ctx.tenant;
+
+      // Load project
+      const [project] = await db
+        .select({ id: schema.projects.id, lifecyclePhase: schema.projects.lifecyclePhase })
+        .from(schema.projects)
+        .where(eq(schema.projects.id, input.projectId))
+        .limit(1);
+
+      if (!project) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+      }
+
+      // RBAC: must be org:admin, or have project team role of 'estimator' or 'project_administrator'
+      const isOrgAdmin = ctx.orgRole === "org:admin";
+      const memberships = await db
+        .select({ role: schema.projectTeamMembers.role })
+        .from(schema.projectTeamMembers)
+        .where(eq(schema.projectTeamMembers.projectId, input.projectId));
+      const canTransition =
+        isOrgAdmin ||
+        memberships.some((m) => m.role === "estimator" || m.role === "project_administrator");
+
+      if (!canTransition) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only Estimators and Project Administrators can transition lifecycle phases.",
+        });
+      }
+
+      // Validate transition (throws TRPCError on invalid)
+      isValidTransition(project.lifecyclePhase as LifecyclePhase, input.toPhase, input.reason);
+
+      const toIdx = LIFECYCLE_ORDER.indexOf(input.toPhase);
+      const fromIdx = LIFECYCLE_ORDER.indexOf(project.lifecyclePhase as LifecyclePhase);
+      const isBackward = toIdx < fromIdx;
+
+      // Execute transition in transaction
+      await db.transaction(async (tx: any) => {
+        await tx
+          .update(schema.projects)
+          .set({ lifecyclePhase: input.toPhase, updatedAt: new Date() })
+          .where(eq(schema.projects.id, input.projectId));
+
+        await tx.insert(schema.projectLifecycleTransitions).values({
+          projectId: input.projectId,
+          fromPhase: project.lifecyclePhase,
+          toPhase: input.toPhase,
+          triggeredBy: "user",
+          actorId: ctx.userId!,
+          reason: input.reason ?? null,
+          eventSource: null,
+        });
+      });
+
+      await createAuditLog(db, schema, {
+        entityType: "Project",
+        entityId: input.projectId,
+        action: AuditAction.UPDATE,
+        actorId: ctx.userId!,
+        changes: {
+          before: { lifecyclePhase: project.lifecyclePhase },
+          after: { lifecyclePhase: input.toPhase },
+        },
+        metadata: { triggeredBy: "user", isBackward },
+      });
+
+      const [updated] = await db
+        .select()
+        .from(schema.projects)
+        .where(eq(schema.projects.id, input.projectId))
+        .limit(1);
+      return updated;
+    }),
+
+  /**
+   * Set project mode (Simple vs GC/Advanced).
+   * Mode changes are never blocked by lifecycle phase — any phase is allowed.
+   * RBAC: org:admin, or project-level estimator or project_administrator.
+   */
+  setMode: protectedProcedure
+    .input(setProjectModeSchema)
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+      }
+
+      const { db, schema } = ctx.tenant;
+
+      // RBAC: must be org:admin, or project-level estimator or project_administrator
+      // NOTE: do NOT check lifecyclePhase here — mode changes are never locked by phase
+      const isOrgAdmin = ctx.orgRole === "org:admin";
+      const memberships = await db
+        .select({ role: schema.projectTeamMembers.role })
+        .from(schema.projectTeamMembers)
+        .where(eq(schema.projectTeamMembers.projectId, input.projectId));
+      const canSetMode =
+        isOrgAdmin ||
+        memberships.some((m) => m.role === "estimator" || m.role === "project_administrator");
+
+      if (!canSetMode) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only Estimators and Project Administrators can change project mode.",
+        });
+      }
+
+      await db
+        .update(schema.projects)
+        .set({ projectMode: input.mode, updatedAt: new Date() })
+        .where(eq(schema.projects.id, input.projectId));
+
+      await createAuditLog(db, schema, {
+        entityType: "Project",
+        entityId: input.projectId,
+        action: AuditAction.UPDATE,
+        actorId: ctx.userId!,
+        changes: { after: { projectMode: input.mode } },
+        metadata: {},
+      });
+
+      const [updated] = await db
+        .select()
+        .from(schema.projects)
+        .where(eq(schema.projects.id, input.projectId))
+        .limit(1);
+      return updated;
+    }),
+
+  /**
+   * Get the full lifecycle transition history for a project.
+   * Ordered by created_at descending (most recent first).
+   * Readable by all authenticated users with access to the project.
+   */
+  getTransitionHistory: protectedProcedure
+    .input(z.object({ projectId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+      }
+
+      const { db, schema } = ctx.tenant;
+
+      const rows = await db
+        .select()
+        .from(schema.projectLifecycleTransitions)
+        .where(eq(schema.projectLifecycleTransitions.projectId, input.projectId))
+        .orderBy(desc(schema.projectLifecycleTransitions.createdAt));
+
+      return rows;
     }),
 });
