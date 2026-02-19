@@ -4,10 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
+import { isFeatureAvailableInPhase, type LifecyclePhase } from "@construction/shared";
 
 interface ProjectTabsProps {
   projectSlug: string;
   projectMode: string;
+  lifecyclePhase: string;
 }
 
 const ALL_SECTIONS = [
@@ -15,7 +17,7 @@ const ALL_SECTIONS = [
   { name: "Documents", href: "/documents" },
   { name: "Budget", href: "/budget" },
   { name: "Commitments", href: "/commitments" },
-  { name: "Change Orders", href: "/change-orders" },
+  { name: "Change Orders", href: "/change-orders", phaseGated: "change_orders" },
   { name: "SOV", href: "/sov", gcOnly: true },
   { name: "Payment Apps", href: "/payment-apps" },
   { name: "Invoices", href: "/invoices" },
@@ -23,7 +25,7 @@ const ALL_SECTIONS = [
   { name: "Estimates", href: "/estimates" },
 ] as const;
 
-export function ProjectTabs({ projectSlug, projectMode }: ProjectTabsProps) {
+export function ProjectTabs({ projectSlug, projectMode, lifecyclePhase }: ProjectTabsProps) {
   const pathname = usePathname();
   const utils = trpc.useUtils();
 
@@ -31,10 +33,16 @@ export function ProjectTabs({ projectSlug, projectMode }: ProjectTabsProps) {
   const { data: project } = trpc.project.getBySlug.useQuery({ slug: projectSlug });
   const projectId = project?.id;
 
-  // Filter out GC-only tabs when project is in Simple mode
-  const sections = ALL_SECTIONS.filter(
-    (s) => !("gcOnly" in s && s.gcOnly) || projectMode === "gc_advanced"
-  );
+  // Filter out GC-only tabs in Simple mode; filter out phase-gated tabs based on lifecycle phase
+  const sections = ALL_SECTIONS.filter((s) => {
+    // Mode gate: hide GC-only tabs in Simple mode
+    if ("gcOnly" in s && s.gcOnly && projectMode !== "gc_advanced") return false;
+    // Phase gate: hide features not available in current lifecycle phase
+    if ("phaseGated" in s && s.phaseGated) {
+      return isFeatureAvailableInPhase(s.phaseGated, lifecyclePhase as LifecyclePhase);
+    }
+    return true;
+  });
 
   // Prefetch handlers for each section
   const prefetchOverview = () => {
