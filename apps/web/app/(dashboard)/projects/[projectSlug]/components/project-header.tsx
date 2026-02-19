@@ -5,14 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Building2, MapPin, Calendar } from "lucide-react";
 import { formatCurrency } from "@/lib/utils/format";
-import type { ProjectStatus } from "@construction/shared";
-
-const statusColors: Record<ProjectStatus, string> = {
-  active: "bg-green-500/10 text-green-700 border-green-200",
-  on_hold: "bg-yellow-500/10 text-yellow-700 border-yellow-200",
-  completed: "bg-blue-500/10 text-blue-700 border-blue-200",
-  archived: "bg-gray-500/10 text-gray-700 border-gray-200",
-};
+import type { LifecyclePhase } from "@construction/shared";
+import { LifecyclePhaseBadge } from "./lifecycle-phase-badge";
 
 interface ProjectHeaderProps {
   project: {
@@ -20,7 +14,8 @@ interface ProjectHeaderProps {
     jobNumber: string | null;
     name: string;
     slug: string;
-    status: ProjectStatus;
+    lifecyclePhase: string;
+    projectMode: string;
     customerId: string;
     customerSlug?: string | null;
     customerName?: string | null;
@@ -38,9 +33,10 @@ interface ProjectHeaderProps {
     totalActual: number | string;
   } | null;
   teamMemberCount?: number;
+  canTransition: boolean;
 }
 
-export function ProjectHeader({ project, budgetSummary, teamMemberCount }: ProjectHeaderProps) {
+export function ProjectHeader({ project, budgetSummary, teamMemberCount, canTransition }: ProjectHeaderProps) {
   // Format currency with fallback for null/undefined
   const formatCurrencyValue = (value: number | string | null | undefined) => {
     if (value === null || value === undefined) return "--";
@@ -82,14 +78,20 @@ export function ProjectHeader({ project, budgetSummary, teamMemberCount }: Proje
 
   return (
     <div className="border-b pb-4">
-      {/* Top row: Job # + Name + Status + Edit button */}
+      {/* Top row: Job # + Name + Lifecycle Phase Badge + Mode Badge + Edit button */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-semibold">
             {project.jobNumber ? `${project.jobNumber}-${project.name}` : project.name}
           </h1>
-          <Badge className={statusColors[project.status]} variant="outline">
-            {project.status.replace("_", " ")}
+          <LifecyclePhaseBadge
+            projectId={project.id}
+            projectSlug={project.slug}
+            currentPhase={project.lifecyclePhase as LifecyclePhase}
+            canTransition={canTransition}
+          />
+          <Badge variant="outline" className="bg-slate-500/10 text-slate-600 border-slate-200 text-xs">
+            {project.projectMode === "simple" ? "Simple" : "GC/Advanced"}
           </Badge>
         </div>
         <Button variant="outline" size="sm" asChild>

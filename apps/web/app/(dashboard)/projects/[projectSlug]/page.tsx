@@ -27,7 +27,8 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar, DollarSign, Users, FileText, Edit, UserPlus, X, CheckCircle2, Circle, Clock, Building2, User, Mail, Phone, MapPin, Plus, Info } from "lucide-react";
-import type { ProjectStatus, ProjectRole } from "@construction/shared";
+import type { ProjectRole } from "@construction/shared";
+import { TransitionHistory } from "./components/transition-history";
 import { toast } from "sonner";
 import { getCustomerDisplayName } from "@construction/shared";
 import { SearchableSelect } from "@/components/ui/searchable-select";
@@ -837,6 +838,17 @@ export default function ProjectOverviewPage({
               No activity yet
             </p>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Lifecycle History */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Lifecycle History</CardTitle>
+          <CardDescription>Record of all phase transitions for this project</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <TransitionHistory projectId={projectId} />
         </CardContent>
       </Card>
 

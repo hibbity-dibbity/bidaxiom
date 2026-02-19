@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/lib/auth-context";
 import { ProjectHeader } from "./components/project-header";
 import { ProjectTabs } from "./components/project-tabs";
 
@@ -15,6 +16,7 @@ interface ProjectLayoutProps {
 
 export default function ProjectLayout({ children, params }: ProjectLayoutProps) {
   const { projectSlug } = params;
+  const { orgRole, userId } = useAuth();
 
   // Fetch project by slug
   const { data: project, isLoading, error } = trpc.project.getBySlug.useQuery({
@@ -26,6 +28,22 @@ export default function ProjectLayout({ children, params }: ProjectLayoutProps) 
     { projectId: project?.id ?? "" },
     { enabled: !!project?.id }
   );
+
+  // Determine if the current user can manually transition lifecycle phases.
+  // The API enforces RBAC regardless — this flag only controls badge interactivity.
+  // Org admins can always transition. Project-level estimator/project_administrator roles
+  // are also allowed — we check team membership when the project data is available.
+  const canTransition = (() => {
+    if (orgRole === "org:admin") return true;
+    if (!userId || !project?.teamMembers) return false;
+    const myMembership = project.teamMembers.find(
+      (m: { userId: string; role: string }) => m.userId === userId
+    );
+    return (
+      myMembership?.role === "estimator" ||
+      myMembership?.role === "project_administrator"
+    );
+  })();
 
   // Loading state: Show skeleton placeholders
   if (isLoading) {
@@ -67,7 +85,8 @@ export default function ProjectLayout({ children, params }: ProjectLayoutProps) 
           jobNumber: project.jobNumber,
           name: project.name,
           slug: project.slug ?? "",
-          status: project.status as "active" | "on_hold" | "completed" | "archived",
+          lifecyclePhase: project.lifecyclePhase ?? "opportunity",
+          projectMode: project.projectMode ?? "gc_advanced",
           customerId: project.customerId,
           customerSlug: project.customer?.slug ?? null,
           customerName: project.customer?.companyName || project.customer?.contactName || null,
@@ -81,6 +100,7 @@ export default function ProjectLayout({ children, params }: ProjectLayoutProps) 
         }}
         budgetSummary={budgetSummary ?? null}
         teamMemberCount={project.teamMembers?.length ?? 0}
+        canTransition={canTransition}
       />
 
       {/* Persistent tabs - highlight active section */}
