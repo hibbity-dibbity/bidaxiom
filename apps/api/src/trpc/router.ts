@@ -14,6 +14,7 @@ import { commitmentRouter } from "./routers/commitment.js";
 import { changeOrderRouter } from "./routers/change-order.js";
 import { sovRouter } from "./routers/sov.js";
 import { paymentAppRouter } from "./routers/payment-app.js";
+import { pdfRouter } from "./routers/pdf.js";
 import { lienWaiverRouter } from "./routers/lien-waiver.js";
 import { invoiceTrackingRouter } from "./routers/invoice-tracking.js";
 import { rfqRouter } from "./routers/rfq.js";
@@ -54,6 +55,7 @@ export const appRouter = router({
   changeOrder: changeOrderRouter,
   sov: sovRouter,
   paymentApp: paymentAppRouter,
+  pdf: pdfRouter,
   lienWaiver: lienWaiverRouter,
   invoiceTracking: invoiceTrackingRouter,
   rfq: rfqRouter,
