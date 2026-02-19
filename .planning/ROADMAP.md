@@ -153,7 +153,7 @@ Plans:
 
 **Requirements:** DEL-01, DEL-02, DEL-03, DEL-04, DEL-05
 
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 37-01-PLAN.md — DB schema columns, migration, shared types, 5 new tRPC procedures (checkDeletable, softDelete, restore, listDeleted, acknowledgeRestore)
@@ -243,7 +243,7 @@ Plans:
 | 25-29 | v1.3 | 16/16 | ✅ Complete | 2026-02-18 |
 | 30-35 | v1.4 | 16/16 | ✅ Complete | 2026-02-18 |
 | 36 | v1.5 | Complete    | 2026-02-19 | - |
-| 37 | v1.5 | 0/2 | Not started | - |
+| 37 | v1.5 | Complete    | 2026-02-19 | - |
 | 38 | v1.5 | 0/~5 | Not started | - |
 | 39 | v1.5 | 0/~4 | Not started | - |
 | 40 | v1.5 | 0/~4 | Not started | - |

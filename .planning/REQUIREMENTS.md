@@ -11,27 +11,27 @@
 
 ### Lifecycle — 9-Phase State Machine
 
-- [ ] **LIFE-01**: The existing project status field (Active/Inactive/etc.) is fully replaced by a 9-phase lifecycle state machine: **Opportunity → Estimating → Submitted → Awarded → Active → Substantial Completion → Closed → Warranty → Archived**. All existing projects are migrated to the new phases (existing data preserved, status mapped to nearest equivalent phase).
-- [ ] **LIFE-02**: Valid lifecycle transitions are enforced — only forward-adjacent moves are allowed unless an admin explicitly unlocks a backward transition with a reason.
-- [ ] **LIFE-03**: The system auto-advances projects through lifecycle phases based on system events (e.g., first estimate created → Estimating; estimate submitted → Submitted; award recorded → Awarded; construction start date reached → Active; final payment app approved → Substantial Completion; project closeout → Closed; warranty period passed → Warranty; archive action → Archived). Auto-advance is enabled by default for all projects.
-- [ ] **LIFE-04**: Every phase transition (manual or auto) is recorded in an audit log: `user_id`, `old_phase`, `new_phase`, `triggered_by` (system or user), `timestamp`, `reason`.
-- [ ] **LIFE-05**: The project list view and project header display the current lifecycle phase instead of the old status field. A color-coded phase badge is shown (StatusBadge component).
-- [ ] **LIFE-06**: Phase-specific feature visibility: certain features are only accessible in appropriate phases (e.g., Change Orders only accessible from Active phase onward; Estimates only editable in Opportunity/Estimating phases).
+- [x] **LIFE-01**: The existing project status field (Active/Inactive/etc.) is fully replaced by a 9-phase lifecycle state machine: **Opportunity → Estimating → Submitted → Awarded → Active → Substantial Completion → Closed → Warranty → Archived**. All existing projects are migrated to the new phases (existing data preserved, status mapped to nearest equivalent phase).
+- [x] **LIFE-02**: Valid lifecycle transitions are enforced — only forward-adjacent moves are allowed unless an admin explicitly unlocks a backward transition with a reason.
+- [x] **LIFE-03**: The system auto-advances projects through lifecycle phases based on system events (e.g., first estimate created → Estimating; estimate submitted → Submitted; award recorded → Awarded; construction start date reached → Active; final payment app approved → Substantial Completion; project closeout → Closed; warranty period passed → Warranty; archive action → Archived). Auto-advance is enabled by default for all projects.
+- [x] **LIFE-04**: Every phase transition (manual or auto) is recorded in an audit log: `user_id`, `old_phase`, `new_phase`, `triggered_by` (system or user), `timestamp`, `reason`.
+- [x] **LIFE-05**: The project list view and project header display the current lifecycle phase instead of the old status field. A color-coded phase badge is shown (StatusBadge component).
+- [x] **LIFE-06**: Phase-specific feature visibility: certain features are only accessible in appropriate phases (e.g., Change Orders only accessible from Active phase onward; Estimates only editable in Opportunity/Estimating phases).
 
 ### Project Mode — Simple vs GC
 
-- [ ] **MODE-01**: When creating a new project, the user selects a complexity mode: **Simple** (lump sum / draws / T&M — suitable for smaller jobs) or **GC/Advanced** (CSI cost codes + SOV + sub management — suitable for larger GC projects). The default mode is configurable in Company Settings.
-- [ ] **MODE-02**: Mode is locked after the project reaches the Active phase. The project detail page shows the current mode as a read-only badge.
-- [ ] **MODE-03**: Simple mode hides: CSI division breakdown, SOV builder, subcontractor bid management, lien waivers. GC/Advanced mode shows all features.
-- [ ] **MODE-04**: Existing projects default to GC/Advanced mode on migration (they already use advanced features).
+- [x] **MODE-01**: When creating a new project, the user selects a complexity mode: **Simple** (lump sum / draws / T&M — suitable for smaller jobs) or **GC/Advanced** (CSI cost codes + SOV + sub management — suitable for larger GC projects). The default mode is configurable in Company Settings.
+- [x] **MODE-02**: Mode is locked after the project reaches the Active phase. The project detail page shows the current mode as a read-only badge.
+- [x] **MODE-03**: Simple mode hides: CSI division breakdown, SOV builder, subcontractor bid management, lien waivers. GC/Advanced mode shows all features.
+- [x] **MODE-04**: Existing projects default to GC/Advanced mode on migration (they already use advanced features).
 
 ### Project Deletion
 
-- [ ] **DEL-01**: An admin-only "Delete Project" action is available on the project detail page and the projects table row menu. Non-admin users do not see this option.
-- [ ] **DEL-02**: Project deletion is blocked (with a clear error message) if the project is in Awarded, Active, Substantial Completion, Closed, or Warranty phase, OR if it has any financial records (change orders, payment applications, committed costs).
-- [ ] **DEL-03**: When deletion is permitted (Opportunity/Estimating/Submitted phases with no financial records), the user is shown a confirmation dialog that requires typing the project name to confirm.
-- [ ] **DEL-04**: Deleted projects use soft delete (deleted_at, deleted_by timestamps). A 30-day recovery window is available via admin tools. Hard delete fires automatically after 30 days.
-- [ ] **DEL-05**: All deletion actions are logged to the audit trail.
+- [x] **DEL-01**: An admin-only "Delete Project" action is available on the project detail page and the projects table row menu. Non-admin users do not see this option.
+- [x] **DEL-02**: Project deletion is blocked (with a clear error message) if the project is in Awarded, Active, Substantial Completion, Closed, or Warranty phase, OR if it has any financial records (change orders, payment applications, committed costs).
+- [x] **DEL-03**: When deletion is permitted (Opportunity/Estimating/Submitted phases with no financial records), the user is shown a confirmation dialog that requires typing the project name to confirm.
+- [x] **DEL-04**: Deleted projects use soft delete (deleted_at, deleted_by timestamps). A 30-day recovery window is available via admin tools. Hard delete fires automatically after 30 days.
+- [x] **DEL-05**: All deletion actions are logged to the audit trail.
 
 ### PDF Generation — Standard Documents
 
