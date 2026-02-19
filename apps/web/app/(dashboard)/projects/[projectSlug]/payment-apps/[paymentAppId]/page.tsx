@@ -8,8 +8,9 @@ import { G702Form } from "@/components/payment-app/g702-form";
 import { G703Continuation } from "@/components/payment-app/g703-continuation";
 import { LienWaiverTracker } from "@/components/payment-app/lien-waiver-tracker";
 import { RetainageSummary } from "@/components/payment-app/retainage-summary";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, FileDown, Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "sonner";
 
 export default function PaymentAppDetailPage({
   params,
@@ -23,6 +24,15 @@ export default function PaymentAppDetailPage({
   const projectId = project?.id;
 
   const { data: paymentApp, isLoading } = trpc.paymentApp.getById.useQuery({ id: paymentAppId });
+
+  const generatePdfMutation = trpc.pdf.generatePaymentApp.useMutation({
+    onSuccess: () => {
+      toast.success("Payment Application PDF (AIA G702/G703) saved to document library");
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
 
   if (isLoading) {
     return (
@@ -85,12 +95,31 @@ export default function PaymentAppDetailPage({
         </Button>
       </div>
 
-      <div>
-        <h1 className="text-2xl font-bold">Payment Application {paymentApp.applicationNumber}</h1>
-        <p className="text-muted-foreground mt-1">
-          {new Date(paymentApp.periodStart).toLocaleDateString()} to{" "}
-          {new Date(paymentApp.periodEnd).toLocaleDateString()}
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Payment Application {paymentApp.applicationNumber}</h1>
+          <p className="text-muted-foreground mt-1">
+            {new Date(paymentApp.periodStart).toLocaleDateString()} to{" "}
+            {new Date(paymentApp.periodEnd).toLocaleDateString()}
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          disabled={generatePdfMutation.isPending}
+          onClick={() =>
+            generatePdfMutation.mutate({
+              projectSlug,
+              paymentAppId,
+            })
+          }
+        >
+          {generatePdfMutation.isPending ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <FileDown className="mr-2 h-4 w-4" />
+          )}
+          Generate AIA G702/G703 PDF
+        </Button>
       </div>
 
       <Tabs defaultValue="summary" className="space-y-6">
