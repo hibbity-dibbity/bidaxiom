@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-18)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 38 in progress (2/7 plans complete)
+**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 38 in progress (3/7 plans complete)
 
 ## Current Position
 
 Phase: 38 (in progress)
-Plan: 02 complete — PDF engine singleton, shared generation utilities (getCompanyBranding, getNextDocumentSequence, resolveFileName, uploadPdfAndSave), pdf tRPC router shell registered in appRouter
-Status: 38-02 complete — TypeScript checks pass, zero new errors, all files created (commits 24a4705, 73d5515)
-Last activity: 2026-02-19 — 38-02 complete: PDF infrastructure foundation
+Plan: 03 complete — Proposal PDF end-to-end: buildProposalHtml template, pdf.generateProposal tRPC procedure, "Generate Proposal PDF" button in estimate detail page
+Status: 38-03 complete — API/web TypeScript checks pass, zero new errors, all files created (commits 599fd90, 76e9934)
+Last activity: 2026-02-19 — 38-03 complete: Proposal PDF feature (template + procedure + UI button)
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100%
 
@@ -49,6 +49,7 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 | 37 | 02 | ~45 min | 2+checkpoint | 9 |
 | 38 | 01 | ~4 min | 2 | 5 |
 | 38 | 02 | ~3 min | 2 | 4 |
+| 38 | 03 | ~6 min | 2 | 3 |
 
 *Updated after each plan completion*
 
@@ -81,6 +82,9 @@ Decisions logged in PROJECT.md Key Decisions table (full log, 35 phases).
 - [Phase 38-01]: DocumentNamingSettings is Partial<Record<PdfDocType, DocumentNamingConvention>> allowing per-type opt-in with per-type template override
 - [Phase 38-02]: getCompanyBranding returns primaryColor "#3B5BDB" hardcoded in Phase 38; logo embedding deferred to Phase 39 (PDF-05 partial)
 - [Phase 38-02]: pdfRouter shell has getStatus smoke-test; real procedures added in plans 38-03 through 38-06
+- [Phase 38-03]: buildProposalHtml uses escapeHtml() on all user-supplied strings to prevent XSS in Puppeteer-rendered output
+- [Phase 38-03]: costTypeLabel() maps DB values (labor/material/equipment/subcontractor) to display labels for the PDF; line item totals calculated as qty*unitCost in procedure
+- [Phase 38-03]: "Generate Proposal PDF" button placed in estimate detail page header alongside "Edit Estimate"; success toast shown without auto-redirect to preserve UX continuity
 
 ### Quick Tasks Completed
 
@@ -101,5 +105,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: Completed 38-02-PLAN.md — PDF engine singleton (engine.ts), shared generation utilities (generate.ts), pdf tRPC router shell (commits 24a4705, 73d5515). Phase 38 plan 02 done.
+Stopped at: Completed 38-03-PLAN.md — Proposal PDF template (proposal.ts), generateProposal tRPC procedure, "Generate Proposal PDF" button in estimate detail page (commits 599fd90, 76e9934). Phase 38 plan 03 done.
 Resume file: None
