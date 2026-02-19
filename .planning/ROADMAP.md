@@ -124,7 +124,7 @@
 
 **Requirements:** LIFE-01, LIFE-02, LIFE-03, LIFE-04, LIFE-05, LIFE-06, MODE-01, MODE-02, MODE-03, MODE-04
 
-**Plans:** 6 plans
+**Plans:** 7 plans
 
 Plans:
 - [ ] 36-01-PLAN.md — Shared types + Drizzle schema (enums, LIFECYCLE_ORDER, projectLifecycleTransitions table)
@@ -132,7 +132,8 @@ Plans:
 - [ ] 36-03-PLAN.md — API mutations (transitionLifecyclePhase, setMode, getTransitionHistory, auto-advance hook)
 - [ ] 36-04-PLAN.md — LifecyclePhaseBadge component + TransitionHistory feed + project header update
 - [ ] 36-05-PLAN.md — Project list phase column + mode dropdown in project creation form
-- [ ] 36-06-PLAN.md — Mode-aware tabs (Simple hides SOV/RFQs) + billing category in Simple estimates
+- [ ] 36-06-PLAN.md — Mode-aware tabs (Simple hides SOV/RFQs) + billing category in Simple estimates + lien waivers hidden in Simple mode
+- [ ] 36-07-PLAN.md — Phase-conditional feature gating (LIFE-06): isFeatureAvailableInPhase helper, Change Orders Active+ guard, Estimates edit-lock post-Estimating
 
 **Success Criteria** (what must be TRUE when this phase is complete):
 1. Every project displays a color-coded lifecycle phase badge (Opportunity / Estimating / Submitted / Awarded / Active / Substantial Completion / Closed / Warranty / Archived) in the project list and project header — the old status field is gone from all UI surfaces.
@@ -239,7 +240,7 @@ Plans:
 | 20-24 | v1.2 | 12/12 | ✅ Complete | 2026-02-17 |
 | 25-29 | v1.3 | 16/16 | ✅ Complete | 2026-02-18 |
 | 30-35 | v1.4 | 16/16 | ✅ Complete | 2026-02-18 |
-| 36 | v1.5 | 0/6 | Ready to execute | - |
+| 36 | v1.5 | 0/7 | Ready to execute | - |
 | 37 | v1.5 | 0/~2 | Not started | - |
 | 38 | v1.5 | 0/~5 | Not started | - |
 | 39 | v1.5 | 0/~4 | Not started | - |
