@@ -112,6 +112,7 @@ export async function buildTenantContext(
       estimateVersions: tenantDb.estimateVersions,
       sovVersions: tenantDb.sovVersions,
       projectLifecycleTransitions: tenantDb.projectLifecycleTransitions,
+      documentNamingCounters: tenantDb.documentNamingCounters,
     },
   };
 }

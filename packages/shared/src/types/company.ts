@@ -340,6 +340,21 @@ export function parseSequenceFromJobNumber(
   return parseInt(extracted, 10);
 }
 
+// Document naming conventions (Phase 38)
+export const PDF_DOC_TYPES = ["proposal", "change_order", "payment_app", "rfq"] as const;
+export type PdfDocType = (typeof PDF_DOC_TYPES)[number];
+
+/**
+ * Per-doc-type naming template.
+ * Supported variables: {JOB-NUMBER}, {PROJECT-NAME}, {DOC-TYPE}, {SEQ}, {YEAR}, {MONTH}, {DATE}
+ * Default when null: "{DOC-TYPE}-{JOB-NUMBER}-{DATE}"
+ */
+export interface DocumentNamingConvention {
+  template: string;
+}
+
+export type DocumentNamingSettings = Partial<Record<PdfDocType, DocumentNamingConvention>>;
+
 /**
  * Complete company configuration schema.
  * Used for create/update validation on the API.

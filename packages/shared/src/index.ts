@@ -27,6 +27,10 @@ export {
   parseTemplatePattern,
   computeNextSequenceNumber,
   parseSequenceFromJobNumber,
+  PDF_DOC_TYPES,
+  type PdfDocType,
+  type DocumentNamingConvention,
+  type DocumentNamingSettings,
 } from "./types/company";
 
 export {

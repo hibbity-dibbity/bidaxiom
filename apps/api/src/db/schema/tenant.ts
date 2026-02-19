@@ -17,6 +17,7 @@ import type {
   ReportFilter,
   ReportColumn,
   ReportChartConfig,
+  DocumentNamingSettings,
 } from "@construction/shared";
 
 /**
@@ -105,6 +106,8 @@ export function createTenantSchema(schemaName: string) {
     // logoStorageKey: text("logo_storage_key"), // Logo columns removed in quick-17 (static BidAxiom branding)
     allowPersonalTemplates: boolean("allow_personal_templates"), // Allow users to create personal estimate templates (default: true if null)
     sovGroupingMethod: text("sov_grouping_method"), // Default SOV grouping method: csi, phase, payment_schedule (default: csi if null)
+    documentNamingSettings: jsonb("document_naming_settings")
+      .$type<DocumentNamingSettings>(), // Per-doc-type naming templates (null = use default pattern)
     validFrom: timestamp("valid_from", { withTimezone: true }).defaultNow().notNull(),
     validTo: timestamp("valid_to", { withTimezone: true }), // NULL = current active version
     createdBy: text("created_by").notNull(), // Clerk user ID
@@ -612,6 +615,20 @@ export function createTenantSchema(schemaName: string) {
     year: integer("year").notNull(),
     lastNumber: integer("last_number").notNull().default(0),
   });
+
+  /**
+   * Document naming counters
+   * Company-scoped sequential counters for PDF document numbering (Phase 38).
+   * One counter per doc type per tenant schema (no project scoping).
+   * Use SELECT FOR UPDATE for race-free atomic increments.
+   */
+  const documentNamingCounters = schema.table("document_naming_counters", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    docType: text("doc_type").notNull(), // "proposal" | "change_order" | "payment_app" | "rfq"
+    currentNumber: integer("current_number").notNull().default(0),
+  }, (table) => ({
+    docTypeUnique: unique("document_naming_counters_doc_type_unique").on(table.docType),
+  }));
 
   /**
    * Retainage held
@@ -1256,6 +1273,7 @@ export function createTenantSchema(schemaName: string) {
     estimateVersions,
     sovVersions,
     projectLifecycleTransitions,
+    documentNamingCounters,
   };
 }
 
