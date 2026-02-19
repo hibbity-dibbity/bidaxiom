@@ -27,8 +27,9 @@ interface Project {
   id: string;
   jobNumber: string | null;
   name: string;
+  slug: string;
   customerName: string | null;
-  status: string;
+  lifecyclePhase: string | null;
   startDate: string | null;
 }
 

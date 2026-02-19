@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
-import type { ProjectStatus } from "@construction/shared";
+import type { LifecyclePhase } from "@construction/shared";
+import { LIFECYCLE_PHASE_LABELS } from "@construction/shared";
 
 // Type for project data from API
 interface Project {
@@ -12,16 +13,21 @@ interface Project {
   name: string;
   slug: string;
   customerName: string | null;
-  status: ProjectStatus;
+  lifecyclePhase: LifecyclePhase | null;
   startDate: string | null;
 }
 
-// Status color mapping (consistent with existing page)
-const statusColors: Record<ProjectStatus, string> = {
-  active: "bg-green-500/10 text-green-700 border-green-200",
-  on_hold: "bg-yellow-500/10 text-yellow-700 border-yellow-200",
-  completed: "bg-blue-500/10 text-blue-700 border-blue-200",
-  archived: "bg-gray-500/10 text-gray-700 border-gray-200",
+// Phase color mapping (read-only badge, no interactivity needed)
+const phaseColors: Record<LifecyclePhase, string> = {
+  opportunity:            "bg-purple-500/10 text-purple-700 border-purple-200",
+  estimating:             "bg-blue-500/10 text-blue-700 border-blue-200",
+  submitted:              "bg-cyan-500/10 text-cyan-700 border-cyan-200",
+  awarded:                "bg-emerald-500/10 text-emerald-700 border-emerald-200",
+  active:                 "bg-green-500/10 text-green-700 border-green-200",
+  substantial_completion: "bg-teal-500/10 text-teal-700 border-teal-200",
+  closed:                 "bg-gray-500/10 text-gray-700 border-gray-200",
+  warranty:               "bg-orange-500/10 text-orange-700 border-orange-200",
+  archived:               "bg-slate-500/10 text-slate-400 border-slate-200",
 };
 
 export const columns: ColumnDef<Project>[] = [
@@ -68,20 +74,15 @@ export const columns: ColumnDef<Project>[] = [
     },
   },
   {
-    accessorKey: "status",
-    header: "Status",
-    size: 120,
+    accessorKey: "lifecyclePhase",
+    header: "Phase",
+    size: 160,
     cell: ({ row }) => {
-      const status = row.getValue("status") as ProjectStatus;
-      const displayStatus = status.replace("_", " ");
-      const capitalizedStatus = displayStatus
-        .split(" ")
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(" ");
-
+      const phase = row.original.lifecyclePhase as LifecyclePhase | null;
+      if (!phase) return null;
       return (
-        <Badge className={statusColors[status]} variant="outline">
-          {capitalizedStatus}
+        <Badge className={phaseColors[phase]} variant="outline">
+          {LIFECYCLE_PHASE_LABELS[phase]}
         </Badge>
       );
     },
