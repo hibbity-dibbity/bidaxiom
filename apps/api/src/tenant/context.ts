@@ -111,6 +111,7 @@ export async function buildTenantContext(
       laborRateTemplates: tenantDb.laborRateTemplates,
       estimateVersions: tenantDb.estimateVersions,
       sovVersions: tenantDb.sovVersions,
+      projectLifecycleTransitions: tenantDb.projectLifecycleTransitions,
     },
   };
 }

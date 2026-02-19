@@ -59,6 +59,7 @@ export function createTenantSchema(schemaName: string) {
     firstName: text("first_name"),
     lastName: text("last_name"),
     role: text("role").notNull().default("member"),
+    defaultProjectMode: text("default_project_mode").default("gc_advanced"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   });
@@ -152,6 +153,8 @@ export function createTenantSchema(schemaName: string) {
     zip: text("zip"),
     projectType: text("project_type").notNull(), // commercial, residential, infrastructure, industrial
     status: text("status").notNull().default("active"), // active, on_hold, completed, archived, bidding
+    lifecyclePhase: text("lifecycle_phase").notNull().default("opportunity"),
+    projectMode: text("project_mode").notNull().default("gc_advanced"),
     startDate: timestamp("start_date", { withTimezone: true }),
     endDate: timestamp("end_date", { withTimezone: true }),
     budget: numeric("budget", { precision: 15, scale: 2 }),
@@ -1169,6 +1172,25 @@ export function createTenantSchema(schemaName: string) {
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   });
 
+  /**
+   * Project lifecycle transitions
+   * Immutable audit trail of all lifecycle phase transitions for projects.
+   * Records every state machine transition with actor, reason, and event source.
+   */
+  const projectLifecycleTransitions = schema.table("project_lifecycle_transitions", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    fromPhase: text("from_phase").notNull(),
+    toPhase: text("to_phase").notNull(),
+    triggeredBy: text("triggered_by").notNull(), // 'user' | 'system'
+    actorId: text("actor_id").notNull(),          // user UUID or 'system'
+    reason: text("reason"),                        // Required for backward transitions
+    eventSource: text("event_source"),             // e.g., 'estimate_created', 'pay_app_approved'
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
   return {
     schema,
     auditLogs,
@@ -1229,6 +1251,7 @@ export function createTenantSchema(schemaName: string) {
     laborRateTemplates,
     estimateVersions,
     sovVersions,
+    projectLifecycleTransitions,
   };
 }
 
