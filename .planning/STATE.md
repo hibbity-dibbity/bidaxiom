@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-02-18)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 36 Plan 04 complete
+**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 36 Plan 05 complete
 
 ## Current Position
 
 Phase: 36 (in progress)
-Plan: 04 complete — frontend lifecycle badge, transition history, project header updated
-Status: 36-04 complete — LifecyclePhaseBadge + TransitionHistory components built; project header and overview wired; ready for next phase 36 plan
-Last activity: 2026-02-19 — 36-04 complete: lifecycle UI components + header integration (commits 762fce6, 40a96cf)
+Plan: 05 complete — project list phase badge + project creation mode dropdown
+Status: 36-05 complete — lifecycle phase badge in project list table; Project Mode dropdown in creation form; all Phase 36 UI surfaces complete
+Last activity: 2026-02-19 — 36-05 complete: project list phase column + creation form mode dropdown (commits dc6a031, 78ae6ad)
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 132 (113 through v1.3, +16 in v1.4, +3 in v1.5 so far)
+- Total plans completed: 133 (113 through v1.3, +16 in v1.4, +4 in v1.5 so far)
 - Average duration: ~4.3 min/plan
 - Total execution time: ~9.9 hours
 
@@ -42,6 +42,7 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 | 36 | 02 | ~2 min | 2 | 3 |
 | 36 | 03 | ~8 min | 2 | 3 |
 | 36 | 04 | ~4 min | 2 | 5 |
+| 36 | 05 | ~3 min | 2 | 3 |
 
 *Updated after each plan completion*
 
@@ -57,6 +58,8 @@ Decisions logged in PROJECT.md Key Decisions table (full log, 35 phases).
 - [Phase 36-03]: setMode has no lifecyclePhase guard — mode changes allowed at any project phase
 - [Phase 36-03]: tryAutoAdvance placed after create audit log; silently no-ops if project not in preceding phase
 - [Phase 36]: canTransition client-side guard uses orgRole===org:admin OR project team estimator/project_administrator; API enforces full RBAC regardless
+- [Phase 36-05]: Read-only phase badge in project list uses inline Badge + phaseColors (not LifecyclePhaseBadge) — keeps list column cell minimal and server-friendly
+- [Phase 36-05]: projectMode defaults to gc_advanced in form defaultValues; explicit form value takes precedence over server's user-preference fallback
 
 ### Quick Tasks Completed
 
@@ -77,5 +80,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: Completed 36-04-PLAN.md — lifecycle phase badge and transition history UI (commits 762fce6, 40a96cf)
+Stopped at: Completed 36-05-PLAN.md — project list phase badge + creation form mode dropdown (commits dc6a031, 78ae6ad)
 Resume file: None
