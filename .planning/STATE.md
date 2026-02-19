@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-18)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 38 in progress (1/7 plans complete)
+**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 38 in progress (2/7 plans complete)
 
 ## Current Position
 
 Phase: 38 (in progress)
-Plan: 01 complete — document naming schema and shared types: documentNamingCounters table, documentNamingSettings JSONB column, PDF_DOC_TYPES/DocumentNamingSettings shared types
-Status: 38-01 complete — TypeScript checks pass, migration ran (1 succeeded, 0 failed), DB verified (commits 0cd3d37, 7b01500)
-Last activity: 2026-02-19 — 38-01 complete: document naming schema foundation
+Plan: 02 complete — PDF engine singleton, shared generation utilities (getCompanyBranding, getNextDocumentSequence, resolveFileName, uploadPdfAndSave), pdf tRPC router shell registered in appRouter
+Status: 38-02 complete — TypeScript checks pass, zero new errors, all files created (commits 24a4705, 73d5515)
+Last activity: 2026-02-19 — 38-02 complete: PDF infrastructure foundation
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100%
 
@@ -48,6 +48,7 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 | 37 | 01 | ~15 min | 2 | 5 |
 | 37 | 02 | ~45 min | 2+checkpoint | 9 |
 | 38 | 01 | ~4 min | 2 | 5 |
+| 38 | 02 | ~3 min | 2 | 4 |
 
 *Updated after each plan completion*
 
@@ -78,6 +79,8 @@ Decisions logged in PROJECT.md Key Decisions table (full log, 35 phases).
 - [Phase 38-01]: documentNamingSettings uses nullable JSONB (no .default()) — null means use platform default naming pattern, matching codebase pattern for optional JSONB config columns
 - [Phase 38-01]: documentNamingCounters is not project-scoped — one counter per doc type per company tenant schema for sequential PDF numbering
 - [Phase 38-01]: DocumentNamingSettings is Partial<Record<PdfDocType, DocumentNamingConvention>> allowing per-type opt-in with per-type template override
+- [Phase 38-02]: getCompanyBranding returns primaryColor "#3B5BDB" hardcoded in Phase 38; logo embedding deferred to Phase 39 (PDF-05 partial)
+- [Phase 38-02]: pdfRouter shell has getStatus smoke-test; real procedures added in plans 38-03 through 38-06
 
 ### Quick Tasks Completed
 
@@ -98,5 +101,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: Completed 38-01-PLAN.md — document naming schema and shared types (documentNamingCounters table, documentNamingSettings column, PDF_DOC_TYPES/DocumentNamingSettings types, commits 0cd3d37, 7b01500). Phase 38 plan 01 done.
+Stopped at: Completed 38-02-PLAN.md — PDF engine singleton (engine.ts), shared generation utilities (generate.ts), pdf tRPC router shell (commits 24a4705, 73d5515). Phase 38 plan 02 done.
 Resume file: None
