@@ -31,8 +31,8 @@ export default function ProjectLayout({ children, params }: ProjectLayoutProps) 
 
   // Determine if the current user can manually transition lifecycle phases.
   // The API enforces RBAC regardless — this flag only controls badge interactivity.
-  // Org admins can always transition. Project-level estimator/project_administrator roles
-  // are also allowed — we check team membership when the project data is available.
+  // Org admins can always transition. Project-level estimator/project_manager/project_administrator
+  // roles are also allowed — we check team membership when the project data is available.
   const canTransition = (() => {
     if (orgRole === "org:admin") return true;
     if (!userId || !project?.teamMembers) return false;
@@ -41,6 +41,7 @@ export default function ProjectLayout({ children, params }: ProjectLayoutProps) 
     );
     return (
       myMembership?.role === "estimator" ||
+      myMembership?.role === "project_manager" ||
       myMembership?.role === "project_administrator"
     );
   })();

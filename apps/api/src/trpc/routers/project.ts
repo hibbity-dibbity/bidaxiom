@@ -1028,7 +1028,7 @@ export const projectRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
       }
 
-      // RBAC: must be org:admin, or have project team role of 'estimator' or 'project_administrator'
+      // RBAC: must be org:admin, or have project team role of 'estimator', 'project_manager', or 'project_administrator'
       const isOrgAdmin = ctx.orgRole === "org:admin";
       const memberships = await db
         .select({ role: schema.projectTeamMembers.role })
@@ -1036,12 +1036,17 @@ export const projectRouter = router({
         .where(eq(schema.projectTeamMembers.projectId, input.projectId));
       const canTransition =
         isOrgAdmin ||
-        memberships.some((m) => m.role === "estimator" || m.role === "project_administrator");
+        memberships.some(
+          (m) =>
+            m.role === "estimator" ||
+            m.role === "project_manager" ||
+            m.role === "project_administrator"
+        );
 
       if (!canTransition) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "Only Estimators and Project Administrators can transition lifecycle phases.",
+          message: "Only Project Managers, Estimators, and Project Administrators can transition lifecycle phases.",
         });
       }
 
@@ -1104,7 +1109,7 @@ export const projectRouter = router({
 
       const { db, schema } = ctx.tenant;
 
-      // RBAC: must be org:admin, or project-level estimator or project_administrator
+      // RBAC: must be org:admin, or project-level estimator, project_manager, or project_administrator
       // NOTE: do NOT check lifecyclePhase here — mode changes are never locked by phase
       const isOrgAdmin = ctx.orgRole === "org:admin";
       const memberships = await db
@@ -1113,7 +1118,12 @@ export const projectRouter = router({
         .where(eq(schema.projectTeamMembers.projectId, input.projectId));
       const canSetMode =
         isOrgAdmin ||
-        memberships.some((m) => m.role === "estimator" || m.role === "project_administrator");
+        memberships.some(
+          (m) =>
+            m.role === "estimator" ||
+            m.role === "project_manager" ||
+            m.role === "project_administrator"
+        );
 
       if (!canSetMode) {
         throw new TRPCError({
