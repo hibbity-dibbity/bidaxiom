@@ -6,6 +6,7 @@ import { protectedProcedure } from "../procedures.js";
 import { buildProposalHtml, type ProposalPdfData } from "../../pdf/templates/proposal.js";
 import { buildChangeOrderHtml, type ChangeOrderPdfData } from "../../pdf/templates/change-order.js";
 import { buildPaymentAppHtml, type PaymentAppPdfData } from "../../pdf/templates/payment-app.js";
+import { buildRfqHtml, type RfqPdfData } from "../../pdf/templates/rfq.js";
 import {
   getNextDocumentSequence,
   resolveFileName,
@@ -698,6 +699,158 @@ export const pdfRouter = router({
         documentId: result.documentId,
         fileName: result.fileName,
         message: "Payment Application PDF generated successfully",
+      };
+    }),
+
+  /**
+   * Generate an RFQ PDF for a Request for Quotation.
+   *
+   * 1. Looks up project by slug.
+   * 2. Looks up RFQ by id; verifies it belongs to the project.
+   * 3. Gets company name from public.tenants.
+   * 4. Gets documentNamingSettings from active companyProfile.
+   * 5. Increments the "rfq" sequence counter.
+   * 6. Resolves PDF file name from naming settings.
+   * 7. Builds RfqPdfData using actual RFQ schema fields.
+   * 8. Calls buildRfqHtml().
+   * 9. Renders PDF via Puppeteer (generatePdfBuffer).
+   * 10. Uploads to S3 and inserts document + version rows with category "rfq".
+   * 11. Returns { documentId, fileName, message }.
+   */
+  generateRfq: protectedProcedure
+    .input(
+      z.object({
+        projectSlug: z.string(),
+        rfqId: z.string().uuid(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+      const tenantId = ctx.tenant.tenantId as string;
+
+      // --- 1. Look up project by slug ---
+      const [project] = await db
+        .select({
+          id: schema.projects.id,
+          name: schema.projects.name,
+          jobNumber: schema.projects.jobNumber,
+          street1: schema.projects.street1,
+          city: schema.projects.city,
+          state: schema.projects.state,
+          zip: schema.projects.zip,
+        })
+        .from(schema.projects)
+        .where(eq(schema.projects.slug, input.projectSlug))
+        .limit(1);
+
+      if (!project) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Project not found",
+        });
+      }
+
+      // --- 2. Look up RFQ and verify it belongs to this project ---
+      const [rfq] = await db
+        .select()
+        .from(schema.rfqs)
+        .where(eq(schema.rfqs.id, input.rfqId))
+        .limit(1);
+
+      if (!rfq || rfq.projectId !== project.id) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "RFQ not found for this project",
+        });
+      }
+
+      // --- 3. Get company name from public.tenants ---
+      const tenantResult = await db.execute(
+        sql`SELECT name FROM public.tenants WHERE id = ${tenantId} LIMIT 1`
+      );
+      const companyName =
+        (tenantResult.rows?.[0] as { name?: string } | undefined)?.name ??
+        "Your Company";
+
+      // --- 4. Fetch active company profile for naming settings ---
+      const [companyProfile] = await db
+        .select({
+          documentNamingSettings: schema.companyProfiles.documentNamingSettings,
+        })
+        .from(schema.companyProfiles)
+        .where(isNull(schema.companyProfiles.validTo))
+        .limit(1);
+
+      // --- 5. Get next sequence number ---
+      const seq = await getNextDocumentSequence(db, schema, "rfq");
+
+      // --- 6. Resolve file name ---
+      const fileName = resolveFileName(
+        companyProfile?.documentNamingSettings ?? null,
+        "rfq",
+        project.jobNumber ?? null,
+        project.name,
+        seq
+      );
+
+      // --- 7. Build RfqPdfData ---
+      const addressParts = [project.street1, project.city, project.state, project.zip].filter(Boolean);
+      const projectAddress =
+        addressParts.length > 0 ? addressParts.join(", ") : "Address not provided";
+
+      const generatedDate = formatGeneratedDate(new Date().toISOString());
+
+      // Format dueDate as "Month DD, YYYY" or null if missing
+      const dueDateFormatted = rfq.dueDate
+        ? formatGeneratedDate(new Date(rfq.dueDate).toISOString())
+        : null;
+
+      // RFQ number: prefer schema rfqNumber, otherwise derive from sequence
+      const rfqNumber = rfq.rfqNumber || `RFQ-${seq.toString().padStart(3, "0")}`;
+
+      const pdfData: RfqPdfData = {
+        companyName,
+        projectName: project.name,
+        jobNumber: project.jobNumber ?? null,
+        projectAddress,
+        rfqTitle: rfq.title,
+        rfqNumber,
+        scopeOfWork: rfq.scopeOfWork,
+        dueDate: dueDateFormatted,
+        description: rfq.description ?? null,
+        generatedDate,
+      };
+
+      // --- 8. Build HTML ---
+      const html = buildRfqHtml(pdfData);
+
+      // --- 9. Generate PDF buffer via Puppeteer ---
+      const pdfBuffer = await generatePdfBuffer(html);
+
+      // --- 10. Upload to S3 + insert document record ---
+      const result = await uploadPdfAndSave({
+        db,
+        schema,
+        tenantId,
+        projectId: project.id,
+        userId: ctx.userId,
+        fileName,
+        category: "rfq",
+        description: `RFQ: ${rfq.title || rfq.description || "Request for Quotation"}`,
+        pdfBuffer,
+      });
+
+      return {
+        documentId: result.documentId,
+        fileName: result.fileName,
+        message: "RFQ PDF generated successfully",
       };
     }),
 });
