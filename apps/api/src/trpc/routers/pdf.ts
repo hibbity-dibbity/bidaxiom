@@ -5,6 +5,7 @@ import { router } from "../trpc.js";
 import { protectedProcedure } from "../procedures.js";
 import { buildProposalHtml, type ProposalPdfData } from "../../pdf/templates/proposal.js";
 import { buildChangeOrderHtml, type ChangeOrderPdfData } from "../../pdf/templates/change-order.js";
+import { buildPaymentAppHtml, type PaymentAppPdfData } from "../../pdf/templates/payment-app.js";
 import {
   getNextDocumentSequence,
   resolveFileName,
@@ -443,6 +444,260 @@ export const pdfRouter = router({
         documentId: result.documentId,
         fileName: result.fileName,
         message: "Change Order PDF generated successfully",
+      };
+    }),
+
+  /**
+   * Generate an AIA G702/G703 Payment Application PDF.
+   *
+   * 1. Looks up project by slug (with customer join for owner info).
+   * 2. Looks up payment app by id; verifies it belongs to the project.
+   * 3. Fetches payment_app_line_items joined with sov_items.
+   * 4. Fetches customer (owner) from project.customerId.
+   * 5. Gets company name from public.tenants.
+   * 6. Gets documentNamingSettings from active companyProfile.
+   * 7. Increments the "payment_app" sequence counter.
+   * 8. Resolves PDF file name.
+   * 9. Builds PaymentAppPdfData and calls buildPaymentAppHtml().
+   * 10. Renders PDF via Puppeteer (generatePdfBuffer).
+   * 11. Uploads to S3 and inserts document + version rows with category "payment_app".
+   * 12. Returns { documentId, fileName, message }.
+   */
+  generatePaymentApp: protectedProcedure
+    .input(
+      z.object({
+        projectSlug: z.string(),
+        paymentAppId: z.string().uuid(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+      const tenantId = ctx.tenant.tenantId as string;
+
+      // --- 1. Look up project by slug ---
+      const [project] = await db
+        .select({
+          id: schema.projects.id,
+          name: schema.projects.name,
+          jobNumber: schema.projects.jobNumber,
+          street1: schema.projects.street1,
+          city: schema.projects.city,
+          state: schema.projects.state,
+          zip: schema.projects.zip,
+          customerId: schema.projects.customerId,
+          startDate: schema.projects.startDate,
+        })
+        .from(schema.projects)
+        .where(eq(schema.projects.slug, input.projectSlug))
+        .limit(1);
+
+      if (!project) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Project not found",
+        });
+      }
+
+      // --- 2. Look up payment app; verify it belongs to this project ---
+      const [payApp] = await db
+        .select()
+        .from(schema.paymentApps)
+        .where(eq(schema.paymentApps.id, input.paymentAppId))
+        .limit(1);
+
+      if (!payApp || payApp.projectId !== project.id) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Payment application not found for this project",
+        });
+      }
+
+      // --- 3. Fetch line items joined with SOV items ---
+      const lineItems = await db
+        .select({
+          id: schema.paymentAppLineItems.id,
+          sovItemId: schema.paymentAppLineItems.sovItemId,
+          previousPercentComplete: schema.paymentAppLineItems.previousPercentComplete,
+          currentPercentComplete: schema.paymentAppLineItems.currentPercentComplete,
+          workCompletedThisPeriod: schema.paymentAppLineItems.workCompletedThisPeriod,
+          materialsStoredThisPeriod: schema.paymentAppLineItems.materialsStoredThisPeriod,
+          totalCompletedAndStored: schema.paymentAppLineItems.totalCompletedAndStored,
+          retainagePercent: schema.paymentAppLineItems.retainagePercent,
+          retainageAmount: schema.paymentAppLineItems.retainageAmount,
+          itemNumber: schema.sovItems.itemNumber,
+          description: schema.sovItems.description,
+          scheduledValue: schema.sovItems.scheduledValue,
+        })
+        .from(schema.paymentAppLineItems)
+        .innerJoin(
+          schema.sovItems,
+          eq(schema.sovItems.id, schema.paymentAppLineItems.sovItemId)
+        )
+        .where(eq(schema.paymentAppLineItems.paymentAppId, input.paymentAppId))
+        .orderBy(schema.sovItems.orderIndex);
+
+      // --- 4. Look up customer (owner) ---
+      const [customer] = await db
+        .select({
+          companyName: schema.customers.companyName,
+          contactName: schema.customers.contactName,
+          street1: schema.customers.street1,
+          city: schema.customers.city,
+          state: schema.customers.state,
+          zip: schema.customers.zip,
+        })
+        .from(schema.customers)
+        .where(eq(schema.customers.id, project.customerId))
+        .limit(1);
+
+      // --- 5. Get company name from public.tenants ---
+      const tenantResult = await db.execute(
+        sql`SELECT name FROM public.tenants WHERE id = ${tenantId} LIMIT 1`
+      );
+      const companyName =
+        (tenantResult.rows?.[0] as { name?: string } | undefined)?.name ??
+        "Your Company";
+
+      // --- 6. Fetch active company profile for naming settings ---
+      const [companyProfile] = await db
+        .select({
+          documentNamingSettings: schema.companyProfiles.documentNamingSettings,
+        })
+        .from(schema.companyProfiles)
+        .where(isNull(schema.companyProfiles.validTo))
+        .limit(1);
+
+      // --- 7. Get next sequence number ---
+      const seq = await getNextDocumentSequence(db, schema, "payment_app");
+
+      // --- 8. Resolve file name ---
+      const fileName = resolveFileName(
+        companyProfile?.documentNamingSettings ?? null,
+        "payment_app",
+        project.jobNumber ?? null,
+        project.name,
+        seq
+      );
+
+      // --- 9. Build PaymentAppPdfData ---
+
+      // Project address
+      const addressParts = [project.street1, project.city, project.state, project.zip].filter(Boolean);
+      const projectAddress =
+        addressParts.length > 0 ? addressParts.join(", ") : "Address not provided";
+
+      // Owner info
+      const ownerName = customer
+        ? (customer.companyName ?? customer.contactName)
+        : "Not specified";
+      const ownerAddressParts = customer
+        ? [customer.street1, customer.city, customer.state, customer.zip].filter(Boolean)
+        : [];
+      const ownerAddress =
+        ownerAddressParts.length > 0 ? ownerAddressParts.join(", ") : "";
+
+      // Period dates
+      const periodFrom = formatGeneratedDate(new Date(payApp.periodStart).toISOString());
+      const periodTo = formatGeneratedDate(new Date(payApp.periodEnd).toISOString());
+
+      // Contract date (project start date)
+      const contractDate = project.startDate
+        ? formatGeneratedDate(new Date(project.startDate).toISOString())
+        : "Not specified";
+
+      // Application number (stored as text in DB e.g. "PAY-2026-001")
+      const applicationNumber = payApp.applicationNumber;
+
+      // Retainage percent for header — derive from retainageAmount / totalCompletedAndStored
+      const totalCompleted = parseFloat(payApp.totalCompletedAndStored as string) || 0;
+      const retainageAmt = parseFloat(payApp.retainageAmount as string) || 0;
+      const retainagePct = totalCompleted > 0 ? (retainageAmt / totalCompleted) * 100 : 0;
+      const retainagePercent = `${retainagePct.toFixed(2)}%`;
+
+      // Check if retainage is uniform across all line items
+      const uniformRetainage =
+        lineItems.length === 0 ||
+        lineItems.every(
+          (li) =>
+            String(li.retainagePercent) === String(lineItems[0].retainagePercent)
+        );
+
+      // Build line items for G703
+      const g703LineItems: PaymentAppPdfData["lineItems"] = lineItems.map((li) => {
+        const scheduledVal = parseFloat(li.scheduledValue as string) || 0;
+        const previousPct = parseFloat(li.previousPercentComplete as string) || 0;
+        const previousWorkCompleted = (previousPct / 100) * scheduledVal;
+
+        return {
+          itemNumber: li.itemNumber,
+          description: li.description,
+          scheduledValue: formatUsd(scheduledVal),
+          previousWorkCompleted: formatUsd(previousWorkCompleted),
+          thisperiodWork: formatUsd(parseFloat(li.workCompletedThisPeriod as string) || 0),
+          materialsStored: formatUsd(parseFloat(li.materialsStoredThisPeriod as string) || 0),
+          totalCompletedAndStored: formatUsd(parseFloat(li.totalCompletedAndStored as string) || 0),
+          balanceToFinish: formatUsd(scheduledVal - (parseFloat(li.totalCompletedAndStored as string) || 0)),
+          retainagePercent: uniformRetainage
+            ? null
+            : `${parseFloat(li.retainagePercent as string).toFixed(2)}%`,
+        };
+      });
+
+      const pdfData: PaymentAppPdfData = {
+        companyName,
+        ownerName,
+        ownerAddress,
+        projectName: project.name,
+        projectAddress,
+        architectName: "Not specified",
+        applicationNumber,
+        periodFrom,
+        periodTo,
+        contractDate,
+        originalContractSum: formatUsd(payApp.originalContractSum as string),
+        netChangeByChangeOrders: formatUsd(payApp.netChangeByChangeOrders as string),
+        contractSumToDate: formatUsd(payApp.contractSumToDate as string),
+        totalCompletedAndStored: formatUsd(payApp.totalCompletedAndStored as string),
+        retainagePercent,
+        retainageAmount: formatUsd(payApp.retainageAmount as string),
+        totalEarnedLessRetainage: formatUsd(payApp.totalEarnedLessRetainage as string),
+        previousPayments: formatUsd(payApp.previousPayments as string),
+        currentPaymentDue: formatUsd(payApp.currentPaymentDue as string),
+        balanceToFinish: formatUsd(payApp.balanceToFinish as string),
+        lineItems: g703LineItems,
+        uniformRetainage,
+      };
+
+      // --- 10. Build HTML ---
+      const html = buildPaymentAppHtml(pdfData);
+
+      // --- 11. Generate PDF buffer via Puppeteer ---
+      const pdfBuffer = await generatePdfBuffer(html);
+
+      // --- 12. Upload to S3 + insert document record ---
+      const result = await uploadPdfAndSave({
+        db,
+        schema,
+        tenantId,
+        projectId: project.id,
+        userId: ctx.userId,
+        fileName,
+        category: "payment_app",
+        description: `Payment Application #${payApp.applicationNumber}`,
+        pdfBuffer,
+      });
+
+      return {
+        documentId: result.documentId,
+        fileName: result.fileName,
+        message: "Payment Application PDF generated successfully",
       };
     }),
 });
