@@ -175,7 +175,17 @@ Plans:
 
 **Requirements:** PDF-01, PDF-02, PDF-03, PDF-04, PDF-05, PDF-06, NAME-01, NAME-02, NAME-03, NAME-04
 
-**Estimated plans:** ~5
+**Plans:** 8 plans
+
+Plans:
+- [ ] 38-01-PLAN.md — DB schema (documentNamingCounters table + documentNamingSettings JSONB on companyProfiles), Phase 38 migration, shared types
+- [ ] 38-02-PLAN.md — PDF engine (Puppeteer singleton), shared generation utilities (S3 upload, doc library insert, atomic counter), pdf tRPC router shell
+- [ ] 38-03-PLAN.md — Proposal PDF: HTML template + pdf.generateProposal procedure + "Generate Proposal PDF" button in estimates UI
+- [ ] 38-04-PLAN.md — Change Order PDF: HTML template + pdf.generateChangeOrder procedure + "Generate PDF" button on CO detail page
+- [ ] 38-05-PLAN.md — Payment Application PDF: AIA G702/G703 HTML template + pdf.generatePaymentApp procedure + button
+- [ ] 38-06-PLAN.md — RFQ PDF: HTML template + pdf.generateRfq procedure + "Generate RFQ PDF" button on RFQ detail page
+- [ ] 38-07-PLAN.md — Document naming settings UI (/settings/document-naming): per-type template inputs, variable chips, live preview, company.updateDocumentNaming
+- [ ] 38-08-PLAN.md — Compilation checks + human end-to-end verification of all 4 PDF types and naming settings
 
 **Success Criteria** (what must be TRUE when this phase is complete):
 1. From the Estimates section, clicking "Generate Proposal PDF" produces a downloadable PDF containing company logo, project name and address, estimate line items with quantities and rates, subtotals, total, and signature blocks — using the company's brand colors if configured.
@@ -184,8 +194,6 @@ Plans:
 4. From the Bidding/Procurement section, clicking "Generate RFQ PDF" produces a downloadable PDF containing project name/address, scope items with description/qty/unit, submission deadline, and payment terms.
 5. Every generated PDF is stored in the project's document library immediately upon generation and is accessible for download from the document list without re-generating.
 6. In Company Settings, an admin can configure a naming format per document type using supported variables ({JOB-NUMBER}, {PROJECT-NAME}, {DOC-TYPE}, {SEQ}, {YEAR}, {MONTH}, {DATE}); a live preview shows the resulting filename; the sequence counter auto-increments atomically on each generation; documents generated without a custom convention use the default {DOC-TYPE}-{JOB-NUMBER}-{DATE} pattern.
-
-**Plans:** TBD
 
 ---
 
@@ -244,6 +252,6 @@ Plans:
 | 30-35 | v1.4 | 16/16 | ✅ Complete | 2026-02-18 |
 | 36 | v1.5 | Complete    | 2026-02-19 | - |
 | 37 | v1.5 | Complete    | 2026-02-19 | - |
-| 38 | v1.5 | 0/~5 | Not started | - |
+| 38 | v1.5 | 0/8 | Not started | - |
 | 39 | v1.5 | 0/~4 | Not started | - |
 | 40 | v1.5 | 0/~4 | Not started | - |
