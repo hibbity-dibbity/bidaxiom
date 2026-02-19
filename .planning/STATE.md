@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-18)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 36 Plan 05 complete
+**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 36 Plan 06 complete (CHECKPOINT: awaiting human verification)
 
 ## Current Position
 
-Phase: 36 (in progress)
-Plan: 05 complete — project list phase badge + project creation mode dropdown
-Status: 36-05 complete — lifecycle phase badge in project list table; Project Mode dropdown in creation form; all Phase 36 UI surfaces complete
-Last activity: 2026-02-19 — 36-05 complete: project list phase column + creation form mode dropdown (commits dc6a031, 78ae6ad)
+Phase: 36 (in progress — checkpoint)
+Plan: 06 complete — mode-based UI gating: hidden GC tabs, billing category dropdown, lien waivers hide
+Status: 36-06 complete — ProjectTabs filters GC-only tabs in Simple mode; EstimateLineItemsTable shows Billing Category dropdown; payment app hides Lien Waivers tab; CHECKPOINT awaiting human verify
+Last activity: 2026-02-19 — 36-06 complete: mode-based UI gating (commits f7f90ec, 102239c)
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100%
 
@@ -43,6 +43,7 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 | 36 | 03 | ~8 min | 2 | 3 |
 | 36 | 04 | ~4 min | 2 | 5 |
 | 36 | 05 | ~3 min | 2 | 3 |
+| 36 | 06 | ~4 min | 2 | 5 |
 
 *Updated after each plan completion*
 
@@ -60,6 +61,9 @@ Decisions logged in PROJECT.md Key Decisions table (full log, 35 phases).
 - [Phase 36]: canTransition client-side guard uses orgRole===org:admin OR project team estimator/project_administrator; API enforces full RBAC regardless
 - [Phase 36-05]: Read-only phase badge in project list uses inline Badge + phaseColors (not LifecyclePhaseBadge) — keeps list column cell minimal and server-friendly
 - [Phase 36-05]: projectMode defaults to gc_advanced in form defaultValues; explicit form value takes precedence over server's user-preference fallback
+- [Phase 36]: EstimateLineItemsTable uses useParams() to self-resolve projectSlug rather than threading projectMode through WorkflowStepContainer/LineItemsStep
+- [Phase 36]: Billing Category dropdown is display-only in Phase 36 — billingCategory DB column deferred to Phase 37+
+- [Phase 36]: Mode switch button placed in ProjectHeader next to mode badge for co-location with the badge it modifies
 
 ### Quick Tasks Completed
 
@@ -80,5 +84,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: Completed 36-05-PLAN.md — project list phase badge + creation form mode dropdown (commits dc6a031, 78ae6ad)
+Stopped at: Completed 36-06-PLAN.md — mode-based UI gating (commits f7f90ec, 102239c). CHECKPOINT: awaiting human verification of all Phase 36 features.
 Resume file: None
