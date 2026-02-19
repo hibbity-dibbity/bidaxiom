@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useParams } from "next/navigation";
 import {
   useReactTable,
   getCoreRowModel,
@@ -29,7 +30,7 @@ import {
 } from "@/components/ui/select";
 import { Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { CSI_DIVISIONS } from "@construction/shared";
+import { CSI_DIVISIONS, BILLING_CATEGORIES } from "@construction/shared";
 import {
   calculateLineItemMargin,
   formatCurrency,
@@ -61,6 +62,8 @@ interface EstimateLineItemsTableProps {
     subcontractor: number;
   };
   onLineItemsChange?: () => void;
+  /** Optional: pass projectMode directly. If omitted, reads from route params via cached getBySlug. */
+  projectMode?: string;
 }
 
 const UNITS = ["ea", "sf", "lf", "cy", "ton", "hr", "ls"];
@@ -69,14 +72,29 @@ const COST_TYPES = ["labor", "material", "equipment", "subcontractor"];
 /**
  * Estimate line items table with inline editing, margin display, and section subtotals.
  * Uses TanStack Table for spreadsheet-like editing experience.
+ * In Simple mode, replaces the CSI Code column with a Billing Category dropdown.
  */
 export function EstimateLineItemsTable({
   estimateId,
   lineItems,
   defaultMarkup,
   onLineItemsChange,
+  projectMode: projectModeProp,
 }: EstimateLineItemsTableProps) {
   const utils = trpc.useUtils();
+
+  // Read projectSlug from route params so we can look up the project mode.
+  // getBySlug is already cached from the project layout, so this is essentially free.
+  const params = useParams<{ projectSlug?: string }>();
+  const projectSlug = params?.projectSlug;
+
+  const { data: project } = trpc.project.getBySlug.useQuery(
+    { slug: projectSlug! },
+    { enabled: !!projectSlug && projectModeProp === undefined }
+  );
+
+  const resolvedProjectMode = projectModeProp ?? project?.projectMode ?? "gc_advanced";
+  const isSimpleMode = resolvedProjectMode === "simple";
 
   // Update mutation with debouncing handled by cell onBlur
   const updateLineItem = trpc.estimates.updateLineItem.useMutation({
@@ -259,21 +277,46 @@ export function EstimateLineItemsTable({
 
   const columnHelper = createColumnHelper<EstimateLineItem>();
 
+  // CSI Code column (GC/Advanced mode only)
+  const csiCodeColumn = columnHelper.accessor("costCodeId", {
+    header: "CSI Code",
+    cell: ({ getValue, row, column }) => (
+      <SelectCell
+        value={getValue()}
+        row={row}
+        column={column}
+        options={CSI_DIVISIONS.map((d) => ({
+          value: d.division,
+          label: `${d.division} - ${d.name}`,
+        }))}
+      />
+    ),
+  });
+
+  // Billing Category column (Simple mode only) — display-only dropdown
+  // Persistence of billingCategory is a Phase 37+ enhancement (no DB column yet)
+  const billingCategoryColumn = columnHelper.display({
+    id: "billingCategory",
+    header: "Billing Category",
+    cell: () => (
+      <Select>
+        <SelectTrigger className="w-36 h-7 text-xs">
+          <SelectValue placeholder="Category" />
+        </SelectTrigger>
+        <SelectContent>
+          {BILLING_CATEGORIES.map((cat) => (
+            <SelectItem key={cat} value={cat}>
+              {cat}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    ),
+  });
+
   const columns: ColumnDef<EstimateLineItem, any>[] = [
-    columnHelper.accessor("costCodeId", {
-      header: "CSI Code",
-      cell: ({ getValue, row, column }) => (
-        <SelectCell
-          value={getValue()}
-          row={row}
-          column={column}
-          options={CSI_DIVISIONS.map((d) => ({
-            value: d.division,
-            label: `${d.division} - ${d.name}`,
-          }))}
-        />
-      ),
-    }),
+    // Show CSI Code in GC/Advanced mode; show Billing Category in Simple mode
+    ...(isSimpleMode ? [billingCategoryColumn] : [csiCodeColumn]),
     columnHelper.accessor("description", {
       header: "Description",
       cell: ({ getValue, row, column }) => (
