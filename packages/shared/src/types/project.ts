@@ -15,9 +15,63 @@ export type ProjectType = z.infer<typeof projectTypeEnum>;
 export const projectStatusEnum = z.enum(["active", "on_hold", "completed", "archived"]);
 export type ProjectStatus = z.infer<typeof projectStatusEnum>;
 
+// Lifecycle phase enum — 9-phase state machine
+export const lifecyclePhaseEnum = z.enum([
+  "opportunity",
+  "estimating",
+  "submitted",
+  "awarded",
+  "active",
+  "substantial_completion",
+  "closed",
+  "warranty",
+  "archived",
+]);
+export type LifecyclePhase = z.infer<typeof lifecyclePhaseEnum>;
+
+// Project mode enum
+export const projectModeEnum = z.enum(["simple", "gc_advanced"]);
+export type ProjectMode = z.infer<typeof projectModeEnum>;
+
 // Project team role enum (project-level, distinct from org-level roles)
-export const projectRoleEnum = z.enum(["project_manager", "superintendent", "foreman", "estimator", "accountant", "viewer"]);
+export const projectRoleEnum = z.enum(["project_manager", "project_administrator", "project_assistant", "superintendent", "foreman", "estimator", "accountant", "viewer"]);
 export type ProjectRole = z.infer<typeof projectRoleEnum>;
+
+// Ordered list of lifecycle phases (index = ordinal position)
+export const LIFECYCLE_ORDER: LifecyclePhase[] = [
+  "opportunity",
+  "estimating",
+  "submitted",
+  "awarded",
+  "active",
+  "substantial_completion",
+  "closed",
+  "warranty",
+  "archived",
+];
+
+// Human-readable labels for the lifecycle phases
+export const LIFECYCLE_PHASE_LABELS: Record<LifecyclePhase, string> = {
+  opportunity: "Opportunity",
+  estimating: "Estimating",
+  submitted: "Submitted",
+  awarded: "Awarded",
+  active: "Active",
+  substantial_completion: "Substantial Completion",
+  closed: "Closed",
+  warranty: "Warranty",
+  archived: "Archived",
+};
+
+// Simple mode billing categories (replaces CSI trade classification)
+export const BILLING_CATEGORIES = [
+  "Labor",
+  "Materials",
+  "Subcontractors",
+  "Equipment",
+  "Other",
+] as const;
+export type BillingCategory = typeof BILLING_CATEGORIES[number];
 
 // Project phase status
 export const phaseStatusEnum = z.enum(["pending", "in_progress", "completed"]);
@@ -55,6 +109,7 @@ export const createProjectSchema = z.object({
   costCodes: z.array(z.number().int().min(0).max(49)).default([]),
   teamMembers: z.array(teamMemberSchema).default([]),
   phases: z.array(projectPhaseSchema).default([]),
+  projectMode: projectModeEnum.optional(), // defaults server-side from user preference
 });
 
 // Update project input
@@ -122,3 +177,16 @@ export const DEFAULT_PROJECT_PHASES = [
   { name: "Finishes", orderIndex: 5 },
   { name: "Closeout", orderIndex: 6 },
 ] as const;
+
+// Schema for manual lifecycle phase transitions
+export const transitionLifecyclePhaseSchema = z.object({
+  projectId: z.string().uuid(),
+  toPhase: lifecyclePhaseEnum,
+  reason: z.string().min(1).max(1000).optional(),
+});
+
+// Schema for setting project mode
+export const setProjectModeSchema = z.object({
+  projectId: z.string().uuid(),
+  mode: projectModeEnum,
+});
