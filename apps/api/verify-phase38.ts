@@ -1,0 +1,10 @@
+import pg from 'pg';
+import { config } from 'dotenv';
+import { resolve } from 'path';
+config({ path: resolve(process.cwd(), '../../.env.local') });
+const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+const r1 = await pool.query("SELECT count(*) FROM information_schema.columns WHERE table_name = 'company_profiles' AND column_name = 'document_naming_settings'");
+const r2 = await pool.query("SELECT count(*) FROM information_schema.tables WHERE table_name = 'document_naming_counters'");
+console.log('document_naming_settings column count:', r1.rows[0].count);
+console.log('document_naming_counters table count:', r2.rows[0].count);
+await pool.end();
