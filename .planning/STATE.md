@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-18)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 38 in progress (3/7 plans complete)
+**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 38 in progress (4/7 plans complete)
 
 ## Current Position
 
 Phase: 38 (in progress)
-Plan: 03 complete — Proposal PDF end-to-end: buildProposalHtml template, pdf.generateProposal tRPC procedure, "Generate Proposal PDF" button in estimate detail page
-Status: 38-03 complete — API/web TypeScript checks pass, zero new errors, all files created (commits 599fd90, 76e9934)
-Last activity: 2026-02-19 — 38-03 complete: Proposal PDF feature (template + procedure + UI button)
+Plan: 04 complete — Change Order PDF end-to-end: buildChangeOrderHtml template, pdf.generateChangeOrder tRPC procedure, "Generate PDF" button in CO detail page
+Status: 38-04 complete — API/web TypeScript checks pass, zero new errors, all files created (commits 3fc3ec8, 87fec23)
+Last activity: 2026-02-19 — 38-04 complete: Change Order PDF feature (template + procedure + UI button)
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100%
 
@@ -50,6 +50,7 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 | 38 | 01 | ~4 min | 2 | 5 |
 | 38 | 02 | ~3 min | 2 | 4 |
 | 38 | 03 | ~6 min | 2 | 3 |
+| 38 | 04 | ~6 min | 2 | 3 |
 
 *Updated after each plan completion*
 
@@ -85,6 +86,8 @@ Decisions logged in PROJECT.md Key Decisions table (full log, 35 phases).
 - [Phase 38-03]: buildProposalHtml uses escapeHtml() on all user-supplied strings to prevent XSS in Puppeteer-rendered output
 - [Phase 38-03]: costTypeLabel() maps DB values (labor/material/equipment/subcontractor) to display labels for the PDF; line item totals calculated as qty*unitCost in procedure
 - [Phase 38-03]: "Generate Proposal PDF" button placed in estimate detail page header alongside "Edit Estimate"; success toast shown without auto-redirect to preserve UX continuity
+- [Phase 38-04]: Status gate for CO PDF allows pco_submitted/pending_approval/approved; blocks draft/rejected/void
+- [Phase 38-04]: ChangeOrderPdfData.lineItems uses amountChange (not qty/unit/unitCost) — CO line items schema has no cost type breakdown; scheduleImpactDays always null (no column in schema)
 
 ### Quick Tasks Completed
 
@@ -105,5 +108,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: Completed 38-03-PLAN.md — Proposal PDF template (proposal.ts), generateProposal tRPC procedure, "Generate Proposal PDF" button in estimate detail page (commits 599fd90, 76e9934). Phase 38 plan 03 done.
+Stopped at: Completed 38-04-PLAN.md — Change Order PDF template (change-order.ts), generateChangeOrder tRPC procedure, "Generate PDF" button in CO detail page (commits 3fc3ec8, 87fec23). Phase 38 plan 04 done.
 Resume file: None
