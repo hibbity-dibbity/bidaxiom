@@ -15,7 +15,10 @@ import {
   lifecyclePhaseEnum,
   projectModeEnum,
   LIFECYCLE_ORDER,
+  LIFECYCLE_PHASE_LABELS,
+  BLOCKED_DELETION_PHASES,
   type LifecyclePhase,
+  type DeletableCheckResult,
   DEFAULT_PROJECT_FOLDERS,
   DEFAULT_PROJECT_PHASES,
   AuditAction,
@@ -23,7 +26,7 @@ import {
 import { createAuditLog } from "../../audit/logger.js";
 import { defineAbilitiesFor } from "../../auth/abilities.js";
 import { isValidTransition, tryAutoAdvance } from "../../lib/lifecycle-state-machine.js";
-import { eq, desc, inArray, and, like, or, asc, count, sql, gte, lte, isNull, ilike, ne } from "drizzle-orm";
+import { eq, desc, inArray, and, like, or, asc, count, sql, gte, lte, isNull, isNotNull, ilike, ne } from "drizzle-orm";
 import { ForbiddenError } from "@casl/ability";
 import { db as publicDb } from "../../db/client.js";
 import { users } from "../../db/schema/public.js";
@@ -330,8 +333,8 @@ export const projectRouter = router({
         orgRole: ctx.orgRole,
       });
 
-      // Build WHERE conditions
-      const conditions = [];
+      // Build WHERE conditions — always exclude soft-deleted projects
+      const conditions = [isNull(schema.projects.deletedAt)];
 
       if (input.status) {
         conditions.push(eq(schema.projects.status, input.status));
@@ -342,14 +345,13 @@ export const projectRouter = router({
       }
 
       if (input.search) {
-        conditions.push(
-          or(
-            like(schema.projects.name, `%${input.search}%`),
-            like(schema.projects.street1, `%${input.search}%`),
-            like(schema.projects.city, `%${input.search}%`),
-            like(schema.projects.state, `%${input.search}%`)
-          )
+        const searchCond = or(
+          like(schema.projects.name, `%${input.search}%`),
+          like(schema.projects.street1, `%${input.search}%`),
+          like(schema.projects.city, `%${input.search}%`),
+          like(schema.projects.state, `%${input.search}%`)
         );
+        if (searchCond) conditions.push(searchCond);
       }
 
       if (input.customerId) {
@@ -479,11 +481,11 @@ export const projectRouter = router({
         orgRole: ctx.orgRole,
       });
 
-      // Query project
+      // Query project — exclude soft-deleted
       const [project] = await db
         .select()
         .from(schema.projects)
-        .where(eq(schema.projects.id, input.id))
+        .where(and(isNull(schema.projects.deletedAt), eq(schema.projects.id, input.id)))
         .limit(1);
 
       if (!project) {
@@ -548,11 +550,11 @@ export const projectRouter = router({
         orgRole: ctx.orgRole,
       });
 
-      // Query project
+      // Query project — exclude soft-deleted
       const [project] = await db
         .select()
         .from(schema.projects)
-        .where(eq(schema.projects.slug, input.slug))
+        .where(and(isNull(schema.projects.deletedAt), eq(schema.projects.slug, input.slug)))
         .limit(1);
 
       if (!project) {
@@ -1152,6 +1154,191 @@ export const projectRouter = router({
         .where(eq(schema.projects.id, input.projectId))
         .limit(1);
       return updated;
+    }),
+
+  /**
+   * Pre-flight check: can this project be deleted?
+   * Returns {canDelete: true} or {canDelete: false, reasons: [...]} with ALL blocking factors.
+   * Admin-only (org:admin).
+   */
+  checkDeletable: protectedProcedure
+    .input(z.object({ projectId: z.string().uuid() }))
+    .query(async ({ ctx, input }): Promise<DeletableCheckResult> => {
+      if (!ctx.tenant || !ctx.userId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+      if (ctx.orgRole !== "org:admin") throw new TRPCError({ code: "FORBIDDEN", message: "Admin required" });
+
+      const { db, schema } = ctx.tenant;
+
+      const [project] = await db.select({
+        lifecyclePhase: schema.projects.lifecyclePhase,
+        deletedAt: schema.projects.deletedAt,
+      }).from(schema.projects).where(eq(schema.projects.id, input.projectId)).limit(1);
+
+      if (!project) throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+      if (project.deletedAt) throw new TRPCError({ code: "BAD_REQUEST", message: "Project already deleted" });
+
+      const reasons: string[] = [];
+
+      // Check lifecycle phase
+      if (BLOCKED_DELETION_PHASES.includes(project.lifecyclePhase as LifecyclePhase)) {
+        const label = LIFECYCLE_PHASE_LABELS[project.lifecyclePhase as LifecyclePhase] ?? project.lifecyclePhase;
+        reasons.push(`Project is in ${label} phase`);
+      }
+
+      // Check financial records in parallel
+      const [coCount, paCount, commitCount] = await Promise.all([
+        db.select({ count: count() }).from(schema.changeOrders).where(eq(schema.changeOrders.projectId, input.projectId)),
+        db.select({ count: count() }).from(schema.paymentApps).where(eq(schema.paymentApps.projectId, input.projectId)),
+        db.select({ count: count() }).from(schema.commitments).where(eq(schema.commitments.projectId, input.projectId)),
+      ]);
+
+      const coTotal = Number(coCount[0]?.count ?? 0);
+      const paTotal = Number(paCount[0]?.count ?? 0);
+      const commitTotal = Number(commitCount[0]?.count ?? 0);
+
+      if (coTotal > 0) reasons.push(`${coTotal} change order${coTotal !== 1 ? "s" : ""}`);
+      if (paTotal > 0) reasons.push(`${paTotal} payment application${paTotal !== 1 ? "s" : ""}`);
+      if (commitTotal > 0) reasons.push(`${commitTotal} committed cost record${commitTotal !== 1 ? "s" : ""}`);
+
+      return { canDelete: reasons.length === 0, reasons };
+    }),
+
+  /**
+   * Soft-delete a project. Sets deleted_at, deleted_by, deletion_reason and writes audit log.
+   * Admin-only (org:admin).
+   */
+  softDelete: protectedProcedure
+    .input(z.object({ projectId: z.string().uuid(), reason: z.string().min(1, "Reason required") }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+      if (ctx.orgRole !== "org:admin") throw new TRPCError({ code: "FORBIDDEN", message: "Admin required" });
+
+      const { db, schema } = ctx.tenant;
+      const now = new Date();
+
+      const [project] = await db.select({ id: schema.projects.id, name: schema.projects.name, deletedAt: schema.projects.deletedAt })
+        .from(schema.projects).where(eq(schema.projects.id, input.projectId)).limit(1);
+
+      if (!project) throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+      if (project.deletedAt) throw new TRPCError({ code: "BAD_REQUEST", message: "Project already deleted" });
+
+      await db.update(schema.projects)
+        .set({ deletedAt: now, deletedBy: ctx.userId, deletionReason: input.reason })
+        .where(eq(schema.projects.id, input.projectId));
+
+      await createAuditLog(db, schema, {
+        entityType: "project",
+        entityId: input.projectId,
+        action: AuditAction.DELETE,
+        actorId: ctx.userId,
+        changes: {
+          after: { deletion_reason: input.reason, name: project.name },
+        },
+      });
+
+      return { success: true };
+    }),
+
+  /**
+   * Restore a soft-deleted project. Clears deleted_at, sets restored_at, writes audit log.
+   * Admin-only (org:admin).
+   */
+  restore: protectedProcedure
+    .input(z.object({ projectId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+      if (ctx.orgRole !== "org:admin") throw new TRPCError({ code: "FORBIDDEN", message: "Admin required" });
+
+      const { db, schema } = ctx.tenant;
+      const now = new Date();
+
+      const [project] = await db.select({ id: schema.projects.id, name: schema.projects.name, deletedAt: schema.projects.deletedAt })
+        .from(schema.projects).where(eq(schema.projects.id, input.projectId)).limit(1);
+
+      if (!project) throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+      if (!project.deletedAt) throw new TRPCError({ code: "BAD_REQUEST", message: "Project is not deleted" });
+
+      await db.update(schema.projects)
+        .set({ deletedAt: null, deletedBy: null, deletionReason: null, restoredAt: now })
+        .where(eq(schema.projects.id, input.projectId));
+
+      await createAuditLog(db, schema, {
+        entityType: "project",
+        entityId: input.projectId,
+        action: AuditAction.UPDATE,
+        actorId: ctx.userId,
+        changes: {
+          after: { restored: true, name: project.name },
+        },
+      });
+
+      return { success: true };
+    }),
+
+  /**
+   * List soft-deleted projects. Lazy-purges rows older than 30 days before returning.
+   * Admin-only (org:admin).
+   */
+  listDeleted: protectedProcedure
+    .query(async ({ ctx }) => {
+      if (!ctx.tenant || !ctx.userId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+      if (ctx.orgRole !== "org:admin") throw new TRPCError({ code: "FORBIDDEN", message: "Admin required" });
+
+      const { db, schema } = ctx.tenant;
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+      // Lazy purge: hard-delete rows older than 30 days (fire before returning list)
+      await db.delete(schema.projects)
+        .where(and(isNotNull(schema.projects.deletedAt), lte(schema.projects.deletedAt, thirtyDaysAgo)));
+
+      // Return remaining soft-deleted projects
+      const deleted = await db.select({
+        id: schema.projects.id,
+        name: schema.projects.name,
+        slug: schema.projects.slug,
+        deletedAt: schema.projects.deletedAt,
+        deletedBy: schema.projects.deletedBy,
+        deletionReason: schema.projects.deletionReason,
+      })
+        .from(schema.projects)
+        .where(isNotNull(schema.projects.deletedAt))
+        .orderBy(desc(schema.projects.deletedAt));
+
+      // Enrich with deleter's name from user_profiles
+      const result = await Promise.all(deleted.map(async (p) => {
+        let deletedByName: string | null = null;
+        if (p.deletedBy) {
+          const [profile] = await db.select({ firstName: schema.userProfiles.firstName, lastName: schema.userProfiles.lastName, email: schema.userProfiles.email })
+            .from(schema.userProfiles)
+            .where(eq(schema.userProfiles.clerkUserId, p.deletedBy))
+            .limit(1);
+          if (profile) {
+            deletedByName = [profile.firstName, profile.lastName].filter(Boolean).join(" ") || profile.email || null;
+          }
+        }
+        const deletedAtDate = p.deletedAt!;
+        const daysRemaining = Math.max(0, 30 - Math.floor((Date.now() - deletedAtDate.getTime()) / (24 * 60 * 60 * 1000)));
+        return { ...p, deletedByName, daysRemaining };
+      }));
+
+      return result;
+    }),
+
+  /**
+   * Acknowledge restore banner by setting restored_at = null.
+   * No admin check — any project member can dismiss the banner.
+   */
+  acknowledgeRestore: protectedProcedure
+    .input(z.object({ projectId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+
+      const { db, schema } = ctx.tenant;
+      await db.update(schema.projects)
+        .set({ restoredAt: null })
+        .where(eq(schema.projects.id, input.projectId));
+
+      return { success: true };
     }),
 
   /**
