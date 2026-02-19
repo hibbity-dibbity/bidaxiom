@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-18)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 37 complete (2/2 plans complete)
+**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 38 in progress (1/7 plans complete)
 
 ## Current Position
 
-Phase: 37 (complete)
-Plan: 02 complete — frontend deletion UX: DeleteProjectButton compound component, admin-only table + header integration, Deleted Projects settings page, restored banner
-Status: 37-02 complete — all 11 UAT verification steps passed; 2 minor post-verification fixes applied (job number on listDeleted, "Reason:" prefix); phase 37 fully done (commits 965c40e, 92b9046, 962a701)
-Last activity: 2026-02-19 — 37-02 complete: project deletion frontend UX
+Phase: 38 (in progress)
+Plan: 01 complete — document naming schema and shared types: documentNamingCounters table, documentNamingSettings JSONB column, PDF_DOC_TYPES/DocumentNamingSettings shared types
+Status: 38-01 complete — TypeScript checks pass, migration ran (1 succeeded, 0 failed), DB verified (commits 0cd3d37, 7b01500)
+Last activity: 2026-02-19 — 38-01 complete: document naming schema foundation
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100%
 
@@ -47,6 +47,7 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 | 36 | 07 | ~5 min | 2 | 6 |
 | 37 | 01 | ~15 min | 2 | 5 |
 | 37 | 02 | ~45 min | 2+checkpoint | 9 |
+| 38 | 01 | ~4 min | 2 | 5 |
 
 *Updated after each plan completion*
 
@@ -74,6 +75,9 @@ Decisions logged in PROJECT.md Key Decisions table (full log, 35 phases).
 - [Phase 37-02]: DeleteProjectButton uses utils.project.checkDeletable.fetch() (direct query fetch) for pre-flight rather than useMutation — semantically a read
 - [Phase 37-02]: Deletion from project header redirects via window.location.href to avoid navigating to a soft-deleted project route
 - [Phase 37-02]: createColumns factory appends admin delete column conditionally — non-admin renders never include the column
+- [Phase 38-01]: documentNamingSettings uses nullable JSONB (no .default()) — null means use platform default naming pattern, matching codebase pattern for optional JSONB config columns
+- [Phase 38-01]: documentNamingCounters is not project-scoped — one counter per doc type per company tenant schema for sequential PDF numbering
+- [Phase 38-01]: DocumentNamingSettings is Partial<Record<PdfDocType, DocumentNamingConvention>> allowing per-type opt-in with per-type template override
 
 ### Quick Tasks Completed
 
@@ -94,5 +98,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: Completed 37-02-PLAN.md — frontend deletion UX (DeleteProjectButton, table + header integration, Deleted Projects settings page, restored banner, commits 965c40e, 92b9046, 962a701). Phase 37 complete — both plans done.
+Stopped at: Completed 38-01-PLAN.md — document naming schema and shared types (documentNamingCounters table, documentNamingSettings column, PDF_DOC_TYPES/DocumentNamingSettings types, commits 0cd3d37, 7b01500). Phase 38 plan 01 done.
 Resume file: None
