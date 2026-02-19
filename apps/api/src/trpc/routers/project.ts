@@ -1296,6 +1296,7 @@ export const projectRouter = router({
         id: schema.projects.id,
         name: schema.projects.name,
         slug: schema.projects.slug,
+        jobNumber: schema.projects.jobNumber,
         deletedAt: schema.projects.deletedAt,
         deletedBy: schema.projects.deletedBy,
         deletionReason: schema.projects.deletionReason,

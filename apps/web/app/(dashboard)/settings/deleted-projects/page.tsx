@@ -41,7 +41,9 @@ export default function DeletedProjectsPage() {
             return (
               <div key={project.id} className="flex items-center justify-between px-4 py-3">
                 <div className="space-y-0.5">
-                  <p className="font-medium text-sm">{project.name}</p>
+                  <p className="font-medium text-sm">
+                    {project.jobNumber ? `${project.jobNumber} — ${project.name}` : project.name}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     Deleted {formattedDate}
                     {project.deletedByName ? ` by ${project.deletedByName}` : ""}
@@ -49,7 +51,7 @@ export default function DeletedProjectsPage() {
                     {project.daysRemaining} day{project.daysRemaining !== 1 ? "s" : ""} remaining
                   </p>
                   {project.deletionReason && (
-                    <p className="text-xs text-muted-foreground italic">&ldquo;{project.deletionReason}&rdquo;</p>
+                    <p className="text-xs text-muted-foreground italic">Reason: {project.deletionReason}</p>
                   )}
                 </div>
                 <Button
