@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-18)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 38 in progress (6/7 plans complete)
+**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 38 complete (7/7 plans complete)
 
 ## Current Position
 
-Phase: 38 (in progress)
-Plan: 06 complete — RFQ PDF: buildRfqHtml template with scopeOfWork pre-wrap and subcontractor response block, pdf.generateRfq tRPC procedure, "Generate RFQ PDF" button on RFQ detail page
-Status: 38-06 complete — API/web TypeScript checks pass, zero new errors in new/modified files, all four pdf procedures complete (commits db1351e, a21ef48)
-Last activity: 2026-02-19 — 38-06 complete: RFQ PDF feature (rfq.ts template + generateRfq procedure + UI button)
+Phase: 38 (complete)
+Plan: 07 complete — Document Naming settings page at /settings/document-naming with per-type template inputs, variable chips, live preview, and company.getDocumentNaming/updateDocumentNaming tRPC procedures
+Status: 38-07 complete — API/web TypeScript checks pass, zero new errors in new/modified files (commits ee155cc, 9f04178)
+Last activity: 2026-02-19 — 38-07 complete: Document Naming settings page + tRPC procedures
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100%
 
@@ -53,6 +53,7 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 | 38 | 04 | ~6 min | 2 | 3 |
 | 38 | 05 | ~6 min | 2 | 3 |
 | 38 | 06 | ~4 min | 2 | 3 |
+| 38 | 07 | ~4 min | 2 | 3 |
 
 *Updated after each plan completion*
 
@@ -96,6 +97,8 @@ Decisions logged in PROJECT.md Key Decisions table (full log, 35 phases).
 - [Phase 38-06]: scopeOfWork rendered with white-space: pre-wrap to preserve line breaks; paymentTerms hardcoded Net 30 with TODO comment (rfqs table has no paymentTerms column — deferred to Phase 39+)
 - [Phase 38-06]: Generate RFQ PDF button has no status gate — any RFQ status can export (unlike CO which gates on submitted/pending/approved)
 - [Phase 38-06]: rfqNumber uses schema rfqs.rfqNumber field directly; sequence only used as fallback if rfqNumber is empty
+- [Phase 38-07]: updateDocumentNaming uses simple UPDATE on current companyProfile row (not effective-dating) — documentNamingSettings is config-only JSONB with no historical tracking requirement
+- [Phase 38-07]: Only doc types with non-empty templates are sent in settings payload; empty template = use platform default ({DOC-TYPE}-{JOB-NUMBER}-{DATE})
 
 ### Quick Tasks Completed
 
@@ -116,5 +119,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: Completed 38-06-PLAN.md — RFQ PDF template (rfq.ts), generateRfq tRPC procedure, "Generate RFQ PDF" button on RFQ detail page (commits db1351e, a21ef48). Phase 38 plan 06 done. All four pdf procedures complete.
+Stopped at: Completed 38-07-PLAN.md — Document Naming settings page (/settings/document-naming) with per-type template inputs, variable chips, live preview, and company.getDocumentNaming/updateDocumentNaming tRPC procedures (commits ee155cc, 9f04178). Phase 38 complete (7/7 plans).
 Resume file: None
