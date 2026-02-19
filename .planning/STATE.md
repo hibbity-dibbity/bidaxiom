@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-18)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 37 in progress (1/2 plans complete)
+**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 37 complete (2/2 plans complete)
 
 ## Current Position
 
-Phase: 37 (in progress)
-Plan: 01 complete — soft-delete backend: schema columns, migration, 5 tRPC procedures (checkDeletable, softDelete, restore, listDeleted, acknowledgeRestore)
-Status: 37-01 complete — 4 nullable columns on projects, idempotent migration, all 5 procedures on projectRouter, soft-delete filter on list/getBySlug/getById (commits e2ebe88, 90a6858)
-Last activity: 2026-02-19 — 37-01 complete: project deletion backend infrastructure
+Phase: 37 (complete)
+Plan: 02 complete — frontend deletion UX: DeleteProjectButton compound component, admin-only table + header integration, Deleted Projects settings page, restored banner
+Status: 37-02 complete — all 11 UAT verification steps passed; 2 minor post-verification fixes applied (job number on listDeleted, "Reason:" prefix); phase 37 fully done (commits 965c40e, 92b9046, 962a701)
+Last activity: 2026-02-19 — 37-02 complete: project deletion frontend UX
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100%
 
@@ -46,6 +46,7 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 | 36 | 06 | ~4 min | 2 | 5 |
 | 36 | 07 | ~5 min | 2 | 6 |
 | 37 | 01 | ~15 min | 2 | 5 |
+| 37 | 02 | ~45 min | 2+checkpoint | 9 |
 
 *Updated after each plan completion*
 
@@ -70,6 +71,9 @@ Decisions logged in PROJECT.md Key Decisions table (full log, 35 phases).
 - [Phase 37-project-deletion-with-safeguards]: checkDeletable checks ALL blocking factors simultaneously (lifecycle phase + change orders + payment apps + commitments) returning complete reasons array
 - [Phase 37-project-deletion-with-safeguards]: listDeleted lazy-purges rows older than 30 days inline before SELECT — no background job needed
 - [Phase 37-project-deletion-with-safeguards]: acknowledgeRestore has no admin gate — any authenticated user with project access can dismiss the restore banner
+- [Phase 37-02]: DeleteProjectButton uses utils.project.checkDeletable.fetch() (direct query fetch) for pre-flight rather than useMutation — semantically a read
+- [Phase 37-02]: Deletion from project header redirects via window.location.href to avoid navigating to a soft-deleted project route
+- [Phase 37-02]: createColumns factory appends admin delete column conditionally — non-admin renders never include the column
 
 ### Quick Tasks Completed
 
@@ -90,5 +94,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: Completed 37-01-PLAN.md — soft-delete backend (schema + migration + 5 tRPC procedures, commits e2ebe88, 90a6858). Phase 37 plan 01 of 02 complete.
+Stopped at: Completed 37-02-PLAN.md — frontend deletion UX (DeleteProjectButton, table + header integration, Deleted Projects settings page, restored banner, commits 965c40e, 92b9046, 962a701). Phase 37 complete — both plans done.
 Resume file: None
