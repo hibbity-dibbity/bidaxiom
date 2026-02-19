@@ -1169,8 +1169,24 @@ export const projectRouter = router({
       const { db, schema } = ctx.tenant;
 
       const rows = await db
-        .select()
+        .select({
+          id: schema.projectLifecycleTransitions.id,
+          projectId: schema.projectLifecycleTransitions.projectId,
+          fromPhase: schema.projectLifecycleTransitions.fromPhase,
+          toPhase: schema.projectLifecycleTransitions.toPhase,
+          triggeredBy: schema.projectLifecycleTransitions.triggeredBy,
+          actorId: schema.projectLifecycleTransitions.actorId,
+          reason: schema.projectLifecycleTransitions.reason,
+          eventSource: schema.projectLifecycleTransitions.eventSource,
+          createdAt: schema.projectLifecycleTransitions.createdAt,
+          actorFirstName: schema.userProfiles.firstName,
+          actorLastName: schema.userProfiles.lastName,
+        })
         .from(schema.projectLifecycleTransitions)
+        .leftJoin(
+          schema.userProfiles,
+          eq(schema.projectLifecycleTransitions.actorId, schema.userProfiles.clerkUserId)
+        )
         .where(eq(schema.projectLifecycleTransitions.projectId, input.projectId))
         .orderBy(desc(schema.projectLifecycleTransitions.createdAt));
 

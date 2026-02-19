@@ -307,18 +307,6 @@ export default function ProjectOverviewPage({
     },
   });
 
-  const { data: auditData } = trpc.audit.entityHistory.useQuery(
-    {
-      entityType: "Project",
-      entityId: projectId,
-    },
-    {
-      enabled: !!projectId,
-    }
-  );
-
-  // Show only last 10 entries
-  const recentAudit = auditData?.slice(0, 10) || [];
 
   const handleAddMember = () => {
     if (!newMemberUserId.trim()) {
@@ -806,36 +794,6 @@ export default function ProjectOverviewPage({
           ) : (
             <p className="text-sm text-muted-foreground text-center py-8">
               No phases defined
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Recent Activity */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
-          <CardDescription>Latest changes to this project</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {recentAudit.length > 0 ? (
-            <div className="space-y-3">
-              {recentAudit.map((entry: any) => (
-                <div key={entry.id} className="flex items-start gap-3 text-sm">
-                  <div className="flex-1">
-                    <p className="font-medium">
-                      {entry.action.replace("_", " ")} {entry.entityType.toLowerCase()}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(entry.timestamp).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground text-center py-8">
-              No activity yet
             </p>
           )}
         </CardContent>

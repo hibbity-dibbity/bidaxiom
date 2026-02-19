@@ -25,29 +25,37 @@ export function TransitionHistory({ projectId }: TransitionHistoryProps) {
 
   return (
     <div className="space-y-3">
-      {transitions.map((t) => (
-        <div key={t.id} className="flex items-start gap-3 text-sm">
-          <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground mt-1.5 shrink-0" />
-          <div className="flex-1">
-            <span className="font-medium">
-              {LIFECYCLE_PHASE_LABELS[t.fromPhase as LifecyclePhase]}{" "}
-              &rarr;{" "}
-              {LIFECYCLE_PHASE_LABELS[t.toPhase as LifecyclePhase]}
-            </span>
-            {t.triggeredBy === "system" && t.eventSource && (
-              <span className="text-muted-foreground ml-2">
-                (auto: {t.eventSource})
+      {transitions.map((t) => {
+        const actorName =
+          t.triggeredBy === "system"
+            ? "System"
+            : [t.actorFirstName, t.actorLastName].filter(Boolean).join(" ") || "Unknown";
+
+        return (
+          <div key={t.id} className="flex items-start gap-3 text-sm">
+            <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground mt-1.5 shrink-0" />
+            <div className="flex-1">
+              <span className="font-medium">
+                {LIFECYCLE_PHASE_LABELS[t.fromPhase as LifecyclePhase]}{" "}
+                &rarr;{" "}
+                {LIFECYCLE_PHASE_LABELS[t.toPhase as LifecyclePhase]}
               </span>
-            )}
-            {t.reason && (
-              <p className="text-muted-foreground mt-0.5">Reason: {t.reason}</p>
-            )}
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {formatDistanceToNow(new Date(t.createdAt), { addSuffix: true })}
-            </p>
+              <span className="text-muted-foreground ml-1">by {actorName}</span>
+              {t.triggeredBy === "system" && t.eventSource && (
+                <span className="text-muted-foreground ml-1">
+                  (auto: {t.eventSource})
+                </span>
+              )}
+              {t.reason && (
+                <p className="text-muted-foreground mt-0.5">Reason: {t.reason}</p>
+              )}
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {formatDistanceToNow(new Date(t.createdAt), { addSuffix: true })}
+              </p>
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
