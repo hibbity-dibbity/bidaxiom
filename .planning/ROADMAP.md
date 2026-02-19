@@ -124,7 +124,15 @@
 
 **Requirements:** LIFE-01, LIFE-02, LIFE-03, LIFE-04, LIFE-05, LIFE-06, MODE-01, MODE-02, MODE-03, MODE-04
 
-**Estimated plans:** ~6
+**Plans:** 6 plans
+
+Plans:
+- [ ] 36-01-PLAN.md — Shared types + Drizzle schema (enums, LIFECYCLE_ORDER, projectLifecycleTransitions table)
+- [ ] 36-02-PLAN.md — Database migration + lifecycle state machine logic module
+- [ ] 36-03-PLAN.md — API mutations (transitionLifecyclePhase, setMode, getTransitionHistory, auto-advance hook)
+- [ ] 36-04-PLAN.md — LifecyclePhaseBadge component + TransitionHistory feed + project header update
+- [ ] 36-05-PLAN.md — Project list phase column + mode dropdown in project creation form
+- [ ] 36-06-PLAN.md — Mode-aware tabs (Simple hides SOV/RFQs) + billing category in Simple estimates
 
 **Success Criteria** (what must be TRUE when this phase is complete):
 1. Every project displays a color-coded lifecycle phase badge (Opportunity / Estimating / Submitted / Awarded / Active / Substantial Completion / Closed / Warranty / Archived) in the project list and project header — the old status field is gone from all UI surfaces.
@@ -133,8 +141,6 @@
 4. Every phase transition — manual or auto-triggered — writes an audit log entry recording the user or system actor, old phase, new phase, reason, and timestamp.
 5. When creating a new project, the user selects Simple or GC/Advanced mode; the mode is visible as a read-only badge after the project reaches Active phase, and mode-appropriate features are shown or hidden (Simple hides CSI breakdown, SOV builder, subcontractor bid management, and lien waivers).
 6. All existing projects are migrated to the nearest equivalent lifecycle phase and assigned GC/Advanced mode, with zero data loss and a recoverable rollback path.
-
-**Plans:** TBD
 
 ---
 
@@ -233,7 +239,7 @@
 | 20-24 | v1.2 | 12/12 | ✅ Complete | 2026-02-17 |
 | 25-29 | v1.3 | 16/16 | ✅ Complete | 2026-02-18 |
 | 30-35 | v1.4 | 16/16 | ✅ Complete | 2026-02-18 |
-| 36 | v1.5 | 0/~6 | Not started | - |
+| 36 | v1.5 | 0/6 | Ready to execute | - |
 | 37 | v1.5 | 0/~2 | Not started | - |
 | 38 | v1.5 | 0/~5 | Not started | - |
 | 39 | v1.5 | 0/~4 | Not started | - |
