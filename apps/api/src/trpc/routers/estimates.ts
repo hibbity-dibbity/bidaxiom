@@ -11,6 +11,8 @@ import {
   updateBidStatusSchema,
   AuditAction,
   type EstimateStatus,
+  type LifecyclePhase,
+  isFeatureAvailableInPhase,
 } from "@construction/shared";
 import { createAuditLog } from "../../audit/logger.js";
 import { tryAutoAdvance } from "../../lib/lifecycle-state-machine.js";
@@ -356,6 +358,20 @@ export const estimatesRouter = router({
 
       ForbiddenError.from(abilities).throwUnlessCan("update", "Estimate");
 
+      // Phase gate: Estimate editing is only available in Opportunity and Estimating phases
+      const [estimateProject] = await db
+        .select({ lifecyclePhase: schema.projects.lifecyclePhase })
+        .from(schema.projects)
+        .where(eq(schema.projects.id, existing.projectId))
+        .limit(1);
+
+      if (estimateProject && !isFeatureAvailableInPhase("estimate_editing", estimateProject.lifecyclePhase as LifecyclePhase)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Estimates cannot be edited in the '${estimateProject.lifecyclePhase}' phase. Estimates are only editable in Opportunity and Estimating phases.`,
+        });
+      }
+
       // Check if trying to change status
       if (input.status && input.status !== existing.status && existing.status === "draft") {
         throw new TRPCError({
@@ -512,6 +528,20 @@ export const estimatesRouter = router({
       });
 
       ForbiddenError.from(abilities).throwUnlessCan("update", "Estimate");
+
+      // Phase gate: Estimate editing is only available in Opportunity and Estimating phases
+      const [lineItemProject] = await db
+        .select({ lifecyclePhase: schema.projects.lifecyclePhase })
+        .from(schema.projects)
+        .where(eq(schema.projects.id, estimate.projectId))
+        .limit(1);
+
+      if (lineItemProject && !isFeatureAvailableInPhase("estimate_editing", lineItemProject.lifecyclePhase as LifecyclePhase)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Estimates cannot be edited in the '${lineItemProject.lifecyclePhase}' phase. Estimates are only editable in Opportunity and Estimating phases.`,
+        });
+      }
 
       // Build update values
       const updateValues: Record<string, unknown> = {

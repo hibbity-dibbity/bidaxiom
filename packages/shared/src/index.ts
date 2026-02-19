@@ -53,6 +53,8 @@ export {
   listProjectsSchema,
   transitionLifecyclePhaseSchema,
   setProjectModeSchema,
+  PHASE_FEATURE_GATES,
+  isFeatureAvailableInPhase,
   DEFAULT_PROJECT_FOLDERS,
   DEFAULT_PROJECT_PHASES,
 } from "./types/project";

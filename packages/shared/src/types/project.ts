@@ -191,3 +191,23 @@ export const setProjectModeSchema = z.object({
   projectId: z.string().uuid(),
   mode: projectModeEnum,
 });
+
+// Phase-feature gate definitions
+// feature -> list of lifecyclePhase values where the feature IS available
+export const PHASE_FEATURE_GATES: Record<string, LifecyclePhase[]> = {
+  change_orders: ["awarded", "active", "substantial_completion", "closed", "warranty", "archived"],
+  estimate_editing: ["opportunity", "estimating"],
+};
+
+/**
+ * Returns true if the given feature is accessible in the given lifecycle phase.
+ * Used in both tRPC mutation guards (server) and tab visibility (client).
+ *
+ * @param feature  - key from PHASE_FEATURE_GATES (e.g. 'change_orders')
+ * @param phase    - current lifecyclePhase of the project
+ */
+export function isFeatureAvailableInPhase(feature: string, phase: LifecyclePhase): boolean {
+  const allowed = PHASE_FEATURE_GATES[feature];
+  if (!allowed) return true; // unknown feature keys are permissive by default
+  return allowed.includes(phase);
+}

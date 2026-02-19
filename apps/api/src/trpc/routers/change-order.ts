@@ -10,6 +10,8 @@ import {
   AuditAction,
   VALID_CO_STATUS_TRANSITIONS,
   type ChangeOrderStatus,
+  type LifecyclePhase,
+  isFeatureAvailableInPhase,
 } from "@construction/shared";
 import { createAuditLog } from "../../audit/logger.js";
 import { defineAbilitiesFor } from "../../auth/abilities.js";
@@ -81,6 +83,14 @@ export const changeOrderRouter = router({
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "Project not found",
+        });
+      }
+
+      // Phase gate: Change Orders are only available in Awarded phase and later
+      if (!isFeatureAvailableInPhase("change_orders", project.lifecyclePhase as LifecyclePhase)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Change Orders are not available in the '${project.lifecyclePhase}' phase. Projects must reach the Awarded phase before change orders can be created.`,
         });
       }
 
