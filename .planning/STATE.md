@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-18)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 38 in progress (4/7 plans complete)
+**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 38 in progress (5/7 plans complete)
 
 ## Current Position
 
 Phase: 38 (in progress)
-Plan: 04 complete — Change Order PDF end-to-end: buildChangeOrderHtml template, pdf.generateChangeOrder tRPC procedure, "Generate PDF" button in CO detail page
-Status: 38-04 complete — API/web TypeScript checks pass, zero new errors, all files created (commits 3fc3ec8, 87fec23)
-Last activity: 2026-02-19 — 38-04 complete: Change Order PDF feature (template + procedure + UI button)
+Plan: 05 complete — Payment Application PDF (AIA G702/G703): buildPaymentAppHtml template, pdf.generatePaymentApp tRPC procedure, "Generate AIA G702/G703 PDF" button on payment app detail page
+Status: 38-05 complete — API/web TypeScript checks pass, zero new errors, all files created (commits 31ae0d7, 0305826)
+Last activity: 2026-02-19 — 38-05 complete: Payment Application PDF feature (G702/G703 template + procedure + UI button)
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100%
 
@@ -51,6 +51,7 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 | 38 | 02 | ~3 min | 2 | 4 |
 | 38 | 03 | ~6 min | 2 | 3 |
 | 38 | 04 | ~6 min | 2 | 3 |
+| 38 | 05 | ~6 min | 2 | 3 |
 
 *Updated after each plan completion*
 
@@ -88,6 +89,9 @@ Decisions logged in PROJECT.md Key Decisions table (full log, 35 phases).
 - [Phase 38-03]: "Generate Proposal PDF" button placed in estimate detail page header alongside "Edit Estimate"; success toast shown without auto-redirect to preserve UX continuity
 - [Phase 38-04]: Status gate for CO PDF allows pco_submitted/pending_approval/approved; blocks draft/rejected/void
 - [Phase 38-04]: ChangeOrderPdfData.lineItems uses amountChange (not qty/unit/unitCost) — CO line items schema has no cost type breakdown; scheduleImpactDays always null (no column in schema)
+- [Phase 38-05]: G702 header retainagePercent derived from retainageAmount/totalCompletedAndStored at generation time; applicationNumber uses the stored text value (e.g. "PAY-2026-001") as AIA document reference
+- [Phase 38-05]: "Generate AIA G702/G703 PDF" button has no status gate — all payment app statuses can generate a PDF
+- [Phase 38-05]: G703 Column I (Retainage %) only rendered when uniformRetainage === false (rates differ across line items)
 
 ### Quick Tasks Completed
 
@@ -108,5 +112,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: Completed 38-04-PLAN.md — Change Order PDF template (change-order.ts), generateChangeOrder tRPC procedure, "Generate PDF" button in CO detail page (commits 3fc3ec8, 87fec23). Phase 38 plan 04 done.
+Stopped at: Completed 38-05-PLAN.md — Payment Application PDF template (payment-app.ts), generatePaymentApp tRPC procedure, "Generate AIA G702/G703 PDF" button on payment app detail page (commits 31ae0d7, 0305826). Phase 38 plan 05 done.
 Resume file: None
