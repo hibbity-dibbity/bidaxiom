@@ -211,3 +211,18 @@ export function isFeatureAvailableInPhase(feature: string, phase: LifecyclePhase
   if (!allowed) return true; // unknown feature keys are permissive by default
   return allowed.includes(phase);
 }
+
+// Blocked lifecycle phases for deletion
+export const BLOCKED_DELETION_PHASES: LifecyclePhase[] = [
+  "awarded",
+  "active",
+  "substantial_completion",
+  "closed",
+  "warranty",
+];
+
+// Return type from project.checkDeletable
+export interface DeletableCheckResult {
+  canDelete: boolean;
+  reasons: string[];  // Human-readable blocking reasons, empty when canDelete=true
+}

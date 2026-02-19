@@ -163,6 +163,10 @@ export function createTenantSchema(schemaName: string) {
     createdBy: text("created_by").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    deletedBy: text("deleted_by"),         // Clerk user ID of deleting admin
+    deletionReason: text("deletion_reason"),
+    restoredAt: timestamp("restored_at", { withTimezone: true }),
   });
 
   /**

@@ -55,6 +55,8 @@ export {
   setProjectModeSchema,
   PHASE_FEATURE_GATES,
   isFeatureAvailableInPhase,
+  BLOCKED_DELETION_PHASES,
+  type DeletableCheckResult,
   DEFAULT_PROJECT_FOLDERS,
   DEFAULT_PROJECT_PHASES,
 } from "./types/project";
