@@ -2,7 +2,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router } from "../trpc.js";
 import { protectedProcedure, authorizedProcedure } from "../procedures.js";
-import { companyConfigSchema, AuditAction, parseSequenceFromJobNumber } from "@construction/shared";
+import { companyConfigSchema, AuditAction, parseSequenceFromJobNumber, PDF_DOC_TYPES, type DocumentNamingSettings } from "@construction/shared";
 import { asOfDate } from "../../lib/effective-dating.js";
 import { withAuditLog } from "../middleware/audit.js";
 import { requirePermission } from "../middleware/authorize.js";
@@ -164,6 +164,61 @@ export const companyRouter = router({
         existingProjectName: existing?.name ?? null,
         existingProjectSlug: existing?.slug ?? null,
       };
+    }),
+
+  /**
+   * Get the current document naming settings from the active company profile.
+   * Returns an empty object if no settings have been configured (null → {}).
+   */
+  getDocumentNaming: protectedProcedure.query(async ({ ctx }) => {
+    const [profile] = await ctx.tenant.db
+      .select()
+      .from(ctx.tenant.schema.companyProfiles)
+      .where(isNull(ctx.tenant.schema.companyProfiles.validTo))
+      .limit(1);
+
+    const documentNamingSettings: DocumentNamingSettings =
+      (profile?.documentNamingSettings as DocumentNamingSettings) ?? {};
+
+    return { documentNamingSettings };
+  }),
+
+  /**
+   * Update document naming convention templates.
+   * Performs a simple UPDATE on the current active company profile row because
+   * documentNamingSettings is a config-only JSONB column (no historical audit
+   * requirement — the main company.update procedure handles the effective-dating
+   * pattern for business-critical fields).
+   *
+   * Restricted to admin users (manage CompanySettings permission).
+   */
+  updateDocumentNaming: authorizedProcedure
+    .use(requirePermission("manage", "CompanySettings"))
+    .use(withAuditLog({ entityType: "CompanyProfile", action: AuditAction.UPDATE }))
+    .input(
+      z.object({
+        settings: z.record(
+          z.enum(PDF_DOC_TYPES),
+          z.object({ template: z.string().max(200) })
+        ),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+
+      await db
+        .update(schema.companyProfiles)
+        .set({ documentNamingSettings: input.settings as DocumentNamingSettings })
+        .where(isNull(schema.companyProfiles.validTo));
+
+      return { success: true };
     }),
 
   /**
