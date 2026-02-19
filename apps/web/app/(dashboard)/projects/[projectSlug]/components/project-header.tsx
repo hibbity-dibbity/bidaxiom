@@ -3,12 +3,18 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Building2, MapPin, Calendar } from "lucide-react";
+import { Building2, MapPin, Calendar, MoreVertical } from "lucide-react";
 import { formatCurrency } from "@/lib/utils/format";
 import type { LifecyclePhase } from "@construction/shared";
 import { LifecyclePhaseBadge } from "./lifecycle-phase-badge";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { DeleteProjectButton } from "../../components/delete-project-button";
 
 interface ProjectHeaderProps {
   project: {
@@ -28,6 +34,7 @@ interface ProjectHeaderProps {
     startDate?: Date | string | null;
     endDate?: Date | string | null;
     budget?: string | null;
+    restoredAt?: string | null;
   };
   budgetSummary?: {
     totalBudgeted: number | string;
@@ -36,9 +43,10 @@ interface ProjectHeaderProps {
   } | null;
   teamMemberCount?: number;
   canTransition: boolean;
+  canDelete?: boolean;
 }
 
-export function ProjectHeader({ project, budgetSummary, teamMemberCount, canTransition }: ProjectHeaderProps) {
+export function ProjectHeader({ project, budgetSummary, teamMemberCount, canTransition, canDelete }: ProjectHeaderProps) {
   const utils = trpc.useUtils();
 
   const setModeMutation = trpc.project.setMode.useMutation({
@@ -48,6 +56,12 @@ export function ProjectHeader({ project, budgetSummary, teamMemberCount, canTran
     },
     onError: (error) => {
       toast.error(error.message || "Failed to update project mode");
+    },
+  });
+
+  const acknowledgeRestoreMutation = trpc.project.acknowledgeRestore.useMutation({
+    onSuccess: () => {
+      utils.project.getBySlug.invalidate({ slug: project.slug });
     },
   });
 
@@ -126,12 +140,48 @@ export function ProjectHeader({ project, budgetSummary, teamMemberCount, canTran
             </button>
           )}
         </div>
-        <Button variant="outline" size="sm" asChild>
-          <Link href={`/projects/${project.slug}/edit`}>
-            Edit Project
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          {canDelete && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DeleteProjectButton
+                  projectId={project.id}
+                  projectName={project.name}
+                  variant="menu-item"
+                  onDeleted={() => {
+                    window.location.href = "/projects";
+                  }}
+                />
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/projects/${project.slug}/edit`}>
+              Edit Project
+            </Link>
+          </Button>
+        </div>
       </div>
+
+      {/* Restored banner — shown when project was recently restored */}
+      {project.restoredAt && (
+        <div className="flex items-center justify-between rounded border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800 mb-3">
+          <span>This project was deleted and restored.</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => acknowledgeRestoreMutation.mutate({ projectId: project.id })}
+            disabled={acknowledgeRestoreMutation.isPending}
+          >
+            Dismiss
+          </Button>
+        </div>
+      )}
 
       {/* Info row: Customer (linked) + Address + Date range */}
       <div className="flex items-center gap-6 text-sm text-muted-foreground mb-3">
