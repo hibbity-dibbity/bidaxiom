@@ -13,6 +13,7 @@ import {
   type EstimateStatus,
 } from "@construction/shared";
 import { createAuditLog } from "../../audit/logger.js";
+import { tryAutoAdvance } from "../../lib/lifecycle-state-machine.js";
 import { defineAbilitiesFor } from "../../auth/abilities.js";
 import { eq, desc, and, count, inArray, sql } from "drizzle-orm";
 import { ForbiddenError } from "@casl/ability";
@@ -299,6 +300,18 @@ export const estimatesRouter = router({
           after: updatedEstimate,
         },
       });
+
+      // Auto-advance: if project is in 'opportunity', first estimate created advances to 'estimating'
+      if (updatedEstimate?.projectId) {
+        await tryAutoAdvance(
+          ctx.tenant.db,
+          ctx.tenant.schema,
+          updatedEstimate.projectId,
+          "estimating",
+          "estimate_created",
+          ctx.userId!
+        );
+      }
 
       return updatedEstimate;
     }),
