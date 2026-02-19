@@ -104,7 +104,7 @@ export default function ProjectLayout({ children, params }: ProjectLayoutProps) 
       />
 
       {/* Persistent tabs - highlight active section */}
-      <ProjectTabs projectSlug={projectSlug} />
+      <ProjectTabs projectSlug={projectSlug} projectMode={project.projectMode ?? "gc_advanced"} />
 
       {/* Dynamic content area - page.tsx renders here */}
       <div className="mt-4">{children}</div>

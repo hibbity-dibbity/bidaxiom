@@ -7,28 +7,34 @@ import { trpc } from "@/lib/trpc";
 
 interface ProjectTabsProps {
   projectSlug: string;
+  projectMode: string;
 }
 
-const sections = [
+const ALL_SECTIONS = [
   { name: "Overview", href: "" },
   { name: "Documents", href: "/documents" },
   { name: "Budget", href: "/budget" },
   { name: "Commitments", href: "/commitments" },
   { name: "Change Orders", href: "/change-orders" },
-  { name: "SOV", href: "/sov" },
+  { name: "SOV", href: "/sov", gcOnly: true },
   { name: "Payment Apps", href: "/payment-apps" },
   { name: "Invoices", href: "/invoices" },
-  { name: "RFQs", href: "/rfqs" },
+  { name: "RFQs", href: "/rfqs", gcOnly: true },
   { name: "Estimates", href: "/estimates" },
-];
+] as const;
 
-export function ProjectTabs({ projectSlug }: ProjectTabsProps) {
+export function ProjectTabs({ projectSlug, projectMode }: ProjectTabsProps) {
   const pathname = usePathname();
   const utils = trpc.useUtils();
 
-  // Get project ID from cached getBySlug query
+  // Get project ID from cached getBySlug query (still needed for prefetch handlers)
   const { data: project } = trpc.project.getBySlug.useQuery({ slug: projectSlug });
   const projectId = project?.id;
+
+  // Filter out GC-only tabs when project is in Simple mode
+  const sections = ALL_SECTIONS.filter(
+    (s) => !("gcOnly" in s && s.gcOnly) || projectMode === "gc_advanced"
+  );
 
   // Prefetch handlers for each section
   const prefetchOverview = () => {

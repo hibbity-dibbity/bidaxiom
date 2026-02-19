@@ -7,6 +7,8 @@ import { Building2, MapPin, Calendar } from "lucide-react";
 import { formatCurrency } from "@/lib/utils/format";
 import type { LifecyclePhase } from "@construction/shared";
 import { LifecyclePhaseBadge } from "./lifecycle-phase-badge";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 
 interface ProjectHeaderProps {
   project: {
@@ -37,6 +39,23 @@ interface ProjectHeaderProps {
 }
 
 export function ProjectHeader({ project, budgetSummary, teamMemberCount, canTransition }: ProjectHeaderProps) {
+  const utils = trpc.useUtils();
+
+  const setModeMutation = trpc.project.setMode.useMutation({
+    onSuccess: () => {
+      utils.project.getBySlug.invalidate({ slug: project.slug });
+      toast.success("Project mode updated");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to update project mode");
+    },
+  });
+
+  const handleModeSwitch = () => {
+    const newMode = project.projectMode === "simple" ? "gc_advanced" : "simple";
+    setModeMutation.mutate({ projectId: project.id, mode: newMode as "simple" | "gc_advanced" });
+  };
+
   // Format currency with fallback for null/undefined
   const formatCurrencyValue = (value: number | string | null | undefined) => {
     if (value === null || value === undefined) return "--";
@@ -93,6 +112,19 @@ export function ProjectHeader({ project, budgetSummary, teamMemberCount, canTran
           <Badge variant="outline" className="bg-slate-500/10 text-slate-600 border-slate-200 text-xs">
             {project.projectMode === "simple" ? "Simple" : "GC/Advanced"}
           </Badge>
+          {canTransition && (
+            <button
+              onClick={handleModeSwitch}
+              disabled={setModeMutation.isPending}
+              className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {setModeMutation.isPending
+                ? "Switching..."
+                : project.projectMode === "simple"
+                ? "Switch to GC/Advanced"
+                : "Switch to Simple"}
+            </button>
+          )}
         </div>
         <Button variant="outline" size="sm" asChild>
           <Link href={`/projects/${project.slug}/edit`}>
