@@ -66,9 +66,16 @@ export function LifecyclePhaseBadge({
   const handlePhaseClick = (phase: LifecyclePhase) => {
     const currentIdx = LIFECYCLE_ORDER.indexOf(currentPhase);
     const targetIdx = LIFECYCLE_ORDER.indexOf(phase);
-    setIsBackward(targetIdx < currentIdx);
-    setPendingPhase(phase);
+    const backward = targetIdx < currentIdx;
     setOpen(false);
+    if (backward) {
+      // Backward: show reason dialog
+      setIsBackward(true);
+      setPendingPhase(phase);
+    } else {
+      // Forward: fire immediately, no confirmation
+      transitionMutation.mutate({ projectId, toPhase: phase, reason: undefined });
+    }
   };
 
   const handleConfirm = () => {
