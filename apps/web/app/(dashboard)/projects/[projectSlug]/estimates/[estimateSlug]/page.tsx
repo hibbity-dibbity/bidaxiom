@@ -9,7 +9,8 @@ import { StatusBadge } from "@/components/estimates/lifecycle/StatusBadge";
 import { NextStepsPanel } from "@/components/estimates/lifecycle/NextStepsPanel";
 import { formatCurrency } from "@construction/shared";
 import { format } from "date-fns";
-import { ArrowLeft, Edit } from "lucide-react";
+import { ArrowLeft, Edit, FileText, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function EstimateDetailPage({
   params,
@@ -27,6 +28,16 @@ export default function EstimateDetailPage({
   // Load project data for navigation
   const { data: project } = trpc.project.getBySlug.useQuery({ slug: projectSlug });
 
+  // Generate Proposal PDF mutation
+  const generateProposalMutation = trpc.pdf.generateProposal.useMutation({
+    onSuccess: () => {
+      toast.success("Proposal PDF generated and saved to document library");
+    },
+    onError: (error) => {
+      toast.error(error.message ?? "Failed to generate Proposal PDF");
+    },
+  });
+
   if (isLoading) {
     return (
       <div className="container mx-auto py-6 space-y-6">
@@ -43,7 +54,7 @@ export default function EstimateDetailPage({
         <div className="flex flex-col items-center justify-center py-12">
           <h2 className="text-2xl font-bold mb-2">Estimate Not Found</h2>
           <p className="text-muted-foreground mb-6">
-            The estimate you're looking for doesn't exist.
+            The estimate you&apos;re looking for doesn&apos;t exist.
           </p>
           <Button asChild>
             <Link href={`/projects/${projectSlug}/estimates`}>
@@ -70,12 +81,31 @@ export default function EstimateDetailPage({
             <h1 className="text-3xl font-bold">Estimate Details</h1>
           </div>
         </div>
-        <Button asChild>
-          <Link href={`/projects/${projectSlug}/estimates/${estimateSlug}/workflow`}>
-            <Edit className="h-4 w-4 mr-2" />
-            Edit Estimate
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            disabled={generateProposalMutation.isPending}
+            onClick={() => {
+              generateProposalMutation.mutate({
+                projectSlug,
+                estimateId: estimate.id,
+              });
+            }}
+          >
+            {generateProposalMutation.isPending ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <FileText className="h-4 w-4 mr-2" />
+            )}
+            Generate Proposal PDF
+          </Button>
+          <Button asChild>
+            <Link href={`/projects/${projectSlug}/estimates/${estimateSlug}/workflow`}>
+              <Edit className="h-4 w-4 mr-2" />
+              Edit Estimate
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Estimate Overview */}
