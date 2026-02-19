@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-18)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 36 ready to plan
+**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 36 Plan 01 complete
 
 ## Current Position
 
-Phase: 36 (ready to plan)
-Plan: —
-Status: Roadmap defined — v1.5 ready for /gsd:plan-phase 36
-Last activity: 2026-02-18 — v1.5 requirements + roadmap complete (5 phases, ~21 plans)
+Phase: 36 (in progress)
+Plan: 01 complete — lifecycle types + schema foundation done
+Status: 36-01 complete — shared types and Drizzle schema defined; ready for 36-02 (migration)
+Last activity: 2026-02-18 — 36-01 complete: lifecycle enums, constants, Drizzle schema additions
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100%
 
@@ -34,6 +34,12 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 | 34 | 5 | ~18 min | ~3.6 min |
 | 35 | 2 | ~7 min | ~3.5 min |
 
+**By Phase (v1.5):**
+
+| Phase | Plan | Duration | Tasks | Files |
+|-------|------|----------|-------|-------|
+| 36 | 01 | ~2 min | 2 | 3 |
+
 *Updated after each plan completion*
 
 ## Accumulated Context
@@ -41,6 +47,7 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 ### Decisions
 
 Decisions logged in PROJECT.md Key Decisions table (full log, 35 phases).
+- [Phase 36]: lifecyclePhase defaults to opportunity; projectMode defaults to gc_advanced for backward compat with existing tenants
 
 ### Quick Tasks Completed
 
@@ -61,5 +68,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: v1.5 milestone started — requirements + roadmap defined, Phase 36 ready
+Stopped at: Completed 36-01-PLAN.md — lifecycle types and schema foundation (commits c5875d2, 9e9e1cc)
 Resume file: None
