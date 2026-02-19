@@ -14,7 +14,7 @@ import { InvitationManager } from "@/components/bidding/invitation-manager";
 import { AmendmentTimeline } from "@/components/bidding/amendment-timeline";
 import { BidCard } from "@/components/bidding/bid-card";
 import { toast } from "sonner";
-import { ChevronLeft, Send, Ban, CheckCircle, X, BarChart3 } from "lucide-react";
+import { ChevronLeft, Send, Ban, CheckCircle, X, BarChart3, FileDown } from "lucide-react";
 import type { RfqStatus } from "@construction/shared";
 
 const CSI_DIVISION_MAP: Record<number, string> = {
@@ -93,6 +93,15 @@ export default function RfqDetailPage({
     },
     onError: (error) => {
       toast.error(error.message || "Failed to delete RFQ");
+    },
+  });
+
+  const generatePdfMutation = trpc.pdf.generateRfq.useMutation({
+    onSuccess: () => {
+      toast.success("RFQ PDF saved to document library");
+    },
+    onError: (error) => {
+      toast.error(error.message);
     },
   });
 
@@ -212,6 +221,20 @@ export default function RfqDetailPage({
               </Link>
             </Button>
           )}
+          <Button
+            variant="outline"
+            onClick={() =>
+              generatePdfMutation.mutate({ projectSlug, rfqId })
+            }
+            disabled={generatePdfMutation.isPending}
+          >
+            {generatePdfMutation.isPending ? (
+              <span className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            ) : (
+              <FileDown className="h-4 w-4 mr-2" />
+            )}
+            Generate RFQ PDF
+          </Button>
         </div>
       </div>
 
