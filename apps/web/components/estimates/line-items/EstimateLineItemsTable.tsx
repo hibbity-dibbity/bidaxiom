@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/select";
 import { Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { CSI_DIVISIONS, BILLING_CATEGORIES } from "@construction/shared";
+import { CSI_DIVISIONS } from "@construction/shared";
 import {
   calculateLineItemMargin,
   formatCurrency,
@@ -293,30 +293,9 @@ export function EstimateLineItemsTable({
     ),
   });
 
-  // Billing Category column (Simple mode only) — display-only dropdown
-  // Persistence of billingCategory is a Phase 37+ enhancement (no DB column yet)
-  const billingCategoryColumn = columnHelper.display({
-    id: "billingCategory",
-    header: "Billing Category",
-    cell: () => (
-      <Select>
-        <SelectTrigger className="w-36 h-7 text-xs">
-          <SelectValue placeholder="Category" />
-        </SelectTrigger>
-        <SelectContent>
-          {BILLING_CATEGORIES.map((cat) => (
-            <SelectItem key={cat} value={cat}>
-              {cat}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    ),
-  });
-
   const columns: ColumnDef<EstimateLineItem, any>[] = [
-    // Show CSI Code in GC/Advanced mode; show Billing Category in Simple mode
-    ...(isSimpleMode ? [billingCategoryColumn] : [csiCodeColumn]),
+    // CSI Code column only shown in GC/Advanced mode — Simple mode uses Cost Type instead
+    ...(isSimpleMode ? [] : [csiCodeColumn]),
     columnHelper.accessor("description", {
       header: "Description",
       cell: ({ getValue, row, column }) => (
