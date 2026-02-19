@@ -27,7 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Edit, Trash2, Ban, ArrowLeft, Send, Plus } from "lucide-react";
+import { Edit, Trash2, Ban, ArrowLeft, Send, Plus, FileDown } from "lucide-react";
 import { toast } from "sonner";
 import {
   Select,
@@ -117,6 +117,15 @@ export function ChangeOrderDetail({ changeOrderId, projectId, projectSlug }: Cha
     },
     onError: (error) => {
       toast.error(error.message || "Failed to submit change order");
+    },
+  });
+
+  const generatePdfMutation = trpc.pdf.generateChangeOrder.useMutation({
+    onSuccess: () => {
+      toast.success("Change Order PDF generated and saved to document library");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to generate Change Order PDF");
     },
   });
 
@@ -217,6 +226,10 @@ export function ChangeOrderDetail({ changeOrderId, projectId, projectSlug }: Cha
   const canEdit = co.status === "draft" || co.status === "rejected";
   const canVoid = co.status === "approved";
   const canDelete = co.status === "draft";
+  const canGeneratePdf =
+    co.status === "pco_submitted" ||
+    co.status === "pending_approval" ||
+    co.status === "approved";
 
   return (
     <div className="space-y-6">
@@ -411,6 +424,22 @@ export function ChangeOrderDetail({ changeOrderId, projectId, projectSlug }: Cha
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
+              )}
+              {canGeneratePdf && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    generatePdfMutation.mutate({
+                      projectSlug,
+                      changeOrderId,
+                    })
+                  }
+                  disabled={generatePdfMutation.isPending}
+                >
+                  <FileDown className="h-4 w-4 mr-2" />
+                  {generatePdfMutation.isPending ? "Generating..." : "Generate PDF"}
+                </Button>
               )}
               {canDelete && (
                 <Button
