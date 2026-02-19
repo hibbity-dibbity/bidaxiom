@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-18)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 36 Plan 06 complete (CHECKPOINT: awaiting human verification)
+**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 36 all 7 plans complete
 
 ## Current Position
 
-Phase: 36 (in progress — checkpoint)
-Plan: 06 complete — mode-based UI gating: hidden GC tabs, billing category dropdown, lien waivers hide
-Status: 36-06 complete — ProjectTabs filters GC-only tabs in Simple mode; EstimateLineItemsTable shows Billing Category dropdown; payment app hides Lien Waivers tab; CHECKPOINT awaiting human verify
-Last activity: 2026-02-19 — 36-06 complete: mode-based UI gating (commits f7f90ec, 102239c)
+Phase: 36 (complete — all plans done)
+Plan: 07 complete — phase-conditional feature gating (LIFE-06): Change Orders blocked pre-Awarded, Estimate editing blocked post-Estimating
+Status: 36-07 complete — isFeatureAvailableInPhase helper in @construction/shared; backend guards in change-order.ts and estimates.ts; Change Orders tab hidden pre-Awarded in ProjectTabs
+Last activity: 2026-02-19 — 36-07 complete: LIFE-06 phase gating (commits af97cd3, 3f972b4)
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100%
 
@@ -44,6 +44,7 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 | 36 | 04 | ~4 min | 2 | 5 |
 | 36 | 05 | ~3 min | 2 | 3 |
 | 36 | 06 | ~4 min | 2 | 5 |
+| 36 | 07 | ~5 min | 2 | 6 |
 
 *Updated after each plan completion*
 
@@ -64,6 +65,7 @@ Decisions logged in PROJECT.md Key Decisions table (full log, 35 phases).
 - [Phase 36]: EstimateLineItemsTable uses useParams() to self-resolve projectSlug rather than threading projectMode through WorkflowStepContainer/LineItemsStep
 - [Phase 36]: Billing Category dropdown is display-only in Phase 36 — billingCategory DB column deferred to Phase 37+
 - [Phase 36]: Mode switch button placed in ProjectHeader next to mode badge for co-location with the badge it modifies
+- [Phase 36]: PHASE_FEATURE_GATES uses inclusive allowed-phase lists; isFeatureAvailableInPhase permissive by default for unknown keys; estimates.create intentionally unguarded to preserve auto-advance flow
 
 ### Quick Tasks Completed
 
@@ -84,5 +86,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: Completed 36-06-PLAN.md — mode-based UI gating (commits f7f90ec, 102239c). CHECKPOINT: awaiting human verification of all Phase 36 features.
+Stopped at: Completed 36-07-PLAN.md — LIFE-06 phase-conditional feature gating (commits af97cd3, 3f972b4). Phase 36 all 7 plans complete.
 Resume file: None
