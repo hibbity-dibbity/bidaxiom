@@ -153,15 +153,17 @@ Plans:
 
 **Requirements:** DEL-01, DEL-02, DEL-03, DEL-04, DEL-05
 
-**Estimated plans:** ~2
+**Plans:** 2 plans
+
+Plans:
+- [ ] 37-01-PLAN.md — DB schema columns, migration, shared types, 5 new tRPC procedures (checkDeletable, softDelete, restore, listDeleted, acknowledgeRestore)
+- [ ] 37-02-PLAN.md — DeleteProjectButton compound component, table/header integration, Deleted Projects settings page
 
 **Success Criteria** (what must be TRUE when this phase is complete):
 1. An admin sees a "Delete Project" action on both the project detail page and the projects table row menu; non-admin users see no delete option on either surface.
 2. Attempting to delete a project in Awarded, Active, Substantial Completion, Closed, or Warranty phase — or any project with existing change orders, payment applications, or committed costs — produces a clear blocking error message explaining why deletion is prevented.
-3. A deletable project (Opportunity, Estimating, or Submitted phase with no financial records) triggers a confirmation dialog that requires the user to type the exact project name before the delete action is enabled.
+3. A deletable project (Opportunity, Estimating, or Submitted phase with no financial records) triggers a confirmation dialog that requires the user to enter a reason for deletion before the delete action is enabled.
 4. Deleted projects are soft-deleted (deleted_at and deleted_by timestamps set); the project disappears from all standard views, an admin recovery path exists for 30 days, and all deletion actions appear in the audit trail.
-
-**Plans:** TBD
 
 ---
 
@@ -241,7 +243,7 @@ Plans:
 | 25-29 | v1.3 | 16/16 | ✅ Complete | 2026-02-18 |
 | 30-35 | v1.4 | 16/16 | ✅ Complete | 2026-02-18 |
 | 36 | v1.5 | Complete    | 2026-02-19 | - |
-| 37 | v1.5 | 0/~2 | Not started | - |
+| 37 | v1.5 | 0/2 | Not started | - |
 | 38 | v1.5 | 0/~5 | Not started | - |
 | 39 | v1.5 | 0/~4 | Not started | - |
 | 40 | v1.5 | 0/~4 | Not started | - |
