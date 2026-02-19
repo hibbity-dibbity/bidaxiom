@@ -5,6 +5,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import type { LifecyclePhase } from "@construction/shared";
 import { LIFECYCLE_PHASE_LABELS } from "@construction/shared";
+import { DeleteProjectButton } from "./delete-project-button";
 
 // Type for project data from API
 interface Project {
@@ -30,77 +31,100 @@ const phaseColors: Record<LifecyclePhase, string> = {
   archived:               "bg-slate-500/10 text-slate-400 border-slate-200",
 };
 
-export const columns: ColumnDef<Project>[] = [
-  {
-    accessorKey: "jobNumber",
-    header: "Job #",
-    size: 100,
-    cell: ({ row }) => {
-      const jobNumber = row.getValue("jobNumber") as string | null;
-      return (
-        <div className="font-mono text-sm">
-          {jobNumber || "--"}
-        </div>
-      );
+export function createColumns(
+  isAdmin: boolean,
+  onDelete: (projectId: string) => void
+): ColumnDef<Project>[] {
+  const cols: ColumnDef<Project>[] = [
+    {
+      accessorKey: "jobNumber",
+      header: "Job #",
+      size: 100,
+      cell: ({ row }) => {
+        const jobNumber = row.getValue("jobNumber") as string | null;
+        return (
+          <div className="font-mono text-sm">
+            {jobNumber || "--"}
+          </div>
+        );
+      },
     },
-  },
-  {
-    accessorKey: "name",
-    header: "Project Name",
-    size: 300,
-    cell: ({ row }) => {
-      const project = row.original;
-      return (
-        <Link
-          href={`/projects/${project.slug}`}
-          className="font-semibold text-sm hover:underline"
-        >
-          {project.name}
-        </Link>
-      );
+    {
+      accessorKey: "name",
+      header: "Project Name",
+      size: 300,
+      cell: ({ row }) => {
+        const project = row.original;
+        return (
+          <Link
+            href={`/projects/${project.slug}`}
+            className="font-semibold text-sm hover:underline"
+          >
+            {project.name}
+          </Link>
+        );
+      },
     },
-  },
-  {
-    accessorKey: "customerName",
-    header: "Customer",
-    size: 200,
-    cell: ({ row }) => {
-      const customerName = row.getValue("customerName") as string | null;
-      return (
-        <div className="text-sm">
-          {customerName || "--"}
-        </div>
-      );
+    {
+      accessorKey: "customerName",
+      header: "Customer",
+      size: 200,
+      cell: ({ row }) => {
+        const customerName = row.getValue("customerName") as string | null;
+        return (
+          <div className="text-sm">
+            {customerName || "--"}
+          </div>
+        );
+      },
     },
-  },
-  {
-    accessorKey: "lifecyclePhase",
-    header: "Phase",
-    size: 160,
-    cell: ({ row }) => {
-      const phase = row.original.lifecyclePhase as LifecyclePhase | null;
-      if (!phase) return null;
-      return (
-        <Badge className={phaseColors[phase]} variant="outline">
-          {LIFECYCLE_PHASE_LABELS[phase]}
-        </Badge>
-      );
+    {
+      accessorKey: "lifecyclePhase",
+      header: "Phase",
+      size: 160,
+      cell: ({ row }) => {
+        const phase = row.original.lifecyclePhase as LifecyclePhase | null;
+        if (!phase) return null;
+        return (
+          <Badge className={phaseColors[phase]} variant="outline">
+            {LIFECYCLE_PHASE_LABELS[phase]}
+          </Badge>
+        );
+      },
     },
-  },
-  {
-    accessorKey: "startDate",
-    header: "Start Date",
-    size: 120,
-    cell: ({ row }) => {
-      const startDate = row.getValue("startDate") as string | null;
-      if (!startDate) {
-        return <div className="text-sm">--</div>;
-      }
-      return (
-        <div className="text-sm">
-          {new Date(startDate).toLocaleDateString()}
-        </div>
-      );
+    {
+      accessorKey: "startDate",
+      header: "Start Date",
+      size: 120,
+      cell: ({ row }) => {
+        const startDate = row.getValue("startDate") as string | null;
+        if (!startDate) {
+          return <div className="text-sm">--</div>;
+        }
+        return (
+          <div className="text-sm">
+            {new Date(startDate).toLocaleDateString()}
+          </div>
+        );
+      },
     },
-  },
-];
+  ];
+
+  if (isAdmin) {
+    cols.push({
+      id: "delete",
+      header: "",
+      size: 60,
+      cell: ({ row }) => (
+        <DeleteProjectButton
+          projectId={row.original.id}
+          projectName={row.original.name}
+          onDeleted={() => onDelete(row.original.id)}
+          variant="table-row"
+        />
+      ),
+    });
+  }
+
+  return cols;
+}

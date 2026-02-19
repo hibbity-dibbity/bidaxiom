@@ -21,7 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronDown, ChevronUp, Plus } from "lucide-react";
-import { columns } from "./columns";
+import { createColumns } from "./columns";
 
 interface Project {
   id: string;
@@ -40,6 +40,8 @@ interface ProjectsTableProps {
   page: number;
   onPageChange: (page: number) => void;
   pageSize: number;
+  isAdmin: boolean;
+  onDelete: (projectId: string) => void;
 }
 
 export function ProjectsTable({
@@ -49,11 +51,19 @@ export function ProjectsTable({
   page,
   onPageChange,
   pageSize,
+  isAdmin,
+  onDelete,
 }: ProjectsTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
   // Wrap data in useMemo to prevent infinite re-renders
   const memoizedData = React.useMemo(() => data, [data]);
+
+  // Build columns based on admin status
+  const columns = React.useMemo(
+    () => createColumns(isAdmin, onDelete),
+    [isAdmin, onDelete]
+  );
 
   const table = useReactTable<Project>({
     data: memoizedData,
@@ -66,6 +76,9 @@ export function ProjectsTable({
     getSortedRowModel: getSortedRowModel(),
   });
 
+  // Skeleton columns for loading state (non-admin baseline)
+  const skeletonColumns = React.useMemo(() => createColumns(false, () => {}), []);
+
   // Calculate pagination info
   const offset = (page - 1) * pageSize;
   const startIndex = total === 0 ? 0 : offset + 1;
@@ -77,8 +90,8 @@ export function ProjectsTable({
         <Table>
           <TableHeader>
             <TableRow>
-              {columns.map((column, index) => (
-                <TableHead key={column.id || index}>
+              {skeletonColumns.map((column, index) => (
+                <TableHead key={(column as ColumnDef<Project> & { id?: string }).id || index}>
                   {typeof column.header === "string" ? column.header : ""}
                 </TableHead>
               ))}
@@ -87,7 +100,7 @@ export function ProjectsTable({
           <TableBody>
             {Array.from({ length: 5 }).map((_, i) => (
               <TableRow key={i}>
-                {columns.map((column, colIndex) => (
+                {skeletonColumns.map((_, colIndex) => (
                   <TableCell key={colIndex} className="py-2">
                     <Skeleton className="h-5 w-full" />
                   </TableCell>
@@ -182,7 +195,7 @@ export function ProjectsTable({
             {table.getRowModel().rows.map((row) => (
               <TableRow
                 key={row.id}
-                className="hover:bg-muted/50"
+                className="hover:bg-muted/50 group"
               >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id} className="py-2 text-sm">

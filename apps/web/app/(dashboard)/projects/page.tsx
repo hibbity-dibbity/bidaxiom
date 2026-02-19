@@ -7,8 +7,13 @@ import { Plus } from "lucide-react";
 import { useQueryStates, parseAsString, parseAsInteger, parseAsStringEnum } from "nuqs";
 import { ProjectsTable } from "./components/projects-table";
 import { ProjectsFilters, type FilterState } from "./components/projects-filters";
+import { useAuth } from "@/lib/auth-context";
 
 export default function ProjectsPage() {
+  const { orgRole } = useAuth();
+  const isAdmin = orgRole === "org:admin";
+  const utils = trpc.useUtils();
+
   // Set up filter state using nuqs
   const [filters, setFilters] = useQueryStates({
     search: parseAsString,
@@ -43,6 +48,11 @@ export default function ProjectsPage() {
     setFilters({ page: newPage });
   };
 
+  // Invalidate project list after deletion so deleted row disappears immediately
+  const handleProjectDeleted = () => {
+    utils.project.list.invalidate();
+  };
+
   return (
     <div className="space-y-4">
       {/* Page header */}
@@ -72,6 +82,8 @@ export default function ProjectsPage() {
         page={filters.page ?? 1}
         pageSize={pageSize}
         onPageChange={handlePageChange}
+        isAdmin={isAdmin}
+        onDelete={handleProjectDeleted}
       />
     </div>
   );
