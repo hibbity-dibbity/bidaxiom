@@ -75,3 +75,14 @@ export function buildStorageKey(
   const prefix = crypto.randomUUID();
   return `tenants/${tenantId}/projects/${projectId}/${prefix}/${fileName}`;
 }
+
+/**
+ * Build an S3 storage key for a company-scoped template file.
+ * Templates are NOT project-scoped (no projectId in the path).
+ *
+ * Format: tenants/{tenantId}/templates/{uuid}/{fileName}
+ */
+export function buildTemplateStorageKey(tenantId: string, fileName: string): string {
+  const prefix = crypto.randomUUID();
+  return `tenants/${tenantId}/templates/${prefix}/${fileName}`;
+}

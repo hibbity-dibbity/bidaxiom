@@ -18,6 +18,8 @@ import type {
   ReportColumn,
   ReportChartConfig,
   DocumentNamingSettings,
+  DetectedField,
+  FieldMapping,
 } from "@construction/shared";
 
 /**
@@ -218,6 +220,27 @@ export function createTenantSchema(schemaName: string) {
   });
 
   /**
+   * Document templates table
+   * Company-scoped custom templates (.docx/.xlsx) for PDF generation.
+   * Stores detected merge fields and user-defined field mappings.
+   * One active template per doc type (enforced by partial unique index in DB).
+   */
+  const documentTemplates = schema.table("document_templates", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    docType: text("doc_type").notNull(), // "proposal" | "change_order" | "payment_app" | "rfq"
+    name: text("name").notNull(),
+    fileType: text("file_type").notNull(), // "docx" | "xlsx"
+    storageKey: text("storage_key").notNull(),
+    fileSize: integer("file_size"),
+    detectedFields: jsonb("detected_fields").notNull().$type<DetectedField[]>().default([]),
+    fieldMappings: jsonb("field_mappings").notNull().$type<FieldMapping[]>().default([]),
+    isActive: boolean("is_active").notNull().default(false),
+    uploadedBy: text("uploaded_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
    * Documents table
    * Holds document metadata. Actual file content is in document_versions.
    * currentVersionId points to the latest version.
@@ -232,6 +255,7 @@ export function createTenantSchema(schemaName: string) {
     currentVersionId: uuid("current_version_id"),
     fileSize: integer("file_size"),
     contentType: text("content_type"),
+    templateId: uuid("template_id").references(() => documentTemplates.id, { onDelete: "set null" }),
     createdBy: text("created_by").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
@@ -1274,6 +1298,7 @@ export function createTenantSchema(schemaName: string) {
     sovVersions,
     projectLifecycleTransitions,
     documentNamingCounters,
+    documentTemplates,
   };
 }
 

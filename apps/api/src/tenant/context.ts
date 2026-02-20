@@ -113,6 +113,7 @@ export async function buildTenantContext(
       sovVersions: tenantDb.sovVersions,
       projectLifecycleTransitions: tenantDb.projectLifecycleTransitions,
       documentNamingCounters: tenantDb.documentNamingCounters,
+      documentTemplates: tenantDb.documentTemplates,
     },
   };
 }
