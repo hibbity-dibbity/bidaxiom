@@ -1,0 +1,10 @@
+import pg from "pg";
+import { config } from "dotenv";
+import { resolve } from "path";
+config({ path: resolve(process.cwd(), "../../.env.local") });
+const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+const r1 = await pool.query("SELECT count(*) FROM information_schema.tables WHERE table_name = 'document_templates' AND table_schema LIKE 'tenant_%'");
+const r2 = await pool.query("SELECT count(*) FROM information_schema.columns WHERE table_name = 'documents' AND column_name = 'template_id' AND table_schema LIKE 'tenant_%'");
+console.log("document_templates tables:", r1.rows[0].count);
+console.log("template_id columns on documents:", r2.rows[0].count);
+await pool.end();
