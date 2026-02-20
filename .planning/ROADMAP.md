@@ -178,7 +178,7 @@ Plans:
 **Plans:** 8/8 plans complete
 
 Plans:
-- [x] 38-01-PLAN.md — DB schema (documentNamingCounters table + documentNamingSettings JSONB on companyProfiles), Phase 38 migration, shared types (completed 2026-02-20)
+- [x] 38-01-PLAN.md — DB schema (documentNamingCounters table + documentNamingSettings JSONB on companyProfiles), Phase 38 migration, shared types (completed 2026-02-20)
 - [ ] 38-02-PLAN.md — PDF engine (Puppeteer singleton), shared generation utilities (S3 upload, doc library insert, atomic counter), pdf tRPC router shell
 - [ ] 38-03-PLAN.md — Proposal PDF: HTML template + pdf.generateProposal procedure + "Generate Proposal PDF" button in estimates UI
 - [ ] 38-04-PLAN.md — Change Order PDF: HTML template + pdf.generateChangeOrder procedure + "Generate PDF" button on CO detail page
@@ -205,15 +205,20 @@ Plans:
 
 **Requirements:** TMPL-01, TMPL-02, TMPL-03, TMPL-04, TMPL-05, TMPL-06
 
-**Estimated plans:** ~4
+**Plans:** 5 plans
+
+Plans:
+- [ ] 39-01-PLAN.md — DB schema (document_templates table + documents.templateId FK), migration, shared types (DetectedField, FieldMapping, BIDAXIOM_FIELD_KEYS), buildTemplateStorageKey
+- [ ] 39-02-PLAN.md — Field extraction utilities (extract.ts: parseDocxFields via docxtemplater InspectModule, parseXlsxFields via exceljs); custom HTML renderer (render.ts: buildCustomTemplateHtml); preview fixture data (fixtures.ts)
+- [ ] 39-03-PLAN.md — templateRouter (7 procedures: getUploadUrl, registerAndExtract, updateMappings, generatePreview, setActive, listByDocType, deleteTemplate); extend uploadPdfAndSave with templateId; update all 4 pdfRouter generate* to check active custom template
+- [ ] 39-04-PLAN.md — Document Templates settings UI (/settings/document-templates): list/upload/toggle page + split-view field mapping page (amber highlights, grouped combobox, progress counter, save-always, preview PDF button)
+- [ ] 39-05-PLAN.md — Pre-UAT TypeScript/structural checks + human end-to-end verification of full template workflow
 
 **Success Criteria** (what must be TRUE when this phase is complete):
-1. An admin can upload a .docx or .xlsx file in Company Settings → Document Templates for any of the 4 document types; the system automatically detects all merge fields (e.g., {{project_name}}, {{total_amount}}) present in the file and presents them in a visual mapping interface.
-2. The field mapping interface shows a progress indicator (e.g., "8 of 10 fields mapped") and prevents saving the template until every detected field is either mapped to a BIDAXIOM data field or explicitly marked as static text.
-3. After completing field mapping, the admin can generate a preview PDF using sample data to verify layout and field substitution before activating the template — the preview uses the same rendering path as production generation.
-4. A company can have one active template per document type; additional uploaded templates are stored but inactive; activating a new template does not delete or alter previously generated documents, which retain a reference to the exact template version used to produce them.
-
-**Plans:** TBD
+1. An admin can upload a .docx or .xlsx file in Company Settings → Document Templates for any of the 4 document types; the system automatically detects all merge fields (using <<angle_bracket>> syntax) present in the file and presents them in a visual split-view mapping interface.
+2. The field mapping interface shows a progress indicator ("X / Y fields mapped"); save is always allowed — unmapped fields are auto-ignored with a warning toast summarizing which fields were removed.
+3. After field mapping, the admin can generate a preview PDF using hybrid data (real company branding + fixture project/document data); unmapped fields render as [UNMAPPED]; preview is available at any time, not gated on completion.
+4. A company can have one active template per document type; activating a template via toggle switch (instant, no dialog) deactivates all others of the same type; previously generated documents retain a reference to the template that produced them via template_id FK (no version history UI).
 
 ---
 
@@ -253,5 +258,5 @@ Plans:
 | 36 | v1.5 | Complete    | 2026-02-19 | - |
 | 37 | v1.5 | Complete    | 2026-02-19 | - |
 | 38 | v1.5 | Complete    | 2026-02-20 | - |
-| 39 | v1.5 | 0/~4 | Not started | - |
+| 39 | v1.5 | 0/5 | Not started | - |
 | 40 | v1.5 | 0/~4 | Not started | - |
