@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-18)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 38 complete (8/8 plans complete, UAT verified)
+**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 39 started (1/N plans complete)
 
 ## Current Position
 
-Phase: 38 (complete)
-Plan: 08 complete — End-to-end UAT: all 4 PDF types verified generating to document library, document naming settings confirmed working, sequence counters confirmed incrementing; 3 inline bug fixes applied during UAT
-Status: 38-08 complete — 8/8 UAT tests passed; 3 inline fixes committed (e36f1d6, f2dd3e5, b7f2170); UAT commit caad1bf
-Last activity: 2026-02-19 — 38-08 complete: Phase 38 UAT passed, all requirements PDF-01–PDF-06 and NAME-01–NAME-04 verified
+Phase: 39 (in progress)
+Plan: 01 complete — DB schema (document_templates table + documents.templateId FK), shared types (TemplateDocType, DetectedField, FieldMapping, BIDAXIOM_FIELD_KEYS), buildTemplateStorageKey(), and idempotent migration run across all active tenant schemas
+Status: 39-01 complete — migration succeeded (1 tenant); 2 task commits (4420c5a, d0a1037)
+Last activity: 2026-02-20 — 39-01 complete: Phase 39 DB foundation established; document_templates table live in all tenant schemas
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100%
 
@@ -55,8 +55,10 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 | 38 | 06 | ~4 min | 2 | 3 |
 | 38 | 07 | ~4 min | 2 | 3 |
 | 38 | 08 | ~60 min (UAT + 3 fixes) | 2 | 4 |
+| 39 | 01 | ~3 min | 2 | 6 |
 
 *Updated after each plan completion*
+| Phase 39 P01 | 3 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -103,6 +105,14 @@ Decisions logged in PROJECT.md Key Decisions table (full log, 35 phases).
 - [Phase 38-08 UAT]: Change order form was silently failing due to 4 root causes — fixed inline during UAT (Rule 1)
 - [Phase 38-08 UAT]: Pay app submit/markPaid were sending wrong field names to tRPC — fixed inline during UAT (Rule 1)
 - [Phase 38-08 UAT]: RFQ dueDate datetime-local string was not converted to ISO datetime — fixed inline during UAT (Rule 1)
+- [Phase 39-01]: BIDAXIOM_FIELD_KEYS uses dot-notation group keys (company.name, project.name, doc.estimateTotal, table.description) matching the canonical field reference from RESEARCH.md
+- [Phase 39-01]: documentTemplates table placed BEFORE documents in createTenantSchema to allow FK reference without circular dependency
+- [Phase 39-01]: buildTemplateStorageKey omits projectId — templates are company-scoped at tenants/{tenantId}/templates/{uuid}/{fileName}
+- [Phase 39-01]: Partial unique index on (doc_type WHERE is_active=true) enforces one-active-template-per-type at DB level
+- [Phase 39]: BIDAXIOM_FIELD_KEYS uses dot-notation group keys (company.name, project.name, doc.estimateTotal, table.description)
+- [Phase 39]: documentTemplates table placed BEFORE documents in createTenantSchema to allow FK reference without circular dependency
+- [Phase 39]: buildTemplateStorageKey omits projectId — templates are company-scoped at tenants/{tenantId}/templates/{uuid}/{fileName}
+- [Phase 39]: Partial unique index on (doc_type WHERE is_active=true) enforces one-active-template-per-type at DB level
 
 ### Quick Tasks Completed
 
@@ -122,6 +132,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-19
-Stopped at: Completed 38-08-PLAN.md — Phase 38 UAT verification: 8/8 tests passed, 3 inline bug fixes applied (e36f1d6, f2dd3e5, b7f2170). All requirements PDF-01–PDF-06 and NAME-01–NAME-04 verified end-to-end. Phase 38 complete (8/8 plans).
+Last session: 2026-02-20
+Stopped at: Completed 39-01-PLAN.md — document_templates schema + migration + shared types (DetectedField, FieldMapping, BIDAXIOM_FIELD_KEYS, TemplateDocType) + buildTemplateStorageKey(). Phase 39 plan 01 complete (1/N).
 Resume file: None
