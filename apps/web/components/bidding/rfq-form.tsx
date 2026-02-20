@@ -5,7 +5,15 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { trpc } from "@/lib/trpc";
-import { createRfqSchema, type CreateRfq, CSI_DIVISIONS } from "@construction/shared";
+import { createRfqSchema, CSI_DIVISIONS } from "@construction/shared";
+import { z } from "zod";
+
+// datetime-local input gives "YYYY-MM-DDTHH:MM" (no Z, no seconds).
+// Override dueDate to accept that format; onSubmit converts to ISO before API call.
+const rfqFormSchema = createRfqSchema.extend({
+  dueDate: z.string().min(1, "Due date is required"),
+});
+type RfqFormData = z.infer<typeof rfqFormSchema>;
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -137,8 +145,8 @@ export function RfqForm({ projectId, projectSlug }: RfqFormProps) {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<CreateRfq>({
-    resolver: zodResolver(createRfqSchema),
+  } = useForm<RfqFormData>({
+    resolver: zodResolver(rfqFormSchema),
     defaultValues: {
       projectId,
       trades: [],
@@ -156,10 +164,11 @@ export function RfqForm({ projectId, projectSlug }: RfqFormProps) {
     },
   });
 
-  const onSubmit = (data: CreateRfq) => {
+  const onSubmit = (data: RfqFormData) => {
     createMutation.mutate({
       ...data,
       trades: selectedTrades,
+      dueDate: new Date(data.dueDate).toISOString(),
     });
   };
 
