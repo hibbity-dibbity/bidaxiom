@@ -129,6 +129,7 @@ Decisions logged in PROJECT.md Key Decisions table (full log, 35 phases).
 - [Phase 39-04]: getById procedure added to templateRouter (Rule 2) — field mapping page requires single-template fetch; listByDocType-without-filter is wasteful and semantically wrong
 - [Phase 39-04]: Combobox options use flat list with group prefix labels — existing Combobox component is flat; prefixes provide equivalent grouped UX
 - [Phase 39-04]: Left panel renders detected fields as clickable button spans (not actual docx HTML) — no mammoth browser dependency; functionally equivalent for field mapping
+- [Phase 39]: renderDocxTemplate uses docxtemplater+mammoth pipeline — fills .docx placeholders then converts to HTML, preserving user formatting end-to-end
 
 ### Quick Tasks Completed
 
