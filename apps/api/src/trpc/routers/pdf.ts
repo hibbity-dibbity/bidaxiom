@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { eq, isNull, sql } from "drizzle-orm";
+import { eq, isNull, sql, and } from "drizzle-orm";
 import { router } from "../trpc.js";
 import { protectedProcedure } from "../procedures.js";
 import { buildProposalHtml, type ProposalPdfData } from "../../pdf/templates/proposal.js";
@@ -13,6 +13,8 @@ import {
   uploadPdfAndSave,
 } from "../../pdf/generate.js";
 import { generatePdfBuffer } from "../../pdf/engine.js";
+import { buildCustomTemplateHtml } from "../../templates/render.js";
+import type { FieldMapping } from "@construction/shared";
 
 /**
  * Format a numeric string or number as USD currency.
@@ -227,13 +229,58 @@ export const pdfRouter = router({
         totalCost: formatUsd(estimate.totalCost as string),
       };
 
-      // --- 7. Build HTML ---
-      const html = buildProposalHtml(pdfData);
+      // --- 7. Check for active custom template (TMPL-06) ---
+      const [activeTemplate] = await db
+        .select()
+        .from(schema.documentTemplates)
+        .where(
+          and(
+            eq(schema.documentTemplates.docType, "proposal"),
+            eq(schema.documentTemplates.isActive, true)
+          )
+        )
+        .limit(1);
 
-      // --- 8. Generate PDF buffer via Puppeteer ---
+      // --- 8. Build HTML (custom template or built-in fallback) ---
+      let html: string;
+      if (activeTemplate?.fieldMappings?.length) {
+        const realData: Record<string, string> = {
+          "company.name": companyName,
+          "company.primaryColor": "#3B5BDB",
+          "project.name": pdfData.projectName,
+          "project.address": pdfData.projectAddress,
+          "project.jobNumber": project.jobNumber ?? "",
+          "doc.estimateTotal": pdfData.totalCost,
+          "doc.subtotalLabor": pdfData.subtotalLabor,
+          "doc.subtotalMaterials": pdfData.subtotalMaterials,
+          "doc.subtotalEquipment": pdfData.subtotalEquipment,
+          "doc.subtotalSubcontractor": pdfData.subtotalSubcontractor,
+          "doc.overheadAmount": pdfData.overheadAmount,
+          "doc.markupAmount": pdfData.markupAmount,
+          "doc.preparedBy": pdfData.estimateName,
+          "doc.generatedDate": pdfData.generatedDate,
+        };
+        html = buildCustomTemplateHtml(
+          activeTemplate.fieldMappings as FieldMapping[],
+          realData,
+          pdfData.lineItems.map((li) => ({
+            description: String(li.description ?? ""),
+            quantity: String(li.quantity ?? ""),
+            unit: String(li.unit ?? ""),
+            unitCost: String(li.unitCost ?? ""),
+            lineTotal: String(li.total ?? ""),
+            costType: String(li.costType ?? ""),
+          })),
+          false // isPreview=false — production
+        );
+      } else {
+        html = buildProposalHtml(pdfData);
+      }
+
+      // --- 9. Generate PDF buffer via Puppeteer ---
       const pdfBuffer = await generatePdfBuffer(html);
 
-      // --- 9. Upload to S3 + insert document record ---
+      // --- 10. Upload to S3 + insert document record ---
       const result = await uploadPdfAndSave({
         db,
         schema,
@@ -244,6 +291,7 @@ export const pdfRouter = router({
         category: "proposal",
         description: `Proposal: ${estimate.name}`,
         pdfBuffer,
+        templateId: activeTemplate?.id ?? null,
       });
 
       return {
@@ -422,13 +470,51 @@ export const pdfRouter = router({
         })),
       };
 
-      // --- 9. Build HTML ---
-      const html = buildChangeOrderHtml(pdfData);
+      // --- 9. Check for active custom template (TMPL-06) ---
+      const [activeTemplate] = await db
+        .select()
+        .from(schema.documentTemplates)
+        .where(
+          and(
+            eq(schema.documentTemplates.docType, "change_order"),
+            eq(schema.documentTemplates.isActive, true)
+          )
+        )
+        .limit(1);
 
-      // --- 10. Generate PDF buffer via Puppeteer ---
+      // --- 10. Build HTML (custom template or built-in fallback) ---
+      let html: string;
+      if (activeTemplate?.fieldMappings?.length) {
+        const realData: Record<string, string> = {
+          "company.name": companyName,
+          "company.primaryColor": "#3B5BDB",
+          "project.name": pdfData.projectName,
+          "project.address": pdfData.projectAddress,
+          "project.jobNumber": project.jobNumber ?? "",
+          "doc.coNumber": pdfData.coNumber,
+          "doc.coTitle": pdfData.coTitle,
+          "doc.coDescription": String(pdfData.coDescription ?? ""),
+          "doc.costDelta": pdfData.totalCost,
+          "doc.status": pdfData.status,
+          "doc.generatedDate": pdfData.generatedDate,
+        };
+        html = buildCustomTemplateHtml(
+          activeTemplate.fieldMappings as FieldMapping[],
+          realData,
+          pdfData.lineItems.map((li) => ({
+            description: String(li.description ?? ""),
+            lineTotal: String(li.amountChange ?? ""),
+          })),
+          false // isPreview=false — production
+        );
+      } else {
+        html = buildChangeOrderHtml(pdfData);
+      }
+
+      // --- 11. Generate PDF buffer via Puppeteer ---
       const pdfBuffer = await generatePdfBuffer(html);
 
-      // --- 11. Upload to S3 + insert document record ---
+      // --- 12. Upload to S3 + insert document record ---
       const result = await uploadPdfAndSave({
         db,
         schema,
@@ -439,6 +525,7 @@ export const pdfRouter = router({
         category: "change_order",
         description: `Change Order ${coNumberDisplay}: ${changeOrder.title}`,
         pdfBuffer,
+        templateId: activeTemplate?.id ?? null,
       });
 
       return {
@@ -676,13 +763,61 @@ export const pdfRouter = router({
         uniformRetainage,
       };
 
-      // --- 10. Build HTML ---
-      const html = buildPaymentAppHtml(pdfData);
+      // --- 10. Check for active custom template (TMPL-06) ---
+      const [activeTemplate] = await db
+        .select()
+        .from(schema.documentTemplates)
+        .where(
+          and(
+            eq(schema.documentTemplates.docType, "payment_app"),
+            eq(schema.documentTemplates.isActive, true)
+          )
+        )
+        .limit(1);
 
-      // --- 11. Generate PDF buffer via Puppeteer ---
+      // --- 11. Build HTML (custom template or built-in fallback) ---
+      let html: string;
+      if (activeTemplate?.fieldMappings?.length) {
+        const realData: Record<string, string> = {
+          "company.name": companyName,
+          "company.primaryColor": "#3B5BDB",
+          "project.name": pdfData.projectName,
+          "project.address": pdfData.projectAddress,
+          "project.jobNumber": project.jobNumber ?? "",
+          "doc.applicationNumber": String(pdfData.applicationNumber ?? ""),
+          "doc.periodStart": pdfData.periodFrom,
+          "doc.periodEnd": pdfData.periodTo,
+          "doc.contractPrice": pdfData.contractSumToDate,
+          "doc.retainagePercent": pdfData.retainagePercent,
+          "doc.retainageAmount": pdfData.retainageAmount,
+          "doc.currentAmountDue": pdfData.currentPaymentDue,
+          "doc.totalEarnedLessRetainage": pdfData.totalEarnedLessRetainage,
+          "doc.previousPayments": pdfData.previousPayments,
+          "doc.generatedDate": new Date().toLocaleDateString("en-US", {
+            month: "long",
+            day: "numeric",
+            year: "numeric",
+          }),
+        };
+        html = buildCustomTemplateHtml(
+          activeTemplate.fieldMappings as FieldMapping[],
+          realData,
+          pdfData.lineItems.map((li) => ({
+            itemNumber: String(li.itemNumber ?? ""),
+            description: String(li.description ?? ""),
+            scheduledValue: String(li.scheduledValue ?? ""),
+            lineTotal: String(li.totalCompletedAndStored ?? ""),
+          })),
+          false // isPreview=false — production
+        );
+      } else {
+        html = buildPaymentAppHtml(pdfData);
+      }
+
+      // --- 12. Generate PDF buffer via Puppeteer ---
       const pdfBuffer = await generatePdfBuffer(html);
 
-      // --- 12. Upload to S3 + insert document record ---
+      // --- 13. Upload to S3 + insert document record ---
       const result = await uploadPdfAndSave({
         db,
         schema,
@@ -693,6 +828,7 @@ export const pdfRouter = router({
         category: "payment_app",
         description: `Payment Application #${payApp.applicationNumber}`,
         pdfBuffer,
+        templateId: activeTemplate?.id ?? null,
       });
 
       return {
@@ -828,13 +964,48 @@ export const pdfRouter = router({
         generatedDate,
       };
 
-      // --- 8. Build HTML ---
-      const html = buildRfqHtml(pdfData);
+      // --- 8. Check for active custom template (TMPL-06) ---
+      const [activeTemplate] = await db
+        .select()
+        .from(schema.documentTemplates)
+        .where(
+          and(
+            eq(schema.documentTemplates.docType, "rfq"),
+            eq(schema.documentTemplates.isActive, true)
+          )
+        )
+        .limit(1);
 
-      // --- 9. Generate PDF buffer via Puppeteer ---
+      // --- 9. Build HTML (custom template or built-in fallback) ---
+      let html: string;
+      if (activeTemplate?.fieldMappings?.length) {
+        const realData: Record<string, string> = {
+          "company.name": companyName,
+          "company.primaryColor": "#3B5BDB",
+          "project.name": pdfData.projectName,
+          "project.address": pdfData.projectAddress,
+          "project.jobNumber": project.jobNumber ?? "",
+          "doc.rfqNumber": String(pdfData.rfqNumber ?? ""),
+          "doc.rfqTitle": String(pdfData.rfqTitle ?? ""),
+          "doc.submissionDeadline": String(pdfData.dueDate ?? ""),
+          "doc.scopeOfWork": String(pdfData.scopeOfWork ?? ""),
+          "doc.paymentTerms": "Net 30",
+          "doc.generatedDate": pdfData.generatedDate,
+        };
+        html = buildCustomTemplateHtml(
+          activeTemplate.fieldMappings as FieldMapping[],
+          realData,
+          [], // RFQ has no line items table
+          false // isPreview=false — production
+        );
+      } else {
+        html = buildRfqHtml(pdfData);
+      }
+
+      // --- 10. Generate PDF buffer via Puppeteer ---
       const pdfBuffer = await generatePdfBuffer(html);
 
-      // --- 10. Upload to S3 + insert document record ---
+      // --- 11. Upload to S3 + insert document record ---
       const result = await uploadPdfAndSave({
         db,
         schema,
@@ -845,6 +1016,7 @@ export const pdfRouter = router({
         category: "rfq",
         description: `RFQ: ${rfq.title || rfq.description || "Request for Quotation"}`,
         pdfBuffer,
+        templateId: activeTemplate?.id ?? null,
       });
 
       return {

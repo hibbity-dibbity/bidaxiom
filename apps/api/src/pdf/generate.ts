@@ -184,6 +184,7 @@ export interface SavePdfParams {
   category: string;    // "proposal" | "change_order" | "payment_app" | "rfq"
   description: string;
   pdfBuffer: Buffer;
+  templateId?: string | null; // Phase 39: FK to document_templates.id (TMPL-06)
 }
 
 /**
@@ -220,6 +221,7 @@ export async function uploadPdfAndSave(
     category,
     description,
     pdfBuffer,
+    templateId,
   } = params;
 
   const s3 = getStorageClient();
@@ -247,6 +249,7 @@ export async function uploadPdfAndSave(
       fileSize: pdfBuffer.length,
       contentType: "application/pdf",
       createdBy: userId,
+      templateId: templateId ?? null,
     })
     .returning({ id: schema.documents.id });
 
