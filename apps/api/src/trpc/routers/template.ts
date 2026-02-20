@@ -389,6 +389,38 @@ export const templateRouter = router({
     }),
 
   /**
+   * Fetch a single template by ID (for the field mapping page).
+   * Returns the full template row including detectedFields and fieldMappings.
+   *
+   * Returns: template row
+   */
+  getById: protectedProcedure
+    .input(
+      z.object({
+        templateId: z.string().uuid(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      if (!ctx.tenant) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+      }
+
+      const { db, schema } = ctx.tenant;
+
+      const [template] = await db
+        .select()
+        .from(schema.documentTemplates)
+        .where(eq(schema.documentTemplates.id, input.templateId))
+        .limit(1);
+
+      if (!template) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Template not found" });
+      }
+
+      return template;
+    }),
+
+  /**
    * List all templates for this tenant, optionally filtered by docType.
    * Ordered by createdAt descending (newest first).
    *
