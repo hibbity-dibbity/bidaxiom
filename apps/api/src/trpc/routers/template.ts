@@ -26,7 +26,7 @@ import { router } from "../trpc.js";
 import { protectedProcedure } from "../procedures.js";
 import { getStorageClient, getBucketName, buildTemplateStorageKey } from "../../storage/client.js";
 import { parseDocxFields, parseXlsxFields } from "../../templates/extract.js";
-import { renderTemplate } from "../../templates/render.js";
+import { renderTemplate, type RenderResult } from "../../templates/render.js";
 import { buildPreviewData } from "../../templates/fixtures.js";
 import { getCompanyBranding } from "../../pdf/generate.js";
 import { generatePdfBuffer } from "../../pdf/engine.js";
@@ -310,8 +310,8 @@ export const templateRouter = router({
         "company.primaryColor": branding.primaryColor,
       });
 
-      // Render HTML: fill placeholders via docxtemplater/ExcelJS → HTML
-      const html = await renderTemplate(
+      // Render: fill placeholders → PDF (LibreOffice) or HTML (mammoth/ExcelJS fallback)
+      const rendered = await renderTemplate(
         docxBuffer,
         template.fileType as "docx" | "xlsx",
         template.fieldMappings as FieldMapping[],
@@ -319,8 +319,11 @@ export const templateRouter = router({
         true // isPreview
       );
 
-      // Generate PDF buffer via Puppeteer
-      const pdfBuffer = await generatePdfBuffer(html);
+      // Generate PDF buffer — native from LibreOffice or via Puppeteer
+      const pdfBuffer =
+        rendered.type === "pdf"
+          ? rendered.buffer
+          : await generatePdfBuffer(rendered.html);
 
       // Upload to S3 with a temporary preview key
       // (Reuse s3/bucket already declared above for the .docx download)

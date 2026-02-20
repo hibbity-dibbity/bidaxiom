@@ -28,6 +28,7 @@
     "bullmq": "^5.69.1",
     "dotenv": "^17.2.4",
     "docxtemplater": "^3.68.2",
+    "libreoffice-convert": "^1.7.0",
     "lodash": "^4.17.21",
     "drizzle-orm": "^0.45.1",
     "exceljs": "^4.4.0",

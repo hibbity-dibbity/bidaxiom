@@ -16,6 +16,19 @@ import {
 import { generatePdfBuffer } from "../../pdf/engine.js";
 import { getStorageClient, getBucketName } from "../../storage/client.js";
 import { renderTemplate } from "../../templates/render.js";
+
+/**
+ * Resolve a renderTemplate() result OR a plain HTML string to a PDF buffer.
+ * - RenderResult { type: "pdf" }  → return buffer directly (LibreOffice path)
+ * - RenderResult { type: "html" } → run through Puppeteer
+ * - string                        → run through Puppeteer (built-in HTML builders)
+ */
+async function resolveToPdf(
+  result: Awaited<ReturnType<typeof renderTemplate>> | string
+): Promise<Buffer> {
+  if (typeof result === "string") return generatePdfBuffer(result);
+  return result.type === "pdf" ? result.buffer : generatePdfBuffer(result.html);
+}
 import type { FieldMapping } from "@construction/shared";
 
 /**
@@ -243,8 +256,8 @@ export const pdfRouter = router({
         )
         .limit(1);
 
-      // --- 8. Build HTML (custom template or built-in fallback) ---
-      let html: string;
+      // --- 8. Build HTML or PDF (custom template or built-in fallback) ---
+      let htmlOrResult: string | Awaited<ReturnType<typeof renderTemplate>>;
       if (activeTemplate?.fieldMappings?.length) {
         // Download .docx from S3 and fill placeholders via docxtemplater → mammoth
         const s3 = getStorageClient();
@@ -273,7 +286,7 @@ export const pdfRouter = router({
           "doc.preparedBy": pdfData.estimateName,
           "doc.generatedDate": pdfData.generatedDate,
         };
-        html = await renderTemplate(
+        htmlOrResult = await renderTemplate(
           docxBuffer,
           activeTemplate.fileType as "docx" | "xlsx",
           activeTemplate.fieldMappings as FieldMapping[],
@@ -281,11 +294,11 @@ export const pdfRouter = router({
           false // isPreview=false — production
         );
       } else {
-        html = buildProposalHtml(pdfData);
+        htmlOrResult = buildProposalHtml(pdfData);
       }
 
-      // --- 9. Generate PDF buffer via Puppeteer ---
-      const pdfBuffer = await generatePdfBuffer(html);
+      // --- 9. Generate PDF buffer (LibreOffice or Puppeteer) ---
+      const pdfBuffer = await resolveToPdf(htmlOrResult);
 
       // --- 10. Upload to S3 + insert document record ---
       const result = await uploadPdfAndSave({
@@ -489,8 +502,8 @@ export const pdfRouter = router({
         )
         .limit(1);
 
-      // --- 10. Build HTML (custom template or built-in fallback) ---
-      let html: string;
+      // --- 10. Build HTML or PDF (custom template or built-in fallback) ---
+      let htmlOrResult: string | Awaited<ReturnType<typeof renderTemplate>>;
       if (activeTemplate?.fieldMappings?.length) {
         // Download .docx from S3 and fill placeholders via docxtemplater → mammoth
         const s3 = getStorageClient();
@@ -516,7 +529,7 @@ export const pdfRouter = router({
           "doc.status": pdfData.status,
           "doc.generatedDate": pdfData.generatedDate,
         };
-        html = await renderTemplate(
+        htmlOrResult = await renderTemplate(
           docxBuffer,
           activeTemplate.fileType as "docx" | "xlsx",
           activeTemplate.fieldMappings as FieldMapping[],
@@ -524,11 +537,11 @@ export const pdfRouter = router({
           false // isPreview=false — production
         );
       } else {
-        html = buildChangeOrderHtml(pdfData);
+        htmlOrResult = buildChangeOrderHtml(pdfData);
       }
 
-      // --- 11. Generate PDF buffer via Puppeteer ---
-      const pdfBuffer = await generatePdfBuffer(html);
+      // --- 11. Generate PDF buffer (LibreOffice or Puppeteer) ---
+      const pdfBuffer = await resolveToPdf(htmlOrResult);
 
       // --- 12. Upload to S3 + insert document record ---
       const result = await uploadPdfAndSave({
@@ -791,8 +804,8 @@ export const pdfRouter = router({
         )
         .limit(1);
 
-      // --- 11. Build HTML (custom template or built-in fallback) ---
-      let html: string;
+      // --- 11. Build HTML or PDF (custom template or built-in fallback) ---
+      let htmlOrResult: string | Awaited<ReturnType<typeof renderTemplate>>;
       if (activeTemplate?.fieldMappings?.length) {
         // Download .docx from S3 and fill placeholders via docxtemplater → mammoth
         const s3 = getStorageClient();
@@ -826,7 +839,7 @@ export const pdfRouter = router({
             year: "numeric",
           }),
         };
-        html = await renderTemplate(
+        htmlOrResult = await renderTemplate(
           docxBuffer,
           activeTemplate.fileType as "docx" | "xlsx",
           activeTemplate.fieldMappings as FieldMapping[],
@@ -834,11 +847,11 @@ export const pdfRouter = router({
           false // isPreview=false — production
         );
       } else {
-        html = buildPaymentAppHtml(pdfData);
+        htmlOrResult = buildPaymentAppHtml(pdfData);
       }
 
-      // --- 12. Generate PDF buffer via Puppeteer ---
-      const pdfBuffer = await generatePdfBuffer(html);
+      // --- 12. Generate PDF buffer (LibreOffice or Puppeteer) ---
+      const pdfBuffer = await resolveToPdf(htmlOrResult);
 
       // --- 13. Upload to S3 + insert document record ---
       const result = await uploadPdfAndSave({
@@ -999,8 +1012,8 @@ export const pdfRouter = router({
         )
         .limit(1);
 
-      // --- 9. Build HTML (custom template or built-in fallback) ---
-      let html: string;
+      // --- 9. Build HTML or PDF (custom template or built-in fallback) ---
+      let htmlOrResult: string | Awaited<ReturnType<typeof renderTemplate>>;
       if (activeTemplate?.fieldMappings?.length) {
         // Download .docx from S3 and fill placeholders via docxtemplater → mammoth
         const s3 = getStorageClient();
@@ -1026,7 +1039,7 @@ export const pdfRouter = router({
           "doc.paymentTerms": "Net 30",
           "doc.generatedDate": pdfData.generatedDate,
         };
-        html = await renderTemplate(
+        htmlOrResult = await renderTemplate(
           docxBuffer,
           activeTemplate.fileType as "docx" | "xlsx",
           activeTemplate.fieldMappings as FieldMapping[],
@@ -1034,11 +1047,11 @@ export const pdfRouter = router({
           false // isPreview=false — production
         );
       } else {
-        html = buildRfqHtml(pdfData);
+        htmlOrResult = buildRfqHtml(pdfData);
       }
 
-      // --- 10. Generate PDF buffer via Puppeteer ---
-      const pdfBuffer = await generatePdfBuffer(html);
+      // --- 10. Generate PDF buffer (LibreOffice or Puppeteer) ---
+      const pdfBuffer = await resolveToPdf(htmlOrResult);
 
       // --- 11. Upload to S3 + insert document record ---
       const result = await uploadPdfAndSave({

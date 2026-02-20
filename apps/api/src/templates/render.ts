@@ -1,10 +1,10 @@
 /**
  * Custom template renderer — supports .docx and .xlsx templates.
  *
- * .docx: docxtemplater fills <<field>> placeholders, mammoth converts to HTML.
- * .xlsx: ExcelJS fills <<field>> placeholders cell-by-cell, rendered as HTML table.
- *
- * Both paths produce a complete HTML document for Puppeteer → PDF rendering.
+ * .docx: docxtemplater fills <<field>> placeholders, then:
+ *   - LibreOffice converts the filled .docx directly to PDF (preserves formatting), OR
+ *   - mammoth converts to HTML → Puppeteer (fallback when LibreOffice not installed)
+ * .xlsx: ExcelJS fills <<field>> placeholders cell-by-cell, rendered as HTML table → Puppeteer.
  */
 
 import PizZip from "pizzip";
@@ -13,11 +13,41 @@ import ExcelJS from "exceljs";
 import { createRequire } from "module";
 import type { FieldMapping } from "@construction/shared";
 
-// mammoth has no ESM export — load via createRequire (same pattern as InspectModule)
+// CJS modules loaded via createRequire
 const require = createRequire(import.meta.url);
+
+// mammoth: docx → HTML fallback when LibreOffice not installed
 const mammoth = require("mammoth") as {
   convertToHtml: (input: { buffer: Buffer }) => Promise<{ value: string }>;
 };
+
+// libreoffice-convert: docx → PDF directly (preserves Word formatting)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let libreConvert: any = null;
+try {
+  libreConvert = require("libreoffice-convert");
+} catch {
+  // Package not installed — will fall back to mammoth
+}
+
+// ---------------------------------------------------------------------------
+// Return type
+// ---------------------------------------------------------------------------
+
+/**
+ * renderTemplate() returns either:
+ *   { type: "pdf"; buffer: Buffer }  — LibreOffice produced a native PDF
+ *   { type: "html"; html: string }   — caller must pass html to generatePdfBuffer()
+ *
+ * Callers should handle both:
+ *   const rendered = await renderTemplate(...);
+ *   const pdfBuffer = rendered.type === "pdf"
+ *     ? rendered.buffer
+ *     : await generatePdfBuffer(rendered.html);
+ */
+export type RenderResult =
+  | { type: "pdf"; buffer: Buffer }
+  | { type: "html"; html: string };
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -31,9 +61,6 @@ function escapeHtml(str: string): string {
     .replace(/"/g, "&quot;");
 }
 
-/**
- * Build the docxtemplater values object: detectedField → resolved string value.
- */
 function buildValuesMap(
   mappings: FieldMapping[],
   data: Record<string, string>,
@@ -53,9 +80,6 @@ function buildValuesMap(
   return values;
 }
 
-/**
- * Wrap body HTML in a complete HTML document for Puppeteer.
- */
 function wrapHtml(bodyContent: string, isPreview: boolean): string {
   const previewBanner = isPreview
     ? `<div style="background:#FEF3C7;border:1px solid #F59E0B;padding:8px 12px;margin-bottom:16px;font-size:12px;color:#92400E;">
@@ -69,13 +93,13 @@ function wrapHtml(bodyContent: string, isPreview: boolean): string {
   <meta charset="UTF-8">
   <title>Document Preview</title>
   <style>
-    body { font-family: system-ui, -apple-system, sans-serif; font-size: 13px; color: #111827;
-           padding: 32px 48px; margin: 0; background: #fff; line-height: 1.6; }
+    body { font-family: Calibri, 'Segoe UI', Arial, sans-serif; font-size: 11pt; color: #000;
+           padding: 1in; margin: 0; background: #fff; line-height: 1.15; }
+    p { margin: 0 0 8pt; }
     table { border-collapse: collapse; width: 100%; }
-    td, th { border: 1px solid #E5E7EB; padding: 6px 10px; }
-    th { background: #F3F4F6; font-weight: 600; }
-    p { margin: 0 0 8px; }
-    h1, h2, h3, h4, h5, h6 { margin: 0 0 8px; }
+    td, th { border: 1px solid #ccc; padding: 4pt 8pt; }
+    th { background: #f5f5f5; font-weight: 600; }
+    h1 { font-size: 16pt; } h2 { font-size: 14pt; } h3 { font-size: 12pt; }
   </style>
 </head>
 <body>
@@ -86,14 +110,15 @@ function wrapHtml(bodyContent: string, isPreview: boolean): string {
 }
 
 // ---------------------------------------------------------------------------
-// .docx renderer — docxtemplater fill → mammoth → HTML
+// .docx renderer
 // ---------------------------------------------------------------------------
 
 async function renderDocx(
   buffer: Buffer,
   values: Record<string, string>,
   isPreview: boolean
-): Promise<string> {
+): Promise<RenderResult> {
+  // Step 1: Fill the template with docxtemplater
   const zip = new PizZip(buffer);
   const doc = new Docxtemplater(zip, {
     paragraphLoop: true,
@@ -104,19 +129,36 @@ async function renderDocx(
   doc.render(values);
   const filledBuffer: Buffer = doc.getZip().generate({ type: "nodebuffer" }) as Buffer;
 
+  // Step 2a: LibreOffice → PDF (preserves Word formatting faithfully)
+  if (libreConvert) {
+    try {
+      const pdfBuffer = await new Promise<Buffer>((resolve, reject) => {
+        libreConvert.convert(filledBuffer, ".pdf", undefined, (err: Error | null, result: Buffer) => {
+          if (err) reject(err);
+          else resolve(result);
+        });
+      });
+      return { type: "pdf", buffer: pdfBuffer };
+    } catch (err) {
+      // LibreOffice found but conversion failed — fall through to mammoth
+      console.warn("[render] LibreOffice conversion failed, falling back to mammoth:", err);
+    }
+  }
+
+  // Step 2b: Mammoth → HTML fallback (LibreOffice not installed or failed)
   const { value: bodyHtml } = await mammoth.convertToHtml({ buffer: filledBuffer });
-  return wrapHtml(bodyHtml, isPreview);
+  return { type: "html", html: wrapHtml(bodyHtml, isPreview) };
 }
 
 // ---------------------------------------------------------------------------
-// .xlsx renderer — ExcelJS cell substitution → HTML table
+// .xlsx renderer
 // ---------------------------------------------------------------------------
 
 async function renderXlsx(
   buffer: Buffer,
   values: Record<string, string>,
   isPreview: boolean
-): Promise<string> {
+): Promise<RenderResult> {
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(buffer as unknown as Parameters<typeof workbook.xlsx.load>[0]);
 
@@ -133,7 +175,6 @@ async function renderXlsx(
         const cellVal = cell.value;
 
         if (typeof cellVal === "string") {
-          // Replace <<field>> placeholders with resolved values
           val = cellVal.replace(/<<([^<>]+)>>/gi, (_, field: string) => {
             return values[field.toLowerCase()] ?? "";
           });
@@ -142,11 +183,10 @@ async function renderXlsx(
         }
 
         const esc = escapeHtml(val);
-        // Preserve whitespace in cells; style [UNMAPPED] in amber
         const style =
           val === "[UNMAPPED]"
-            ? "padding:6px 10px;border:1px solid #E5E7EB;font-size:13px;color:#B45309;font-style:italic;"
-            : "padding:6px 10px;border:1px solid #E5E7EB;font-size:13px;";
+            ? "padding:4pt 8pt;border:1px solid #ccc;font-size:11pt;color:#B45309;font-style:italic;"
+            : "padding:4pt 8pt;border:1px solid #ccc;font-size:11pt;";
         cellsHtml += `<td style="${style}">${esc}</td>`;
       });
 
@@ -156,9 +196,9 @@ async function renderXlsx(
     if (rowsHtml) {
       const sheetName = escapeHtml(worksheet.name ?? "Sheet");
       tablesHtml += `
-        <div style="margin-bottom:24px;">
-          <h3 style="font-size:12px;color:#6B7280;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 8px;">${sheetName}</h3>
-          <table style="width:100%;border-collapse:collapse;">${rowsHtml}</table>
+        <div style="margin-bottom:24pt;">
+          <h3 style="font-size:10pt;color:#666;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 6pt;">${sheetName}</h3>
+          <table>${rowsHtml}</table>
         </div>`;
     }
   });
@@ -167,7 +207,7 @@ async function renderXlsx(
     tablesHtml = `<p style="color:#9CA3AF;">No content found in template.</p>`;
   }
 
-  return wrapHtml(tablesHtml, isPreview);
+  return { type: "html", html: wrapHtml(tablesHtml, isPreview) };
 }
 
 // ---------------------------------------------------------------------------
@@ -177,12 +217,8 @@ async function renderXlsx(
 /**
  * Render a custom template (.docx or .xlsx) buffer with field mappings applied.
  *
- * @param buffer   - Raw file bytes downloaded from S3
- * @param fileType - "docx" or "xlsx"
- * @param mappings - Stored field mappings (detectedField → mappedTo BIDAXIOM key)
- * @param data     - Flat data keyed by BIDAXIOM dot-notation (e.g. "company.name")
- * @param isPreview - When true, unmapped fields show "[UNMAPPED]" and a banner is added
- * @returns Complete HTML string suitable for generatePdfBuffer()
+ * Returns a RenderResult — callers must check .type to determine whether to
+ * use the PDF buffer directly or pass the HTML to generatePdfBuffer().
  */
 export async function renderTemplate(
   buffer: Buffer,
@@ -190,9 +226,8 @@ export async function renderTemplate(
   mappings: FieldMapping[],
   data: Record<string, string>,
   isPreview: boolean
-): Promise<string> {
+): Promise<RenderResult> {
   const values = buildValuesMap(mappings, data, isPreview);
-
   if (fileType === "xlsx") {
     return renderXlsx(buffer, values, isPreview);
   }
