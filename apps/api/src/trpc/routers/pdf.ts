@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { eq, isNull, sql, and } from "drizzle-orm";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { router } from "../trpc.js";
 import { protectedProcedure } from "../procedures.js";
 import { buildProposalHtml, type ProposalPdfData } from "../../pdf/templates/proposal.js";
@@ -13,7 +14,8 @@ import {
   uploadPdfAndSave,
 } from "../../pdf/generate.js";
 import { generatePdfBuffer } from "../../pdf/engine.js";
-import { buildCustomTemplateHtml } from "../../templates/render.js";
+import { getStorageClient, getBucketName } from "../../storage/client.js";
+import { renderDocxTemplate } from "../../templates/render.js";
 import type { FieldMapping } from "@construction/shared";
 
 /**
@@ -244,6 +246,17 @@ export const pdfRouter = router({
       // --- 8. Build HTML (custom template or built-in fallback) ---
       let html: string;
       if (activeTemplate?.fieldMappings?.length) {
+        // Download .docx from S3 and fill placeholders via docxtemplater → mammoth
+        const s3 = getStorageClient();
+        const bucket = getBucketName();
+        const getCmd = new GetObjectCommand({ Bucket: bucket, Key: activeTemplate.storageKey });
+        const s3Res = await s3.send(getCmd);
+        const chunks: Uint8Array[] = [];
+        for await (const chunk of s3Res.Body as AsyncIterable<Uint8Array>) {
+          chunks.push(chunk);
+        }
+        const docxBuffer = Buffer.concat(chunks);
+
         const realData: Record<string, string> = {
           "company.name": companyName,
           "company.primaryColor": "#3B5BDB",
@@ -260,17 +273,10 @@ export const pdfRouter = router({
           "doc.preparedBy": pdfData.estimateName,
           "doc.generatedDate": pdfData.generatedDate,
         };
-        html = buildCustomTemplateHtml(
+        html = await renderDocxTemplate(
+          docxBuffer,
           activeTemplate.fieldMappings as FieldMapping[],
           realData,
-          pdfData.lineItems.map((li) => ({
-            description: String(li.description ?? ""),
-            quantity: String(li.quantity ?? ""),
-            unit: String(li.unit ?? ""),
-            unitCost: String(li.unitCost ?? ""),
-            lineTotal: String(li.total ?? ""),
-            costType: String(li.costType ?? ""),
-          })),
           false // isPreview=false — production
         );
       } else {
@@ -485,6 +491,17 @@ export const pdfRouter = router({
       // --- 10. Build HTML (custom template or built-in fallback) ---
       let html: string;
       if (activeTemplate?.fieldMappings?.length) {
+        // Download .docx from S3 and fill placeholders via docxtemplater → mammoth
+        const s3 = getStorageClient();
+        const bucket = getBucketName();
+        const getCmd = new GetObjectCommand({ Bucket: bucket, Key: activeTemplate.storageKey });
+        const s3Res = await s3.send(getCmd);
+        const chunks: Uint8Array[] = [];
+        for await (const chunk of s3Res.Body as AsyncIterable<Uint8Array>) {
+          chunks.push(chunk);
+        }
+        const docxBuffer = Buffer.concat(chunks);
+
         const realData: Record<string, string> = {
           "company.name": companyName,
           "company.primaryColor": "#3B5BDB",
@@ -498,13 +515,10 @@ export const pdfRouter = router({
           "doc.status": pdfData.status,
           "doc.generatedDate": pdfData.generatedDate,
         };
-        html = buildCustomTemplateHtml(
+        html = await renderDocxTemplate(
+          docxBuffer,
           activeTemplate.fieldMappings as FieldMapping[],
           realData,
-          pdfData.lineItems.map((li) => ({
-            description: String(li.description ?? ""),
-            lineTotal: String(li.amountChange ?? ""),
-          })),
           false // isPreview=false — production
         );
       } else {
@@ -778,6 +792,17 @@ export const pdfRouter = router({
       // --- 11. Build HTML (custom template or built-in fallback) ---
       let html: string;
       if (activeTemplate?.fieldMappings?.length) {
+        // Download .docx from S3 and fill placeholders via docxtemplater → mammoth
+        const s3 = getStorageClient();
+        const bucket = getBucketName();
+        const getCmd = new GetObjectCommand({ Bucket: bucket, Key: activeTemplate.storageKey });
+        const s3Res = await s3.send(getCmd);
+        const chunks: Uint8Array[] = [];
+        for await (const chunk of s3Res.Body as AsyncIterable<Uint8Array>) {
+          chunks.push(chunk);
+        }
+        const docxBuffer = Buffer.concat(chunks);
+
         const realData: Record<string, string> = {
           "company.name": companyName,
           "company.primaryColor": "#3B5BDB",
@@ -799,15 +824,10 @@ export const pdfRouter = router({
             year: "numeric",
           }),
         };
-        html = buildCustomTemplateHtml(
+        html = await renderDocxTemplate(
+          docxBuffer,
           activeTemplate.fieldMappings as FieldMapping[],
           realData,
-          pdfData.lineItems.map((li) => ({
-            itemNumber: String(li.itemNumber ?? ""),
-            description: String(li.description ?? ""),
-            scheduledValue: String(li.scheduledValue ?? ""),
-            lineTotal: String(li.totalCompletedAndStored ?? ""),
-          })),
           false // isPreview=false — production
         );
       } else {
@@ -979,6 +999,17 @@ export const pdfRouter = router({
       // --- 9. Build HTML (custom template or built-in fallback) ---
       let html: string;
       if (activeTemplate?.fieldMappings?.length) {
+        // Download .docx from S3 and fill placeholders via docxtemplater → mammoth
+        const s3 = getStorageClient();
+        const bucket = getBucketName();
+        const getCmd = new GetObjectCommand({ Bucket: bucket, Key: activeTemplate.storageKey });
+        const s3Res = await s3.send(getCmd);
+        const chunks: Uint8Array[] = [];
+        for await (const chunk of s3Res.Body as AsyncIterable<Uint8Array>) {
+          chunks.push(chunk);
+        }
+        const docxBuffer = Buffer.concat(chunks);
+
         const realData: Record<string, string> = {
           "company.name": companyName,
           "company.primaryColor": "#3B5BDB",
@@ -992,10 +1023,10 @@ export const pdfRouter = router({
           "doc.paymentTerms": "Net 30",
           "doc.generatedDate": pdfData.generatedDate,
         };
-        html = buildCustomTemplateHtml(
+        html = await renderDocxTemplate(
+          docxBuffer,
           activeTemplate.fieldMappings as FieldMapping[],
           realData,
-          [], // RFQ has no line items table
           false // isPreview=false — production
         );
       } else {

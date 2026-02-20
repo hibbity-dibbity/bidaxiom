@@ -26,8 +26,8 @@ import { router } from "../trpc.js";
 import { protectedProcedure } from "../procedures.js";
 import { getStorageClient, getBucketName, buildTemplateStorageKey } from "../../storage/client.js";
 import { parseDocxFields, parseXlsxFields } from "../../templates/extract.js";
-import { buildCustomTemplateHtml } from "../../templates/render.js";
-import { buildPreviewData, PREVIEW_LINE_ITEMS } from "../../templates/fixtures.js";
+import { renderDocxTemplate } from "../../templates/render.js";
+import { buildPreviewData } from "../../templates/fixtures.js";
 import { getCompanyBranding } from "../../pdf/generate.js";
 import { generatePdfBuffer } from "../../pdf/engine.js";
 import type { FieldMapping } from "@construction/shared";
@@ -284,6 +284,23 @@ export const templateRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Template not found" });
       }
 
+      // Download .docx from S3 to fill with sample data
+      const s3 = getStorageClient();
+      const bucket = getBucketName();
+      const getCmd = new GetObjectCommand({ Bucket: bucket, Key: template.storageKey });
+      const s3Response = await s3.send(getCmd);
+      if (!s3Response.Body) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Template file not found in storage",
+        });
+      }
+      const chunks: Uint8Array[] = [];
+      for await (const chunk of s3Response.Body as AsyncIterable<Uint8Array>) {
+        chunks.push(chunk);
+      }
+      const docxBuffer = Buffer.concat(chunks);
+
       // Fetch company branding
       const branding = await getCompanyBranding(db, tenantId);
 
@@ -293,11 +310,11 @@ export const templateRouter = router({
         "company.primaryColor": branding.primaryColor,
       });
 
-      // Build HTML using stored mappings + preview data (isPreview=true → [UNMAPPED])
-      const html = buildCustomTemplateHtml(
+      // Render HTML: fill .docx placeholders via docxtemplater → mammoth
+      const html = await renderDocxTemplate(
+        docxBuffer,
         template.fieldMappings as FieldMapping[],
         previewData,
-        PREVIEW_LINE_ITEMS,
         true // isPreview
       );
 
@@ -305,8 +322,7 @@ export const templateRouter = router({
       const pdfBuffer = await generatePdfBuffer(html);
 
       // Upload to S3 with a temporary preview key
-      const s3 = getStorageClient();
-      const bucket = getBucketName();
+      // (Reuse s3/bucket already declared above for the .docx download)
       const previewKey = `tenants/${tenantId}/previews/${input.templateId}/preview.pdf`;
 
       await s3.send(
@@ -319,11 +335,11 @@ export const templateRouter = router({
       );
 
       // Generate presigned GET URL valid for 5 minutes
-      const getCmd = new GetObjectCommand({
+      const previewGetCmd = new GetObjectCommand({
         Bucket: bucket,
         Key: previewKey,
       });
-      const previewUrl = await getSignedUrl(s3, getCmd, { expiresIn: 300 }); // 5 minutes
+      const previewUrl = await getSignedUrl(s3, previewGetCmd, { expiresIn: 300 }); // 5 minutes
 
       return { previewUrl };
     }),
