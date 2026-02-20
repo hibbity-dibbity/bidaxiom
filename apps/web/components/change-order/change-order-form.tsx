@@ -67,6 +67,7 @@ export function ChangeOrderForm({ projectId, projectSlug }: ChangeOrderFormProps
       type: "owner",
       title: "",
       description: "",
+      requestedBy: "",
       relatedDocuments: [],
       lineItems: [
         {
@@ -128,10 +129,19 @@ export function ChangeOrderForm({ projectId, projectSlug }: ChangeOrderFormProps
   };
 
   const canProceedStep1 = selectedType !== undefined;
-  const canProceedStep2 = watch("title")?.length > 0;
+  const canProceedStep2 =
+    watch("title")?.length > 0 &&
+    (selectedType !== "owner" || watch("requestedBy")?.length > 0) &&
+    (selectedType !== "internal" || !!watch("reason")) &&
+    (selectedType !== "subcontractor" || !!watch("commitmentId"));
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form
+      onSubmit={handleSubmit(onSubmit, () =>
+        toast.error("Please complete all required fields before submitting.")
+      )}
+      className="space-y-6"
+    >
       {/* Step 1: Type Selection */}
       {step === 1 && (
         <Card>
