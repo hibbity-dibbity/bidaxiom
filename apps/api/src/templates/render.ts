@@ -1,245 +1,117 @@
 /**
- * Custom template HTML builder.
+ * Custom template renderer.
  *
- * Converts a stored field mapping configuration + runtime data into a complete
- * HTML document that the existing generatePdfBuffer() Puppeteer pipeline can
- * render as a PDF.
+ * Fills a .docx Buffer's <<field>> placeholders via docxtemplater, then
+ * converts the filled .docx to HTML via mammoth, and wraps the result in a
+ * full HTML document for Puppeteer → PDF rendering.
  *
- * This module is the rendering counterpart to extract.ts:
+ * This is the rendering counterpart to extract.ts:
  *   extract.ts  — detects <<field>> names from uploaded .docx/.xlsx files
- *   render.ts   — builds the output HTML from the stored field mapping
+ *   render.ts   — fills those fields and returns HTML for Puppeteer
  *
- * The output HTML is semantically equivalent to the Phase 38 builder functions
- * (buildProposalHtml, buildChangeOrderHtml, etc.) but driven by user-configured
- * field mappings rather than hardcoded templates.
+ * Both docxtemplater and mammoth are CommonJS packages; we use createRequire
+ * to load them in this ESM module (same pattern as extract.ts).
  */
 
+import { createRequire } from "module";
 import type { FieldMapping } from "@construction/shared";
-import { PREVIEW_LINE_ITEMS } from "./fixtures.js";
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-/**
- * Flat data object passed to buildCustomTemplateHtml().
- * Keys use BIDAXIOM dot-notation (e.g. "company.name", "project.jobNumber").
- * Compatible with PREVIEW_SAMPLE_DATA from fixtures.ts.
- */
-export type TemplateRenderData = Record<string, string>;
-
-// Re-export for convenience so routers can import from a single location.
-export type { FieldMapping };
-
-// ---------------------------------------------------------------------------
-// HTML escape
-// ---------------------------------------------------------------------------
+// CJS modules loaded via createRequire (ESM-safe pattern, same as extract.ts)
+const require = createRequire(import.meta.url);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const Docxtemplater = require("docxtemplater") as any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const PizZip = require("pizzip") as any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mammoth = require("mammoth") as {
+  convertToHtml: (input: { buffer: Buffer }) => Promise<{ value: string }>;
+};
 
 /**
- * Escape user-supplied strings before embedding in HTML.
- * Prevents XSS in Puppeteer-rendered output (same as Phase 38 pattern).
- */
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-// ---------------------------------------------------------------------------
-// Field value resolution
-// ---------------------------------------------------------------------------
-
-/**
- * Resolve the display value for a detected field given its mapping.
+ * Fill <<field>> placeholders in a .docx Buffer, convert to HTML, and
+ * wrap in a complete HTML document suitable for generatePdfBuffer().
  *
- * - mappedTo === null  → "[UNMAPPED]" in preview mode, "" in production mode
- * - mappedTo === "IGNORED" → "" (field stripped from output)
- * - mappedTo === <key> → data[key] ?? "[UNMAPPED]" in preview, "" in production
+ * Value resolution rules (per FieldMapping):
+ *   - mappedTo === null     → "[UNMAPPED]" in preview, "" in production
+ *   - mappedTo === "IGNORED"→ ""
+ *   - mappedTo === <key>    → data[key] ?? ("[UNMAPPED]" in preview, "" in production)
  *
- * @param mapping   - The FieldMapping for this field
- * @param data      - Runtime data object (real or fixture)
- * @param isPreview - When true, unmapped fields show "[UNMAPPED]" placeholder
- */
-function resolveValue(
-  mapping: FieldMapping,
-  data: TemplateRenderData,
-  isPreview: boolean
-): string {
-  const unmappedPlaceholder = isPreview ? "[UNMAPPED]" : "";
-
-  if (mapping.mappedTo === null) return unmappedPlaceholder;
-  if (mapping.mappedTo === "IGNORED") return "";
-
-  const value = data[mapping.mappedTo];
-  if (value === undefined || value === null) return unmappedPlaceholder;
-  return value;
-}
-
-// ---------------------------------------------------------------------------
-// buildCustomTemplateHtml
-// ---------------------------------------------------------------------------
-
-/**
- * Build a complete HTML document from a field mapping configuration and data.
- *
- * The output is a self-contained HTML document (inline styles, no external CSS)
- * intended for Puppeteer → PDF rendering via generatePdfBuffer().
- *
- * Rendering rules:
- *  - Scalar fields (mappedTo starts with anything except "table."):
- *    Rendered as a two-column definition list: label → value
- *  - Table-context fields (mappedTo starts with "table."):
- *    Rendered as an HTML <table> iterating over lineItems rows
- *  - Unmapped fields: "[UNMAPPED]" in preview mode, "" in production
- *  - Ignored fields: empty string (stripped from output)
- *  - All user data is HTML-escaped to prevent XSS
- *
- * @param mappings  - Field mappings as stored in document_templates.field_mappings
- * @param data      - Flat data object (real data or PREVIEW_SAMPLE_DATA fixtures)
- * @param lineItems - Line item rows for table-context fields (defaults to PREVIEW_LINE_ITEMS)
- * @param isPreview - When true, unmapped fields render as "[UNMAPPED]" (default: true)
+ * @param docxBuffer - Raw .docx file bytes (from S3)
+ * @param mappings   - Field mappings as stored in document_templates.field_mappings
+ * @param data       - Flat data object keyed by BIDAXIOM dot-notation (e.g. "company.name")
+ * @param isPreview  - When true, unmapped fields render as "[UNMAPPED]" and a banner is shown
  * @returns Complete HTML string suitable for generatePdfBuffer()
  */
-export function buildCustomTemplateHtml(
+export async function renderDocxTemplate(
+  docxBuffer: Buffer,
   mappings: FieldMapping[],
-  data: TemplateRenderData,
-  lineItems: Array<Record<string, string>> = PREVIEW_LINE_ITEMS,
-  isPreview: boolean = true
-): string {
-  const primaryColor = data["company.primaryColor"] ?? "#3B5BDB";
-  const companyName = escapeHtml(data["company.name"] ?? "Your Company");
-  const companyAddress = escapeHtml(data["company.address"] ?? "");
-  const companyPhone = escapeHtml(data["company.phone"] ?? "");
-  const generatedDate = escapeHtml(data["doc.generatedDate"] ?? new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }));
+  data: Record<string, string>,
+  isPreview: boolean
+): Promise<string> {
+  // -------------------------------------------------------------------------
+  // 1. Build values object keyed by detectedField (lowercased tag name)
+  // -------------------------------------------------------------------------
+  const unmappedPlaceholder = isPreview ? "[UNMAPPED]" : "";
 
-  // Separate table-context mappings (table.*) from scalar mappings
-  const tableMappings = mappings.filter(
-    (m) => m.mappedTo !== null && m.mappedTo !== "IGNORED" && m.mappedTo.startsWith("table.")
-  );
-  const scalarMappings = mappings.filter(
-    (m) => !(m.mappedTo !== null && m.mappedTo !== "IGNORED" && m.mappedTo.startsWith("table."))
-  );
-
-  // ---------------------------------------------------------------------------
-  // Build scalar fields section (definition list)
-  // ---------------------------------------------------------------------------
-  const scalarRows = scalarMappings
-    .map((m) => {
-      const label = escapeHtml(m.displayField.replace(/^<<|>>$/g, "").replace(/_/g, " "));
-      const value = escapeHtml(resolveValue(m, data, isPreview));
-      const valueStyle =
-        value === "[UNMAPPED]"
-          ? 'color:#B45309;font-style:italic;'
-          : 'color:#111827;';
-      return `
-        <div style="display:flex;gap:16px;padding:6px 0;border-bottom:1px solid #F3F4F6;">
-          <dt style="width:220px;min-width:220px;font-size:12px;color:#6B7280;font-weight:500;text-transform:capitalize;">${label}</dt>
-          <dd style="flex:1;margin:0;font-size:13px;${valueStyle}">${value || '<span style="color:#9CA3AF;">—</span>'}</dd>
-        </div>`;
-    })
-    .join("");
-
-  // ---------------------------------------------------------------------------
-  // Build table section (HTML table iterating lineItems)
-  // ---------------------------------------------------------------------------
-  let tableSection = "";
-  if (tableMappings.length > 0 && lineItems.length > 0) {
-    // Build column headers from displayField labels
-    const headerCells = tableMappings
-      .map((m) => {
-        const label = escapeHtml(m.displayField.replace(/^<<|>>$/g, "").replace(/_/g, " "));
-        return `<th style="padding:8px 10px;text-align:left;font-size:12px;font-weight:600;color:#ffffff;background:${escapeHtml(primaryColor)};border:1px solid rgba(255,255,255,0.2);">${label}</th>`;
-      })
-      .join("");
-
-    // Build body rows from lineItems
-    const bodyRows = lineItems
-      .map((row, idx) => {
-        const rowBg = idx % 2 === 0 ? "#FFFFFF" : "#F9FAFB";
-        const cells = tableMappings
-          .map((m) => {
-            // Extract the sub-key after "table." (e.g. "table.description" -> "description")
-            const subKey = m.mappedTo!.replace(/^table\./, "");
-            const cellValue = escapeHtml(row[subKey] ?? "");
-            return `<td style="padding:7px 10px;font-size:12px;color:#111827;border:1px solid #E5E7EB;">${cellValue}</td>`;
-          })
-          .join("");
-        return `<tr style="background:${rowBg};">${cells}</tr>`;
-      })
-      .join("");
-
-    tableSection = `
-      <section style="margin-top:24px;">
-        <h3 style="font-size:13px;font-weight:600;color:#374151;margin:0 0 8px;text-transform:uppercase;letter-spacing:0.05em;">Line Items</h3>
-        <table style="width:100%;border-collapse:collapse;font-family:system-ui,sans-serif;">
-          <thead>
-            <tr>${headerCells}</tr>
-          </thead>
-          <tbody>${bodyRows}</tbody>
-        </table>
-      </section>`;
+  const values: Record<string, string> = {};
+  for (const mapping of mappings) {
+    if (mapping.mappedTo === null) {
+      values[mapping.detectedField] = unmappedPlaceholder;
+    } else if (mapping.mappedTo === "IGNORED") {
+      values[mapping.detectedField] = "";
+    } else {
+      values[mapping.detectedField] = data[mapping.mappedTo] ?? unmappedPlaceholder;
+    }
   }
 
-  // ---------------------------------------------------------------------------
-  // Preview watermark (shown only in preview mode)
-  // ---------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // 2. Fill .docx placeholders with docxtemplater
+  // -------------------------------------------------------------------------
+  const zip = new PizZip(docxBuffer);
+  const doc = new Docxtemplater(zip, {
+    paragraphLoop: true,
+    linebreaks: true,
+    delimiters: { start: "<<", end: ">>" },
+    // nullGetter: suppress errors for any tags not present in values map
+    nullGetter: () => "",
+  });
+  doc.render(values);
+  const filledBuffer: Buffer = doc.getZip().generate({ type: "nodebuffer" }) as Buffer;
+
+  // -------------------------------------------------------------------------
+  // 3. Convert filled .docx to HTML with mammoth
+  // -------------------------------------------------------------------------
+  const { value: bodyHtml } = await mammoth.convertToHtml({ buffer: filledBuffer });
+
+  // -------------------------------------------------------------------------
+  // 4. Preview watermark banner (shown only in preview mode)
+  // -------------------------------------------------------------------------
   const previewBanner = isPreview
-    ? `<div style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:4px;padding:8px 12px;margin-bottom:16px;font-size:12px;color:#92400E;">
-        <strong>Preview Mode</strong> — Sample data is used. Fields marked [UNMAPPED] have no mapping configured.
+    ? `<div style="background:#FEF3C7;border:1px solid #F59E0B;padding:8px 12px;margin-bottom:16px;font-size:12px;color:#92400E;">
+        <strong>Preview Mode</strong> — Sample data used. [UNMAPPED] fields have no mapping configured.
        </div>`
     : "";
 
-  // ---------------------------------------------------------------------------
-  // Compose full HTML document
-  // ---------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // 5. Wrap in full HTML document for Puppeteer
+  // -------------------------------------------------------------------------
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Custom Template Preview</title>
+  <title>Document Preview</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, -apple-system, sans-serif; font-size: 14px; color: #111827; background: #FFFFFF; }
+    body { font-family: system-ui, -apple-system, sans-serif; font-size: 13px; color: #111827;
+           padding: 32px 48px; margin: 0; background: #fff; line-height: 1.6; }
+    table { border-collapse: collapse; width: 100%; }
+    td, th { border: 1px solid #E5E7EB; padding: 6px 10px; }
+    th { background: #F3F4F6; font-weight: 600; }
+    p { margin: 0 0 8px; }
   </style>
 </head>
-<body style="padding:0;margin:0;">
-
-  <!-- Header -->
-  <header style="background:${escapeHtml(primaryColor)};color:#ffffff;padding:24px 40px 20px;">
-    <div style="font-size:22px;font-weight:700;letter-spacing:-0.01em;">${companyName}</div>
-    ${companyAddress ? `<div style="font-size:12px;margin-top:4px;opacity:0.85;">${companyAddress}</div>` : ""}
-    ${companyPhone ? `<div style="font-size:12px;margin-top:2px;opacity:0.85;">${companyPhone}</div>` : ""}
-  </header>
-
-  <!-- Main content -->
-  <main style="padding:24px 40px 32px;">
-
-    ${previewBanner}
-
-    <!-- Scalar fields section -->
-    ${scalarRows
-      ? `<section style="margin-bottom:8px;">
-          <dl style="list-style:none;margin:0;padding:0;">
-            ${scalarRows}
-          </dl>
-        </section>`
-      : '<p style="color:#9CA3AF;font-size:13px;">No scalar fields mapped.</p>'
-    }
-
-    <!-- Table section -->
-    ${tableSection}
-
-  </main>
-
-  <!-- Footer -->
-  <footer style="padding:16px 40px;border-top:1px solid #E5E7EB;display:flex;justify-content:space-between;align-items:center;">
-    <span style="font-size:11px;color:#9CA3AF;">Generated by BIDAXIOM</span>
-    <span style="font-size:11px;color:#9CA3AF;">${generatedDate}</span>
-  </footer>
-
+<body>
+  ${previewBanner}
+  ${bodyHtml}
 </body>
 </html>`;
 }
