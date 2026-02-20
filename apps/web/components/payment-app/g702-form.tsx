@@ -56,16 +56,15 @@ export function G702Form({ paymentApp }: G702FormProps) {
   });
 
   const handleSubmit = () => {
-    // For now, submit without approval steps - would open approval configuration dialog in real impl
     submitMutation.mutate({
-      id: paymentApp.id,
-      approvalSteps: [],
+      paymentAppId: paymentApp.id,
+      approvalSteps: [{ stepOrder: 1, approverRole: "org:admin", requirementType: "all" }],
     });
   };
 
   const handleMarkPaid = () => {
     if (confirm("Mark this payment application as paid?")) {
-      markPaidMutation.mutate({ id: paymentApp.id });
+      markPaidMutation.mutate({ paymentAppId: paymentApp.id });
     }
   };
 
