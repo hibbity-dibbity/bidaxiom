@@ -30,6 +30,7 @@ import { organizationRouter } from "./routers/organization.js";
 import { searchRouter } from "./routers/search.js";
 import { estimatesRouter } from "./routers/estimates.js";
 import { estimateTemplatesRouter } from "./routers/estimateTemplates.js";
+import { templateRouter } from "./routers/template.js";
 
 /**
  * Root application router.
@@ -70,6 +71,7 @@ export const appRouter = router({
   search: searchRouter,
   estimates: estimatesRouter,
   estimateTemplates: estimateTemplatesRouter,
+  template: templateRouter,
 });
 
 /**
