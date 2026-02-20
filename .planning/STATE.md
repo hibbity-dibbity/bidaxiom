@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-18)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 39 started (1/N plans complete)
+**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 39 in progress (2/N plans complete)
 
 ## Current Position
 
 Phase: 39 (in progress)
-Plan: 01 complete — DB schema (document_templates table + documents.templateId FK), shared types (TemplateDocType, DetectedField, FieldMapping, BIDAXIOM_FIELD_KEYS), buildTemplateStorageKey(), and idempotent migration run across all active tenant schemas
-Status: 39-01 complete — migration succeeded (1 tenant); 2 task commits (4420c5a, d0a1037)
-Last activity: 2026-02-20 — 39-01 complete: Phase 39 DB foundation established; document_templates table live in all tenant schemas
+Plan: 02 complete — docxtemplater+pizzip+mammoth installed; extract.ts (parseDocxFields, parseXlsxFields), fixtures.ts (PREVIEW_SAMPLE_DATA, PREVIEW_LINE_ITEMS, buildPreviewData), render.ts (buildCustomTemplateHtml) implemented in apps/api/src/templates/
+Status: 39-02 complete — 2 task commits (ccb77b7, 43a43b9); 0 TypeScript errors in templates/
+Last activity: 2026-02-20 — 39-02 complete: template utility modules ready for templateRouter (Plan 39-03)
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100%
 
@@ -59,6 +59,7 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 
 *Updated after each plan completion*
 | Phase 39 P01 | 3 | 2 tasks | 6 files |
+| Phase 39 P02 | 6 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -113,6 +114,11 @@ Decisions logged in PROJECT.md Key Decisions table (full log, 35 phases).
 - [Phase 39]: documentTemplates table placed BEFORE documents in createTenantSchema to allow FK reference without circular dependency
 - [Phase 39]: buildTemplateStorageKey omits projectId — templates are company-scoped at tenants/{tenantId}/templates/{uuid}/{fileName}
 - [Phase 39]: Partial unique index on (doc_type WHERE is_active=true) enforces one-active-template-per-type at DB level
+- [Phase 39-02]: createRequire(import.meta.url) used to CJS-require InspectModule — it has no ESM named export
+- [Phase 39-02]: Original-case field display form captured via raw XML regex before InspectModule processes the docx (InspectModule lowercases all keys)
+- [Phase 39-02]: ExcelJS Buffer type conflict with Node Buffer<ArrayBufferLike> resolved via Parameters<> cast — avoids unsafe any
+- [Phase 39-02]: isPreview flag on buildCustomTemplateHtml defaults to true — unmapped fields render as [UNMAPPED] for preview, empty string for production
+- [Phase 39-02]: table.* mapped fields separated from scalar fields by mappedTo.startsWith("table.") — rendered as HTML table rows iterating lineItems
 
 ### Quick Tasks Completed
 
@@ -133,5 +139,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 39-01-PLAN.md — document_templates schema + migration + shared types (DetectedField, FieldMapping, BIDAXIOM_FIELD_KEYS, TemplateDocType) + buildTemplateStorageKey(). Phase 39 plan 01 complete (1/N).
+Stopped at: Completed 39-02-PLAN.md — extract.ts (parseDocxFields, parseXlsxFields), fixtures.ts (PREVIEW_SAMPLE_DATA, PREVIEW_LINE_ITEMS, buildPreviewData), render.ts (buildCustomTemplateHtml). Phase 39 plan 02 complete (2/N).
 Resume file: None
