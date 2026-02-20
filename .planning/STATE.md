@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-18)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 39 in progress (2/N plans complete)
+**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 39 in progress (3/N plans complete)
 
 ## Current Position
 
 Phase: 39 (in progress)
-Plan: 02 complete — docxtemplater+pizzip+mammoth installed; extract.ts (parseDocxFields, parseXlsxFields), fixtures.ts (PREVIEW_SAMPLE_DATA, PREVIEW_LINE_ITEMS, buildPreviewData), render.ts (buildCustomTemplateHtml) implemented in apps/api/src/templates/
-Status: 39-02 complete — 2 task commits (ccb77b7, 43a43b9); 0 TypeScript errors in templates/
-Last activity: 2026-02-20 — 39-02 complete: template utility modules ready for templateRouter (Plan 39-03)
+Plan: 03 complete — templateRouter (7 procedures) registered in appRouter; uploadPdfAndSave extended with templateId; all 4 pdfRouter generate* procedures check active custom template before built-in HTML fallback
+Status: 39-03 complete — 2 task commits (098b3fb, cfdbace); 0 TypeScript errors in template.ts, router.ts, generate.ts, pdf.ts
+Last activity: 2026-02-20 — 39-03 complete: templateRouter API ready; Plan 39-04 (frontend UI) next
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100%
 
@@ -60,6 +60,7 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 *Updated after each plan completion*
 | Phase 39 P01 | 3 | 2 tasks | 6 files |
 | Phase 39 P02 | 6 | 2 tasks | 5 files |
+| Phase 39 P03 | 5 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -119,6 +120,11 @@ Decisions logged in PROJECT.md Key Decisions table (full log, 35 phases).
 - [Phase 39-02]: ExcelJS Buffer type conflict with Node Buffer<ArrayBufferLike> resolved via Parameters<> cast — avoids unsafe any
 - [Phase 39-02]: isPreview flag on buildCustomTemplateHtml defaults to true — unmapped fields render as [UNMAPPED] for preview, empty string for production
 - [Phase 39-02]: table.* mapped fields separated from scalar fields by mappedTo.startsWith("table.") — rendered as HTML table rows iterating lineItems
+- [Phase 39-03]: ctx.orgRole accessed directly (not ctx.session?.orgRole) — matches all existing routers in codebase; requireAdmin() takes full ctx object
+- [Phase 39-03]: deleteTemplate swallows S3 DeleteObjectCommand errors non-fatally — DB row must be cleaned up even if file already gone
+- [Phase 39-03]: Preview PDF uploaded to tenants/{tenantId}/previews/{templateId}/preview.pdf — predictable throwaway key overwritten on each preview generation
+- [Phase 39-03]: generateRfq custom template called with empty lineItems array — RFQs have no line item table in scope
+- [Phase 39-03]: All 4 pdfRouter generate* procedures check documentTemplates for active template before HTML build; realData maps doc-specific pdfData fields to BIDAXIOM_FIELD_KEYS dot-notation format
 
 ### Quick Tasks Completed
 
@@ -139,5 +145,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 39-02-PLAN.md — extract.ts (parseDocxFields, parseXlsxFields), fixtures.ts (PREVIEW_SAMPLE_DATA, PREVIEW_LINE_ITEMS, buildPreviewData), render.ts (buildCustomTemplateHtml). Phase 39 plan 02 complete (2/N).
+Stopped at: Completed 39-03-PLAN.md — templateRouter (7 procedures) in appRouter; uploadPdfAndSave extended with templateId; all 4 pdfRouter generate* procedures check active custom template. Phase 39 plan 03 complete (3/N).
 Resume file: None
