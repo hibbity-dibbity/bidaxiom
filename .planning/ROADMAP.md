@@ -175,10 +175,10 @@ Plans:
 
 **Requirements:** PDF-01, PDF-02, PDF-03, PDF-04, PDF-05, PDF-06, NAME-01, NAME-02, NAME-03, NAME-04
 
-**Plans:** 8 plans
+**Plans:** 8/8 plans complete
 
 Plans:
-- [ ] 38-01-PLAN.md — DB schema (documentNamingCounters table + documentNamingSettings JSONB on companyProfiles), Phase 38 migration, shared types
+- [x] 38-01-PLAN.md — DB schema (documentNamingCounters table + documentNamingSettings JSONB on companyProfiles), Phase 38 migration, shared types (completed 2026-02-20)
 - [ ] 38-02-PLAN.md — PDF engine (Puppeteer singleton), shared generation utilities (S3 upload, doc library insert, atomic counter), pdf tRPC router shell
 - [ ] 38-03-PLAN.md — Proposal PDF: HTML template + pdf.generateProposal procedure + "Generate Proposal PDF" button in estimates UI
 - [ ] 38-04-PLAN.md — Change Order PDF: HTML template + pdf.generateChangeOrder procedure + "Generate PDF" button on CO detail page
@@ -252,6 +252,6 @@ Plans:
 | 30-35 | v1.4 | 16/16 | ✅ Complete | 2026-02-18 |
 | 36 | v1.5 | Complete    | 2026-02-19 | - |
 | 37 | v1.5 | Complete    | 2026-02-19 | - |
-| 38 | v1.5 | 0/8 | Not started | - |
+| 38 | v1.5 | Complete    | 2026-02-20 | - |
 | 39 | v1.5 | 0/~4 | Not started | - |
 | 40 | v1.5 | 0/~4 | Not started | - |
