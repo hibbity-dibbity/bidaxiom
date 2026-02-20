@@ -15,7 +15,7 @@ import {
 } from "../../pdf/generate.js";
 import { generatePdfBuffer } from "../../pdf/engine.js";
 import { getStorageClient, getBucketName } from "../../storage/client.js";
-import { renderDocxTemplate } from "../../templates/render.js";
+import { renderTemplate } from "../../templates/render.js";
 import type { FieldMapping } from "@construction/shared";
 
 /**
@@ -273,8 +273,9 @@ export const pdfRouter = router({
           "doc.preparedBy": pdfData.estimateName,
           "doc.generatedDate": pdfData.generatedDate,
         };
-        html = await renderDocxTemplate(
+        html = await renderTemplate(
           docxBuffer,
+          activeTemplate.fileType as "docx" | "xlsx",
           activeTemplate.fieldMappings as FieldMapping[],
           realData,
           false // isPreview=false — production
@@ -515,8 +516,9 @@ export const pdfRouter = router({
           "doc.status": pdfData.status,
           "doc.generatedDate": pdfData.generatedDate,
         };
-        html = await renderDocxTemplate(
+        html = await renderTemplate(
           docxBuffer,
+          activeTemplate.fileType as "docx" | "xlsx",
           activeTemplate.fieldMappings as FieldMapping[],
           realData,
           false // isPreview=false — production
@@ -824,8 +826,9 @@ export const pdfRouter = router({
             year: "numeric",
           }),
         };
-        html = await renderDocxTemplate(
+        html = await renderTemplate(
           docxBuffer,
+          activeTemplate.fileType as "docx" | "xlsx",
           activeTemplate.fieldMappings as FieldMapping[],
           realData,
           false // isPreview=false — production
@@ -1023,8 +1026,9 @@ export const pdfRouter = router({
           "doc.paymentTerms": "Net 30",
           "doc.generatedDate": pdfData.generatedDate,
         };
-        html = await renderDocxTemplate(
+        html = await renderTemplate(
           docxBuffer,
+          activeTemplate.fileType as "docx" | "xlsx",
           activeTemplate.fieldMappings as FieldMapping[],
           realData,
           false // isPreview=false — production

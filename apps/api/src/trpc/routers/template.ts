@@ -26,7 +26,7 @@ import { router } from "../trpc.js";
 import { protectedProcedure } from "../procedures.js";
 import { getStorageClient, getBucketName, buildTemplateStorageKey } from "../../storage/client.js";
 import { parseDocxFields, parseXlsxFields } from "../../templates/extract.js";
-import { renderDocxTemplate } from "../../templates/render.js";
+import { renderTemplate } from "../../templates/render.js";
 import { buildPreviewData } from "../../templates/fixtures.js";
 import { getCompanyBranding } from "../../pdf/generate.js";
 import { generatePdfBuffer } from "../../pdf/engine.js";
@@ -310,9 +310,10 @@ export const templateRouter = router({
         "company.primaryColor": branding.primaryColor,
       });
 
-      // Render HTML: fill .docx placeholders via docxtemplater → mammoth
-      const html = await renderDocxTemplate(
+      // Render HTML: fill placeholders via docxtemplater/ExcelJS → HTML
+      const html = await renderTemplate(
         docxBuffer,
+        template.fileType as "docx" | "xlsx",
         template.fieldMappings as FieldMapping[],
         previewData,
         true // isPreview
