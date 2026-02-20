@@ -159,9 +159,42 @@ async function renderXlsx(
   values: Record<string, string>,
   isPreview: boolean
 ): Promise<RenderResult> {
+  // Step 1: Fill <<field>> placeholders in all cells using ExcelJS
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(buffer as unknown as Parameters<typeof workbook.xlsx.load>[0]);
 
+  workbook.eachSheet((worksheet) => {
+    worksheet.eachRow({ includeEmpty: false }, (row) => {
+      row.eachCell({ includeEmpty: false }, (cell) => {
+        const cellVal = cell.value;
+        if (typeof cellVal === "string" && cellVal.includes("<<")) {
+          cell.value = cellVal.replace(/<<([^<>]+)>>/gi, (_, field: string) => {
+            return values[field.toLowerCase()] ?? "";
+          });
+        }
+      });
+    });
+  });
+
+  // Step 2a: LibreOffice → PDF (preserves Excel formatting faithfully)
+  if (libreConvert) {
+    try {
+      const filledBuffer = Buffer.from(
+        await workbook.xlsx.writeBuffer() as unknown as Parameters<typeof Buffer.from>[0]
+      );
+      const pdfBuffer = await new Promise<Buffer>((resolve, reject) => {
+        libreConvert.convert(filledBuffer, ".pdf", undefined, (err: Error | null, result: Buffer) => {
+          if (err) reject(err);
+          else resolve(result);
+        });
+      });
+      return { type: "pdf", buffer: pdfBuffer };
+    } catch (err) {
+      console.warn("[render] LibreOffice xlsx conversion failed, falling back to HTML:", err);
+    }
+  }
+
+  // Step 2b: HTML table fallback (LibreOffice not installed or failed)
   let tablesHtml = "";
 
   workbook.eachSheet((worksheet) => {
@@ -171,16 +204,9 @@ async function renderXlsx(
       let cellsHtml = "";
 
       row.eachCell({ includeEmpty: true }, (cell) => {
-        let val = "";
-        const cellVal = cell.value;
-
-        if (typeof cellVal === "string") {
-          val = cellVal.replace(/<<([^<>]+)>>/gi, (_, field: string) => {
-            return values[field.toLowerCase()] ?? "";
-          });
-        } else if (cellVal !== null && cellVal !== undefined) {
-          val = String(cellVal);
-        }
+        const val = typeof cell.value === "string" ? cell.value
+          : cell.value !== null && cell.value !== undefined ? String(cell.value)
+          : "";
 
         const esc = escapeHtml(val);
         const style =
@@ -198,7 +224,7 @@ async function renderXlsx(
       tablesHtml += `
         <div style="margin-bottom:24pt;">
           <h3 style="font-size:10pt;color:#666;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 6pt;">${sheetName}</h3>
-          <table>${rowsHtml}</table>
+          <table style="border-collapse:collapse;width:100%;">${rowsHtml}</table>
         </div>`;
     }
   });
