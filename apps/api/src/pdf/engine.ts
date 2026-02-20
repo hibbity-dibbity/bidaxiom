@@ -39,7 +39,7 @@ export async function generatePdfBuffer(html: string): Promise<Buffer> {
   const browser = await getBrowser();
   const page = await browser.newPage();
   try {
-    await page.setContent(html, { waitUntil: "networkidle0" });
+    await page.setContent(html, { waitUntil: "domcontentloaded" });
     const buffer = await page.pdf({
       format: "Letter",
       printBackground: true,
