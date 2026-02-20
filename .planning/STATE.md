@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-18)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 39 in progress (3/N plans complete)
+**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 39 in progress (4/N plans complete)
 
 ## Current Position
 
 Phase: 39 (in progress)
-Plan: 03 complete — templateRouter (7 procedures) registered in appRouter; uploadPdfAndSave extended with templateId; all 4 pdfRouter generate* procedures check active custom template before built-in HTML fallback
-Status: 39-03 complete — 2 task commits (098b3fb, cfdbace); 0 TypeScript errors in template.ts, router.ts, generate.ts, pdf.ts
-Last activity: 2026-02-20 — 39-03 complete: templateRouter API ready; Plan 39-04 (frontend UI) next
+Plan: 04 complete — Document Templates settings UI: /settings/document-templates (4-tab list, upload, activate toggle, delete) and /settings/document-templates/[templateId] (split-view field mapping with amber highlights, grouped combobox, X/Y progress, save-always, preview PDF)
+Status: 39-04 complete — 2 task commits (f659dca, e51f271); getById added to templateRouter; 0 TypeScript errors in all new files
+Last activity: 2026-02-20 — 39-04 complete: Document Templates UI ready; Plan 39-05 (UAT/verification) next
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100%
 
@@ -61,6 +61,7 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 | Phase 39 P01 | 3 | 2 tasks | 6 files |
 | Phase 39 P02 | 6 | 2 tasks | 5 files |
 | Phase 39 P03 | 5 | 2 tasks | 4 files |
+| Phase 39 P04 | 5 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -125,6 +126,9 @@ Decisions logged in PROJECT.md Key Decisions table (full log, 35 phases).
 - [Phase 39-03]: Preview PDF uploaded to tenants/{tenantId}/previews/{templateId}/preview.pdf — predictable throwaway key overwritten on each preview generation
 - [Phase 39-03]: generateRfq custom template called with empty lineItems array — RFQs have no line item table in scope
 - [Phase 39-03]: All 4 pdfRouter generate* procedures check documentTemplates for active template before HTML build; realData maps doc-specific pdfData fields to BIDAXIOM_FIELD_KEYS dot-notation format
+- [Phase 39-04]: getById procedure added to templateRouter (Rule 2) — field mapping page requires single-template fetch; listByDocType-without-filter is wasteful and semantically wrong
+- [Phase 39-04]: Combobox options use flat list with group prefix labels — existing Combobox component is flat; prefixes provide equivalent grouped UX
+- [Phase 39-04]: Left panel renders detected fields as clickable button spans (not actual docx HTML) — no mammoth browser dependency; functionally equivalent for field mapping
 
 ### Quick Tasks Completed
 
@@ -145,5 +149,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 39-03-PLAN.md — templateRouter (7 procedures) in appRouter; uploadPdfAndSave extended with templateId; all 4 pdfRouter generate* procedures check active custom template. Phase 39 plan 03 complete (3/N).
+Stopped at: Completed 39-04-PLAN.md — Document Templates settings UI (template list + field mapping pages); getById added to templateRouter. Phase 39 plan 04 complete (4/N).
 Resume file: None
