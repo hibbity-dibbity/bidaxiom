@@ -130,10 +130,12 @@ async function renderDocx(
   const filledBuffer: Buffer = doc.getZip().generate({ type: "nodebuffer" }) as Buffer;
 
   // Step 2a: LibreOffice → PDF (preserves Word formatting faithfully)
+  // writer_pdf_Export filter ensures LibreOffice uses the document's own page size
+  // and margins rather than system/printer defaults (fixes A4 vs Letter shift).
   if (libreConvert) {
     try {
       const pdfBuffer = await new Promise<Buffer>((resolve, reject) => {
-        libreConvert.convert(filledBuffer, ".pdf", undefined, (err: Error | null, result: Buffer) => {
+        libreConvert.convert(filledBuffer, ".pdf", "writer_pdf_Export", (err: Error | null, result: Buffer) => {
           if (err) reject(err);
           else resolve(result);
         });
@@ -177,13 +179,14 @@ async function renderXlsx(
   });
 
   // Step 2a: LibreOffice → PDF (preserves Excel formatting faithfully)
+  // calc_pdf_Export filter ensures LibreOffice uses the spreadsheet's own page settings.
   if (libreConvert) {
     try {
       const filledBuffer = Buffer.from(
         await workbook.xlsx.writeBuffer() as unknown as Parameters<typeof Buffer.from>[0]
       );
       const pdfBuffer = await new Promise<Buffer>((resolve, reject) => {
-        libreConvert.convert(filledBuffer, ".pdf", undefined, (err: Error | null, result: Buffer) => {
+        libreConvert.convert(filledBuffer, ".pdf", "calc_pdf_Export", (err: Error | null, result: Buffer) => {
           if (err) reject(err);
           else resolve(result);
         });

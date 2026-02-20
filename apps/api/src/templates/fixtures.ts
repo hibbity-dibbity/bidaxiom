@@ -22,16 +22,26 @@
 export const PREVIEW_SAMPLE_DATA: Record<string, string> = {
   // Company (overridden at runtime with real company data)
   "company.name": "Acme Construction Co.",
-  "company.address": "123 Main Street, Denver, CO 80203",
   "company.phone": "(303) 555-0100",
   "company.license": "GC-2026-001234",
+  "company.address": "123 Main Street, Denver, CO 80203",
+  "company.street1": "123 Main Street",
+  "company.street2": "",
+  "company.city": "Denver",
+  "company.state": "CO",
+  "company.zip": "80203",
   "company.primaryColor": "#3B5BDB",
 
   // Project
   "project.name": "Project Alpha",
   "project.jobNumber": "2026-001",
-  "project.address": "456 Oak Avenue, Denver, CO 80204",
   "project.clientName": "Acme Property Group",
+  "project.address": "456 Oak Avenue, Denver, CO 80204",
+  "project.street1": "456 Oak Avenue",
+  "project.street2": "",
+  "project.city": "Denver",
+  "project.state": "CO",
+  "project.zip": "80204",
   "project.lifecyclePhase": "construction",
   "project.startDate": "January 15, 2026",
   "project.endDate": "December 31, 2026",
@@ -44,6 +54,9 @@ export const PREVIEW_SAMPLE_DATA: Record<string, string> = {
   "doc.subtotalSubcontractor": "$0.00",
   "doc.overheadAmount": "$6,250.00",
   "doc.markupAmount": "$3,750.00",
+  "doc.salesTaxRate": "8.50%",
+  "doc.salesTaxAmount": "$10,625.00",
+  "doc.expirationDate": "March 20, 2026",
   "doc.preparedBy": "Jane Smith",
   "doc.generatedDate": "February 20, 2026",
 

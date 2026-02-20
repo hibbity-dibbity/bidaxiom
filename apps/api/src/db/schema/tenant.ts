@@ -106,6 +106,14 @@ export function createTenantSchema(schemaName: string) {
         },
       }),
     // logoStorageKey: text("logo_storage_key"), // Logo columns removed in quick-17 (static BidAxiom branding)
+    // Company contact info for document generation
+    phone: text("phone"),
+    license: text("license"), // Contractor license number
+    street1: text("street1"),
+    street2: text("street2"),
+    city: text("city"),
+    state: text("state"), // 2-char US state abbreviation
+    zip: text("zip"),
     allowPersonalTemplates: boolean("allow_personal_templates"), // Allow users to create personal estimate templates (default: true if null)
     sovGroupingMethod: text("sov_grouping_method"), // Default SOV grouping method: csi, phase, payment_schedule (default: csi if null)
     documentNamingSettings: jsonb("document_naming_settings")

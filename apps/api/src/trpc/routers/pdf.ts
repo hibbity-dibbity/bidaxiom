@@ -119,6 +119,7 @@ export const pdfRouter = router({
           name: schema.projects.name,
           jobNumber: schema.projects.jobNumber,
           street1: schema.projects.street1,
+          street2: schema.projects.street2,
           city: schema.projects.city,
           state: schema.projects.state,
           zip: schema.projects.zip,
@@ -158,6 +159,13 @@ export const pdfRouter = router({
       const [companyProfile] = await db
         .select({
           documentNamingSettings: schema.companyProfiles.documentNamingSettings,
+          phone: schema.companyProfiles.phone,
+          license: schema.companyProfiles.license,
+          street1: schema.companyProfiles.street1,
+          street2: schema.companyProfiles.street2,
+          city: schema.companyProfiles.city,
+          state: schema.companyProfiles.state,
+          zip: schema.companyProfiles.zip,
         })
         .from(schema.companyProfiles)
         .where(isNull(schema.companyProfiles.validTo))
@@ -270,12 +278,27 @@ export const pdfRouter = router({
         }
         const docxBuffer = Buffer.concat(chunks);
 
+        const companyAddressParts = [companyProfile?.street1, companyProfile?.city, companyProfile?.state, companyProfile?.zip].filter(Boolean);
         const realData: Record<string, string> = {
           "company.name": companyName,
+          "company.phone": companyProfile?.phone ?? "",
+          "company.license": companyProfile?.license ?? "",
+          "company.address": companyAddressParts.length > 0 ? companyAddressParts.join(", ") : "",
+          "company.street1": companyProfile?.street1 ?? "",
+          "company.street2": companyProfile?.street2 ?? "",
+          "company.city": companyProfile?.city ?? "",
+          "company.state": companyProfile?.state ?? "",
+          "company.zip": companyProfile?.zip ?? "",
           "company.primaryColor": "#3B5BDB",
           "project.name": pdfData.projectName,
-          "project.address": pdfData.projectAddress,
           "project.jobNumber": project.jobNumber ?? "",
+          "project.clientName": "",
+          "project.address": pdfData.projectAddress,
+          "project.street1": project.street1 ?? "",
+          "project.street2": project.street2 ?? "",
+          "project.city": project.city ?? "",
+          "project.state": project.state ?? "",
+          "project.zip": project.zip ?? "",
           "doc.estimateTotal": pdfData.totalCost,
           "doc.subtotalLabor": pdfData.subtotalLabor,
           "doc.subtotalMaterials": pdfData.subtotalMaterials,
@@ -283,6 +306,9 @@ export const pdfRouter = router({
           "doc.subtotalSubcontractor": pdfData.subtotalSubcontractor,
           "doc.overheadAmount": pdfData.overheadAmount,
           "doc.markupAmount": pdfData.markupAmount,
+          "doc.salesTaxRate": "",
+          "doc.salesTaxAmount": "",
+          "doc.expirationDate": "",
           "doc.preparedBy": pdfData.estimateName,
           "doc.generatedDate": pdfData.generatedDate,
         };
@@ -361,6 +387,7 @@ export const pdfRouter = router({
           name: schema.projects.name,
           jobNumber: schema.projects.jobNumber,
           street1: schema.projects.street1,
+          street2: schema.projects.street2,
           city: schema.projects.city,
           state: schema.projects.state,
           zip: schema.projects.zip,
@@ -404,6 +431,13 @@ export const pdfRouter = router({
       const [companyProfile] = await db
         .select({
           documentNamingSettings: schema.companyProfiles.documentNamingSettings,
+          phone: schema.companyProfiles.phone,
+          license: schema.companyProfiles.license,
+          street1: schema.companyProfiles.street1,
+          street2: schema.companyProfiles.street2,
+          city: schema.companyProfiles.city,
+          state: schema.companyProfiles.state,
+          zip: schema.companyProfiles.zip,
         })
         .from(schema.companyProfiles)
         .where(isNull(schema.companyProfiles.validTo))
@@ -516,12 +550,27 @@ export const pdfRouter = router({
         }
         const docxBuffer = Buffer.concat(chunks);
 
+        const companyAddressParts = [companyProfile?.street1, companyProfile?.city, companyProfile?.state, companyProfile?.zip].filter(Boolean);
         const realData: Record<string, string> = {
           "company.name": companyName,
+          "company.phone": companyProfile?.phone ?? "",
+          "company.license": companyProfile?.license ?? "",
+          "company.address": companyAddressParts.length > 0 ? companyAddressParts.join(", ") : "",
+          "company.street1": companyProfile?.street1 ?? "",
+          "company.street2": companyProfile?.street2 ?? "",
+          "company.city": companyProfile?.city ?? "",
+          "company.state": companyProfile?.state ?? "",
+          "company.zip": companyProfile?.zip ?? "",
           "company.primaryColor": "#3B5BDB",
           "project.name": pdfData.projectName,
-          "project.address": pdfData.projectAddress,
           "project.jobNumber": project.jobNumber ?? "",
+          "project.clientName": "",
+          "project.address": pdfData.projectAddress,
+          "project.street1": project.street1 ?? "",
+          "project.street2": project.street2 ?? "",
+          "project.city": project.city ?? "",
+          "project.state": project.state ?? "",
+          "project.zip": project.zip ?? "",
           "doc.coNumber": pdfData.coNumber,
           "doc.coTitle": pdfData.coTitle,
           "doc.coDescription": String(pdfData.coDescription ?? ""),
@@ -605,6 +654,7 @@ export const pdfRouter = router({
           name: schema.projects.name,
           jobNumber: schema.projects.jobNumber,
           street1: schema.projects.street1,
+          street2: schema.projects.street2,
           city: schema.projects.city,
           state: schema.projects.state,
           zip: schema.projects.zip,
@@ -686,6 +736,13 @@ export const pdfRouter = router({
       const [companyProfile] = await db
         .select({
           documentNamingSettings: schema.companyProfiles.documentNamingSettings,
+          phone: schema.companyProfiles.phone,
+          license: schema.companyProfiles.license,
+          street1: schema.companyProfiles.street1,
+          street2: schema.companyProfiles.street2,
+          city: schema.companyProfiles.city,
+          state: schema.companyProfiles.state,
+          zip: schema.companyProfiles.zip,
         })
         .from(schema.companyProfiles)
         .where(isNull(schema.companyProfiles.validTo))
@@ -818,12 +875,29 @@ export const pdfRouter = router({
         }
         const docxBuffer = Buffer.concat(chunks);
 
+        const companyAddressParts = [companyProfile?.street1, companyProfile?.city, companyProfile?.state, companyProfile?.zip].filter(Boolean);
         const realData: Record<string, string> = {
           "company.name": companyName,
+          "company.phone": companyProfile?.phone ?? "",
+          "company.license": companyProfile?.license ?? "",
+          "company.address": companyAddressParts.length > 0 ? companyAddressParts.join(", ") : "",
+          "company.street1": companyProfile?.street1 ?? "",
+          "company.street2": companyProfile?.street2 ?? "",
+          "company.city": companyProfile?.city ?? "",
+          "company.state": companyProfile?.state ?? "",
+          "company.zip": companyProfile?.zip ?? "",
           "company.primaryColor": "#3B5BDB",
           "project.name": pdfData.projectName,
-          "project.address": pdfData.projectAddress,
           "project.jobNumber": project.jobNumber ?? "",
+          "project.clientName": customer
+            ? (customer.companyName ?? customer.contactName)
+            : "",
+          "project.address": pdfData.projectAddress,
+          "project.street1": project.street1 ?? "",
+          "project.street2": project.street2 ?? "",
+          "project.city": project.city ?? "",
+          "project.state": project.state ?? "",
+          "project.zip": project.zip ?? "",
           "doc.applicationNumber": String(pdfData.applicationNumber ?? ""),
           "doc.periodStart": pdfData.periodFrom,
           "doc.periodEnd": pdfData.periodTo,
@@ -914,6 +988,7 @@ export const pdfRouter = router({
           name: schema.projects.name,
           jobNumber: schema.projects.jobNumber,
           street1: schema.projects.street1,
+          street2: schema.projects.street2,
           city: schema.projects.city,
           state: schema.projects.state,
           zip: schema.projects.zip,
@@ -955,6 +1030,13 @@ export const pdfRouter = router({
       const [companyProfile] = await db
         .select({
           documentNamingSettings: schema.companyProfiles.documentNamingSettings,
+          phone: schema.companyProfiles.phone,
+          license: schema.companyProfiles.license,
+          street1: schema.companyProfiles.street1,
+          street2: schema.companyProfiles.street2,
+          city: schema.companyProfiles.city,
+          state: schema.companyProfiles.state,
+          zip: schema.companyProfiles.zip,
         })
         .from(schema.companyProfiles)
         .where(isNull(schema.companyProfiles.validTo))
@@ -1026,12 +1108,27 @@ export const pdfRouter = router({
         }
         const docxBuffer = Buffer.concat(chunks);
 
+        const companyAddressParts = [companyProfile?.street1, companyProfile?.city, companyProfile?.state, companyProfile?.zip].filter(Boolean);
         const realData: Record<string, string> = {
           "company.name": companyName,
+          "company.phone": companyProfile?.phone ?? "",
+          "company.license": companyProfile?.license ?? "",
+          "company.address": companyAddressParts.length > 0 ? companyAddressParts.join(", ") : "",
+          "company.street1": companyProfile?.street1 ?? "",
+          "company.street2": companyProfile?.street2 ?? "",
+          "company.city": companyProfile?.city ?? "",
+          "company.state": companyProfile?.state ?? "",
+          "company.zip": companyProfile?.zip ?? "",
           "company.primaryColor": "#3B5BDB",
           "project.name": pdfData.projectName,
-          "project.address": pdfData.projectAddress,
           "project.jobNumber": project.jobNumber ?? "",
+          "project.clientName": "",
+          "project.address": pdfData.projectAddress,
+          "project.street1": project.street1 ?? "",
+          "project.street2": project.street2 ?? "",
+          "project.city": project.city ?? "",
+          "project.state": project.state ?? "",
+          "project.zip": project.zip ?? "",
           "doc.rfqNumber": String(pdfData.rfqNumber ?? ""),
           "doc.rfqTitle": String(pdfData.rfqTitle ?? ""),
           "doc.submissionDeadline": String(pdfData.dueDate ?? ""),
