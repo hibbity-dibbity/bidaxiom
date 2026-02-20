@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { User, Users, Building2, Plug, Activity, Trash2, FileText } from "lucide-react";
+import { User, Users, Building2, Plug, Activity, Trash2, FileText, LayoutTemplate } from "lucide-react";
 
 /**
  * Settings landing page.
@@ -106,6 +106,19 @@ export default function SettingsPage() {
           </div>
           <p className="text-sm text-muted-foreground">
             Configure how generated PDFs are named with custom templates
+          </p>
+        </Link>
+
+        <Link
+          href="/settings/document-templates"
+          className="bg-card p-6 hover:bg-muted/50 transition-colors"
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <LayoutTemplate className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold">Document Templates</h2>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Upload branded Word or Excel templates to replace built-in PDF layouts
           </p>
         </Link>
       </div>
