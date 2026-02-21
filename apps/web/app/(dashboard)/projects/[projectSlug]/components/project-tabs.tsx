@@ -57,7 +57,7 @@ export function ProjectTabs({ projectSlug, projectMode, lifecyclePhase }: Projec
 
   const prefetchDocuments = () => {
     if (!projectId) return;
-    utils.document.list.prefetch({ projectId, folderId: null });
+    utils.document.listUnified.prefetch({ projectId });
   };
 
   const prefetchBudget = () => {
@@ -89,8 +89,8 @@ export function ProjectTabs({ projectSlug, projectMode, lifecyclePhase }: Projec
 
   const prefetchInvoices = () => {
     if (!projectId) return;
-    utils.invoice.getARSummary.prefetch({ projectId });
-    utils.invoice.getAPSummary.prefetch({ projectId });
+    utils.invoiceTracking.getARAgingReport.prefetch({ projectId });
+    utils.invoiceTracking.getAPAgingReport.prefetch({ projectId });
   };
 
   const prefetchRFQs = () => {
