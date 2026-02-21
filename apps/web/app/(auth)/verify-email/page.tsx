@@ -103,7 +103,7 @@ export default function VerifyEmailPage() {
     <Card>
       <CardHeader>
         <div className="flex justify-center mb-4">
-          <CheckCircle2 className="h-12 w-12 text-green-500" />
+          <CheckCircle2 className="h-12 w-12 text-financial-positive" />
         </div>
         <CardTitle className="text-center">Email Verified!</CardTitle>
         <CardDescription className="text-center">

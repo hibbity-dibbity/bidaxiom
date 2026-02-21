@@ -177,7 +177,7 @@ function MfaSetupPage() {
       <Card>
         <CardHeader>
           <div className="flex justify-center mb-4">
-            <CheckCircle2 className="h-12 w-12 text-green-500" />
+            <CheckCircle2 className="h-12 w-12 text-financial-positive" />
           </div>
           <CardTitle className="text-center">Save Your Backup Codes</CardTitle>
           <CardDescription className="text-center">
@@ -276,7 +276,7 @@ function MfaSetupPage() {
               <p className="text-sm text-muted-foreground mb-4">
                 Use an authenticator app like Google Authenticator, Authy, or 1Password to scan this QR code.
               </p>
-              <div className="flex justify-center bg-white p-4 rounded-lg">
+              <div className="flex justify-center bg-card p-4 rounded-lg">
                 <img
                   src={setupData.qrCodeDataUrl}
                   alt="MFA QR Code"

@@ -86,7 +86,7 @@ export default function SignUpPage() {
       <Card>
         <CardHeader>
           <div className="flex justify-center mb-4">
-            <CheckCircle2 className="h-12 w-12 text-green-500" />
+            <CheckCircle2 className="h-12 w-12 text-financial-positive" />
           </div>
           <CardTitle className="text-center">Check Your Email</CardTitle>
           <CardDescription className="text-center">
@@ -187,7 +187,7 @@ export default function SignUpPage() {
                 {requirements.map((req, i) => (
                   <div
                     key={i}
-                    className={req.met ? "text-green-600" : "text-muted-foreground"}
+                    className={req.met ? "text-financial-positive" : "text-muted-foreground"}
                   >
                     {req.met ? "✓" : "○"} {req.text}
                   </div>
