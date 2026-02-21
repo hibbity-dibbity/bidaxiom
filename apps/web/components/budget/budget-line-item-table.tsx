@@ -265,9 +265,9 @@ export function BudgetLineItemTable({ projectId }: BudgetLineItemTableProps) {
                   </TableCell>
                   <TableCell className="text-center">
                     {item.isLocked ? (
-                      <Lock className="h-4 w-4 text-red-600 mx-auto" />
+                      <Lock className="h-4 w-4 text-financial-negative mx-auto" />
                     ) : (
-                      <Unlock className="h-4 w-4 text-green-600 mx-auto" />
+                      <Unlock className="h-4 w-4 text-financial-positive mx-auto" />
                     )}
                   </TableCell>
                   <TableCell className="text-right">
