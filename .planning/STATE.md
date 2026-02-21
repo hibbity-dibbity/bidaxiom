@@ -59,6 +59,10 @@ Recent decisions relevant to v1.6:
 - [41-03]: Winning bid highlight in bid-comparison-table uses text-financial-positive on amount text only (not row background) — financial tokens on number text only
 - [41-03]: rfq-form.tsx validation errors use text-destructive (form errors, not financial values — different semantic than text-financial-negative)
 - [41-03]: Phase lifecycle badge variants follow: opportunity/estimating/submitted→pending, awarded→approved, active/substantial_completion→active, closed→completed, warranty→warning, archived→cancelled
+- [41-05]: typeColors bg-amber-500 (internal CO type) replaced with bg-orange-500 — amber falls in the design token audit pattern and must not appear in Group F files
+- [41-05]: aging-report-table 31-60 and 61-90 day buckets use text-muted-foreground — severity gradient: current=financial-positive, mid-range=muted-foreground, severely-overdue=financial-negative
+- [41-05]: VISUAL-03 pattern — canCurrentUserApprove queried at detail level; dialog state flows down as props to ApprovalPanel; action button triggers live in page headers
+- [41-05]: G702Form is now display-only; Submit/Mark Paid mutations lifted to paymentAppId page.tsx
 
 ### Pending Todos
 
@@ -72,5 +76,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Completed 41-06-PLAN.md — Group G 15-file token migration (estimates workflow, integration cards, shared components, dashboard). All Wave 2 plans complete (41-02 through 41-06).
+Stopped at: Completed 41-05-PLAN.md — Group F (change order + payment app) token migration + VISUAL-03. All Wave 2 plans complete (41-02 through 41-06).
 Resume file: None
