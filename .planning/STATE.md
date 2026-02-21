@@ -2,19 +2,18 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-18)
+See: .planning/PROJECT.md (updated 2026-02-21)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 40 complete (all 4 plans done, UAT approved)
+**Current focus:** v1.5 complete — archived Feb 21, 2026. Ready for next milestone (/gsd:new-milestone).
 
 ## Current Position
 
-Phase: 40-document-system-redesign (complete)
-Plan: 04 complete — Prefetch updated; UAT approved all 7 checks; Phase 40 fully verified
-Status: 40-04 complete — SUMMARY at .planning/phases/40-document-system-redesign/40-04-SUMMARY.md
-Last activity: 2026-02-21 — 40-04 complete: UAT passed; 3 inline fixes (Select error, upload button, bulk-download CORS proxy)
+Milestone: v1.5 COMPLETE — all 5 phases (36-40), 27 plans shipped and verified
+Status: Milestone archived — .planning/milestones/v1.5-ROADMAP.md + v1.5-REQUIREMENTS.md + v1.5-MILESTONE-AUDIT.md
+Last activity: 2026-02-21 — v1.5 milestone archived; PROJECT.md evolved; ROADMAP.md reorganized; git tag v1.5 created
 
-Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100%
+Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100% | v1.5: [██████████] 100%
 
 ## Performance Metrics
 
@@ -72,7 +71,7 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 
 ### Decisions
 
-Decisions logged in PROJECT.md Key Decisions table (full log, 35 phases).
+Decisions logged in PROJECT.md Key Decisions table (full log, 40 phases, v1.5 complete).
 - [Phase 36]: lifecyclePhase defaults to opportunity; projectMode defaults to gc_advanced for backward compat with existing tenants
 - [Phase 36-02]: isValidTransition uses index-based comparison (LIFECYCLE_ORDER.indexOf) for O(1) ordinal arithmetic
 - [Phase 36-02]: tryAutoAdvance silently returns (no throw) when project is already at or past target phase
@@ -167,5 +166,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Completed 40-03-PLAN.md — unified document table UI complete; Phase 40 done; ready for UAT.
+Stopped at: v1.5 milestone complete — all phases verified, milestone archived, git tag created.
 Resume file: None

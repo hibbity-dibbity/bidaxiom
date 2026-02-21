@@ -65,3 +65,13 @@
 
 ---
 
+
+## v1.5 Document Engine (Shipped: 2026-02-21)
+
+**Phases completed:** 34 phases, 163 plans, 55 tasks
+
+**Key accomplishments:**
+- Customer and subcontractor forms using PhoneInput and AddressInput with proper React Hook Form integration
+
+---
+

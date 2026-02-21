@@ -7,7 +7,7 @@
 - ✅ **v1.2 Job Number System Fixes & Reliability** — Phases 20-24 (shipped Feb 17, 2026)
 - ✅ **v1.3 Polish & Gap Closure** — Phases 25-29 (shipped Feb 18, 2026)
 - ✅ **v1.4 Rebranding & UX Upgrades** — Phases 30-35 (shipped Feb 18, 2026)
-- 📋 **v1.5 Lifecycle, PDF Generation & Document Redesign** — Phases 36-40 (planned)
+- ✅ **v1.5 Lifecycle, PDF Generation & Document Redesign** — Phases 36-40 (shipped Feb 21, 2026)
 
 ## Shipped Milestones
 
@@ -101,150 +101,19 @@
 
 </details>
 
----
+<details>
+<summary>✅ v1.5 Lifecycle, PDF Generation & Document Redesign (Phases 36-40) — SHIPPED Feb 21, 2026</summary>
 
-## Active Milestone
+**Delivered:** 9-phase lifecycle state machine, Simple/GC project modes, project deletion with safeguards, PDF generation for all 4 document types, custom .docx/.xlsx template engine with field mapping, and unified flat document table.
 
-<details open>
-<summary>📋 v1.5 Lifecycle, PDF Generation & Document Redesign (Phases 36-40) — IN PROGRESS</summary>
+**Phases:**
+- [x] Phase 36: Project Lifecycle State Machine + Simple/GC Mode (7 plans) — 9-phase state machine, auto-advance, audit log, mode-aware feature visibility
+- [x] Phase 37: Project Deletion with Safeguards (2 plans) — Admin deletion, lifecycle guards, soft-delete, 30-day recovery
+- [x] Phase 38: PDF Generation + Document Naming (8 plans) — Proposal/CO/G702/RFQ PDFs, company branding, naming conventions
+- [x] Phase 39: Custom Template Import + Field Mapping (6 plans) — .docx/.xlsx upload, field detection, mapping UI, preview, activation
+- [x] Phase 40: Document System Redesign (4 plans) — Unified flat table, nuqs filters, bulk ops, workflow navigation
 
-**Goal:** Replace the flat project status model with a 9-phase state machine, add Simple vs GC complexity modes, generate professional PDF documents from within the app, redesign the document management system, and add project deletion.
-
-**Build order is strictly sequential.** Phase 36 (lifecycle foundation) is a hard prerequisite for all downstream phases. Phase 38 (PDF generation) must be stable before Phase 39 (custom templates). Phase 40 (document redesign) depends on the documentType taxonomy finalized in Phases 38-39.
-
-**Requirements coverage:** 30/30 v1.5 requirements mapped across 5 phases.
-
----
-
-### Phase 36: Project Lifecycle State Machine + Simple/GC Mode
-
-**Goal:** Every project in the system has a verified lifecycle phase and a complexity mode. The old flat status field is replaced.
-
-**Depends on:** Phase 35 (v1.4 complete)
-
-**Requirements:** LIFE-01, LIFE-02, LIFE-03, LIFE-04, LIFE-05, LIFE-06, MODE-01, MODE-02, MODE-03, MODE-04
-
-**Plans:** 7/7 plans complete
-
-Plans:
-- [ ] 36-01-PLAN.md — Shared types + Drizzle schema (enums, LIFECYCLE_ORDER, projectLifecycleTransitions table)
-- [ ] 36-02-PLAN.md — Database migration + lifecycle state machine logic module
-- [ ] 36-03-PLAN.md — API mutations (transitionLifecyclePhase, setMode, getTransitionHistory, auto-advance hook)
-- [ ] 36-04-PLAN.md — LifecyclePhaseBadge component + TransitionHistory feed + project header update
-- [ ] 36-05-PLAN.md — Project list phase column + mode dropdown in project creation form
-- [ ] 36-06-PLAN.md — Mode-aware tabs (Simple hides SOV/RFQs) + billing category in Simple estimates + lien waivers hidden in Simple mode
-- [ ] 36-07-PLAN.md — Phase-conditional feature gating (LIFE-06): isFeatureAvailableInPhase helper, Change Orders Active+ guard, Estimates edit-lock post-Estimating
-
-**Success Criteria** (what must be TRUE when this phase is complete):
-1. Every project displays a color-coded lifecycle phase badge (Opportunity / Estimating / Submitted / Awarded / Active / Substantial Completion / Closed / Warranty / Archived) in the project list and project header — the old status field is gone from all UI surfaces.
-2. An admin can manually advance a project to the next lifecycle phase via a phase transition action; forward-only transitions are enforced, and a backward transition requires an admin override with an explicit reason.
-3. The system automatically advances projects through lifecycle phases based on system events (e.g., first estimate created moves the project from Opportunity to Estimating); auto-advance triggers are audited identically to manual transitions.
-4. Every phase transition — manual or auto-triggered — writes an audit log entry recording the user or system actor, old phase, new phase, reason, and timestamp.
-5. When creating a new project, the user selects Simple or GC/Advanced mode; the mode is visible as a read-only badge after the project reaches Active phase, and mode-appropriate features are shown or hidden (Simple hides CSI breakdown, SOV builder, subcontractor bid management, and lien waivers).
-6. All existing projects are migrated to the nearest equivalent lifecycle phase and assigned GC/Advanced mode, with zero data loss and a recoverable rollback path.
-
----
-
-### Phase 37: Project Deletion with Safeguards
-
-**Goal:** Admins can permanently remove projects that have not progressed to financial activity, with a soft-delete safety net.
-
-**Depends on:** Phase 36 (lifecycle phase required to gate deletion)
-
-**Requirements:** DEL-01, DEL-02, DEL-03, DEL-04, DEL-05
-
-**Plans:** 2/2 plans complete
-
-Plans:
-- [ ] 37-01-PLAN.md — DB schema columns, migration, shared types, 5 new tRPC procedures (checkDeletable, softDelete, restore, listDeleted, acknowledgeRestore)
-- [ ] 37-02-PLAN.md — DeleteProjectButton compound component, table/header integration, Deleted Projects settings page
-
-**Success Criteria** (what must be TRUE when this phase is complete):
-1. An admin sees a "Delete Project" action on both the project detail page and the projects table row menu; non-admin users see no delete option on either surface.
-2. Attempting to delete a project in Awarded, Active, Substantial Completion, Closed, or Warranty phase — or any project with existing change orders, payment applications, or committed costs — produces a clear blocking error message explaining why deletion is prevented.
-3. A deletable project (Opportunity, Estimating, or Submitted phase with no financial records) triggers a confirmation dialog that requires the user to enter a reason for deletion before the delete action is enabled.
-4. Deleted projects are soft-deleted (deleted_at and deleted_by timestamps set); the project disappears from all standard views, an admin recovery path exists for 30 days, and all deletion actions appear in the audit trail.
-
----
-
-### Phase 38: PDF Generation + Document Naming
-
-**Goal:** Users can generate a professional, branded PDF for any Proposal, Change Order, Payment Application, or RFQ directly from the relevant section of a project — and every generated document receives a consistent, auto-numbered filename.
-
-**Depends on:** Phase 36 (lifecycle state referenced in PDFs; phase gates which doc types are generatable)
-
-**Requirements:** PDF-01, PDF-02, PDF-03, PDF-04, PDF-05, PDF-06, NAME-01, NAME-02, NAME-03, NAME-04
-
-**Plans:** 8/8 plans complete
-
-Plans:
-- [x] 38-01-PLAN.md — DB schema (documentNamingCounters table + documentNamingSettings JSONB on companyProfiles), Phase 38 migration, shared types (completed 2026-02-20)
-- [ ] 38-02-PLAN.md — PDF engine (Puppeteer singleton), shared generation utilities (S3 upload, doc library insert, atomic counter), pdf tRPC router shell
-- [ ] 38-03-PLAN.md — Proposal PDF: HTML template + pdf.generateProposal procedure + "Generate Proposal PDF" button in estimates UI
-- [ ] 38-04-PLAN.md — Change Order PDF: HTML template + pdf.generateChangeOrder procedure + "Generate PDF" button on CO detail page
-- [ ] 38-05-PLAN.md — Payment Application PDF: AIA G702/G703 HTML template + pdf.generatePaymentApp procedure + button
-- [ ] 38-06-PLAN.md — RFQ PDF: HTML template + pdf.generateRfq procedure + "Generate RFQ PDF" button on RFQ detail page
-- [ ] 38-07-PLAN.md — Document naming settings UI (/settings/document-naming): per-type template inputs, variable chips, live preview, company.updateDocumentNaming
-- [ ] 38-08-PLAN.md — Compilation checks + human end-to-end verification of all 4 PDF types and naming settings
-
-**Success Criteria** (what must be TRUE when this phase is complete):
-1. From the Estimates section, clicking "Generate Proposal PDF" produces a downloadable PDF containing company logo, project name and address, estimate line items with quantities and rates, subtotals, total, and signature blocks — using the company's brand colors if configured.
-2. From the Change Orders section, clicking "Generate PDF" on an approved or pending CO produces a downloadable PDF containing project name/number, CO number, description, cost breakdown by labor/materials, contract sum impact, schedule impact, and AIA-format signature blocks.
-3. From the Payment Applications section, clicking "Generate PDF" produces an AIA G702/G703-compliant document auto-populated from the payment application record, including owner/contractor/architect project info, application number, period dates, contract price, retainage percentage, amount due, and SOV breakdown by cost code.
-4. From the Bidding/Procurement section, clicking "Generate RFQ PDF" produces a downloadable PDF containing project name/address, scope items with description/qty/unit, submission deadline, and payment terms.
-5. Every generated PDF is stored in the project's document library immediately upon generation and is accessible for download from the document list without re-generating.
-6. In Company Settings, an admin can configure a naming format per document type using supported variables ({JOB-NUMBER}, {PROJECT-NAME}, {DOC-TYPE}, {SEQ}, {YEAR}, {MONTH}, {DATE}); a live preview shows the resulting filename; the sequence counter auto-increments atomically on each generation; documents generated without a custom convention use the default {DOC-TYPE}-{JOB-NUMBER}-{DATE} pattern.
-
----
-
-### Phase 39: Custom Template Import + Field Mapping
-
-**Goal:** A company admin can upload a branded Word or Excel template, map its merge fields to BIDAXIOM data, and activate it as the default for a document type — replacing the built-in layout with the company's own design.
-
-**Depends on:** Phase 38 (core PDF pipeline must be stable before extending to arbitrary user templates)
-
-**Requirements:** TMPL-01, TMPL-02, TMPL-03, TMPL-04, TMPL-05, TMPL-06
-
-**Plans:** 6/6 plans complete
-
-Plans:
-- [ ] 39-01-PLAN.md — DB schema (document_templates table + documents.templateId FK), migration, shared types (DetectedField, FieldMapping, BIDAXIOM_FIELD_KEYS), buildTemplateStorageKey
-- [ ] 39-02-PLAN.md — Field extraction utilities (extract.ts: parseDocxFields via docxtemplater InspectModule, parseXlsxFields via exceljs); custom HTML renderer (render.ts: buildCustomTemplateHtml); preview fixture data (fixtures.ts)
-- [ ] 39-03-PLAN.md — templateRouter (7 procedures: getUploadUrl, registerAndExtract, updateMappings, generatePreview, setActive, listByDocType, deleteTemplate); extend uploadPdfAndSave with templateId; update all 4 pdfRouter generate* to check active custom template
-- [ ] 39-04-PLAN.md — Document Templates settings UI (/settings/document-templates): list/upload/toggle page + split-view field mapping page (amber highlights, grouped combobox, progress counter, save-always, preview PDF button)
-- [ ] 39-05-PLAN.md — Pre-UAT TypeScript/structural checks + human end-to-end verification of full template workflow
-
-**Success Criteria** (what must be TRUE when this phase is complete):
-1. An admin can upload a .docx or .xlsx file in Company Settings → Document Templates for any of the 4 document types; the system automatically detects all merge fields (using <<angle_bracket>> syntax) present in the file and presents them in a visual split-view mapping interface.
-2. The field mapping interface shows a progress indicator ("X / Y fields mapped"); save is always allowed — unmapped fields are auto-ignored with a warning toast summarizing which fields were removed.
-3. After field mapping, the admin can generate a preview PDF using hybrid data (real company branding + fixture project/document data); unmapped fields render as [UNMAPPED]; preview is available at any time, not gated on completion.
-4. A company can have one active template per document type; activating a template via toggle switch (instant, no dialog) deactivates all others of the same type; previously generated documents retain a reference to the template that produced them via template_id FK (no version history UI).
-
----
-
-### Phase 40: Document System Redesign
-
-**Goal:** The project Documents section is a unified flat table where every document — generated PDFs, uploaded files, RFIs, submittals, transmittals — is discoverable by type, status, date, or author without navigating folder trees.
-
-**Depends on:** Phases 38-39 (documentType taxonomy must be finalized before existing documents are migrated to it)
-
-**Requirements:** DOC-01, DOC-02, DOC-03, DOC-04, DOC-05
-
-**Plans:** 4/4 plans complete
-
-Plans:
-- [ ] 40-01-PLAN.md — document.listUnified tRPC query + document.sendByEmail mutation + sendDocumentEmail helper + POST /api/documents/bulk-download REST endpoint
-- [ ] 40-02-PLAN.md — Missing workflow detail route at /projects/[slug]/workflows/[workflowId]/page.tsx
-- [ ] 40-03-PLAN.md — 6 new UI components (unified-document-table, document-filters, document-row-menu, bulk-action-bar, send-document-dialog, delete-confirm-dialog) + replace documents page
-- [ ] 40-04-PLAN.md — Update project-tabs.tsx prefetch + human end-to-end UAT (7 checks, all 5 DOC requirements)
-
-**Success Criteria** (what must be TRUE when this phase is complete):
-1. The project Documents section presents all documents (RFIs, submittals, transmittals, change orders, payment applications, proposals, and uploaded files) in a single flat table — the folder tree and tab navigation are gone.
-2. Each table row displays: document name, type badge, status badge (Draft / Submitted / Approved / Rejected), related entity (e.g., "CO-005"), created by, created date, and a download link.
-3. The table supports URL-state filters (via nuqs) for document type, status, date range, and author; applying a type filter reproduces the previous per-tab experience (e.g., filtering by "Submittal" shows all submittals).
-4. Clicking a row for an RFI, Submittal, or Transmittal opens the full existing workflow detail view — approval chains, revisions, and comments are fully preserved and accessible from the flat table.
-
----
+**Archive:** [.planning/milestones/v1.5-ROADMAP.md](./milestones/v1.5-ROADMAP.md)
 
 </details>
 

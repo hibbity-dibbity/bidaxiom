@@ -10,13 +10,20 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 
 ## Current State
 
-**Shipped:** v1.0–v1.4 (all milestones complete as of Feb 18, 2026)
+**Shipped:** v1.0–v1.5 (all milestones complete as of Feb 21, 2026)
 
 **What's built:**
 - Complete project financial lifecycle (RFQs → bidding → budget → change orders → payment apps)
+- 9-phase project lifecycle state machine (Opportunity → Archived) with auto-advance and audit log
+- Simple vs GC/Advanced project complexity modes with mode-aware feature visibility
+- Project deletion with lifecycle guards, soft-delete, and 30-day admin recovery window
+- PDF generation for proposals, change orders, AIA G702/G703 payment apps, and RFQs
+- Custom branded PDF/Word/Excel template import with visual field mapping (docxtemplater+mammoth pipeline)
+- Document naming conventions with per-company sequence counters
+- Unified flat document table — all document types (PDFs, uploads, RFIs, submittals, transmittals) in one view with nuqs URL-state filters
 - Multi-tenant auth with custom JWT, MFA, and organization management
 - QuickBooks bi-directional integration for projects, invoices, and bills
-- Document management with workflows (RFIs, submittals, transmittals)
+- Document workflows (RFIs, submittals, transmittals) with approval chains
 - Reporting & analytics with custom builder and scheduled delivery
 - Calendar integration (Google, Microsoft) with bi-directional sync
 - Enterprise-grade UI with dark mode, global ⌘K search (projects, customers, estimates, subcontractors)
@@ -31,9 +38,9 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 - Consolidated account settings (/settings/account) with password change and MFA management
 - Consistent empty states, skeleton loading, and global API error toast handling
 
-**Tech stack:** Next.js 14, Fastify, tRPC, Drizzle ORM, PostgreSQL (schema-per-tenant), Redis, MinIO (S3), Tailwind CSS
+**Tech stack:** Next.js 14, Fastify, tRPC, Drizzle ORM, PostgreSQL (schema-per-tenant), Redis, MinIO (S3), Tailwind CSS, Puppeteer, docxtemplater, LibreOffice (optional), archiver
 
-**Codebase:** ~155,000+ lines of TypeScript across 35 phases
+**Codebase:** ~164,000+ lines of TypeScript across 40 phases
 
 ## Requirements
 
@@ -92,22 +99,20 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 - ✓ CurrencyInput component — $X,XXX.XX format on blur across 7 amount fields — v1.4
 - ✓ Subcontractors in ⌘K global search — "Subcontractors" CommandGroup with slug navigation — v1.4
 
+**v1.5 Project Lifecycle Redesign & Document Engine (Phases 36-40):**
+- ✓ 9-phase lifecycle state machine (Opportunity → Archived) with auto-advance on system events — v1.5
+- ✓ Simple vs GC/Advanced project complexity modes; mode locked at Active phase — v1.5
+- ✓ Phase-conditional feature gating (Change Orders active-only, estimates edit-locked post-Estimating) — v1.5
+- ✓ Project deletion with lifecycle guards, confirmation dialog, soft-delete, and 30-day recovery — v1.5
+- ✓ PDF generation for proposals, change orders, AIA G702/G703 payment apps, and RFQs — v1.5
+- ✓ Company logo + brand colors embedded in PDFs — v1.5
+- ✓ Document naming conventions with configurable template and per-company sequence counters — v1.5
+- ✓ Custom .docx/.xlsx template import with visual field mapping and preview PDF (docxtemplater+mammoth) — v1.5
+- ✓ Unified flat document table — all document types in one view with type/status/date/author filters — v1.5
+
 ### Active
 
-<!-- v1.5 Project Lifecycle Redesign & Document Engine -->
-
-**Milestone v1.5: Project Lifecycle Redesign & Document Engine** (Started: 2026-02-18)
-
-**Goal:** Replace the current flat project status model with a 9-phase state machine (Opportunity → Estimating → Submitted → Awarded → Active → Substantial Completion → Closed → Warranty → Archived), add Simple vs GC complexity modes, generate professional PDF documents from within the app, redesign the document management system, and add project deletion.
-
-**Target features:**
-- 9-phase project lifecycle state machine with full auto-advance on key system events
-- Simple mode (lump sum/draws/T&M) vs GC/Advanced mode (CSI + SOV + sub management) toggle at project creation
-- Project deletion with confirmation dialog and safeguards (prevent deletion for Awarded/Active/etc. projects)
-- PDF generation for proposals/estimates, change orders, invoices/pay apps, and RFQs with company-branded default templates
-- Document naming convention system in Company Profile (static text + job number + incremental counter)
-- Custom PDF/Word/Excel template import with visual field mapping
-- Document system redesign: flat table view with metadata filters, replacing the current folder/tab structure
+<!-- No active milestone — v1.5 complete as of Feb 21, 2026. Start next milestone with /gsd:new-milestone -->
 
 ### Out of Scope
 
@@ -126,12 +131,15 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 
 **Market:** Small-to-mid-sized commercial contractors are underserved. Enterprise tools (Procore, Sage) are expensive and complex. Smaller tools lack multi-company collaboration and financial depth. The gap is a platform that handles the full GC↔Sub lifecycle affordably.
 
-**Current status:** v1.4 shipped — full BIDAXIOM rebrand complete. Cyan-teal palette, flat design system, currency format on blur, company selector in dropdown, subcontractors in search. ~155K lines of TypeScript across 35 phases.
+**Current status:** v1.5 shipped — lifecycle state machine, project deletion, PDF generation, custom template engine, and unified document table all complete. ~164K lines of TypeScript across 40 phases.
 
 **Known technical debt:**
 - Phase 27 VERIFICATION.md never generated (UAT summary serves as substitute)
 - Sign-in page: `redirect_url` unvalidated at page level (getSafeRedirectUrl only fires at router.push time — no current exposure, defense-in-depth gap)
 - MFA `hasMfa` state refresh lag after `disableMfa` — shows stale "Enabled" until re-login/refresh
+- `type UnifiedDocument = any` in 3 document components (deferred type safety — tRPC AppRouter inference not yet wired for `listUnified`)
+- `softDelete` (project deletion) does not re-validate lifecycle phase independently — relies on UI calling `checkDeletable` first (defense-in-depth gap only)
+- `billingCategory` DB column deferred; Phase 36 shows Cost Type (UI-only bridge) — full billing category deferred to v2.0
 
 **Go-to-market:** Both GCs and subs need to find value from day one. GCs use the platform to issue RFQs and manage project financials. Subs use it to respond to RFQs and manage their own projects/bids. Free sub accounts (profile + RFQ response + limited projects) create network effects.
 
@@ -178,6 +186,16 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 | CompanySwitcher deleted, not hidden (Phase 33) | Merged into UserMenu; no dead code left | ✓ Good |
 | CurrencyInput fires onChange on blur only (Phase 34) | Format-on-blur chosen over live masking; use-mask-input tried and reverted | ✓ Good |
 | Slug backfill migration required for subcontractor search (Phase 35) | isNotNull filter excludes null slugs; add-entity-slugs.ts one-time migration resolves it | ✓ Good |
+| lifecyclePhase defaults to opportunity; projectMode defaults to gc_advanced for existing tenants (Phase 36) | Backward compatibility — existing projects use all advanced features; new projects can opt into Simple | ✓ Good |
+| PHASE_FEATURE_GATES uses inclusive allowed-phase lists; estimates.create unguarded (Phase 36) | Permissive-by-default prevents over-blocking; estimates.create unguarded to preserve auto-advance flow | ✓ Good |
+| checkDeletable checks all blocking factors simultaneously returning complete reasons array (Phase 37) | Single pre-flight returns all blockers at once — better UX than sequential checks | ✓ Good |
+| listDeleted lazy-purges rows older than 30 days inline before SELECT (Phase 37) | No background job needed — purge happens naturally on every admin view of deleted projects | ✓ Good |
+| Puppeteer (headless Chrome) as PDF renderer; HTML builder for all 4 doc types (Phase 38) | Avoids native dependencies (wkhtmltopdf, WeasyPrint); pure Node.js; consistent with Docker deployment | ✓ Good |
+| documentNamingCounters company-scoped (not project-scoped); nullable JSONB for settings (Phase 38) | Sequential PDF numbers are company-wide; null = use platform default naming pattern | ✓ Good |
+| docxtemplater+mammoth pipeline for custom template rendering; LibreOffice optional (Phase 39) | LibreOffice preserves Word formatting better; mammoth is fallback — no mandatory native install | ✓ Good |
+| Partial unique index (doc_type WHERE is_active=true) enforces one-active-template-per-type at DB level (Phase 39) | DB-level constraint cheaper and more reliable than application-level enforcement | ✓ Good |
+| listUnified post-query type filter; author options from project.getBySlug teamMembers (Phase 40) | React Query deduplicates teamMembers request; post-query filter avoids complex SQL for 8 document types | ✓ Good |
+| Bulk-download proxied through Next.js API route to eliminate CORS (Phase 40) | Direct browser→Fastify POST blocked by CORS preflight; server-side proxy consistent with tRPC pattern | ✓ Good |
 
 ---
-*Last updated: 2026-02-18 — v1.5 milestone started*
+*Last updated: 2026-02-21 — v1.5 milestone complete*
