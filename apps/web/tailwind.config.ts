@@ -70,7 +70,11 @@ const config: Config = {
   			'brand-slate': {
   				DEFAULT: 'hsl(var(--brand-slate))',
   				foreground: 'hsl(var(--brand-slate-foreground))',
-  			}
+  			},
+  			// Financial semantic tokens
+  			'financial-positive': 'hsl(var(--financial-positive))',
+  			'financial-negative': 'hsl(var(--financial-negative))',
+  			'financial-pending': 'hsl(var(--financial-pending))',
   		},
   		borderRadius: {
   			lg: 'var(--radius)',
