@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-21)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.6 UX Redesign & Polish — Phase 41: Design Foundation (ready to plan)
+**Current focus:** v1.6 UX Redesign & Polish — Phase 41: Design Foundation (in progress)
 
 ## Current Position
 
 Phase: 41 of 46 (Design Foundation)
-Plan: —
-Status: Ready to plan
-Last activity: 2026-02-21 — v1.6 roadmap created; 6 phases defined, 27/27 requirements mapped
+Plan: 01 complete (financial tokens + packages + canonical recipes)
+Status: In progress
+Last activity: 2026-02-21 — 41-01 complete: financial CSS tokens, 3 packages installed, Canonical Class Recipes documented
 
-Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100% | v1.5: [██████████] 100% | v1.6: [░░░░░░░░░░] 0%
+Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100% | v1.5: [██████████] 100% | v1.6: [█░░░░░░░░░] 4%
 
 ## Performance Metrics
 
@@ -43,6 +43,9 @@ Recent decisions relevant to v1.6:
 - [v1.6 research]: 52 TSX files in apps/web have hardcoded palette color classes without dark: companions — Phase 41 must fix systemically; grep audit required in every PR
 - [v1.6 research]: React Hook Form Controller show/hide must use CSS visibility (never conditional JS mounting) — conditional wrapper causes unmount+remount, resetting field values to undefined; useForm<any> in change-order-form.tsx hides this from TypeScript
 - [v1.6 research]: project-tabs.tsx uses `<Link href scroll={false}>` for tab navigation — must NOT be replaced with Radix Tabs state; preserves back button, URL sharing, and sectionPrefetchMap prefetch
+- [41-01]: Financial tokens use flat string format in tailwind.config.ts (no nested object) — no foreground variant needed for these semantic colors
+- [41-01]: motion v12 import path is 'motion/react' not 'framer-motion' — documented in COMPONENT-ORGANIZATION.md Canonical Class Recipes
+- [41-01]: Dark mode financial tokens use lighter palette steps (400) vs light mode (600) for WCAG contrast on dark backgrounds
 
 ### Pending Todos
 
@@ -56,5 +59,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-21
-Stopped at: v1.6 roadmap created — Phase 41 ready to plan. Next step: `/gsd:plan-phase 41`
+Stopped at: Completed 41-01-PLAN.md — financial tokens + packages + canonical recipes. Next step: Execute 41-02 through 41-06 (Wave 2 parallel plans).
 Resume file: None
