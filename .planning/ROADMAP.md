@@ -230,7 +230,7 @@ Plans:
 
 **Requirements:** DOC-01, DOC-02, DOC-03, DOC-04, DOC-05
 
-**Plans:** 4 plans
+**Plans:** 4/4 plans complete
 
 Plans:
 - [ ] 40-01-PLAN.md — document.listUnified tRPC query + document.sendByEmail mutation + sendDocumentEmail helper + POST /api/documents/bulk-download REST endpoint
@@ -263,4 +263,4 @@ Plans:
 | 37 | v1.5 | Complete    | 2026-02-19 | - |
 | 38 | v1.5 | Complete    | 2026-02-20 | - |
 | 39 | v1.5 | Complete    | 2026-02-21 | - |
-| 40 | v1.5 | 0/4 | Not started | - |
+| 40 | v1.5 | Complete    | 2026-02-21 | - |
