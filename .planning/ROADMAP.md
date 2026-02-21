@@ -230,15 +230,19 @@ Plans:
 
 **Requirements:** DOC-01, DOC-02, DOC-03, DOC-04, DOC-05
 
-**Estimated plans:** ~4
+**Plans:** 4 plans
+
+Plans:
+- [ ] 40-01-PLAN.md — document.listUnified tRPC query + document.sendByEmail mutation + sendDocumentEmail helper + POST /api/documents/bulk-download REST endpoint
+- [ ] 40-02-PLAN.md — Missing workflow detail route at /projects/[slug]/workflows/[workflowId]/page.tsx
+- [ ] 40-03-PLAN.md — 6 new UI components (unified-document-table, document-filters, document-row-menu, bulk-action-bar, send-document-dialog, delete-confirm-dialog) + replace documents page
+- [ ] 40-04-PLAN.md — Update project-tabs.tsx prefetch + human end-to-end UAT (7 checks, all 5 DOC requirements)
 
 **Success Criteria** (what must be TRUE when this phase is complete):
 1. The project Documents section presents all documents (RFIs, submittals, transmittals, change orders, payment applications, proposals, and uploaded files) in a single flat table — the folder tree and tab navigation are gone.
 2. Each table row displays: document name, type badge, status badge (Draft / Submitted / Approved / Rejected), related entity (e.g., "CO-005"), created by, created date, and a download link.
 3. The table supports URL-state filters (via nuqs) for document type, status, date range, and author; applying a type filter reproduces the previous per-tab experience (e.g., filtering by "Submittal" shows all submittals).
 4. Clicking a row for an RFI, Submittal, or Transmittal opens the full existing workflow detail view — approval chains, revisions, and comments are fully preserved and accessible from the flat table.
-
-**Plans:** TBD
 
 ---
 
@@ -259,4 +263,4 @@ Plans:
 | 37 | v1.5 | Complete    | 2026-02-19 | - |
 | 38 | v1.5 | Complete    | 2026-02-20 | - |
 | 39 | v1.5 | Complete    | 2026-02-21 | - |
-| 40 | v1.5 | 0/~4 | Not started | - |
+| 40 | v1.5 | 0/4 | Not started | - |
