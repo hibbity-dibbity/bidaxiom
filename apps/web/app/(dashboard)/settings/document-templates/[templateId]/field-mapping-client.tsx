@@ -124,7 +124,7 @@ function FieldReferenceSidebar({ docType }: FieldReferenceSidebarProps) {
                     <tbody>
                       {section.items.map((item) => (
                         <tr key={item.key} className="border-b border-border/40 last:border-0">
-                          <td className="py-1 pr-4 font-mono text-amber-700">
+                          <td className="py-1 pr-4 font-mono text-muted-foreground">
                             {"<<"}
                             {item.key.split(".")[1]}
                             {">>"}
@@ -338,10 +338,10 @@ export function FieldMappingClient({ templateId }: FieldMappingClientProps) {
                         className={[
                           "px-2 py-0.5 rounded text-xs font-mono transition-all cursor-pointer hover:opacity-80",
                           isMapped
-                            ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                            ? "bg-muted text-financial-positive font-semibold"
                             : isIgnored
                               ? "bg-muted text-muted-foreground line-through"
-                              : "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
+                              : "bg-muted text-foreground",
                         ].join(" ")}
                         title={`Click to jump to mapping for ${field.displayField}`}
                       >
@@ -354,11 +354,11 @@ export function FieldMappingClient({ templateId }: FieldMappingClientProps) {
                 {/* Color legend */}
                 <div className="mt-6 pt-4 border-t border-border/50 flex flex-wrap gap-4 text-xs font-sans">
                   <span className="flex items-center gap-1.5">
-                    <span className="inline-block w-3 h-3 rounded bg-amber-100 border border-amber-300" />
+                    <span className="inline-block w-3 h-3 rounded bg-muted border border-border" />
                     <span className="text-muted-foreground">Unmapped</span>
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <span className="inline-block w-3 h-3 rounded bg-green-100 border border-green-300" />
+                    <span className="inline-block w-3 h-3 rounded bg-muted border border-financial-positive" />
                     <span className="text-muted-foreground">Mapped</span>
                   </span>
                   <span className="flex items-center gap-1.5">
@@ -387,8 +387,8 @@ export function FieldMappingClient({ templateId }: FieldMappingClientProps) {
                 className={[
                   "text-sm font-medium",
                   mappedCount === totalFields && totalFields > 0
-                    ? "text-green-600"
-                    : "text-amber-600",
+                    ? "text-financial-positive"
+                    : "text-muted-foreground",
                 ].join(" ")}
               >
                 {mappedCount} / {totalFields} fields mapped
@@ -447,7 +447,7 @@ export function FieldMappingClient({ templateId }: FieldMappingClientProps) {
                     className="flex flex-col gap-1.5 rounded-lg p-3 bg-muted/20 border border-transparent transition-all"
                   >
                     {/* Field name */}
-                    <span className="text-xs font-mono text-amber-700 dark:text-amber-400">
+                    <span className="text-xs font-mono text-muted-foreground">
                       {field.displayField}
                     </span>
 

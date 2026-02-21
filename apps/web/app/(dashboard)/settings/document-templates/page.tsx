@@ -150,8 +150,8 @@ function TemplateCard({ template, onActiveToggled, onDeleted }: TemplateCardProp
           <span
             className={
               totalFields > 0 && mappedCount === totalFields
-                ? "text-green-600 font-medium"
-                : "text-amber-600 font-medium"
+                ? "text-financial-positive font-medium"
+                : "text-muted-foreground font-medium"
             }
           >
             {mappedCount} / {totalFields}

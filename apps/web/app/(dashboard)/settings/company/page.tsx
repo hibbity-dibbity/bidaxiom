@@ -141,13 +141,13 @@ export default function CompanySettingsPage() {
       </div>
 
       {!canManage && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+        <div className="rounded-lg border border-border bg-muted p-4 flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-muted-foreground mt-0.5" />
           <div>
-            <p className="font-medium text-amber-900">
+            <p className="font-medium text-foreground">
               Read-only access
             </p>
-            <p className="text-sm text-amber-700">
+            <p className="text-sm text-muted-foreground">
               Only company administrators can modify these settings
             </p>
           </div>

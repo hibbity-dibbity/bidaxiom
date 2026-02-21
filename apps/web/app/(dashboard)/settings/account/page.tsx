@@ -258,7 +258,7 @@ export default function AccountSettingsPage() {
         <CardContent>
           {hasMfa ? (
             <div className="space-y-4">
-              <span className="inline-flex items-center gap-1.5 text-sm text-green-600">
+              <span className="inline-flex items-center gap-1.5 text-sm text-financial-positive">
                 <Shield className="h-4 w-4" /> Enabled
               </span>
               <p className="text-sm text-muted-foreground">

@@ -82,11 +82,11 @@ export default function QuickBooksCallbackPage() {
 
           {status === "success" && (
             <div className="flex flex-col items-center gap-4 py-6">
-              <div className="rounded-full bg-green-100 p-3">
-                <CheckCircle2 className="h-8 w-8 text-green-600" />
+              <div className="rounded-full bg-muted p-3">
+                <CheckCircle2 className="h-8 w-8 text-financial-positive" />
               </div>
               <div className="text-center">
-                <p className="font-medium text-green-900">
+                <p className="font-medium text-foreground">
                   QuickBooks connected successfully!
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
