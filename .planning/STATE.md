@@ -64,6 +64,7 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 | Phase 39 P04 | 5 | 2 tasks | 5 files |
 | Phase 39 P05 | ~90 | 2 tasks + GAP-01 fix chain | 4 files |
 | Phase 40 P02 | 1 | 1 tasks | 1 files |
+| Phase 40-document-system-redesign P01 | 4 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -136,6 +137,9 @@ Decisions logged in PROJECT.md Key Decisions table (full log, 35 phases).
 - [Phase 39-05 UAT]: LibreOffice alternative explored but rejected — Puppeteer+mammoth HTML path kept for infrastructure consistency with Phase 38/39 PDF stack
 - [Phase 39-05 UAT]: isPreview flag cleanly separates [UNMAPPED] placeholders (preview) from empty string (production) without branching at call sites
 - [Phase 40]: Page uses trpc.project.getBySlug (same query as layout) — React Query deduplicates the in-flight request; no projectId prop threading needed
+- [Phase 40-01]: listUnified post-query type filter: workflow types match workflowType, category types require category match and null workflowId, file keeps remaining with no workflow attachment
+- [Phase 40-01]: sendByEmail uses raw getSignedUrl with 7-day expiry (not generateDownloadUrl 1-hour) — email recipients need longer window
+- [Phase 40-01]: bulk-download route derives tenant from JWT orgId — never trusts client-supplied tenantId; maintains same security posture as tRPC
 
 ### Quick Tasks Completed
 
