@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-02-18)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 39 in progress (4/N plans complete)
+**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 39 complete (5/5 plans complete)
 
 ## Current Position
 
-Phase: 39 (in progress)
-Plan: 04 complete — Document Templates settings UI: /settings/document-templates (4-tab list, upload, activate toggle, delete) and /settings/document-templates/[templateId] (split-view field mapping with amber highlights, grouped combobox, X/Y progress, save-always, preview PDF)
-Status: 39-04 complete — 2 task commits (f659dca, e51f271); getById added to templateRouter; 0 TypeScript errors in all new files
-Last activity: 2026-02-20 — 39-04 complete: Document Templates UI ready; Plan 39-05 (UAT/verification) next
+Phase: 39 (complete)
+Plan: 05 complete — Phase 39 UAT: 8/8 tests passed; GAP-01 (render.ts ignored uploaded .docx file) fixed inline via docxtemplater+mammoth pipeline; all 6 TMPL requirements verified end-to-end
+Status: 39-05 complete — Phase 39 fully verified; SUMMARY at .planning/phases/39-custom-template-import-field-mapping/39-05-SUMMARY.md
+Last activity: 2026-02-20 — 39-05 complete: Phase 39 done; custom template pipeline (upload → extract → map → preview → activate → production PDF → fallback) operational
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 133 (113 through v1.3, +16 in v1.4, +4 in v1.5 so far)
+- Total plans completed: 138 (113 through v1.3, +16 in v1.4, +9 in v1.5 so far)
 - Average duration: ~4.3 min/plan
 - Total execution time: ~9.9 hours
 
@@ -62,6 +62,7 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 | Phase 39 P02 | 6 | 2 tasks | 5 files |
 | Phase 39 P03 | 5 | 2 tasks | 4 files |
 | Phase 39 P04 | 5 | 2 tasks | 5 files |
+| Phase 39 P05 | ~90 | 2 tasks + GAP-01 fix chain | 4 files |
 
 ## Accumulated Context
 
@@ -130,6 +131,9 @@ Decisions logged in PROJECT.md Key Decisions table (full log, 35 phases).
 - [Phase 39-04]: Combobox options use flat list with group prefix labels — existing Combobox component is flat; prefixes provide equivalent grouped UX
 - [Phase 39-04]: Left panel renders detected fields as clickable button spans (not actual docx HTML) — no mammoth browser dependency; functionally equivalent for field mapping
 - [Phase 39]: renderDocxTemplate uses docxtemplater+mammoth pipeline — fills .docx placeholders then converts to HTML, preserving user formatting end-to-end
+- [Phase 39-05 UAT]: GAP-01 fixed inline — render.ts was building generic BIDAXIOM-branded HTML instead of using the uploaded .docx file; replaced with renderDocxTemplate (docxtemplater+mammoth pipeline)
+- [Phase 39-05 UAT]: LibreOffice alternative explored but rejected — Puppeteer+mammoth HTML path kept for infrastructure consistency with Phase 38/39 PDF stack
+- [Phase 39-05 UAT]: isPreview flag cleanly separates [UNMAPPED] placeholders (preview) from empty string (production) without branching at call sites
 
 ### Quick Tasks Completed
 
@@ -150,5 +154,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 39-04-PLAN.md — Document Templates settings UI (template list + field mapping pages); getById added to templateRouter. Phase 39 plan 04 complete (4/N).
+Stopped at: Completed 39-05-PLAN.md — Phase 39 UAT (8/8 passed); GAP-01 resolved inline (renderDocxTemplate pipeline); Phase 39 complete (5/5 plans).
 Resume file: None
