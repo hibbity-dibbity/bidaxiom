@@ -205,7 +205,7 @@ Plans:
 
 **Requirements:** TMPL-01, TMPL-02, TMPL-03, TMPL-04, TMPL-05, TMPL-06
 
-**Plans:** 5 plans
+**Plans:** 6/6 plans complete
 
 Plans:
 - [ ] 39-01-PLAN.md — DB schema (document_templates table + documents.templateId FK), migration, shared types (DetectedField, FieldMapping, BIDAXIOM_FIELD_KEYS), buildTemplateStorageKey
@@ -258,5 +258,5 @@ Plans:
 | 36 | v1.5 | Complete    | 2026-02-19 | - |
 | 37 | v1.5 | Complete    | 2026-02-19 | - |
 | 38 | v1.5 | Complete    | 2026-02-20 | - |
-| 39 | v1.5 | 0/5 | Not started | - |
+| 39 | v1.5 | Complete    | 2026-02-21 | - |
 | 40 | v1.5 | 0/~4 | Not started | - |
