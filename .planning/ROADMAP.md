@@ -147,7 +147,15 @@
   3. The `COMPONENT-ORGANIZATION.md` file contains documented canonical Tailwind class recipes for table rows, list views, and form fields; no per-page deviation in row height, cell padding, or typography scale is permitted without updating the canonical.
   4. Three new npm packages are installed in `apps/web/` and importable: `@tanstack/react-virtual` v3, `motion` v12, and `react-number-format` v5.
   5. Approval action buttons on change order and payment application detail pages appear in the page header action area — not inside dropdown menus or overflow controls.
-**Plans**: TBD
+**Plans**: 6 plans
+
+Plans:
+- [ ] 41-01-PLAN.md — CSS token foundation: financial tokens in globals.css + tailwind.config, 3 npm packages, COMPONENT-ORGANIZATION.md canonical recipes
+- [ ] 41-02-PLAN.md — Group A+B: auth pages (4) + settings/integrations pages (7) palette class migration
+- [ ] 41-03-PLAN.md — Group C+D: project/customer/sub pages (8) + bidding components (5) palette class migration
+- [ ] 41-04-PLAN.md — Group E: budget components (6) — financial token migration + surface bg migration
+- [ ] 41-05-PLAN.md — Group F: change order + payment app (10) — VISUAL-03 approval button relocation + color migration
+- [ ] 41-06-PLAN.md — Group G: estimates workflow (7) + integrations (3) + shared/currency-display/status-badge (5) migration
 
 ### Phase 42: Shared UI Primitives
 **Goal**: The shared `components/ui/` primitives and `components/shared/` domain components are correctly configured for Procore-level density — table row height, badge variants, and status badge semantics are locked in before any domain phase inherits them.
@@ -221,7 +229,7 @@
 | 25-29 (v1.3) | 16/16 | Complete | 2026-02-18 |
 | 30-35 (v1.4) | 16/16 | Complete | 2026-02-18 |
 | 36-40 (v1.5) | 23/23 | Complete | 2026-02-21 |
-| 41. Design Foundation | 0/TBD | Not started | - |
+| 41. Design Foundation | 0/6 | Not started | - |
 | 42. Shared UI Primitives | 0/TBD | Not started | - |
 | 43. Budget Domain Redesign | 0/TBD | Not started | - |
 | 44. Change Order and Payment App Redesign | 0/TBD | Not started | - |
