@@ -20,19 +20,27 @@ import type { ApprovalStepStatus } from "@construction/shared";
 
 interface ApprovalPanelProps {
   changeOrderId: string;
+  approveDialogOpen: boolean;
+  rejectDialogOpen: boolean;
+  onApproveDialogChange: (open: boolean) => void;
+  onRejectDialogChange: (open: boolean) => void;
 }
 
 const statusIcons: Record<ApprovalStepStatus, React.ReactNode> = {
-  pending: <Circle className="h-5 w-5 text-gray-400" />,
-  approved: <CheckCircle2 className="h-5 w-5 text-green-600" />,
-  rejected: <XCircle className="h-5 w-5 text-red-600" />,
-  skipped: <Minus className="h-5 w-5 text-gray-400" />,
+  pending: <Circle className="h-5 w-5 text-muted-foreground" />,
+  approved: <CheckCircle2 className="h-5 w-5 text-financial-positive" />,
+  rejected: <XCircle className="h-5 w-5 text-financial-negative" />,
+  skipped: <Minus className="h-5 w-5 text-muted-foreground" />,
 };
 
-export function ApprovalPanel({ changeOrderId }: ApprovalPanelProps) {
+export function ApprovalPanel({
+  changeOrderId,
+  approveDialogOpen,
+  rejectDialogOpen,
+  onApproveDialogChange,
+  onRejectDialogChange,
+}: ApprovalPanelProps) {
   const utils = trpc.useUtils();
-  const [approveDialogOpen, setApproveDialogOpen] = useState(false);
-  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [comments, setComments] = useState("");
 
   const { data: approvalStatus, isLoading } = trpc.changeOrder.getApprovalStatus.useQuery({
@@ -45,7 +53,7 @@ export function ApprovalPanel({ changeOrderId }: ApprovalPanelProps) {
       utils.changeOrder.getApprovalStatus.invalidate({ changeOrderId });
       utils.changeOrder.list.invalidate();
       toast.success("Change order approved");
-      setApproveDialogOpen(false);
+      onApproveDialogChange(false);
       setComments("");
     },
     onError: (error) => {
@@ -59,7 +67,7 @@ export function ApprovalPanel({ changeOrderId }: ApprovalPanelProps) {
       utils.changeOrder.getApprovalStatus.invalidate({ changeOrderId });
       utils.changeOrder.list.invalidate();
       toast.success("Change order rejected");
-      setRejectDialogOpen(false);
+      onRejectDialogChange(false);
       setComments("");
     },
     onError: (error) => {
@@ -90,151 +98,131 @@ export function ApprovalPanel({ changeOrderId }: ApprovalPanelProps) {
   }
 
   const steps = approvalStatus;
-  const currentStep = steps.find((s) => s.status === "pending");
-  const canCurrentUserApprove = steps.some((s: any) => s.canCurrentUserApprove === true);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Approval Workflow</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {steps.map((step: any) => (
-            <div key={step.id} className="flex items-start gap-4">
-              <div className="mt-1">{statusIcons[step.status as ApprovalStepStatus]}</div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">Step {step.stepOrder}</span>
-                  {step.approverRole && (
-                    <span className="text-sm text-muted-foreground">
-                      ({step.approverRole})
-                    </span>
-                  )}
-                  {step.approverUserId && (
-                    <span className="text-sm text-muted-foreground">
-                      (User: {step.approverUserId.substring(0, 8)})
-                    </span>
-                  )}
-                </div>
-                {step.status === "approved" && step.approvedBy && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Approved by {step.approvedBy} on{" "}
-                    {new Date(step.approvedAt!).toLocaleString()}
-                  </p>
-                )}
-                {step.status === "rejected" && step.rejectedBy && (
-                  <div className="mt-1">
-                    <p className="text-sm text-muted-foreground">
-                      Rejected by {step.rejectedBy} on{" "}
-                      {new Date(step.rejectedAt!).toLocaleString()}
-                    </p>
-                    {step.comments && (
-                      <p className="text-sm text-red-600 mt-1">{step.comments}</p>
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>Approval Workflow</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {steps.map((step: any) => (
+              <div key={step.id} className="flex items-start gap-4">
+                <div className="mt-1">{statusIcons[step.status as ApprovalStepStatus]}</div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">Step {step.stepOrder}</span>
+                    {step.approverRole && (
+                      <span className="text-sm text-muted-foreground">
+                        ({step.approverRole})
+                      </span>
+                    )}
+                    {step.approverUserId && (
+                      <span className="text-sm text-muted-foreground">
+                        (User: {step.approverUserId.substring(0, 8)})
+                      </span>
                     )}
                   </div>
-                )}
-                {step.comments && step.status === "approved" && (
-                  <p className="text-sm text-muted-foreground mt-1">{step.comments}</p>
-                )}
+                  {step.status === "approved" && step.approvedBy && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Approved by {step.approvedBy} on{" "}
+                      {new Date(step.approvedAt!).toLocaleString()}
+                    </p>
+                  )}
+                  {step.status === "rejected" && step.rejectedBy && (
+                    <div className="mt-1">
+                      <p className="text-sm text-muted-foreground">
+                        Rejected by {step.rejectedBy} on{" "}
+                        {new Date(step.rejectedAt!).toLocaleString()}
+                      </p>
+                      {step.comments && (
+                        <p className="text-sm text-financial-negative mt-1">{step.comments}</p>
+                      )}
+                    </div>
+                  )}
+                  {step.comments && step.status === "approved" && (
+                    <p className="text-sm text-muted-foreground mt-1">{step.comments}</p>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-
-        {canCurrentUserApprove && currentStep && (
-          <div className="mt-6 pt-6 border-t">
-            <p className="text-sm font-medium mb-4">
-              You can approve or reject this change order at the current step
-            </p>
-            <div className="flex gap-2">
-              <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
-                <Button
-                  className="flex-1"
-                  onClick={() => setApproveDialogOpen(true)}
-                >
-                  Approve
-                </Button>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Approve Change Order</DialogTitle>
-                    <DialogDescription>
-                      Approve this change order at the current approval step.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-2">
-                    <Label htmlFor="approveComments">Comments (Optional)</Label>
-                    <Textarea
-                      id="approveComments"
-                      value={comments}
-                      onChange={(e) => setComments(e.target.value)}
-                      placeholder="Add any comments about your approval"
-                      rows={3}
-                    />
-                  </div>
-                  <DialogFooter>
-                    <Button
-                      variant="outline"
-                      onClick={() => setApproveDialogOpen(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={handleApprove}
-                      disabled={approveMutation.isPending}
-                    >
-                      {approveMutation.isPending ? "Approving..." : "Approve"}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-
-              <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
-                <Button
-                  variant="destructive"
-                  className="flex-1"
-                  onClick={() => setRejectDialogOpen(true)}
-                >
-                  Reject
-                </Button>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Reject Change Order</DialogTitle>
-                    <DialogDescription>
-                      Reject this change order and provide a reason.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-2">
-                    <Label htmlFor="rejectComments">Reason for Rejection *</Label>
-                    <Textarea
-                      id="rejectComments"
-                      value={comments}
-                      onChange={(e) => setComments(e.target.value)}
-                      placeholder="Explain why you are rejecting this change order"
-                      rows={3}
-                    />
-                  </div>
-                  <DialogFooter>
-                    <Button
-                      variant="outline"
-                      onClick={() => setRejectDialogOpen(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={handleReject}
-                      disabled={rejectMutation.isPending}
-                    >
-                      {rejectMutation.isPending ? "Rejecting..." : "Reject"}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
+            ))}
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      {/* Approve Dialog — triggered from page header */}
+      <Dialog open={approveDialogOpen} onOpenChange={onApproveDialogChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Approve Change Order</DialogTitle>
+            <DialogDescription>
+              Approve this change order at the current approval step.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="approveComments">Comments (Optional)</Label>
+            <Textarea
+              id="approveComments"
+              value={comments}
+              onChange={(e) => setComments(e.target.value)}
+              placeholder="Add any comments about your approval"
+              rows={3}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => onApproveDialogChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleApprove}
+              disabled={approveMutation.isPending}
+            >
+              {approveMutation.isPending ? "Approving..." : "Approve"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Dialog — triggered from page header */}
+      <Dialog open={rejectDialogOpen} onOpenChange={onRejectDialogChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject Change Order</DialogTitle>
+            <DialogDescription>
+              Reject this change order and provide a reason.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="rejectComments">Reason for Rejection *</Label>
+            <Textarea
+              id="rejectComments"
+              value={comments}
+              onChange={(e) => setComments(e.target.value)}
+              placeholder="Explain why you are rejecting this change order"
+              rows={3}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => onRejectDialogChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleReject}
+              disabled={rejectMutation.isPending}
+            >
+              {rejectMutation.isPending ? "Rejecting..." : "Reject"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

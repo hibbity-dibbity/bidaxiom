@@ -27,7 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Edit, Trash2, Ban, ArrowLeft, Send, Plus, FileDown } from "lucide-react";
+import { Edit, Trash2, Ban, ArrowLeft, Send, Plus, FileDown, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import {
   Select,
@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/select";
 import { ApprovalPanel } from "./approval-panel";
 import { ChangeOrderHistory } from "./change-order-history";
+import { StatusBadge } from "@/components/shared/status-badge";
 import { CSI_DIVISIONS } from "@construction/shared";
 import type { ChangeOrderStatus, ChangeOrderType } from "@construction/shared";
 
@@ -53,13 +54,13 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 2,
 });
 
-const statusColors: Record<ChangeOrderStatus, string> = {
-  draft: "bg-gray-500",
-  pco_submitted: "bg-yellow-500",
-  pending_approval: "bg-orange-500",
-  approved: "bg-green-500",
-  rejected: "bg-red-500",
-  void: "bg-slate-500",
+const statusVariantMap: Record<ChangeOrderStatus, "draft" | "pending" | "approved" | "rejected" | "cancelled" | "warning"> = {
+  draft: "draft",
+  pco_submitted: "pending",
+  pending_approval: "warning",
+  approved: "approved",
+  rejected: "rejected",
+  void: "cancelled",
 };
 
 const typeColors: Record<ChangeOrderType, string> = {
@@ -74,6 +75,8 @@ export function ChangeOrderDetail({ changeOrderId, projectId, projectSlug }: Cha
   const [voidDialogOpen, setVoidDialogOpen] = useState(false);
   const [voidReason, setVoidReason] = useState("");
   const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
+  const [approveDialogOpen, setApproveDialogOpen] = useState(false);
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [approvalSteps, setApprovalSteps] = useState<
     Array<{
       stepOrder: number;
@@ -84,6 +87,15 @@ export function ChangeOrderDetail({ changeOrderId, projectId, projectSlug }: Cha
   >([]);
 
   const { data, isLoading } = trpc.changeOrder.getById.useQuery({ id: changeOrderId });
+
+  const { data: approvalStatus } = trpc.changeOrder.getApprovalStatus.useQuery(
+    { changeOrderId },
+    { enabled: true }
+  );
+
+  const canCurrentUserApprove =
+    approvalStatus?.some((s: any) => s.canCurrentUserApprove === true) ?? false;
+  const hasPendingStep = approvalStatus?.some((s: any) => s.status === "pending") ?? false;
 
   const voidMutation = trpc.changeOrder.void.useMutation({
     onSuccess: () => {
@@ -230,6 +242,10 @@ export function ChangeOrderDetail({ changeOrderId, projectId, projectSlug }: Cha
     co.status === "pco_submitted" ||
     co.status === "pending_approval" ||
     co.status === "approved";
+  const canApproveOrReject =
+    canCurrentUserApprove &&
+    hasPendingStep &&
+    (co.status === "pending_approval" || co.status === "pco_submitted");
 
   return (
     <div className="space-y-6">
@@ -248,9 +264,9 @@ export function ChangeOrderDetail({ changeOrderId, projectId, projectSlug }: Cha
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
-                <Badge className={statusColors[co.status as ChangeOrderStatus]}>
+                <StatusBadge variant={statusVariantMap[co.status as ChangeOrderStatus]}>
                   {co.status.replace(/_/g, " ")}
-                </Badge>
+                </StatusBadge>
                 <Badge className={typeColors[co.type as ChangeOrderType]}>
                   {co.type}
                 </Badge>
@@ -261,6 +277,27 @@ export function ChangeOrderDetail({ changeOrderId, projectId, projectSlug }: Cha
               <CardTitle className="text-3xl">{co.title}</CardTitle>
             </div>
             <div className="flex gap-2">
+              {/* VISUAL-03: Approve/Reject buttons in header action area */}
+              {canApproveOrReject && (
+                <>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => setApproveDialogOpen(true)}
+                  >
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Approve
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setRejectDialogOpen(true)}
+                  >
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Reject
+                  </Button>
+                </>
+              )}
               {co.status === "draft" && (
                 <Dialog open={submitDialogOpen} onOpenChange={setSubmitDialogOpen}>
                   <DialogTrigger asChild>
@@ -513,8 +550,8 @@ export function ChangeOrderDetail({ changeOrderId, projectId, projectSlug }: Cha
                     <span
                       className={
                         Number(item.amountChange) < 0
-                          ? "text-red-600"
-                          : "text-green-600"
+                          ? "text-financial-negative"
+                          : "text-financial-positive"
                       }
                     >
                       {currencyFormatter.format(Number(item.amountChange))}
@@ -529,7 +566,9 @@ export function ChangeOrderDetail({ changeOrderId, projectId, projectSlug }: Cha
               <span className="text-muted-foreground mr-2">Total:</span>
               <span
                 className={
-                  Number(co.totalAmount) < 0 ? "text-red-600" : "text-green-600"
+                  Number(co.totalAmount) < 0
+                    ? "text-financial-negative"
+                    : "text-financial-positive"
                 }
               >
                 {currencyFormatter.format(Number(co.totalAmount))}
@@ -544,7 +583,13 @@ export function ChangeOrderDetail({ changeOrderId, projectId, projectSlug }: Cha
         co.status === "pending_approval" ||
         co.status === "approved" ||
         co.status === "rejected") && (
-        <ApprovalPanel changeOrderId={changeOrderId} />
+        <ApprovalPanel
+          changeOrderId={changeOrderId}
+          approveDialogOpen={approveDialogOpen}
+          rejectDialogOpen={rejectDialogOpen}
+          onApproveDialogChange={setApproveDialogOpen}
+          onRejectDialogChange={setRejectDialogOpen}
+        />
       )}
 
       {/* History */}
