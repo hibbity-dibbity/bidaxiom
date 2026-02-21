@@ -65,7 +65,7 @@ const statusVariantMap: Record<ChangeOrderStatus, "draft" | "pending" | "approve
 
 const typeColors: Record<ChangeOrderType, string> = {
   owner: "bg-blue-500",
-  internal: "bg-amber-500",
+  internal: "bg-orange-500",
   subcontractor: "bg-purple-500",
 };
 

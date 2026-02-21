@@ -239,7 +239,7 @@ export function ChangeOrderForm({ projectId, projectSlug }: ChangeOrderFormProps
                 placeholder="Enter change order title"
               />
               {errors.title && (
-                <p className="text-sm text-red-600">{errors.title.message}</p>
+                <p className="text-sm text-destructive">{errors.title.message}</p>
               )}
             </div>
 
@@ -263,7 +263,7 @@ export function ChangeOrderForm({ projectId, projectSlug }: ChangeOrderFormProps
                   placeholder="Enter name of person requesting change"
                 />
                 {(errors as any).requestedBy && (
-                  <p className="text-sm text-red-600">{(errors as any).requestedBy.message}</p>
+                  <p className="text-sm text-destructive">{(errors as any).requestedBy.message}</p>
                 )}
               </div>
             )}
@@ -286,7 +286,7 @@ export function ChangeOrderForm({ projectId, projectSlug }: ChangeOrderFormProps
                   </SelectContent>
                 </Select>
                 {(errors as any).reason && (
-                  <p className="text-sm text-red-600">{(errors as any).reason.message}</p>
+                  <p className="text-sm text-destructive">{(errors as any).reason.message}</p>
                 )}
               </div>
             )}
@@ -311,7 +311,7 @@ export function ChangeOrderForm({ projectId, projectSlug }: ChangeOrderFormProps
                   </SelectContent>
                 </Select>
                 {(errors as any).commitmentId && (
-                  <p className="text-sm text-red-600">{(errors as any).commitmentId.message}</p>
+                  <p className="text-sm text-destructive">{(errors as any).commitmentId.message}</p>
                 )}
               </div>
             )}
@@ -417,7 +417,7 @@ export function ChangeOrderForm({ projectId, projectSlug }: ChangeOrderFormProps
                       </SelectContent>
                     </Select>
                     {(errors.lineItems as any)?.[index]?.costCodeId && (
-                      <p className="text-sm text-red-600">
+                      <p className="text-sm text-destructive">
                         {(errors.lineItems as any)[index]?.costCodeId?.message}
                       </p>
                     )}
@@ -430,7 +430,7 @@ export function ChangeOrderForm({ projectId, projectSlug }: ChangeOrderFormProps
                       placeholder="Enter description"
                     />
                     {(errors.lineItems as any)?.[index]?.description && (
-                      <p className="text-sm text-red-600">
+                      <p className="text-sm text-destructive">
                         {(errors.lineItems as any)[index]?.description?.message}
                       </p>
                     )}
@@ -451,7 +451,7 @@ export function ChangeOrderForm({ projectId, projectSlug }: ChangeOrderFormProps
                       )}
                     />
                     {(errors.lineItems as any)?.[index]?.amountChange && (
-                      <p className="text-sm text-red-600">
+                      <p className="text-sm text-destructive">
                         {(errors.lineItems as any)[index]?.amountChange?.message}
                       </p>
                     )}
@@ -472,7 +472,7 @@ export function ChangeOrderForm({ projectId, projectSlug }: ChangeOrderFormProps
             <CardContent className="pt-6">
               <div className="flex justify-between items-center text-lg font-semibold">
                 <span>Total Amount Change:</span>
-                <span className={totalAmount < 0 ? "text-red-600" : "text-green-600"}>
+                <span className={totalAmount < 0 ? "text-financial-negative" : "text-financial-positive"}>
                   {currencyFormatter.format(totalAmount)}
                 </span>
               </div>

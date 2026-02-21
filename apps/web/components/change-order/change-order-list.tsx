@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { StatusBadge } from "@/components/shared/status-badge";
 import {
   Select,
   SelectContent,
@@ -27,19 +28,19 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 0,
 });
 
-const statusColors: Record<ChangeOrderStatus, string> = {
-  draft: "bg-gray-500",
-  pco_submitted: "bg-yellow-500",
-  pending_approval: "bg-orange-500",
-  approved: "bg-green-500",
-  rejected: "bg-red-500",
-  void: "bg-slate-500",
+const statusVariantMap: Record<ChangeOrderStatus, "draft" | "pending" | "approved" | "rejected" | "cancelled" | "warning"> = {
+  draft: "draft",
+  pco_submitted: "pending",
+  pending_approval: "warning",
+  approved: "approved",
+  rejected: "rejected",
+  void: "cancelled",
 };
 
 const typeColors: Record<ChangeOrderType, string> = {
   owner: "bg-blue-500",
-  internal: "bg-amber-500",
-  subcontractor: "bg-purple-500",
+  internal: "bg-purple-500",
+  subcontractor: "bg-orange-500",
 };
 
 const typeLabels: Record<ChangeOrderType, string> = {
@@ -157,9 +158,9 @@ export function ChangeOrderList({ projectId, projectSlug }: ChangeOrderListProps
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <Badge className={statusColors[co.status as ChangeOrderStatus]}>
+                      <StatusBadge variant={statusVariantMap[co.status as ChangeOrderStatus]}>
                         {co.status.replace(/_/g, " ")}
-                      </Badge>
+                      </StatusBadge>
                       <Badge className={typeColors[co.type as ChangeOrderType]}>
                         {typeLabels[co.type as ChangeOrderType]}
                       </Badge>
