@@ -275,14 +275,18 @@ fastify.post("/api/documents/bulk-download", async (request, reply) => {
     const storageKey = doc.currentVersionId ? keyMap.get(doc.currentVersionId) : null;
     if (!storageKey) continue;
 
-    const s3Response = await s3.send(
-      new GetObjectCommand({ Bucket: bucket, Key: storageKey })
-    );
+    try {
+      const s3Response = await s3.send(
+        new GetObjectCommand({ Bucket: bucket, Key: storageKey })
+      );
 
-    if (s3Response.Body) {
-      archive.append(Readable.from(s3Response.Body as AsyncIterable<Uint8Array>), {
-        name: doc.name,
-      });
+      if (s3Response.Body) {
+        archive.append(Readable.from(s3Response.Body as AsyncIterable<Uint8Array>), {
+          name: doc.name,
+        });
+      }
+    } catch (err) {
+      console.error(`[bulk-download] Skipping document ${doc.id} — S3 fetch failed for key ${storageKey}:`, err);
     }
   }
 

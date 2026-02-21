@@ -30,7 +30,6 @@ interface DocumentFiltersProps {
 }
 
 const TYPE_OPTIONS = [
-  { label: "All Types", value: "" },
   { label: "RFI", value: "rfi" },
   { label: "Submittal", value: "submittal" },
   { label: "Transmittal", value: "transmittal" },
@@ -42,7 +41,6 @@ const TYPE_OPTIONS = [
 ];
 
 const STATUS_OPTIONS = [
-  { label: "All Statuses", value: "" },
   { label: "Draft", value: "draft" },
   { label: "Submitted", value: "submitted" },
   { label: "Under Review", value: "under_review" },
@@ -196,7 +194,6 @@ export function DocumentFilters({ filters, onChange, authorOptions }: DocumentFi
                 <SelectValue placeholder="All Authors" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Authors</SelectItem>
                 {authorOptions.map((o) => (
                   <SelectItem key={o.id} value={o.id}>
                     {o.name}

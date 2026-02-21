@@ -40,6 +40,9 @@ export function BulkActionBar({
         throw new Error("Could not retrieve auth token");
       }
       const { accessToken } = await tokenRes.json();
+      if (!accessToken) {
+        throw new Error("No access token available — please sign in again");
+      }
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
       const response = await fetch(`${apiUrl}/api/documents/bulk-download`, {
@@ -54,7 +57,8 @@ export function BulkActionBar({
       });
 
       if (!response.ok) {
-        throw new Error("Bulk download failed");
+        const errText = await response.text().catch(() => "");
+        throw new Error(`Bulk download failed (${response.status})${errText ? `: ${errText}` : ""}`);
       }
 
       const blob = await response.blob();
@@ -66,8 +70,9 @@ export function BulkActionBar({
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    } catch {
-      toast.error("Bulk download failed");
+    } catch (err) {
+      console.error("Bulk download error:", err);
+      toast.error(err instanceof Error ? err.message : "Bulk download failed");
     }
   };
 

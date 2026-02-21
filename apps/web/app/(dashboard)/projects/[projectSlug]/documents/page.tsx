@@ -10,6 +10,9 @@ import { UnifiedDocumentTable } from "@/components/project/documents/unified-doc
 import { DocumentFilters } from "@/components/project/documents/document-filters";
 import { BulkActionBar } from "@/components/project/documents/bulk-action-bar";
 import type { DocumentFilters as DocumentFiltersType } from "@/components/project/documents/document-filters";
+import { DocumentUploader } from "@/components/project/document-uploader";
+import { Button } from "@/components/ui/button";
+import { Upload } from "lucide-react";
 
 // TODO: Replace with proper inferred type from tRPC AppRouter
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -38,6 +41,7 @@ export default function ProjectDocumentsPage() {
 
   // Selected documents state for bulk actions
   const [selectedDocuments, setSelectedDocuments] = useState<UnifiedDocument[]>([]);
+  const [showUploader, setShowUploader] = useState(false);
 
   const utils = trpc.useUtils();
 
@@ -113,11 +117,34 @@ export default function ProjectDocumentsPage() {
 
   return (
     <div className="space-y-4">
-      <DocumentFilters
-        filters={currentFilters}
-        onChange={handleFilterChange}
-        authorOptions={authorOptions}
-      />
+      <div className="flex items-start gap-2">
+        <div className="flex-1">
+          <DocumentFilters
+            filters={currentFilters}
+            onChange={handleFilterChange}
+            authorOptions={authorOptions}
+          />
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setShowUploader((prev) => !prev)}
+          disabled={!projectId}
+        >
+          <Upload className="mr-2 h-4 w-4" />
+          {showUploader ? "Cancel" : "Upload"}
+        </Button>
+      </div>
+      {showUploader && projectId && (
+        <DocumentUploader
+          projectId={projectId}
+          folderId={null}
+          onUploadComplete={() => {
+            utils.document.listUnified.invalidate({ projectId });
+            setShowUploader(false);
+          }}
+        />
+      )}
       <UnifiedDocumentTable
         documents={documents ?? []}
         isLoading={isLoading}
