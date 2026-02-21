@@ -34,23 +34,10 @@ export function BulkActionBar({
 
   const handleBulkDownload = async () => {
     try {
-      // Fetch the bearer token from the session API route (same pattern as providers.tsx)
-      const tokenRes = await fetch("/api/auth/token");
-      if (!tokenRes.ok) {
-        throw new Error("Could not retrieve auth token");
-      }
-      const { accessToken } = await tokenRes.json();
-      if (!accessToken) {
-        throw new Error("No access token available — please sign in again");
-      }
-
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
-      const response = await fetch(`${apiUrl}/api/documents/bulk-download`, {
+      // Proxied through Next.js API route — avoids CORS, auth handled server-side
+      const response = await fetch("/api/documents/bulk-download", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           documentIds: selectedDocuments.map((d: UnifiedDocument) => d.id),
         }),
