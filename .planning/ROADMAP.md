@@ -150,12 +150,12 @@
 **Plans**: 6 plans
 
 Plans:
-- [ ] 41-01-PLAN.md — CSS token foundation: financial tokens in globals.css + tailwind.config, 3 npm packages, COMPONENT-ORGANIZATION.md canonical recipes
-- [ ] 41-02-PLAN.md — Group A+B: auth pages (4) + settings/integrations pages (7) palette class migration
-- [ ] 41-03-PLAN.md — Group C+D: project/customer/sub pages (8) + bidding components (5) palette class migration
-- [ ] 41-04-PLAN.md — Group E: budget components (6) — financial token migration + surface bg migration
-- [ ] 41-05-PLAN.md — Group F: change order + payment app (10) — VISUAL-03 approval button relocation + color migration
-- [ ] 41-06-PLAN.md — Group G: estimates workflow (7) + integrations (3) + shared/currency-display/status-badge (5) migration
+- [x] 41-01-PLAN.md — CSS token foundation: financial tokens in globals.css + tailwind.config, 3 npm packages, COMPONENT-ORGANIZATION.md canonical recipes
+- [x] 41-02-PLAN.md — Group A+B: auth pages (4) + settings/integrations pages (7) palette class migration
+- [x] 41-03-PLAN.md — Group C+D: project/customer/sub pages (8) + bidding components (5) palette class migration
+- [x] 41-04-PLAN.md — Group E: budget components (6) — financial token migration + surface bg migration
+- [x] 41-05-PLAN.md — Group F: change order + payment app (10) — VISUAL-03 approval button relocation + color migration
+- [x] 41-06-PLAN.md — Group G: estimates workflow (7) + integrations (3) + shared/currency-display/status-badge (5) migration
 
 ### Phase 42: Shared UI Primitives
 **Goal**: The shared `components/ui/` primitives and `components/shared/` domain components are correctly configured for Procore-level density — table row height, badge variants, and status badge semantics are locked in before any domain phase inherits them.

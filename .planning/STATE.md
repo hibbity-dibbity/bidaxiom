@@ -5,30 +5,29 @@
 See: .planning/PROJECT.md (updated 2026-02-21)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.6 UX Redesign & Polish — Phase 41: Design Foundation (in progress)
+**Current focus:** v1.6 UX Redesign & Polish — Phase 42: Shared UI Primitives (next)
 
 ## Current Position
 
-Phase: 41 of 46 (Design Foundation)
-Plan: 06 complete (Group G — estimates workflow, integration cards, shared components, dashboard token migration)
-Status: In progress
-Last activity: 2026-02-21 — 41-06 complete: 15 files migrated to CSS variable tokens — currency-display, status-badge, estimates workflow steps (01-05), MarginCalculator, SOVBuilder, integration cards, document-uploader, workflow-detail, kpi-card
+Phase: 42 of 46 (Shared UI Primitives)
+Plan: N/A — awaiting planning
+Status: Phase 41 COMPLETE ✅ | Phase 42 not yet planned
+Last activity: 2026-02-21 — Phase 41 complete: 56 TSX files migrated to CSS variable token system, financial tokens established, 3 npm packages installed, VISUAL-03 approval buttons relocated to page headers, verification PASSED 6/6
 
-Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100% | v1.5: [██████████] 100% | v1.6: [█░░░░░░░░░] 4%
+Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100% | v1.5: [██████████] 100% | v1.6: [██░░░░░░░░] 17%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 157 (138 through v1.4, +19 in v1.5)
+- Total plans completed: 163 (138 through v1.4, +19 in v1.5, +6 in v1.6 Phase 41)
 - Average duration: ~4.3 min/plan
-- Total execution time: ~11.3 hours
+- Total execution time: ~11.7 hours
 
-**Recent trend (v1.5 phases):**
-- Phase 36: 7 plans — lifecycle state machine + mode system
-- Phase 37: 2 plans — project deletion with safeguards
+**Recent trend (v1.5-1.6 phases):**
 - Phase 38: 8 plans — PDF generation + document naming
 - Phase 39: 5 plans (+ inline fixes during UAT)
 - Phase 40: 4 plans (+ inline fixes during UAT)
+- Phase 41: 6 plans — design token foundation, 56-file CSS migration, VISUAL-03
 
 *Updated after each plan completion*
 
@@ -76,5 +75,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Completed 41-05-PLAN.md — Group F (change order + payment app) token migration + VISUAL-03. All Wave 2 plans complete (41-02 through 41-06).
+Stopped at: Phase 41 complete — all 6 plans executed, verifier passed 6/6, ROADMAP updated. Next: plan Phase 42 (Shared UI Primitives).
 Resume file: None
