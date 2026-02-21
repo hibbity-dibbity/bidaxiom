@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-18)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 39 complete (5/5 plans complete)
+**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 40 in progress (Plan 02 complete)
 
 ## Current Position
 
-Phase: 39 (complete)
-Plan: 05 complete — Phase 39 UAT: 8/8 tests passed; GAP-01 (render.ts ignored uploaded .docx file) fixed inline via docxtemplater+mammoth pipeline; all 6 TMPL requirements verified end-to-end
-Status: 39-05 complete — Phase 39 fully verified; SUMMARY at .planning/phases/39-custom-template-import-field-mapping/39-05-SUMMARY.md
-Last activity: 2026-02-20 — 39-05 complete: Phase 39 done; custom template pipeline (upload → extract → map → preview → activate → production PDF → fallback) operational
+Phase: 40-document-system-redesign (in progress)
+Plan: 02 complete — Workflow detail route page created; DOC-04 row-click navigation unblocked
+Status: 40-02 complete — SUMMARY at .planning/phases/40-document-system-redesign/40-02-SUMMARY.md
+Last activity: 2026-02-21 — 40-02 complete: workflow detail route at /projects/[slug]/workflows/[id] rendering WorkflowDetail component
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100%
 
@@ -63,6 +63,7 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 | Phase 39 P03 | 5 | 2 tasks | 4 files |
 | Phase 39 P04 | 5 | 2 tasks | 5 files |
 | Phase 39 P05 | ~90 | 2 tasks + GAP-01 fix chain | 4 files |
+| Phase 40 P02 | 1 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -134,6 +135,7 @@ Decisions logged in PROJECT.md Key Decisions table (full log, 35 phases).
 - [Phase 39-05 UAT]: GAP-01 fixed inline — render.ts was building generic BIDAXIOM-branded HTML instead of using the uploaded .docx file; replaced with renderDocxTemplate (docxtemplater+mammoth pipeline)
 - [Phase 39-05 UAT]: LibreOffice alternative explored but rejected — Puppeteer+mammoth HTML path kept for infrastructure consistency with Phase 38/39 PDF stack
 - [Phase 39-05 UAT]: isPreview flag cleanly separates [UNMAPPED] placeholders (preview) from empty string (production) without branching at call sites
+- [Phase 40]: Page uses trpc.project.getBySlug (same query as layout) — React Query deduplicates the in-flight request; no projectId prop threading needed
 
 ### Quick Tasks Completed
 
@@ -153,6 +155,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-20
-Stopped at: Completed 39-05-PLAN.md — Phase 39 UAT (8/8 passed); GAP-01 resolved inline (renderDocxTemplate pipeline); Phase 39 complete (5/5 plans).
+Last session: 2026-02-21
+Stopped at: Completed 40-02-PLAN.md — workflow detail route page created; Plan 03 (unified document table) is next.
 Resume file: None
