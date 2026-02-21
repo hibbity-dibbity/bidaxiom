@@ -1,21 +1,14 @@
 ---
-status: testing
+status: complete
 phase: 39-custom-template-import-field-mapping
 source: 39-01-SUMMARY.md, 39-02-SUMMARY.md, 39-03-SUMMARY.md, 39-04-SUMMARY.md
 started: 2026-02-20T00:00:00Z
-updated: 2026-02-20T00:00:00Z
+updated: 2026-02-20T12:00:00Z
 ---
 
 ## Current Test
 
-number: 6
-name: Preview PDF — available at any time, shows [UNMAPPED] for unmapped fields (re-test after GAP-01 fix)
-expected: |
-  Restart API. Click "Preview PDF". A new tab opens with a PDF.
-  The PDF should show YOUR template's text/layout (e.g. "Dear Acme Property Group,
-  your project Project Alpha has a total of [UNMAPPED].").
-  The mapped fields are substituted; unmapped shows [UNMAPPED].
-awaiting: user response
+[testing complete]
 
 ## Tests
 
@@ -41,22 +34,22 @@ result: pass
 
 ### 6. Preview PDF — available at any time, shows [UNMAPPED] for unmapped fields
 expected: Click "Preview PDF". A new tab opens with a PDF. In the PDF: <<client_name>> shows "Acme Property Group", <<project_name>> shows "Project Alpha", <<estimate_total>> shows "[UNMAPPED]". Company branding (name, color) comes from the real company profile.
-result: gap — PDF opened but showed a generic BIDAXIOM-branded definition-list layout, NOT the uploaded .docx template. render.ts was implemented as a generic HTML builder that discards the user's template formatting entirely. Fix: render.ts must be replaced with a docxtemplater fill → mammoth HTML convert → Puppeteer PDF pipeline.
+result: pass (re-verified after GAP-01 fix — docxtemplater → mammoth pipeline now renders uploaded .docx template correctly)
 
 ### 7. Activation toggle — instant, no confirmation dialog
 expected: Navigate back to /settings/document-templates. Toggle the Proposal template's Active switch on. The toggle is instant with no confirmation dialog. The card shows an "Active" badge.
-result: [pending]
+result: pass
 
 ### 8. Production PDF uses active custom template; falls back when deactivated
 expected: Go to any project with an estimate and generate a Proposal PDF. The PDF output reflects the mapped field values (real project name, client name). Then toggle the template inactive, generate another Proposal PDF — this one uses the standard Phase 38 built-in layout.
-result: [pending]
+result: pass
 
 ## Summary
 
 total: 8
-passed: 5
-issues: 1
-pending: 2
+passed: 8
+issues: 0
+pending: 0
 skipped: 0
 
 ## Gaps
