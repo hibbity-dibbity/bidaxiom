@@ -8,6 +8,7 @@
 - ✅ **v1.3 Polish & Gap Closure** — Phases 25-29 (shipped Feb 18, 2026)
 - ✅ **v1.4 Rebranding & UX Upgrades** — Phases 30-35 (shipped Feb 18, 2026)
 - ✅ **v1.5 Lifecycle, PDF Generation & Document Redesign** — Phases 36-40 (shipped Feb 21, 2026)
+- 🚧 **v1.6 UX Redesign & Polish** — Phases 41-46 (in progress)
 
 ## Shipped Milestones
 
@@ -119,17 +120,110 @@
 
 ---
 
+## Active Milestone: v1.6 UX Redesign & Polish
+
+**Milestone Goal:** Redesign BIDAXIOM's UX to Procore-level density and polish — systematic dark mode audit, design token enforcement, dense financial tables, filter chips on all list views, inline approvals, compact sticky project header, and visual consistency enforced across all 40+ pages.
+
+**Note on research:** Phase 43 (Budget Domain Redesign) requires `/gsd:research-phase` before planning — TanStack Table `getGroupedRowModel` combined with `@tanstack/react-virtual` has integration nuances that must be verified. All other phases use standard patterns and can proceed directly to planning.
+
+### Phases
+
+- [ ] **Phase 41: Design Foundation** — Dark mode audit, semantic token system, canonical class recipes, npm package installation
+- [ ] **Phase 42: Shared UI Primitives** — Dense table component, badge variants, status badge consolidation, visual consistency
+- [ ] **Phase 43: Budget Domain Redesign** — Dense financial tables, column picker, inline row add, filter chips, empty states
+- [ ] **Phase 44: Change Order and Payment App Redesign** — CSV export, inline approve/reject, inline mark-paid on list rows
+- [ ] **Phase 45: Estimates Redesign** — Horizontal stepper bar, react-number-format currency inputs, form section grouping
+- [ ] **Phase 46: Project Header, Tabs, and Navigation Chrome** — Compact sticky header, financial stat bar, tab count badges, URL-based tab routing
+
+## Phase Details
+
+### Phase 41: Design Foundation
+**Goal**: The application's CSS token system, dark mode compliance, and Tailwind class recipes are the correct foundation for all subsequent redesign work — every page renders correctly in dark mode and every surface uses semantic tokens rather than hardcoded palette classes.
+**Depends on**: Nothing (first v1.6 phase)
+**Requirements**: FOUND-01, FOUND-02, FOUND-03, FOUND-04, VISUAL-03
+**Success Criteria** (what must be TRUE):
+  1. Toggling to dark mode on any page produces no visible white/light backgrounds, amber washes, or slate text — all 52 previously identified hardcoded palette class violations are resolved.
+  2. Financial data across all surfaces renders positive values in green, negative values in red, and pending/neutral values in amber — using the `--financial-positive`, `--financial-negative` semantic CSS tokens, not inline Tailwind palette classes.
+  3. The `COMPONENT-ORGANIZATION.md` file contains documented canonical Tailwind class recipes for table rows, list views, and form fields; no per-page deviation in row height, cell padding, or typography scale is permitted without updating the canonical.
+  4. Three new npm packages are installed in `apps/web/` and importable: `@tanstack/react-virtual` v3, `motion` v12, and `react-number-format` v5.
+  5. Approval action buttons on change order and payment application detail pages appear in the page header action area — not inside dropdown menus or overflow controls.
+**Plans**: TBD
+
+### Phase 42: Shared UI Primitives
+**Goal**: The shared `components/ui/` primitives and `components/shared/` domain components are correctly configured for Procore-level density — table row height, badge variants, and status badge semantics are locked in before any domain phase inherits them.
+**Depends on**: Phase 41
+**Requirements**: TABLE-01, TABLE-02, TABLE-03, TABLE-04, TABLE-05, VISUAL-01, VISUAL-02
+**Success Criteria** (what must be TRUE):
+  1. All financial tables rendered by the updated `table.tsx` display a sticky frozen header row that stays visible during vertical scroll — achieved without Radix ScrollArea.
+  2. Wide financial tables (budget, SOV) freeze their first column so that the cost code or description remains visible when the user scrolls horizontally.
+  3. All financial amount columns are right-aligned with tabular-nums font variant and `$` prefix; `CurrencyDisplay` is used for read-only cells and `react-number-format` for edit inputs throughout.
+  4. Clicking any financial table column header cycles through ascending, descending, and unsorted states with a visible chevron indicator at each state.
+  5. All financial tables display a sticky summary footer row at the bottom of the scrollable area showing column totals or key aggregates.
+  6. The duplicate `estimates/lifecycle/StatusBadge.tsx` component is deleted and every one of its former call sites uses `components/shared/status-badge.tsx` instead.
+  7. Status badges across all surfaces (projects, change orders, estimates, payment applications, documents, RFQs) render using the 4-tier semantic model: gray for draft/inactive, amber for pending/review, green for approved/active/complete, red for rejected/void.
+**Plans**: TBD
+
+### Phase 43: Budget Domain Redesign
+**Goal**: The budget domain surfaces — line item table, summary cards, and list views — are redesigned to Procore-level density with column picker, inline row addition, filter chips, and consistent empty states, establishing the domain redesign pattern that change order and payment app phases will replicate.
+**Depends on**: Phase 42
+**Requirements**: TABLE-06, TABLE-07, LIST-01, LIST-02, LIST-03
+**Note**: Requires `/gsd:research-phase` before planning. TanStack Table `getGroupedRowModel` combined with `@tanstack/react-virtual` has integration nuances that must be verified before implementation planning begins.
+**Success Criteria** (what must be TRUE):
+  1. The budget line item table and projects list view have a column picker control (popover with checkbox list) that shows and hides individual columns; the user's selection is reflected immediately without a page reload.
+  2. SOV line items and change order line items can be added as a new inline row directly in the table by clicking "Add line item" — no modal dialog opens.
+  3. Every major list view (projects, customers, subcontractors, change orders, payment applications, estimates, RFQs) has an inline search bar directly above the table that filters the visible result set.
+  4. Active filter selections on all list views display as removable filter chips below the search bar; each chip shows the filter label and value with an × dismiss button; a "Clear all" link removes all active filters simultaneously.
+  5. Every list view displays a contextual empty state with icon, heading, description, and a context-appropriate CTA button when no records match the current filters or when the list is genuinely empty.
+**Plans**: TBD
+
+### Phase 44: Change Order and Payment App Redesign
+**Goal**: Change order and payment application list views gain CSV export and inline approval actions — users can approve, reject, or mark paid directly from the list row without navigating to the detail page.
+**Depends on**: Phase 43
+**Requirements**: LIST-04, LIST-05, LIST-06
+**Success Criteria** (what must be TRUE):
+  1. All list views with filtering support have an "Export CSV" button that downloads the currently filtered and sorted result set as a CSV file.
+  2. Change order list rows display inline Approve and Reject action buttons for pending COs; activating either shows a confirmation before the irreversible status change is applied; the CO status updates without a full page navigation.
+  3. Payment application list rows display inline Approve and Mark Paid action buttons for pending pay apps; the status updates without navigating to the detail page.
+**Plans**: TBD
+
+### Phase 45: Estimates Redesign
+**Goal**: The estimate creation wizard and its forms are redesigned with a visible progress stepper, properly masked currency inputs across all amount fields, and visual section grouping on multi-section forms — the most complex form surface in BIDAXIOM is also the most polished.
+**Depends on**: Phase 44
+**Requirements**: FORM-01, FORM-02, FORM-03
+**Note**: Highest form state regression risk — every Controller must use CSS visibility for show/hide (never conditional JS mounting). Full 6-step form submission UAT verified in the Network tab is mandatory before phase complete.
+**Success Criteria** (what must be TRUE):
+  1. The estimate creation wizard displays a horizontal stepper bar at the top with all 6 steps labeled, the current step highlighted, and completed steps visually marked; users can navigate back to any completed step by clicking it.
+  2. All currency input fields across the application (change order amounts, budget entries, pay app values, line item unit costs) use `react-number-format` NumericFormat with `$` prefix, thousands separators, and 2 decimal precision; the value submitted to the server is a number, not a formatted string.
+  3. Multi-section create and edit forms (change order, project, customer) use clear visual section grouping with section headings and consistent spacing — fields are not presented as an undivided flat list.
+**Plans**: TBD
+
+### Phase 46: Project Header, Tabs, and Navigation Chrome
+**Goal**: The project detail page has a compact sticky header with a financial stat bar and tab count badges, and the tab navigation system is confirmed URL-based with browser back/forward support — the shared chrome across all 10 project tabs is polished and regression-free.
+**Depends on**: Phase 45
+**Requirements**: CHROME-01, CHROME-02, CHROME-03, CHROME-04
+**Note**: Navigation chrome is shared across all 10 project tabs — a regression here breaks the entire project detail experience. Confirm `<Link href scroll={false}>` tab routing and `sectionPrefetchMap` registrations are preserved before writing any code. URL-based routing must not be replaced with Radix Tabs state.
+**Success Criteria** (what must be TRUE):
+  1. The project detail page has a sticky header with maximum 80px height that remains fixed at the top of the viewport during vertical scroll on all 10 project tabs.
+  2. The sticky project header includes an inline financial stat bar showing contract value, approved change orders total, billed to date, balance to complete, and retainage held — all visible without scrolling or expanding any control.
+  3. Project navigation tabs display a count badge for pending action items on tabs where pending items exist (e.g., "Change Orders (3)" when 3 change orders await approval).
+  4. Tab navigation uses `<Link href scroll={false}>` — not Radix Tabs component state — so browser back and forward buttons work, tab URLs are shareable, and hover-prefetch via `sectionPrefetchMap` fires correctly.
+**Plans**: TBD
+
+---
+
 ## Progress
 
-| Phase | Milestone | Plans | Status | Completed |
-|-------|-----------|-------|--------|-----------|
-| 1-12 | v1.0 | 60/60 | ✅ Complete | 2026-02-14 |
-| 13-19 | v1.1 | 50/50 | ✅ Complete | 2026-02-16 |
-| 20-24 | v1.2 | 12/12 | ✅ Complete | 2026-02-17 |
-| 25-29 | v1.3 | 16/16 | ✅ Complete | 2026-02-18 |
-| 30-35 | v1.4 | 16/16 | ✅ Complete | 2026-02-18 |
-| 36 | v1.5 | Complete    | 2026-02-19 | - |
-| 37 | v1.5 | Complete    | 2026-02-19 | - |
-| 38 | v1.5 | Complete    | 2026-02-20 | - |
-| 39 | v1.5 | Complete    | 2026-02-21 | - |
-| 40 | v1.5 | Complete    | 2026-02-21 | - |
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 1-12 (v1.0) | 60/60 | Complete | 2026-02-14 |
+| 13-19 (v1.1) | 50/50 | Complete | 2026-02-16 |
+| 20-24 (v1.2) | 12/12 | Complete | 2026-02-17 |
+| 25-29 (v1.3) | 16/16 | Complete | 2026-02-18 |
+| 30-35 (v1.4) | 16/16 | Complete | 2026-02-18 |
+| 36-40 (v1.5) | 23/23 | Complete | 2026-02-21 |
+| 41. Design Foundation | 0/TBD | Not started | - |
+| 42. Shared UI Primitives | 0/TBD | Not started | - |
+| 43. Budget Domain Redesign | 0/TBD | Not started | - |
+| 44. Change Order and Payment App Redesign | 0/TBD | Not started | - |
+| 45. Estimates Redesign | 0/TBD | Not started | - |
+| 46. Project Header, Tabs, and Navigation Chrome | 0/TBD | Not started | - |
