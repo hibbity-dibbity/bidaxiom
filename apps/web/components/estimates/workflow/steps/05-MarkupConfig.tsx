@@ -378,7 +378,7 @@ export function MarkupConfigStep({ estimateId }: MarkupConfigStepProps) {
               </div>
               <div className="col-span-2 pt-2 border-t">
                 <dt className="text-muted-foreground">Margin</dt>
-                <dd className="text-lg font-bold text-green-600">
+                <dd className="text-lg font-bold text-financial-positive">
                   {summary.margin.toFixed(2)}%
                 </dd>
               </div>

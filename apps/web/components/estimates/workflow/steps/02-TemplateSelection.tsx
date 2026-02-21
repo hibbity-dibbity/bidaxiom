@@ -190,7 +190,7 @@ export function TemplateSelectionStep({ estimateId }: TemplateSelectionStepProps
       <div className="pt-4 border-t">
         <p className="text-sm text-muted-foreground">
           {estimate?.appliedTemplateId ? (
-            <span className="text-green-600 font-medium">
+            <span className="text-financial-positive font-medium">
               ✓ Template applied - Step 3 unlocked
             </span>
           ) : (

@@ -185,7 +185,7 @@ export function LaborRatesStep({ estimateId }: LaborRatesStepProps) {
         </Button>
         <p className="text-sm text-muted-foreground">
           {appliedTemplateId ? (
-            <span className="text-green-600 font-medium">
+            <span className="text-financial-positive font-medium">
               ✓ Step 5 unlocked - proceed to Markup Configuration
             </span>
           ) : (

@@ -79,9 +79,9 @@ export function SOVBuilder({ estimateId, defaultGroupingMethod = "csi" }: SOVBui
   // Get variance color
   const getVarianceColor = () => {
     if (isVarianceAcceptable) {
-      return "text-green-600";
+      return "text-financial-positive";
     } else {
-      return "text-red-600";
+      return "text-financial-negative";
     }
   };
 
@@ -222,9 +222,9 @@ export function SOVBuilder({ estimateId, defaultGroupingMethod = "csi" }: SOVBui
               )}
 
               {isVarianceAcceptable && (
-                <Alert className="mt-4 border-green-600 bg-green-50 dark:bg-green-950">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <AlertDescription className="text-green-600">
+                <Alert className="mt-4 border-border bg-muted">
+                  <CheckCircle2 className="h-4 w-4 text-financial-positive" />
+                  <AlertDescription className="text-financial-positive">
                     SOV total matches estimate total. Ready to finalize.
                   </AlertDescription>
                 </Alert>

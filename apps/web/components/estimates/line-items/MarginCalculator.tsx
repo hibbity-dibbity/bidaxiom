@@ -55,11 +55,11 @@ export function calculateLineItemMargin(
  */
 export function getMarginColorClass(marginPercent: number): string {
   if (marginPercent < 10) {
-    return "text-red-600";
+    return "text-financial-negative";
   } else if (marginPercent < 20) {
-    return "text-yellow-600";
+    return "text-financial-pending";
   } else {
-    return "text-green-600";
+    return "text-financial-positive";
   }
 }
 

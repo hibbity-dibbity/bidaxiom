@@ -175,7 +175,7 @@ export function BasicInfoStep({ estimateId }: BasicInfoStepProps) {
       <div className="pt-4 border-t">
         <p className="text-sm text-muted-foreground">
           {watchedData.name && watchedData.projectType ? (
-            <span className="text-green-600 font-medium">
+            <span className="text-financial-positive font-medium">
               ✓ Step 2 unlocked - proceed to Template Selection
             </span>
           ) : (

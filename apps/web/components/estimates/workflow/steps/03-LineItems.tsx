@@ -78,7 +78,7 @@ export function LineItemsStep({ estimateId }: LineItemsStepProps) {
         <div>
           <p className="text-sm text-muted-foreground">
             {estimate.lineItems && estimate.lineItems.length > 0 ? (
-              <span className="text-green-600 font-medium">
+              <span className="text-financial-positive font-medium">
                 ✓ Step 4 unlocked - proceed to Labor Rates
               </span>
             ) : (
