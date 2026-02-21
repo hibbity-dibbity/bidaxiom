@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-21)
 ## Current Position
 
 Phase: 41 of 46 (Design Foundation)
-Plan: 01 complete (financial tokens + packages + canonical recipes)
+Plan: 02 complete (auth pages + settings/integrations pages token migration)
 Status: In progress
-Last activity: 2026-02-21 — 41-01 complete: financial CSS tokens, 3 packages installed, Canonical Class Recipes documented
+Last activity: 2026-02-21 — 41-02 complete: 11 auth/settings pages migrated to CSS variable tokens (dark mode compliant)
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100% | v1.5: [██████████] 100% | v1.6: [█░░░░░░░░░] 4%
 
@@ -46,6 +46,9 @@ Recent decisions relevant to v1.6:
 - [41-01]: Financial tokens use flat string format in tailwind.config.ts (no nested object) — no foreground variant needed for these semantic colors
 - [41-01]: motion v12 import path is 'motion/react' not 'framer-motion' — documented in COMPONENT-ORGANIZATION.md Canonical Class Recipes
 - [41-01]: Dark mode financial tokens use lighter palette steps (400) vs light mode (600) for WCAG contrast on dark backgrounds
+- [41-02]: Amber callout (read-only warning) maps to bg-muted + border-border — neutral info surface, not a warning surface
+- [41-02]: Success state icons (checkmark, connection confirmed) use text-financial-positive + bg-muted wrapper — replaces bg-green-100/text-green-600 pattern which had no dark: counterpart
+- [41-02]: field-mapping-client badge states: mapped fields use bg-muted + text-financial-positive; unmapped use bg-muted + text-foreground — eliminates dark: companion hacks
 
 ### Pending Todos
 
@@ -59,5 +62,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Completed 41-01-PLAN.md — financial tokens + packages + canonical recipes. Next step: Execute 41-02 through 41-06 (Wave 2 parallel plans).
+Stopped at: Completed 41-02-PLAN.md — 11 auth/settings pages token migration. Next step: Continue Wave 2 with 41-03 through 41-06.
 Resume file: None
