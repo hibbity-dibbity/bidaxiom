@@ -112,7 +112,18 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 
 ### Active
 
-<!-- No active milestone — v1.5 complete as of Feb 21, 2026. Start next milestone with /gsd:new-milestone -->
+<!-- v1.6 UX Redesign -->
+
+**Milestone v1.6: UX Redesign & Polish** (Started: 2026-02-21)
+
+**Goal:** Redesign BIDAXIOM's UX to Procore-level density and polish — systematic audit of every surface, comprehensive overhaul of project detail pages, list/table views, and data entry forms, with visual consistency enforced across the entire application.
+
+**Target features:**
+- Project detail pages redesign — tabs, header, financial data layout at Procore density
+- List/table views overhaul — projects, estimates, customers, subs, change orders, pay apps
+- Forms and data entry improvement — progressive disclosure, field layout, multi-step flows
+- Visual consistency audit and enforcement — component library cleanup, spacing, typography, color use
+- Competitive UX benchmarking against Procore and BuilderTrend patterns
 
 ### Out of Scope
 
