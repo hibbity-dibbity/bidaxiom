@@ -5,7 +5,7 @@ import Link from "next/link";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/shared/status-badge";
 import {
   Select,
   SelectContent,
@@ -35,13 +35,15 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 2,
 });
 
-const statusColors: Record<string, string> = {
-  draft: "bg-gray-500/10 text-gray-700 border-gray-200",
-  submitted: "bg-yellow-500/10 text-yellow-700 border-yellow-200",
-  under_review: "bg-orange-500/10 text-orange-700 border-orange-200",
-  approved: "bg-green-500/10 text-green-700 border-green-200",
-  rejected: "bg-red-500/10 text-red-700 border-red-200",
-  paid: "bg-blue-500/10 text-blue-700 border-blue-200",
+type PaymentAppStatus = "draft" | "submitted" | "under_review" | "approved" | "rejected" | "paid";
+
+const statusVariantMap: Record<PaymentAppStatus, "draft" | "pending" | "approved" | "rejected" | "active"> = {
+  draft: "draft",
+  submitted: "pending",
+  under_review: "pending",
+  approved: "approved",
+  rejected: "rejected",
+  paid: "active",
 };
 
 export function PaymentAppList({ projectId, projectSlug }: PaymentAppListProps) {
@@ -214,12 +216,11 @@ export function PaymentAppList({ projectId, projectSlug }: PaymentAppListProps) 
                       {currencyFormatter.format(Number(app.currentPaymentDue))}
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        className={statusColors[app.status] || "bg-gray-500/10 text-gray-700"}
-                        variant="outline"
+                      <StatusBadge
+                        variant={statusVariantMap[app.status as PaymentAppStatus] || "draft"}
                       >
                         {app.status.replace("_", " ")}
-                      </Badge>
+                      </StatusBadge>
                     </TableCell>
                     <TableCell>
                       <Button variant="outline" size="sm" asChild>

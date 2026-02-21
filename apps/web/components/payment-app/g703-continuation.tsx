@@ -78,7 +78,7 @@ export function G703Continuation({ lineItems, editable = false, onLineItemChange
           {lineItems.map((item, index) => {
             const hasError = item.currentPercent < item.previousPercent;
             return (
-              <TableRow key={item.sovItemNumber} className={hasError ? "bg-red-50" : ""}>
+              <TableRow key={item.sovItemNumber} className={hasError ? "bg-muted" : ""}>
                 <TableCell className="font-mono">{item.sovItemNumber}</TableCell>
                 <TableCell>{item.sovDescription}</TableCell>
                 <TableCell className="font-mono">
@@ -98,7 +98,7 @@ export function G703Continuation({ lineItems, editable = false, onLineItemChange
                       onChange={(e) =>
                         onLineItemChange?.(index, "currentPercent", parseFloat(e.target.value) || 0)
                       }
-                      className={`w-full text-center ${hasError ? "border-red-500" : ""}`}
+                      className={`w-full text-center ${hasError ? "border-destructive" : ""}`}
                     />
                   ) : (
                     <div className="text-center">{item.currentPercent.toFixed(2)}%</div>
@@ -130,7 +130,13 @@ export function G703Continuation({ lineItems, editable = false, onLineItemChange
                   {item.currentPercent.toFixed(2)}%
                 </TableCell>
                 <TableCell className="font-mono">
-                  {currencyFormatter.format(item.balanceToFinish)}
+                  {hasError ? (
+                    <span className="text-financial-negative">
+                      {currencyFormatter.format(item.balanceToFinish)}
+                    </span>
+                  ) : (
+                    currencyFormatter.format(item.balanceToFinish)
+                  )}
                 </TableCell>
                 <TableCell className="font-mono">
                   {currencyFormatter.format(item.retainageAmount)}

@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/shared/status-badge";
 import {
   Table,
   TableBody,
@@ -55,21 +55,21 @@ export function RetainageSummary({ projectId }: RetainageSummaryProps) {
         <div className="grid grid-cols-4 gap-4">
           <div className="p-4 border rounded-lg">
             <p className="text-sm text-muted-foreground">Total Held</p>
-            <p className="text-2xl font-bold text-amber-600">
+            <p className="text-2xl font-bold text-financial-negative">
               {currencyFormatter.format(Number(summary.totalHeld))}
             </p>
           </div>
 
           <div className="p-4 border rounded-lg">
             <p className="text-sm text-muted-foreground">Total Released</p>
-            <p className="text-2xl font-bold text-green-600">
+            <p className="text-2xl font-bold text-financial-positive">
               {currencyFormatter.format(Number(summary.totalReleased))}
             </p>
           </div>
 
           <div className="p-4 border rounded-lg">
             <p className="text-sm text-muted-foreground">Eligible for Release</p>
-            <p className="text-2xl font-bold text-blue-600">
+            <p className="text-2xl font-bold">
               {currencyFormatter.format(Number(summary.totalEligibleForRelease))}
             </p>
           </div>
@@ -108,18 +108,17 @@ export function RetainageSummary({ projectId }: RetainageSummaryProps) {
                       {Number(record.retainageRate).toFixed(2)}%
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        variant="outline"
-                        className={
+                      <StatusBadge
+                        variant={
                           record.status === "held"
-                            ? "bg-amber-500/10 text-amber-700 border-amber-200"
+                            ? "warning"
                             : record.status === "eligible_for_release"
-                            ? "bg-blue-500/10 text-blue-700 border-blue-200"
-                            : "bg-green-500/10 text-green-700 border-green-200"
+                            ? "pending"
+                            : "approved"
                         }
                       >
                         {record.status.replace("_", " ")}
-                      </Badge>
+                      </StatusBadge>
                     </TableCell>
                     <TableCell className="font-mono">
                       {record.releasedAmount

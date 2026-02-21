@@ -1,13 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { trpc } from "@/lib/trpc";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
+import { StatusBadge } from "@/components/shared/status-badge";
 import { CheckCircle, XCircle, Clock, DollarSign } from "lucide-react";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
@@ -16,13 +10,13 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 2,
 });
 
-const statusColors: Record<string, string> = {
-  draft: "bg-gray-500/10 text-gray-700 border-gray-200",
-  submitted: "bg-yellow-500/10 text-yellow-700 border-yellow-200",
-  under_review: "bg-orange-500/10 text-orange-700 border-orange-200",
-  approved: "bg-green-500/10 text-green-700 border-green-200",
-  rejected: "bg-red-500/10 text-red-700 border-red-200",
-  paid: "bg-blue-500/10 text-blue-700 border-blue-200",
+const statusVariantMap: Record<string, "draft" | "pending" | "approved" | "rejected" | "cancelled" | "active"> = {
+  draft: "draft",
+  submitted: "pending",
+  under_review: "pending",
+  approved: "approved",
+  rejected: "rejected",
+  paid: "active",
 };
 
 interface G702FormProps {
@@ -30,44 +24,6 @@ interface G702FormProps {
 }
 
 export function G702Form({ paymentApp }: G702FormProps) {
-  const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
-
-  const utils = trpc.useUtils();
-
-  const submitMutation = trpc.paymentApp.submit.useMutation({
-    onSuccess: () => {
-      utils.paymentApp.getById.invalidate({ id: paymentApp.id });
-      toast.success("Payment application submitted for approval");
-      setSubmitDialogOpen(false);
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to submit payment application");
-    },
-  });
-
-  const markPaidMutation = trpc.paymentApp.markPaid.useMutation({
-    onSuccess: () => {
-      utils.paymentApp.getById.invalidate({ id: paymentApp.id });
-      toast.success("Payment application marked as paid");
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to mark as paid");
-    },
-  });
-
-  const handleSubmit = () => {
-    submitMutation.mutate({
-      paymentAppId: paymentApp.id,
-      approvalSteps: [{ stepOrder: 1, approverRole: "org:admin", requirementType: "all" }],
-    });
-  };
-
-  const handleMarkPaid = () => {
-    if (confirm("Mark this payment application as paid?")) {
-      markPaidMutation.mutate({ paymentAppId: paymentApp.id });
-    }
-  };
-
   const StatusIcon = paymentApp.status === "approved"
     ? CheckCircle
     : paymentApp.status === "rejected"
@@ -83,10 +39,10 @@ export function G702Form({ paymentApp }: G702FormProps) {
             <CardDescription>Application Number: {paymentApp.applicationNumber}</CardDescription>
           </div>
           <div className="flex items-center gap-2">
-            <Badge className={statusColors[paymentApp.status] || "bg-gray-500/10 text-gray-700"} variant="outline">
-              <StatusIcon className="mr-1 h-3 w-3" />
+            <StatusBadge variant={statusVariantMap[paymentApp.status] || "draft"}>
+              <StatusIcon className="mr-1 h-3 w-3 inline" />
               {paymentApp.status.replace("_", " ")}
-            </Badge>
+            </StatusBadge>
           </div>
         </div>
       </CardHeader>
@@ -155,62 +111,21 @@ export function G702Form({ paymentApp }: G702FormProps) {
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex gap-2 border-t pt-4">
-          {paymentApp.status === "draft" && (
-            <Button onClick={() => setSubmitDialogOpen(true)}>
-              Submit for Approval
-            </Button>
-          )}
-
-          {paymentApp.status === "approved" && !paymentApp.paidAt && (
-            <Button onClick={handleMarkPaid} disabled={markPaidMutation.isPending}>
-              {markPaidMutation.isPending ? "Marking..." : "Mark as Paid"}
-            </Button>
-          )}
-
-          {paymentApp.status === "paid" && paymentApp.paidAt && (
+        {/* Paid info (read-only) */}
+        {paymentApp.status === "paid" && paymentApp.paidAt && (
+          <div className="border-t pt-4">
             <p className="text-sm text-muted-foreground">
               Paid on {new Date(paymentApp.paidAt).toLocaleDateString()}
             </p>
-          )}
-
-          {paymentApp.status === "rejected" && (
-            <Button variant="outline" disabled>
-              Edit & Resubmit
-            </Button>
-          )}
-
-          {(paymentApp.status === "submitted" || paymentApp.status === "under_review") && (
-            <p className="text-sm text-muted-foreground">Approval in progress...</p>
-          )}
-        </div>
-      </CardContent>
-
-      {/* Submit Dialog */}
-      <Dialog open={submitDialogOpen} onOpenChange={setSubmitDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Submit for Approval</DialogTitle>
-            <DialogDescription>
-              Submit this payment application for approval workflow
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="text-sm text-muted-foreground">
-              This payment application will be submitted to the configured approval workflow.
-            </p>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSubmitDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSubmit} disabled={submitMutation.isPending}>
-              {submitMutation.isPending ? "Submitting..." : "Submit"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        )}
+
+        {(paymentApp.status === "submitted" || paymentApp.status === "under_review") && (
+          <div className="border-t pt-4">
+            <p className="text-sm text-muted-foreground">Approval in progress...</p>
+          </div>
+        )}
+      </CardContent>
     </Card>
   );
 }

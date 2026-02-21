@@ -3,6 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { StatusBadge } from "@/components/shared/status-badge";
 import { trpc } from "@/lib/trpc";
 
 interface LienWaiverTrackerProps {
@@ -12,9 +13,9 @@ interface LienWaiverTrackerProps {
 
 const waiverTypeColors: Record<string, string> = {
   partial_conditional: "bg-blue-500/10 text-blue-700 border-blue-200",
-  partial_unconditional: "bg-amber-500/10 text-amber-700 border-amber-200",
+  partial_unconditional: "bg-muted text-foreground border-border",
   final_conditional: "bg-purple-500/10 text-purple-700 border-purple-200",
-  final_unconditional: "bg-red-500/10 text-red-700 border-red-200",
+  final_unconditional: "bg-orange-500/10 text-orange-700 border-orange-200",
 };
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
@@ -54,7 +55,7 @@ export function LienWaiverTracker({ paymentAppId, projectId }: LienWaiverTracker
             {totalReceived}/{totalRequired} Received
           </Badge>
           {allComplete && (
-            <span className="ml-2 text-green-600 text-sm">All waivers collected</span>
+            <span className="ml-2 text-financial-positive text-sm">All waivers collected</span>
           )}
         </CardDescription>
       </CardHeader>
@@ -95,9 +96,9 @@ export function LienWaiverTracker({ paymentAppId, projectId }: LienWaiverTracker
                 )}
                 <p className="text-sm">
                   Status:{" "}
-                  <span className={isCollected ? "text-green-600 font-medium" : "text-yellow-600"}>
+                  <StatusBadge variant={isCollected ? "approved" : "warning"}>
                     {waiver.status.replace("_", " ")}
-                  </span>
+                  </StatusBadge>
                 </p>
               </div>
             </div>

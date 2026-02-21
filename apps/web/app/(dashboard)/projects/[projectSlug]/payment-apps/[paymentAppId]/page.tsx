@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,14 @@ import { LienWaiverTracker } from "@/components/payment-app/lien-waiver-tracker"
 import { RetainageSummary } from "@/components/payment-app/retainage-summary";
 import { ChevronLeft, FileDown, Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 export default function PaymentAppDetailPage({
@@ -18,12 +27,15 @@ export default function PaymentAppDetailPage({
   params: { projectSlug: string; paymentAppId: string };
 }) {
   const { projectSlug, paymentAppId } = params;
+  const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
 
   // Resolve project by slug (cached from layout)
   const { data: project } = trpc.project.getBySlug.useQuery({ slug: projectSlug });
   const projectId = project?.id;
 
   const { data: paymentApp, isLoading } = trpc.paymentApp.getById.useQuery({ id: paymentAppId });
+
+  const utils = trpc.useUtils();
 
   const generatePdfMutation = trpc.pdf.generatePaymentApp.useMutation({
     onSuccess: () => {
@@ -33,6 +45,40 @@ export default function PaymentAppDetailPage({
       toast.error(error.message);
     },
   });
+
+  const submitMutation = trpc.paymentApp.submit.useMutation({
+    onSuccess: () => {
+      utils.paymentApp.getById.invalidate({ id: paymentAppId });
+      toast.success("Payment application submitted for approval");
+      setSubmitDialogOpen(false);
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to submit payment application");
+    },
+  });
+
+  const markPaidMutation = trpc.paymentApp.markPaid.useMutation({
+    onSuccess: () => {
+      utils.paymentApp.getById.invalidate({ id: paymentAppId });
+      toast.success("Payment application marked as paid");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to mark as paid");
+    },
+  });
+
+  const handleSubmitForApproval = () => {
+    submitMutation.mutate({
+      paymentAppId,
+      approvalSteps: [{ stepOrder: 1, approverRole: "org:admin", requirementType: "all" }],
+    });
+  };
+
+  const handleMarkAsPaid = () => {
+    if (confirm("Mark this payment application as paid?")) {
+      markPaidMutation.mutate({ paymentAppId });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -95,6 +141,7 @@ export default function PaymentAppDetailPage({
         </Button>
       </div>
 
+      {/* Header with action buttons — VISUAL-03 */}
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold">Payment Application {paymentApp.applicationNumber}</h1>
@@ -103,23 +150,39 @@ export default function PaymentAppDetailPage({
             {new Date(paymentApp.periodEnd).toLocaleDateString()}
           </p>
         </div>
-        <Button
-          variant="outline"
-          disabled={generatePdfMutation.isPending}
-          onClick={() =>
-            generatePdfMutation.mutate({
-              projectSlug,
-              paymentAppId,
-            })
-          }
-        >
-          {generatePdfMutation.isPending ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <FileDown className="mr-2 h-4 w-4" />
+        <div className="flex items-center gap-2">
+          {paymentApp.status === "draft" && (
+            <Button variant="default" onClick={() => setSubmitDialogOpen(true)}>
+              Submit for Approval
+            </Button>
           )}
-          Generate AIA G702/G703 PDF
-        </Button>
+          {paymentApp.status === "approved" && !paymentApp.paidAt && (
+            <Button
+              variant="default"
+              onClick={handleMarkAsPaid}
+              disabled={markPaidMutation.isPending}
+            >
+              {markPaidMutation.isPending ? "Marking..." : "Mark as Paid"}
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            disabled={generatePdfMutation.isPending}
+            onClick={() =>
+              generatePdfMutation.mutate({
+                projectSlug,
+                paymentAppId,
+              })
+            }
+          >
+            {generatePdfMutation.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <FileDown className="mr-2 h-4 w-4" />
+            )}
+            Generate AIA G702/G703 PDF
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="summary" className="space-y-6">
@@ -158,6 +221,31 @@ export default function PaymentAppDetailPage({
           <RetainageSummary projectId={projectId!} />
         </TabsContent>
       </Tabs>
+
+      {/* Submit for Approval Dialog */}
+      <Dialog open={submitDialogOpen} onOpenChange={setSubmitDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Submit for Approval</DialogTitle>
+            <DialogDescription>
+              Submit this payment application for approval workflow
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-muted-foreground">
+              This payment application will be submitted to the configured approval workflow.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSubmitDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmitForApproval} disabled={submitMutation.isPending}>
+              {submitMutation.isPending ? "Submitting..." : "Submit"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

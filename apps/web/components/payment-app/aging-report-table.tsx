@@ -73,7 +73,7 @@ export function AgingReportTable({ type }: AgingReportTableProps) {
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Overdue (&gt;30 days)</p>
-            <p className={`text-2xl font-bold ${overdue > 0 ? "text-red-600" : ""}`}>
+            <p className={`text-2xl font-bold ${overdue > 0 ? "text-financial-negative" : ""}`}>
               {currencyFormatter.format(overdue)}
             </p>
           </div>
@@ -97,19 +97,19 @@ export function AgingReportTable({ type }: AgingReportTableProps) {
               ? byProject?.map((item: any) => (
                   <TableRow key={item.projectId}>
                     <TableCell>{item.projectName || "Unknown Project"}</TableCell>
-                    <TableCell className="text-right font-mono text-green-600">
+                    <TableCell className="text-right font-mono text-financial-positive">
                       {currencyFormatter.format(Number(item.current))}
                     </TableCell>
-                    <TableCell className="text-right font-mono text-yellow-600">
+                    <TableCell className="text-right font-mono text-muted-foreground">
                       {currencyFormatter.format(Number(item.days31to60))}
                     </TableCell>
-                    <TableCell className="text-right font-mono text-orange-600">
+                    <TableCell className="text-right font-mono text-muted-foreground">
                       {currencyFormatter.format(Number(item.days61to90))}
                     </TableCell>
-                    <TableCell className="text-right font-mono text-red-600">
+                    <TableCell className="text-right font-mono text-financial-negative">
                       {currencyFormatter.format(Number(item.days91to120))}
                     </TableCell>
-                    <TableCell className="text-right font-mono text-red-800">
+                    <TableCell className="text-right font-mono text-financial-negative">
                       {currencyFormatter.format(Number(item.over120))}
                     </TableCell>
                     <TableCell className="text-right font-mono font-bold">
@@ -120,19 +120,19 @@ export function AgingReportTable({ type }: AgingReportTableProps) {
               : byVendor?.map((item: any) => (
                   <TableRow key={item.vendorName}>
                     <TableCell>{item.vendorName}</TableCell>
-                    <TableCell className="text-right font-mono text-green-600">
+                    <TableCell className="text-right font-mono text-financial-positive">
                       {currencyFormatter.format(Number(item.current))}
                     </TableCell>
-                    <TableCell className="text-right font-mono text-yellow-600">
+                    <TableCell className="text-right font-mono text-muted-foreground">
                       {currencyFormatter.format(Number(item.days31to60))}
                     </TableCell>
-                    <TableCell className="text-right font-mono text-orange-600">
+                    <TableCell className="text-right font-mono text-muted-foreground">
                       {currencyFormatter.format(Number(item.days61to90))}
                     </TableCell>
-                    <TableCell className="text-right font-mono text-red-600">
+                    <TableCell className="text-right font-mono text-financial-negative">
                       {currencyFormatter.format(Number(item.days91to120))}
                     </TableCell>
-                    <TableCell className="text-right font-mono text-red-800">
+                    <TableCell className="text-right font-mono text-financial-negative">
                       {currencyFormatter.format(Number(item.over120))}
                     </TableCell>
                     <TableCell className="text-right font-mono font-bold">
@@ -144,19 +144,19 @@ export function AgingReportTable({ type }: AgingReportTableProps) {
             {/* Totals Row */}
             <TableRow className="font-bold bg-muted/50">
               <TableCell>Total</TableCell>
-              <TableCell className="text-right font-mono text-green-600">
+              <TableCell className="text-right font-mono text-financial-positive">
                 {currencyFormatter.format(Number(overallBuckets.current))}
               </TableCell>
-              <TableCell className="text-right font-mono text-yellow-600">
+              <TableCell className="text-right font-mono text-muted-foreground">
                 {currencyFormatter.format(Number(overallBuckets.days31to60))}
               </TableCell>
-              <TableCell className="text-right font-mono text-orange-600">
+              <TableCell className="text-right font-mono text-muted-foreground">
                 {currencyFormatter.format(Number(overallBuckets.days61to90))}
               </TableCell>
-              <TableCell className="text-right font-mono text-red-600">
+              <TableCell className="text-right font-mono text-financial-negative">
                 {currencyFormatter.format(Number(overallBuckets.days91to120))}
               </TableCell>
-              <TableCell className="text-right font-mono text-red-800">
+              <TableCell className="text-right font-mono text-financial-negative">
                 {currencyFormatter.format(Number(overallBuckets.over120))}
               </TableCell>
               <TableCell className="text-right font-mono font-bold">
