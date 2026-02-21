@@ -169,9 +169,9 @@ export function DocumentUploader({ projectId, folderId, onUploadComplete }: Docu
   const getStatusIcon = (status: UploadFile["status"]) => {
     switch (status) {
       case "complete":
-        return <Check className="h-4 w-4 text-green-500" />;
+        return <Check className="h-4 w-4 text-financial-positive" />;
       case "error":
-        return <AlertCircle className="h-4 w-4 text-red-500" />;
+        return <AlertCircle className="h-4 w-4 text-destructive" />;
       default:
         return <File className="h-4 w-4 text-muted-foreground" />;
     }
@@ -230,10 +230,10 @@ export function DocumentUploader({ projectId, folderId, onUploadComplete }: Docu
                   <p className="text-xs text-muted-foreground">Registering document...</p>
                 )}
                 {uploadFile.status === "complete" && (
-                  <p className="text-xs text-green-600">Upload complete</p>
+                  <p className="text-xs text-financial-positive">Upload complete</p>
                 )}
                 {uploadFile.status === "error" && (
-                  <p className="text-xs text-red-600">{uploadFile.error}</p>
+                  <p className="text-xs text-destructive">{uploadFile.error}</p>
                 )}
               </div>
               {(uploadFile.status === "complete" || uploadFile.status === "error") && (

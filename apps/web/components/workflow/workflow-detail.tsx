@@ -298,12 +298,12 @@ export function WorkflowDetail({ workflowId, projectId, projectSlug }: WorkflowD
                       <div
                         className={`w-8 h-8 rounded-full flex items-center justify-center ${
                           isApproved
-                            ? "bg-green-500 text-white"
+                            ? "bg-financial-positive text-white"
                             : isRejected
-                            ? "bg-red-500 text-white"
+                            ? "bg-financial-negative text-white"
                             : isPending
-                            ? "bg-blue-500 text-white"
-                            : "bg-gray-300 text-gray-600"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-muted-foreground"
                         }`}
                       >
                         {isApproved ? (
@@ -315,7 +315,7 @@ export function WorkflowDetail({ workflowId, projectId, projectSlug }: WorkflowD
                         )}
                       </div>
                       {index < (workflow.approvals?.length || 0) - 1 && (
-                        <div className="w-0.5 h-12 bg-gray-300 my-1" />
+                        <div className="w-0.5 h-12 bg-border my-1" />
                       )}
                     </div>
 
@@ -358,7 +358,7 @@ export function WorkflowDetail({ workflowId, projectId, projectSlug }: WorkflowD
                             <Button
                               size="sm"
                               variant="outline"
-                              className="text-green-600 border-green-600 hover:bg-green-50"
+                              className="text-financial-positive border-border hover:bg-muted"
                               onClick={() => handleApprove(approval.id)}
                             >
                               <Check className="mr-1 h-4 w-4" />
@@ -367,7 +367,7 @@ export function WorkflowDetail({ workflowId, projectId, projectSlug }: WorkflowD
                             <Button
                               size="sm"
                               variant="outline"
-                              className="text-red-600 border-red-600 hover:bg-red-50"
+                              className="text-financial-negative border-border hover:bg-muted"
                               onClick={() => handleReject(approval.id)}
                             >
                               <X className="mr-1 h-4 w-4" />
@@ -457,7 +457,7 @@ export function WorkflowDetail({ workflowId, projectId, projectSlug }: WorkflowD
                 disabled={reviewApprovalMutation.isLoading}
                 className={
                   approvalAction === "reject"
-                    ? "bg-red-600 hover:bg-red-700"
+                    ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     : ""
                 }
               >

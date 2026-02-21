@@ -55,8 +55,8 @@ export function CalendarConnectionCard({
   const utils = trpc.useUtils();
 
   const providerName = provider === "google" ? "Google Calendar" : "Microsoft Outlook";
-  const providerColor = provider === "google" ? "text-blue-700" : "text-orange-700";
-  const providerBg = provider === "google" ? "bg-blue-100" : "bg-orange-100";
+  const providerColor = provider === "google" ? "text-primary" : "text-muted-foreground";
+  const providerBg = provider === "google" ? "bg-primary/10" : "bg-muted";
 
   const getAuthUrlMutation = trpc.calendar.getAuthUrl.useMutation({
     onSuccess: (data) => {
@@ -132,7 +132,7 @@ export function CalendarConnectionCard({
   const getStatusBadge = () => {
     if (!connection) {
       return (
-        <Badge variant="outline" className="bg-gray-100">
+        <Badge variant="outline" className="bg-muted">
           Not Connected
         </Badge>
       );
@@ -146,7 +146,7 @@ export function CalendarConnectionCard({
       return (
         <Badge
           variant="outline"
-          className="bg-yellow-100 text-yellow-800 border-yellow-300"
+          className="bg-muted text-financial-pending border-border"
         >
           Expired
         </Badge>
@@ -154,7 +154,7 @@ export function CalendarConnectionCard({
     }
 
     return (
-      <Badge className="bg-green-100 text-green-800 border-green-300">
+      <Badge className="bg-muted text-financial-positive border-border">
         Connected
       </Badge>
     );
@@ -171,7 +171,7 @@ export function CalendarConnectionCard({
         return (
           <Badge
             variant="outline"
-            className="bg-blue-100 text-blue-800 border-blue-300"
+            className="bg-primary/10 text-primary border-border"
           >
             <Loader2 className="mr-1 h-3 w-3 animate-spin" />
             Syncing...
@@ -179,7 +179,7 @@ export function CalendarConnectionCard({
         );
       case "synced":
         return (
-          <Badge className="bg-green-100 text-green-800 border-green-300">
+          <Badge className="bg-muted text-financial-positive border-border">
             Synced
           </Badge>
         );

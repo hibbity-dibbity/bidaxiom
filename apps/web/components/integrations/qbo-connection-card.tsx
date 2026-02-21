@@ -81,7 +81,7 @@ export function QboConnectionCard({ connection }: QboConnectionCardProps) {
 
   const getStatusBadge = () => {
     if (!connection.connected) {
-      return <Badge variant="outline" className="bg-gray-100">Not Connected</Badge>;
+      return <Badge variant="outline" className="bg-muted">Not Connected</Badge>;
     }
 
     if (connection.status === "error") {
@@ -90,13 +90,13 @@ export function QboConnectionCard({ connection }: QboConnectionCardProps) {
 
     if (connection.status === "expired") {
       return (
-        <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">
+        <Badge variant="outline" className="bg-muted text-financial-pending border-border">
           Expired
         </Badge>
       );
     }
 
-    return <Badge className="bg-green-100 text-green-800 border-green-300">Connected</Badge>;
+    return <Badge className="bg-muted text-financial-positive border-border">Connected</Badge>;
   };
 
   const getEnvironmentBadge = () => {
@@ -104,7 +104,7 @@ export function QboConnectionCard({ connection }: QboConnectionCardProps) {
 
     const isSandbox = connection.environment === "sandbox";
     return (
-      <Badge variant="outline" className={isSandbox ? "bg-amber-50 text-amber-700" : ""}>
+      <Badge variant="outline" className={isSandbox ? "bg-muted text-muted-foreground" : ""}>
         {isSandbox ? "Sandbox" : "Production"}
       </Badge>
     );
@@ -116,8 +116,8 @@ export function QboConnectionCard({ connection }: QboConnectionCardProps) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100">
-                <Plug className="h-5 w-5 text-green-700" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                <Plug className="h-5 w-5 text-financial-positive" />
               </div>
               <div>
                 <CardTitle>QuickBooks Online</CardTitle>

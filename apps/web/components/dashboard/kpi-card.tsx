@@ -15,9 +15,9 @@ interface KpiCardProps {
 }
 
 const statusColorMap = {
-  success: "text-green-600 dark:text-green-500",
-  warning: "text-amber-600 dark:text-amber-500",
-  error: "text-red-600 dark:text-red-500",
+  success: "text-financial-positive",
+  warning: "text-financial-pending",
+  error: "text-financial-negative",
   neutral: "",
 };
 

@@ -111,7 +111,7 @@ export function QboSyncNotifications() {
               variant={isError ? "destructive" : "default"}
               className={
                 isWarning
-                  ? "border-yellow-300 bg-yellow-50 text-yellow-900"
+                  ? "border-border bg-muted text-financial-pending"
                   : ""
               }
             >
