@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-18)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 40 complete (all 3 plans done)
+**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 40 complete (all 4 plans done, UAT approved)
 
 ## Current Position
 
 Phase: 40-document-system-redesign (complete)
-Plan: 03 complete — Unified document table UI built; all 5 DOC requirements satisfied
-Status: 40-03 complete — SUMMARY at .planning/phases/40-document-system-redesign/40-03-SUMMARY.md
-Last activity: 2026-02-21 — 40-03 complete: 6 document components + flat table documents page replacing tabs/folder tree
+Plan: 04 complete — Prefetch updated; UAT approved all 7 checks; Phase 40 fully verified
+Status: 40-04 complete — SUMMARY at .planning/phases/40-document-system-redesign/40-04-SUMMARY.md
+Last activity: 2026-02-21 — 40-04 complete: UAT passed; 3 inline fixes (Select error, upload button, bulk-download CORS proxy)
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100%
 
@@ -66,6 +66,7 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 | Phase 40 P02 | 1 | 1 tasks | 1 files |
 | Phase 40-document-system-redesign P01 | 4 | 2 tasks | 4 files |
 | Phase 40 P03 | 5 | 2 tasks | 7 files |
+| Phase 40 P04 | ~30 | 2 tasks + UAT (3 inline fixes) | 6 files |
 
 ## Accumulated Context
 
