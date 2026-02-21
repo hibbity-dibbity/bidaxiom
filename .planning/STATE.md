@@ -56,6 +56,9 @@ Recent decisions relevant to v1.6:
 - [41-06]: Calendar provider icon colors (blue/orange) replaced with text-primary/text-muted-foreground — provider-specific palette colors have no token equivalent
 - [41-06]: Workflow approve/reject action buttons use text-financial-positive/negative with border-border — consistent token replacement for colored borders
 - [41-06]: Reject dialog button uses bg-destructive pattern not raw bg-red-600 — consistent with other destructive action buttons
+- [41-03]: Winning bid highlight in bid-comparison-table uses text-financial-positive on amount text only (not row background) — financial tokens on number text only
+- [41-03]: rfq-form.tsx validation errors use text-destructive (form errors, not financial values — different semantic than text-financial-negative)
+- [41-03]: Phase lifecycle badge variants follow: opportunity/estimating/submitted→pending, awarded→approved, active/substantial_completion→active, closed→completed, warranty→warning, archived→cancelled
 
 ### Pending Todos
 
