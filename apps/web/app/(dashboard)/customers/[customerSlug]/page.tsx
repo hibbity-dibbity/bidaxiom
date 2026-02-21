@@ -9,8 +9,8 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatusBadge } from "@/components/shared/status-badge";
 import {
   Dialog,
   DialogContent,
@@ -35,11 +35,14 @@ import { createCustomerSchema } from "@construction/shared";
 import type { ProjectStatus } from "@construction/shared";
 import type { z } from "zod";
 
-const statusColors: Record<ProjectStatus, string> = {
-  active: "bg-green-500/10 text-green-700 border-green-200",
-  on_hold: "bg-yellow-500/10 text-yellow-700 border-yellow-200",
-  completed: "bg-blue-500/10 text-blue-700 border-blue-200",
-  archived: "bg-gray-500/10 text-gray-700 border-gray-200",
+const projectStatusToVariant = (status: ProjectStatus) => {
+  switch (status) {
+    case "active": return "active" as const;
+    case "on_hold": return "warning" as const;
+    case "completed": return "completed" as const;
+    case "archived": return "cancelled" as const;
+    default: return "draft" as const;
+  }
 };
 
 type CustomerFormData = z.infer<typeof createCustomerSchema>;
@@ -267,9 +270,9 @@ export default function CustomerDetailPage({
                           )}
                           {project.name}
                         </CardTitle>
-                        <Badge className={statusColors[project.status as ProjectStatus]} variant="outline">
+                        <StatusBadge variant={projectStatusToVariant(project.status as ProjectStatus)}>
                           {project.status.replace("_", " ")}
-                        </Badge>
+                        </StatusBadge>
                       </div>
                       {project.location && (
                         <CardDescription className="flex items-center gap-1 mt-1">

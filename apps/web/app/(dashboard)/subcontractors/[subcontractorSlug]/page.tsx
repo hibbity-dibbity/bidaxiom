@@ -30,6 +30,7 @@ import { toast } from "sonner";
 import { CSI_DIVISIONS } from "@/lib/csi-divisions";
 import { SubcontractorForm } from "@/components/bidding/subcontractor-form";
 import { BidHistoryTable } from "@/components/bidding/bid-history-table";
+import { StatusBadge } from "@/components/shared/status-badge";
 import type { SubcontractorStatus } from "@construction/shared";
 
 export default function SubcontractorDetailPage({ params }: { params: { subcontractorSlug: string } }) {
@@ -102,13 +103,13 @@ export default function SubcontractorDetailPage({ params }: { params: { subcontr
     );
   }
 
-  const getStatusColor = (status: string): string => {
-    const statusColors: Record<string, string> = {
-      active: "bg-green-500/10 text-green-500",
-      inactive: "bg-gray-500/10 text-gray-500",
-      blacklisted: "bg-red-500/10 text-red-500",
-    };
-    return statusColors[status] || "bg-gray-500/10 text-gray-500";
+  const subStatusToVariant = (status: string) => {
+    switch (status) {
+      case "active": return "active" as const;
+      case "inactive": return "cancelled" as const;
+      case "blacklisted": return "rejected" as const;
+      default: return "draft" as const;
+    }
   };
 
   const getStatusLabel = (status: string): string => {
@@ -135,9 +136,9 @@ export default function SubcontractorDetailPage({ params }: { params: { subcontr
           <div>
             <div className="flex items-center gap-3 mb-2">
               <h1 className="text-3xl font-bold tracking-tight">{subcontractor.companyName}</h1>
-              <Badge variant="secondary" className={getStatusColor(subcontractor.status)}>
+              <StatusBadge variant={subStatusToVariant(subcontractor.status)}>
                 {getStatusLabel(subcontractor.status)}
-              </Badge>
+              </StatusBadge>
             </div>
             <p className="text-muted-foreground">
               Subcontractor details and bid history

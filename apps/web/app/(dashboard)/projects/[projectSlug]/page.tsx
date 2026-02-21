@@ -149,9 +149,9 @@ const phaseStatusIcons = {
 };
 
 const phaseStatusColors = {
-  pending: "text-gray-400",
-  in_progress: "text-blue-500",
-  completed: "text-green-500",
+  pending: "text-muted-foreground",
+  in_progress: "text-foreground",
+  completed: "text-financial-positive",
 };
 
 export default function ProjectOverviewPage({
@@ -767,7 +767,7 @@ export default function ProjectOverviewPage({
             <div className="space-y-3">
               {project.phases.map((phase: any) => {
                 const StatusIcon = phaseStatusIcons[phase.status as keyof typeof phaseStatusIcons] || Circle;
-                const statusColor = phaseStatusColors[phase.status as keyof typeof phaseStatusColors] || "text-gray-400";
+                const statusColor = phaseStatusColors[phase.status as keyof typeof phaseStatusColors] || "text-muted-foreground";
 
                 return (
                   <div key={phase.id} className="flex items-center justify-between p-3 rounded-lg border">

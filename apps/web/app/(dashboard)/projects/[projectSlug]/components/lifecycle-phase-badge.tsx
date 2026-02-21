@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/shared/status-badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   AlertDialog,
@@ -18,16 +18,19 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { LIFECYCLE_ORDER, LIFECYCLE_PHASE_LABELS, type LifecyclePhase } from "@construction/shared";
 
-const phaseColors: Record<LifecyclePhase, string> = {
-  opportunity: "bg-purple-500/10 text-purple-700 border-purple-200",
-  estimating: "bg-blue-500/10 text-blue-700 border-blue-200",
-  submitted: "bg-cyan-500/10 text-cyan-700 border-cyan-200",
-  awarded: "bg-emerald-500/10 text-emerald-700 border-emerald-200",
-  active: "bg-green-500/10 text-green-700 border-green-200",
-  substantial_completion: "bg-teal-500/10 text-teal-700 border-teal-200",
-  closed: "bg-gray-500/10 text-gray-700 border-gray-200",
-  warranty: "bg-orange-500/10 text-orange-700 border-orange-200",
-  archived: "bg-slate-500/10 text-slate-400 border-slate-200",
+const phaseToVariant = (phase: LifecyclePhase) => {
+  switch (phase) {
+    case "opportunity": return "pending" as const;
+    case "estimating": return "pending" as const;
+    case "submitted": return "pending" as const;
+    case "awarded": return "approved" as const;
+    case "active": return "active" as const;
+    case "substantial_completion": return "active" as const;
+    case "closed": return "completed" as const;
+    case "warranty": return "warning" as const;
+    case "archived": return "cancelled" as const;
+    default: return "draft" as const;
+  }
 };
 
 interface LifecyclePhaseBadgeProps {
@@ -88,13 +91,12 @@ export function LifecyclePhaseBadge({
   };
 
   const badge = (
-    <Badge
-      className={phaseColors[currentPhase]}
-      variant="outline"
+    <StatusBadge
+      variant={phaseToVariant(currentPhase)}
       style={{ cursor: canTransition ? "pointer" : "default" }}
     >
       {LIFECYCLE_PHASE_LABELS[currentPhase]}
-    </Badge>
+    </StatusBadge>
   );
 
   return (

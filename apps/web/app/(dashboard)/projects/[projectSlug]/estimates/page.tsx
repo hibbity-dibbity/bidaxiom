@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatusBadge } from "@/components/shared/status-badge";
 import { FileText, Plus } from "lucide-react";
 import { formatCurrency } from "@construction/shared";
 import { format } from "date-fns";
@@ -106,19 +107,19 @@ export default function EstimatesPage({
               <TableRow key={estimate.id}>
                 <TableCell className="font-medium">{estimate.name}</TableCell>
                 <TableCell>
-                  <span
-                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                  <StatusBadge
+                    variant={
                       estimate.status === "draft"
-                        ? "bg-gray-100 text-gray-800"
+                        ? "draft"
                         : estimate.status === "submitted"
-                        ? "bg-blue-100 text-blue-800"
+                        ? "pending"
                         : estimate.status === "approved"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-red-100 text-red-800"
-                    }`}
+                        ? "approved"
+                        : "rejected"
+                    }
                   >
                     {estimate.status.charAt(0).toUpperCase() + estimate.status.slice(1)}
-                  </span>
+                  </StatusBadge>
                 </TableCell>
                 <TableCell className="text-right">
                   {formatCurrency(parseFloat(estimate.totalCost || "0"))}

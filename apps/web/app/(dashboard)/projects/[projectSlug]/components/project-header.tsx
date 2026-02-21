@@ -123,7 +123,7 @@ export function ProjectHeader({ project, budgetSummary, teamMemberCount, canTran
             currentPhase={project.lifecyclePhase as LifecyclePhase}
             canTransition={canTransition}
           />
-          <Badge variant="outline" className="bg-slate-500/10 text-slate-600 border-slate-200 text-xs">
+          <Badge variant="outline" className="bg-muted text-muted-foreground text-xs">
             {project.projectMode === "simple" ? "Simple" : "GC/Advanced"}
           </Badge>
           {canTransition && (
@@ -170,7 +170,7 @@ export function ProjectHeader({ project, budgetSummary, teamMemberCount, canTran
 
       {/* Restored banner — shown when project was recently restored */}
       {project.restoredAt && (
-        <div className="flex items-center justify-between rounded border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800 mb-3">
+        <div className="flex items-center justify-between rounded border border-border bg-muted px-4 py-2 text-sm text-muted-foreground mb-3">
           <span>This project was deleted and restored.</span>
           <Button
             variant="ghost"
