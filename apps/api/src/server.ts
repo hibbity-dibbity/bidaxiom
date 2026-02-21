@@ -16,7 +16,7 @@ import { appRouter, type AppRouter } from "./trpc/router.js";
 import { createContext } from "./trpc/context.js";
 import { webhookRoutes } from "./webhooks/routes.js";
 import { pool } from "./db/client.js";
-import { ensureBucket } from "./storage/client.js";
+import { ensureBucket, getStorageClient, getBucketName } from "./storage/client.js";
 import { provisionAuthTables } from "./tenant/provision.js";
 import { startQboSyncWorker } from "./integrations/quickbooks/sync/workers.js";
 import { startScheduledReportsWorker, scheduleNextReports } from "./jobs/scheduled-reports.js";
@@ -26,6 +26,12 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import { cleanupExpiredExports } from "./services/report-exporter.js";
+import { verifyAccessToken } from "./auth/jwt.js";
+import { buildTenantContext } from "./tenant/context.js";
+import { eq, inArray } from "drizzle-orm";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
+import archiver from "archiver";
+import { Readable } from "stream";
 
 const fastify = Fastify({
   logger: {
@@ -172,6 +178,116 @@ setInterval(async () => {
 //     console.error('Error queuing daily calendar sync:', error);
 //   }
 // }, 24 * 60 * 60 * 1000); // Every 24 hours
+
+// Bulk document zip download endpoint
+// Accepts: POST /api/documents/bulk-download { documentIds: string[] }
+// Auth: Bearer token in Authorization header (same as tRPC)
+fastify.post("/api/documents/bulk-download", async (request, reply) => {
+  // Verify auth token
+  const rawAuth = request.headers["authorization"];
+  const authHeader = Array.isArray(rawAuth) ? rawAuth[0] : rawAuth;
+  const token = authHeader?.replace("Bearer ", "");
+
+  if (!token) {
+    return reply.code(401).send({ error: "Unauthorized" });
+  }
+
+  let userId: string;
+  let orgId: string;
+
+  try {
+    const payload = await verifyAccessToken(token);
+    if (!payload.userId || !payload.orgId) {
+      return reply.code(401).send({ error: "Unauthorized" });
+    }
+    userId = payload.userId;
+    orgId = payload.orgId;
+  } catch {
+    return reply.code(401).send({ error: "Invalid token" });
+  }
+
+  // Resolve tenant context from JWT orgId
+  let tenantCtx: Awaited<ReturnType<typeof buildTenantContext>>;
+  try {
+    tenantCtx = await buildTenantContext(orgId, userId);
+  } catch {
+    return reply.code(403).send({ error: "Tenant not found" });
+  }
+
+  const body = request.body as { documentIds?: unknown };
+  const documentIds = body?.documentIds;
+
+  if (!Array.isArray(documentIds) || documentIds.length === 0) {
+    return reply.code(400).send({ error: "documentIds required" });
+  }
+
+  if (documentIds.length > 50) {
+    return reply.code(400).send({ error: "Maximum 50 documents per bulk download" });
+  }
+
+  const { db, schema } = tenantCtx;
+
+  // Fetch document records for requested IDs
+  const docs = await db
+    .select({
+      id: schema.documents.id,
+      name: schema.documents.name,
+      currentVersionId: schema.documents.currentVersionId,
+    })
+    .from(schema.documents)
+    .where(inArray(schema.documents.id, documentIds as string[]));
+
+  if (docs.length === 0) {
+    return reply.code(404).send({ error: "No documents found" });
+  }
+
+  // Fetch S3 keys from document_versions
+  const versionIds = docs
+    .map((d) => d.currentVersionId)
+    .filter((v): v is string => v !== null && v !== undefined);
+
+  const versions =
+    versionIds.length > 0
+      ? await db
+          .select({
+            id: schema.documentVersions.id,
+            storageKey: schema.documentVersions.storageKey,
+          })
+          .from(schema.documentVersions)
+          .where(inArray(schema.documentVersions.id, versionIds))
+      : [];
+
+  const keyMap = new Map(versions.map((v) => [v.id, v.storageKey]));
+
+  reply.raw.setHeader("Content-Type", "application/zip");
+  reply.raw.setHeader(
+    "Content-Disposition",
+    'attachment; filename="documents.zip"'
+  );
+
+  const archive = archiver("zip", { zlib: { level: 6 } });
+  archive.pipe(reply.raw);
+
+  const s3 = getStorageClient();
+  const bucket = getBucketName();
+
+  for (const doc of docs) {
+    const storageKey = doc.currentVersionId ? keyMap.get(doc.currentVersionId) : null;
+    if (!storageKey) continue;
+
+    const s3Response = await s3.send(
+      new GetObjectCommand({ Bucket: bucket, Key: storageKey })
+    );
+
+    if (s3Response.Body) {
+      archive.append(Readable.from(s3Response.Body as AsyncIterable<Uint8Array>), {
+        name: doc.name,
+      });
+    }
+  }
+
+  await archive.finalize();
+});
 
 // Health check (non-tRPC, for load balancers)
 fastify.get("/health", async () => {
