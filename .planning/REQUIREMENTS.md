@@ -1,0 +1,117 @@
+# Requirements: ConstructionSaaS v1.6
+
+**Defined:** 2026-02-21
+**Core Value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
+
+**Milestone Focus:** Redesign BIDAXIOM's UX to Procore-level density and polish — systematic dark mode audit, design token enforcement, dense financial tables, filter chips on all list views, inline approvals, compact sticky project header, and visual consistency enforced across all 40+ pages.
+
+---
+
+## v1.6 Requirements
+
+### Design Foundation
+
+- [ ] **FOUND-01**: The application renders correctly in dark mode on every page — no hardcoded Tailwind palette color classes (bg-white, bg-amber-50, text-slate-600, etc.) exist without a paired `dark:` companion class; all background and text colors reference CSS variable tokens.
+- [ ] **FOUND-02**: Financial data uses a consistent semantic color system across all surfaces: positive/approved values use `--financial-positive` (green token), negative/rejected values use `--financial-negative` (red token), and neutral/pending values use the amber semantic token.
+- [ ] **FOUND-03**: All tables, list views, and forms use documented canonical Tailwind class recipes with no per-page variation in row height, cell padding, or typography scale; the canonical recipes are documented in `COMPONENT-ORGANIZATION.md`.
+- [ ] **FOUND-04**: Three new npm packages are installed in apps/web: `@tanstack/react-virtual` v3 (table row virtualization), `motion` v12 (spring animations), and `react-number-format` v5 (currency/numeric masked inputs).
+
+### Financial Tables
+
+- [ ] **TABLE-01**: All financial tables (budget line items, SOV builder, change order line items, payment application SOV) display with a sticky frozen table header row that remains visible during vertical scroll without using Radix ScrollArea.
+- [ ] **TABLE-02**: Wide financial tables (budget, SOV) freeze the first column (cost code or description) so it remains visible during horizontal scroll.
+- [ ] **TABLE-03**: All financial amount columns display right-aligned values with tabular-nums font variant and `$` prefix; currency values use `CurrencyDisplay` component or `react-number-format` for edit inputs.
+- [ ] **TABLE-04**: All financial tables and list views support sorting by any column — clicking a column header cycles ascending / descending / unsorted with a visible chevron indicator.
+- [ ] **TABLE-05**: All financial tables display a sticky summary/totals footer row at the bottom of the scrollable area showing column totals or key aggregates.
+- [ ] **TABLE-06**: Users can show or hide individual columns on financial tables and the projects list view via a column picker control (popover with checkbox list).
+- [ ] **TABLE-07**: SOV line items and change order line items can be added as a new row directly within the table without opening a modal dialog; inline input fields appear in the new row on "Add line item" click.
+
+### List Views
+
+- [ ] **LIST-01**: Every major list view (projects, customers, subcontractors, change orders, payment applications, estimates, RFQs) has an inline search bar positioned directly above the table that filters the current result set.
+- [ ] **LIST-02**: Active filter selections on all list views are displayed as removable filter chips below the search bar; each chip shows the filter label and value with an × dismiss button; a "Clear all" link removes all active filters at once.
+- [ ] **LIST-03**: Every list view shows a contextual empty state (icon + heading + description + CTA button) when no records match the current filters or when the list is genuinely empty; the CTA is context-appropriate (e.g., "Create your first project").
+- [ ] **LIST-04**: All list views with filtering support have an "Export CSV" button that downloads the currently filtered and sorted result set as a CSV file.
+- [ ] **LIST-05**: Change order list rows have inline Approve and Reject action buttons visible on hover (or always visible for pending COs) that update the CO status without navigating to the detail page; a confirmation is shown before irreversible status changes.
+- [ ] **LIST-06**: Payment application list rows have inline Approve and Mark Paid action buttons for pending pay apps, usable without navigating to the detail page.
+
+### Forms and Data Entry
+
+- [ ] **FORM-01**: The estimate creation wizard displays a horizontal stepper bar at the top of the form showing all 6 steps with labels, current step highlighted, and completed steps visually marked; users can navigate back to completed steps.
+- [ ] **FORM-02**: All currency input fields across the application (change order amounts, budget entries, pay app values, line item unit costs) use `react-number-format` NumericFormat with `$` prefix, thousands separators, and 2 decimal precision; form submission values are numeric (not formatted strings).
+- [ ] **FORM-03**: Multi-section create and edit forms (change order, project, customer) use clear visual section grouping with section headings and consistent spacing between sections rather than a flat undivided list of fields.
+
+### Project Navigation Chrome
+
+- [ ] **CHROME-01**: The project detail page has a compact sticky header (maximum 80px height) that remains fixed at the top of the viewport during vertical scroll on all 10 project tabs.
+- [ ] **CHROME-02**: The sticky project header includes a financial stat bar showing 3–5 key project financial metrics inline (contract value, approved change orders total, billed to date, balance to complete, retainage held).
+- [ ] **CHROME-03**: Project navigation tabs display a count badge for pending action items on tabs where pending items exist (e.g., "Change Orders (3)" when 3 change orders are pending approval).
+- [ ] **CHROME-04**: The project navigation tab system preserves URL-based tab routing with browser back/forward support, URL sharing, and hover-prefetch behavior; tab navigation uses `<Link href scroll={false}>` and not Radix state-based Tabs for the navigation-level tabs.
+
+### Visual Consistency
+
+- [ ] **VISUAL-01**: The duplicate StatusBadge component in the estimates lifecycle folder is removed and all its call sites are updated to use the shared `components/shared/status-badge.tsx` component.
+- [ ] **VISUAL-02**: Status badges across all surfaces (projects, change orders, estimates, payment applications, documents, RFQs) consistently use the 4-tier semantic color model: gray for draft/inactive, amber for pending/review, green for approved/active/complete, red for rejected/void.
+- [ ] **VISUAL-03**: Approval action buttons on change order and payment application detail pages are prominently placed in the page header action area — not buried in dropdown menus or overflow menus.
+
+---
+
+## Out of Scope
+
+Items explicitly excluded from v1.6:
+
+| Feature | Reason |
+|---------|--------|
+| Row density toggle (compact/default user control) | Deferred to v2 — canonical compact density established in v1.6 is sufficient |
+| Side panel for row detail (replacing full-page navigation) | Deferred to v2 — significant interaction pattern change; needs user testing first |
+| Bulk action floating bar (multi-select batch operations) | Deferred to v2 — inline approve/reject covers the primary use case |
+| Saved filter views ("My Pending Approvals") | Deferred to v2 — requires user preference persistence in DB |
+| User-controlled column pinning (drag-to-pin) | Deferred to v2 — column picker covers the simpler need |
+| Snapshot comparison view in budget table | Deferred to v2 — complex UI with no data model support |
+| CSV/spreadsheet import for SOV or budget | Deferred to v2 — out of UX redesign scope |
+| New features or backend API changes | This milestone is frontend/UX only — no new data models, tRPC procedures, or schema migrations |
+| Mobile native app | Web-first; responsive web improvements are included where possible |
+| Tailwind v4 migration | Doubles risk surface when combined with UX redesign — deferred to v2 |
+
+---
+
+## Traceability
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| FOUND-01 | Phase 41 | Pending |
+| FOUND-02 | Phase 41 | Pending |
+| FOUND-03 | Phase 41 | Pending |
+| FOUND-04 | Phase 41 | Pending |
+| TABLE-01 | Phase 42 | Pending |
+| TABLE-02 | Phase 42 | Pending |
+| TABLE-03 | Phase 42 | Pending |
+| TABLE-04 | Phase 42 | Pending |
+| TABLE-05 | Phase 42 | Pending |
+| TABLE-06 | Phase 43 | Pending |
+| TABLE-07 | Phase 43 | Pending |
+| LIST-01 | Phase 43 | Pending |
+| LIST-02 | Phase 43 | Pending |
+| LIST-03 | Phase 43 | Pending |
+| LIST-04 | Phase 44 | Pending |
+| LIST-05 | Phase 44 | Pending |
+| LIST-06 | Phase 44 | Pending |
+| FORM-01 | Phase 45 | Pending |
+| FORM-02 | Phase 45 | Pending |
+| FORM-03 | Phase 45 | Pending |
+| CHROME-01 | Phase 46 | Pending |
+| CHROME-02 | Phase 46 | Pending |
+| CHROME-03 | Phase 46 | Pending |
+| CHROME-04 | Phase 46 | Pending |
+| VISUAL-01 | Phase 42 | Pending |
+| VISUAL-02 | Phase 42 | Pending |
+| VISUAL-03 | Phase 41 | Pending |
+
+**Coverage:**
+- v1.6 requirements: 27 total
+- Mapped to phases: 27/27
+- Unmapped: 0 ✓
+
+---
+*Requirements defined: 2026-02-21*
+*Last updated: 2026-02-21 — initial definition*
