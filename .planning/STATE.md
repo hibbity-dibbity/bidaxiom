@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-21)
 ## Current Position
 
 Phase: 41 of 46 (Design Foundation)
-Plan: 02 complete (auth pages + settings/integrations pages token migration)
+Plan: 04 complete (budget group token migration — all 6 budget components)
 Status: In progress
-Last activity: 2026-02-21 — 41-02 complete: 11 auth/settings pages migrated to CSS variable tokens (dark mode compliant)
+Last activity: 2026-02-21 — 41-04 complete: 6 budget components migrated; financial tokens on number text, bg-muted on card backgrounds, StatusBadge for commitment status
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100% | v1.5: [██████████] 100% | v1.6: [█░░░░░░░░░] 4%
 
@@ -49,6 +49,9 @@ Recent decisions relevant to v1.6:
 - [41-02]: Amber callout (read-only warning) maps to bg-muted + border-border — neutral info surface, not a warning surface
 - [41-02]: Success state icons (checkmark, connection confirmed) use text-financial-positive + bg-muted wrapper — replaces bg-green-100/text-green-600 pattern which had no dark: counterpart
 - [41-02]: field-mapping-client badge states: mapped fields use bg-muted + text-financial-positive; unmapped use bg-muted + text-foreground — eliminates dark: companion hacks
+- [41-04]: EAC, ETC, Total Budget primary metric amounts use text-primary (not text-financial-*) — primary metric values get brand teal, not directional financial color
+- [41-04]: Recharts Bar fill props left as hex strings (#2563eb, #d97706) — chart library configuration values are not Tailwind classes, no token equivalent applies
+- [41-04]: commitment-list statusColors Record replaced by StatusBadge with statusVariants mapping: executed→active, closed→cancelled; type label badge uses variant=draft (neutral)
 
 ### Pending Todos
 
@@ -62,5 +65,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Completed 41-02-PLAN.md — 11 auth/settings pages token migration. Next step: Continue Wave 2 with 41-03 through 41-06.
+Stopped at: Completed 41-04-PLAN.md — 6 budget components token migration. Next step: Continue remaining Wave 2 plans.
 Resume file: None
