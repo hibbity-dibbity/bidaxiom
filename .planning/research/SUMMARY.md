@@ -1,22 +1,21 @@
-# Research Summary: v1.5 Project Lifecycle Redesign & Document Engine
+# Research Summary: BIDAXIOM v1.6 UX Redesign
 
 **Project:** BIDAXIOM — Construction Management SaaS
-**Milestone:** v1.5
-**Domain:** Construction SaaS — project lifecycle state management, PDF generation, document engine
-**Researched:** 2026-02-18
-**Synthesized:** 2026-02-18
-**Overall Confidence:** MEDIUM-HIGH
-**Supersedes:** Previous SUMMARY.md (v1.1 enterprise UI research — now stale)
+**Milestone:** v1.6 — Procore-Level Density and Polish
+**Domain:** Dense enterprise construction SaaS UI — financial data tables, approval workflow UI, project navigation, complex forms
+**Researched:** 2026-02-21
+**Synthesized:** 2026-02-21
+**Overall Confidence:** HIGH
 
 ---
 
 ## Executive Summary
 
-v1.5 is a foundational milestone that adds the operational scaffolding construction companies need to run projects end-to-end: a structured 9-phase lifecycle replacing the current flat 4-status field, a document engine that generates PDFs from live project data, and a flat metadata-first document system replacing the folder hierarchy. These three concerns are tightly coupled — lifecycle state gates document generation (change orders only generate in execution phase), and document metadata references lifecycle phase as a core filter tag — so build order matters significantly.
+BIDAXIOM already has the right technical foundation for Procore-level density. The stack — TanStack Table v8, shadcn/ui, Tailwind with CSS variable tokens, React Hook Form, CVA — is mature and correctly wired. This redesign does not require replacing any component library or making backend changes. Only three new npm packages are needed (`@tanstack/react-virtual`, `motion`, `react-number-format`). The gap between the current state and Procore-level polish is a CSS discipline, density configuration, and interaction pattern problem — not a technology problem.
 
-The recommended approach is additive and non-breaking. Introduce a `project_lifecycle_state` table alongside the existing `projects.status` column (kept in sync as a read-only backward-compat field), add metadata columns to the existing `documents` table rather than rebuilding it, and generate PDFs in-process using pdfmake for structured AIA forms and Puppeteer via BullMQ workers for custom template imports. All state transitions run through tRPC mutations with `SELECT FOR UPDATE` locking — not DB triggers — so they carry user context, are auditable, and can be tested cleanly. The entire effort builds on the existing Fastify + tRPC + Drizzle + PostgreSQL + Redis + MinIO stack with five focused library additions.
+The recommended approach is a strict layered build order: token foundation first, shared UI primitives second, shared domain components third, domain-by-domain page redesigns fourth, and layout and navigation chrome last. This order is non-negotiable because CSS tokens propagate everywhere, primitives underpin domain components, and the project header and tabs are shared across all 10 project tabs. Attempting page-level redesigns before the foundation is stable forces rework. Each phase must target a single rendering surface and be independently verifiable — the biggest risk is scope creep, which stalls phases in a 164K-line, 40-phase codebase.
 
-The top risk by severity is the status migration: mapping existing `active / on_hold / completed / archived` to a 9-phase lifecycle is lossy, and if done incorrectly it blocks every downstream phase. The second-ranked risk is sequence number race conditions on concurrent document generation — a silent defect that creates duplicate document numbers and breaks audit trails. Both must be solved in Phase 1, before any PDF generation or document naming work begins.
+The central risk is dark mode regression. Direct codebase inspection found 52 TSX files with hardcoded Tailwind palette classes (e.g., `bg-amber-50`, `text-slate-600`) that bypass the CSS variable token system and break dark mode. Every redesign phase introduces temptation to add more. This must be addressed by a non-negotiable rule established in Phase 1: no background or text palette class without a paired `dark:` companion. The second risk is form state regression — React Hook Form Controllers are sensitive to conditional wrapper remounting, and the existing `useForm<any>` cast in the change order form hides these bugs from TypeScript. Every phase that touches a form-containing page must include a full form submission test verified in the Network tab.
 
 ---
 
@@ -24,279 +23,192 @@ The top risk by severity is the status migration: mapping existing `active / on_
 
 ### Recommended Stack
 
-Five new libraries augment the existing stack. No architectural changes required. Redis and MinIO already in production; BullMQ and PDF generation layer directly on top.
+See full analysis: `.planning/research/STACK.md`
 
-**New library additions:**
+The existing stack is complete for this redesign. Only three packages need to be added to `apps/web/`:
 
-| Library | Version | Purpose | Rationale |
-|---------|---------|---------|-----------|
-| **pdfmake** | 0.3.4 | Structured PDF generation (RFQs, AIA forms, invoices) | Declarative JSON → PDF; no browser overhead; safe in-process for standard forms |
-| **Puppeteer** | 24.37.3 | Custom HTML/PDF template rendering | Full Chromium rendering for user-imported branded templates; handles complex CSS layouts |
-| **docxtemplater** | 3.68.1 | DOCX/XLSX template merge with field substitution | Industry standard; handles simple AND complex OOXML merge fields; covers DOCX + XLSX + PPTX |
-| **officeparser** | 6.0.4 | Extract `{placeholder}` fields from uploaded templates | AST-based output; safe for both simple and formatted fields; Dec 2025 release |
-| **BullMQ** | 5.67.3 | Async job queue for PDF generation and email delivery | Successor to deprecated Bull; TypeScript-first; uses existing Redis; built-in monitoring |
-| **Nodemailer** | 8.0.1 | SMTP email delivery with PDF attachments | Zero dependencies; custom-domain SMTP; no third-party ESP required by requirement |
+**Additions required:**
+- `@tanstack/react-virtual` v3.13.18 — row virtualization for tables with 100+ rows. Pairs directly with the already-installed `@tanstack/react-table` v8; stays in-family. The TanStack official docs include a virtualized rows example using this exact combination.
+- `motion` v12.34.3 — spring-physics animations for sidebar collapse, panel expansions, and row height transitions. Formerly Framer Motion; rebranded in late 2024. MIT licensed. All animated components require `"use client"` directive — a non-issue for interactive UI components.
+- `react-number-format` v5.4.4 — currency and percentage masked inputs. The installed `use-mask-input` handles phone/date character patterns but not numeric formatting semantics (currency prefix, decimal precision, thousands separators). Wrap in `<Controller>` for React Hook Form integration.
 
-**PDF approach is dual-track — choose the right tool per document type:**
-- **pdfmake:** Auto-generated standard documents (payment apps, RFQs, change orders with predictable structure). Runs in-process in tRPC mutation. Fast, no browser overhead.
-- **Puppeteer:** User-imported custom branded templates (proposals with company letterhead, non-standard layouts). Always runs via BullMQ worker — never synchronously in a request handler (100-200MB RAM per instance).
+**Already installed, just needs correct use:**
+- `react-resizable-panels` v4.6.4 — already backs shadcn `Resizable`; enables Procore-style master-detail split-pane layouts. Verify installation with `npm ls react-resizable-panels` in `apps/web/` before Phase 4.
+- `@radix-ui/react-scroll-area` — already in `package.json`. Critical note: do NOT use Radix ScrollArea for tables with sticky headers. It uses `display: table` internally and breaks `position: sticky` (confirmed open GitHub issue radix-ui/primitives #2783). Use a plain `div` with `overflow-auto` and a `max-height` constraint instead.
 
-**State machine:** Simple TypeScript enum + transition table — NOT XState. The 9-phase lifecycle is mostly linear with limited branching. XState overhead is not justified until v2 when parallel approval states may emerge.
+**Density is achieved through Tailwind class conventions, not new libraries:**
+- Compact rows: `h-8 py-1 text-xs` (32px target)
+- Default rows: `h-10 py-2 text-sm` (40px target)
+- Table headers: `text-[11px] font-semibold uppercase tracking-wider`
+- All financial cells: `text-right tabular-nums`
 
-**Sequence counters:** Counter table + `SELECT FOR UPDATE` — NOT PostgreSQL native SEQUENCES. SEQUENCES do not guarantee uniqueness across concurrent transactions without application-level locking. Counter table with explicit lock is the correct pattern for tenant-scoped auto-increment.
-
-See `.planning/research/STACK.md` for installation commands, environment variable setup, and integration code samples.
-
----
+**Do not add:** AG Grid, react-virtuoso, react-data-grid, MUI, any CSS-in-JS library, or `styled-components`. Do not migrate to Tailwind v4 during this milestone — the existing v3.4.x CSS variable system is stable and correct; mixing a v4 migration into a UX redesign doubles the risk surface.
 
 ### Expected Features
 
-**Must have (table stakes — missing these breaks feature parity with Procore/Buildertrend):**
+See full analysis: `.planning/research/FEATURES-UX-REDESIGN.md`
 
-| Feature | Why It's Table Stakes |
-|---------|----------------------|
-| 9-phase project lifecycle with manual transitions | AIA contracts define Substantial Completion as a contractual milestone; construction industry expects structured phase tracking |
-| Audit trail for all state changes | Compliance requirement (FAR 4.7); who changed what, when, and why |
-| Backward-transition safeguards | Prevent accidental regression (Closed → Active); require confirmation + reason log |
-| Project soft delete + 30-day trash restore | Federal contractor records retention minimum (3 years, FAR 4.7) |
-| Simple vs. GC (Advanced) mode selector at project creation | Reduces cognitive load for residential contractors; Buildertrend vs. Procore dichotomy |
-| Feature gating by mode | Change orders, lien waivers, subcontractor management: GC mode only |
-| Flat document list with metadata filters | Replaces folder hierarchy; Procore pattern; ISO 19650 taxonomy |
+**Must have (table stakes — construction professionals expect these; their absence makes the product feel unfinished):**
+- Sticky frozen table headers on all scrollable financial tables
+- Frozen first column on wide tables (budget, SOV) — cost code stays visible while scrolling right
+- Right-aligned, tabular-nums currency values with $ prefix on all financial columns
+- Semantic status badges across all surfaces: gray=draft, amber=pending, green=approved, red=rejected
+- Sort by any column header (click to toggle asc/desc/none with chevron indicator)
+- Sticky totals/summary footer row on all financial tables
+- Inline search bar above every list view
+- Filter chips pattern on all list views — removable pills showing active filters with "Clear all"
+- Empty states with actionable CTA on all list views (never a blank screen)
+- Approval action buttons prominent on CO and pay app detail pages — never buried in dropdown menus
+- Compact sticky project header: name, status badge, job number, financial stat bar, tabs
 
-**Should have (differentiators for v1.5):**
+**Should have (differentiators that elevate from baseline to best-in-class):**
+- Column picker (show/hide columns) on financial tables and list views
+- Row density control (compact/default toggle) on financial tables
+- Side panel for row detail — replaces disorienting full-page modals; keeps table visible
+- Bulk action floating bar when rows selected
+- Inline row addition for SOV and CO line item tables — no modal disruption
+- Tab count badges on project navigation tabs for action items ("Change Orders (3)")
+- Financial health indicator in project header — single green/amber/red signal for budget variance
+- Keyboard navigation in budget table and SOV builder
+- Export CSV from all list views
+- Inline approve/reject quick action on CO list rows
 
-| Feature | Value Proposition |
-|---------|------------------|
-| Proposal PDF generation | Client-ready proposals from estimates; eliminates manual Word export |
-| Change Order PDF generation | AIA-compliant CO documents from existing CO entries; required fields verified against AIA standards |
-| AIA G702/G703 payment application PDF | Auto-populate from payment app entries; G702 contract sections + G703 SOV breakdown |
-| RFQ PDF generation | Subcontractor/supplier request documents; lowest complexity of the four types |
-| Configurable document naming convention | `CO-{JOB-NUMBER}-{SEQ}`, `{jobNumber}-PA-{seq}`; auto-increment per doc type |
-| Document metadata tagging | ISO 19650-inspired: documentType, relatedEntityType, phase, cost code, revision |
+**Defer to v2+ (higher complexity, lower immediate impact):**
+- User-controlled column pinning (drag-to-pin)
+- Saved filter views ("My Pending Approvals")
+- Snapshot comparison view in budget table
+- Multi-select and copy-values across budget rows
+- CSV/spreadsheet import for SOV
 
-**Defer to v1.5.1 / v2:**
-
-| Feature | Why Defer |
-|---------|----------|
-| Custom template import (Word/PDF upload with field mapping UI) | Field mapping UX is the most complex user-facing feature; validate core PDF gen first |
-| Bulk metadata operations | Single-doc tagging sufficient for MVP |
-| Document relationship links (RFI → Submittal → Approval chain) | Medium complexity; not blocking for document discovery |
-| XState for state machine | 9-phase lifecycle is linear; upgrade if parallel approval states emerge |
-| XLSX repeating-row templates with formulas | Formula cell references break on row duplication; defer until DOCX templates proven |
-
-See `.planning/research/FEATURES.md` for full feature dependency map, user flows, and complexity matrix.
-
----
+**Anti-features to explicitly avoid:**
+- Modals for row detail — kills table context; use side panel instead
+- Infinite scroll on list views — use pagination; virtual scroll only for spreadsheet tables
+- Auto-advance approval status based on rules — creates financial and contractual liability
+- Real-time collaboration cursors on financial data — concurrent edits cause data conflicts
+- Dashboard widget customization grid — saved filters and column picker give 90% of the value at 10% of the complexity
+- Zebra striping combined with hover and selected states — three gray states conflict visually
 
 ### Architecture Approach
 
-v1.5 architecture is purely additive — new tables, new columns, no rewrites. The existing tRPC + Drizzle + schema-per-tenant pattern handles all three pillars without modification.
+See full analysis: `.planning/research/ARCHITECTURE-UX-REDESIGN.md`
 
-**Major components and their responsibilities:**
+The codebase uses a correct three-layer CSS architecture: semantic CSS variables in `globals.css`, token-to-utility mapping in `tailwind.config.ts`, and component class composition via CVA and `cn()`. The redesign must preserve this separation and never skip layers. The token system is the redesign's greatest structural asset — changing a token in `:root` and `.dark` simultaneously propagates the change to every component using it, with zero React re-renders.
 
-| Component | Type | Responsibility |
-|-----------|------|---------------|
-| `project_lifecycle_state` | New table | Current 9-phase state, `enteredPhaseAt`, transition history JSONB array |
-| `advanceProjectPhase` mutation | tRPC | SELECT FOR UPDATE → validate transition → run pre-flight checks → audit log → update state |
-| `documents.documentType` / `relatedEntityType` / `relatedEntityId` | New columns | Enable flat metadata discovery without folder navigation |
-| `document_templates` | New table | Field mapping configs (JSONB), naming conventions, MinIO storage keys |
-| `document_naming_conventions` | New table | Per-company, per-doc-type naming format + sequence counter |
-| PDF generation service | In-process + BullMQ | pdfmake for standard forms (in-process); Puppeteer for custom templates (BullMQ worker, concurrency=2) |
-| BullMQ workers | Async workers | PDF generation, email delivery — prevent tRPC event loop blocking |
-| `folder_archive` | New table | Preserve original folder-document mapping for rollback and audit trail |
+**The five-layer dependency chain defines the required build order:**
+1. Token layer (`globals.css` + `tailwind.config.ts`) — changes propagate everywhere; must be right first
+2. Shared UI primitives (`components/ui/`) — `table.tsx`, `badge.tsx`, `card.tsx`, `button.tsx` — propagate to all domain components
+3. Shared domain components (`components/shared/`) — `status-badge.tsx`, `currency-display.tsx` — used 14+ and 6+ places respectively
+4. Domain components, one domain per PR — Budget first (most tables and most violations); then Change Orders and Pay Apps; then Estimates
+5. Layout and navigation (`project-header.tsx`, `project-tabs.tsx`) — last; highest regression cost if broken early
 
-**Key architectural rules (non-negotiable):**
-- State transitions go through tRPC mutations only — never DB triggers. Mutations carry user context, appear in application logs, and can call external services (webhooks, QBO).
-- `SELECT FOR UPDATE` in all phase transitions AND sequence counter increments — mandatory for concurrent request safety.
-- Puppeteer always runs via BullMQ worker — never synchronously in a tRPC route.
-- `projects.status` stays read-only, synced from lifecycle state — zero breaking changes to existing API.
-- Template configs stored as JSONB on `document_templates.config` (field mappings, naming format, layout, signature block positions).
+**TanStack Table has two distinct modes in this codebase:**
+- Display grids (document list, project list, CO list): read-only, compact density, sort headers — `unified-document-table.tsx` is the reference implementation
+- Inline-edit spreadsheets (estimate line items, SOV builder): cell-level editing, keyboard tab navigation — `EstimateLineItemsTable.tsx` is the reference
 
-**Migration strategy for existing data:**
-- `project_lifecycle_state` table added as non-breaking addition; backfill existing projects with status mapping
-- `documents` table gets new columns via `ALTER TABLE`; backfill `documentType` from existing `category` enum
-- Original folder mapping preserved in `folder_archive` for rollback
-- `folderId` deprecated (nullable, not dropped) for gradual transition
+Both already use `@tanstack/react-table` v8. The redesign configures them; it does not replace them.
 
-See `.planning/research/ARCHITECTURE-V1.5.md` for full table DDL, migration SQL, tRPC mutation examples, and data flow diagrams.
+**Known hardcoded color violations to fix (verified from codebase):**
+- `budget-summary-cards.tsx`: `text-blue-600`, `text-amber-600`, `text-slate-600`
+- `budget-line-item-table.tsx`: `text-red-600`, `text-green-600` on lock icons
+- `project-header.tsx`: `bg-slate-500/10 text-slate-600 border-slate-200` on mode badge; `bg-amber-50 text-amber-800` on restored-project banner
+- `estimates/lifecycle/StatusBadge.tsx`: duplicate of `components/shared/status-badge.tsx` — consolidate
 
----
+**Do not extract prematurely:** `EstimateLineItemsTable`, `SOVBuilder`, `BudgetVarianceChart`, and `WorkflowDetail` must stay in their domain folders — too domain-specific to share. A generic `DataTable` shell in `components/shared/` is only warranted if Budget, CO, and Pay Apps share the exact same chrome — audit before extracting.
 
 ### Critical Pitfalls
 
-Ranked by severity and the order in which they can kill the milestone.
+See full analysis: `.planning/research/PITFALLS-UX-REDESIGN.md`
 
-**Tier 1 — Blocking (cause full rollback or rewrite if ignored):**
+1. **Over-scoping phases stalls the milestone** — UX surfaces feel visually connected, creating pressure to change everything at once. A phase plan touching more than one rendering surface is a red flag. Hard limit: if a plan has more than 8 atomic tasks, split it. Each phase must have a UAT checklist completable without any other phase being merged first.
 
-| # | Pitfall | Phase | Prevention |
-|---|---------|-------|-----------|
-| 1 | **State machine migration maps existing projects to wrong phase** | Phase 1 | Audit `SELECT DISTINCT(status) FROM projects` before writing migration SQL; map 100% of values including `on_hold`; transaction-wrap entire migration; keep `status_legacy` column for 3 releases; dry-run on staging first |
-| 2 | **No rollback plan for failed migration** | Phase 1 | Test rollback procedure on staging before production run; backup database before migration; validate doc-count-before == doc-count-after; wrap in single transaction |
-| 3 | **Sequence number race conditions on concurrent document generation** | Phase 2 | Use `SELECT FOR UPDATE` on counter table — never read-then-write without DB lock; load test with k6 at 10+ concurrent generations; monitor for duplicates with detection query |
-| 4 | **PDF layout shifts push Terms & Conditions off-page** | Phase 2 | Use flow-based layout with CSS `page-break-before: always` for T&C; test with 1-item, 5-item, and 50-item proposals; never use absolute Y-pixel positioning for critical sections |
+2. **Dark mode breakage from hardcoded palette classes** — 52 files in `apps/web/` already have this debt. Every new `bg-amber-`, `bg-white`, `bg-gray-`, or `bg-slate-` class without a `dark:` companion is a regression. Lock the rule in Phase 1 and enforce via grep in every PR review.
 
-**Tier 2 — High (significant rework, erodes user trust):**
+3. **Form state regression from layout changes** — Adding a conditionally-rendered wrapper (`{condition && <Wrapper>}`) around a React Hook Form `<Controller>` causes unmount and remount, resetting field values to `undefined`. The `useForm<any>` cast in `change-order-form.tsx` hides this from TypeScript — it only surfaces as a missing field in the Network tab payload. Rule: use CSS visibility (`hidden` / `opacity-0 pointer-events-none`) to show/hide form sections, never conditional JS mounting around controllers. Every form-touching phase must include a full-submission UAT step verified in the Network tab.
 
-| # | Pitfall | Phase | Prevention |
-|---|---------|-------|-----------|
-| 5 | **Existing projects default to wrong complexity mode** | Phase 1 | Analyze actual feature usage BEFORE adding column; default `GC` mode is safer (existing users have complex workflows); log `mode_assigned_at` + `mode_assigned_by` for audit trail |
-| 6 | **State machine + complexity mode interactions create invalid states** | Phase 1-2 | Design state machine independent of mode; validate current state compatibility before any mode change; prevent mode change when project is in incompatible state |
-| 7 | **Merge field detection fails on formatted DOCX fields** | Phase 3 | Use `docxtemplater` (handles complex OOXML split-tag fields) — never regex-scan for `{{field}}`; test with bolded, italicized, and mixed-format template fields |
-| 8 | **Unmapped template fields silently generate as blank in output** | Phase 3 | Show mapping progress "12/15 fields mapped"; require explicit handling (map, set default, or mark skip) for all unmapped fields before save; validate before committing |
+4. **Replacing URL-based tabs with Radix state tabs** — `project-tabs.tsx` uses `<Link href scroll={false}>` for tab navigation, enabling browser back button, URL sharing, and the hover-prefetch system (`sectionPrefetchMap`). Switching to Radix `<Tabs>` with React state breaks all three. Reserve Radix Tabs for in-page sub-sections only. Document this rule before any phase touches `project-tabs.tsx`.
 
-**Tier 3 — Moderate (require rework, manageable with process):**
+5. **Stale shared component APIs** — `CurrencyDisplay` is referenced in 14+ places, `StatusBadge` in 6+. Any prop change must be preceded by a full grep of call sites. Always prefer additive API changes (new optional prop with a safe default) over breaking changes. The `variant` prop on `StatusBadge` must be typed as a string union, not `string`, so renames are compile errors.
 
-| # | Pitfall | Phase | Prevention |
-|---|---------|-------|-----------|
-| 9 | **Folder → metadata migration loses document context** | Phase 4 | Pre-migration audit of all folder naming patterns; keep `folder_path_legacy` column; validate doc count before == after migration |
-| 10 | **File handle leaks under concurrent PDF load** | Phase 2 | Always close file streams in `finally` blocks; cache template buffers in memory (not file handles); set BullMQ Puppeteer worker concurrency = 2 |
-| 11 | **Template versioning not tracked** | Phase 3 | Store `template_id` + `template_version` on every generated document; only archive templates, never delete |
-| 12 | **International characters garbled in template import** | Phase 3 | Explicit `utf-8` encoding in all XML parsers; normalize field names before matching; test with German (ä, ö, ü), French (é), Spanish (ñ) templates |
-
-See `.planning/research/PITFALLS.md` for detection queries, example failure scenarios, and phase-by-phase warning matrix.
+6. **Tailwind class explosion and design drift across phases** — Each phase author without a defined recipe picks their own `py-` and `text-` values, producing tables with subtly different row heights on adjacent project tabs. Establish canonical class recipes in `COMPONENT-ORGANIZATION.md` before any page-level phase begins. Key canonicals: `TableCell: py-2 text-sm`; page wrapper: `container mx-auto py-6 space-y-6`; form field group: `space-y-2`.
 
 ---
 
 ## Implications for Roadmap
 
-Research across all four files points to a clear 4-phase structure with explicit gates between phases.
+The research points to a seven-phase structure that precisely mirrors the five-layer dependency chain, with two domain phases split by complexity. Each phase can ship and be UAT-verified independently. Do not attempt to combine layers — the dependencies are real and rework is expensive at this codebase's scale.
 
-### Dependency Map
+### Phase 1: Design Foundation
+**Rationale:** Token changes propagate everywhere automatically. If tokens are wrong, every subsequent phase inherits the problem. This is also the phase to establish the dark mode pairing rule, document canonical class recipes, and run the hardcoded color audit that defines the scope of cleanup work for subsequent phases.
+**Delivers:** Updated `globals.css` with synchronized `:root` and `.dark` blocks; new semantic tokens (`--financial-positive`, `--financial-negative`, `--surface`); canonical recipe documentation added to `COMPONENT-ORGANIZATION.md`; hardcoded color audit report; three npm package installations (`@tanstack/react-virtual`, `motion`, `react-number-format`).
+**From FEATURES.md:** Semantic color system for status states across all surfaces.
+**Avoids:** Dark mode breakage (Pitfall 2); Tailwind class drift (Pitfall 3); Tailwind v4 migration trap.
+**Research flag:** Standard patterns — skip `/gsd:research-phase`. CSS variable token overhaul is well-documented.
 
-```
-Phase 1: Lifecycle Foundation + Mode Setup
-  |
-  +-- gates --> Phase 2: PDF Generation (Standard Documents)
-                  |
-                  +-- gates --> Phase 3: Custom Template Import
-                                  |
-Phase 4: Document Metadata Redesign <-- depends on stable documentType taxonomy from Phase 2-3
-```
+### Phase 2: Shared UI Primitives
+**Rationale:** `components/ui/` changes propagate to every domain component simultaneously. Getting table row height, badge variants, and card style right here means every domain that follows inherits the correct baseline automatically. Modifying these after domain phases begin requires re-verifying all domain work.
+**Delivers:** Dense `table.tsx` (TableHead `h-10` → `h-8`; TableCell `p-2` → `py-1.5 px-2`); `badge.tsx` extended with `success`, `warning`, and `info` variants; `card.tsx` adjusted for flat design (shadow reduction, padding review); `button.tsx` icon-only compact variant if audit identifies need.
+**From FEATURES.md:** Sticky table header foundation, tabular-nums baseline, badge variant system.
+**Avoids:** Stale shared component APIs (Pitfall 6) — lock primitives before domain phases use them; check every use site before committing any `ui/` change.
+**Research flag:** Standard patterns — skip `/gsd:research-phase`. TanStack Table density configuration and shadcn UI modification are well-documented.
 
----
+### Phase 3: Shared Domain Components
+**Rationale:** `status-badge.tsx` and `currency-display.tsx` are used across 6+ and 14+ locations respectively. Consolidating the duplicate `estimates/lifecycle/StatusBadge.tsx` and ensuring both shared components are on the correct token-based color system must happen before domain redesigns reference them in redesigned states.
+**Delivers:** Consolidated `StatusBadge` — estimates version merged into shared; `variant` prop typed as a string union for compiler safety; any `dark:` prefix classes replaced with CSS token references where feasible. `CurrencyDisplay` verified stable with no changes required. Hardcoded dark violations in both components resolved.
+**From ARCHITECTURE.md:** Eliminate duplicate component instance. From FEATURES.md: Consistent status badge semantics across all surfaces.
+**Avoids:** Stale shared component APIs (Pitfall 6) — grep all 14+ `CurrencyDisplay` and 6+ `StatusBadge` call sites before any change.
+**Research flag:** Standard patterns — skip `/gsd:research-phase`. Straightforward consolidation.
 
-### Phase 1: Lifecycle Foundation + Mode Setup
+### Phase 4: Budget Domain Redesign
+**Rationale:** Budget is the most financially critical surface in BIDAXIOM, has the most tables, and has the most existing hardcoded color violations. It establishes the domain redesign pattern — dense table configuration, side panel detail, column picker, density control — that Change Orders and Pay Apps will replicate. Tackling it first produces the highest visual impact per phase.
+**Delivers:** Dense `budget-line-item-table.tsx` with 32px compact rows, sticky header, frozen first column, right-aligned tabular-nums currency, sort headers, and totals footer. `budget-summary-cards.tsx` with tokenized colors and compact flat layout. CSI division row grouping with collapse and expand. Column picker (show/hide) and density control toggle. Side panel for line item drill-down replacing modal.
+**From STACK.md:** TanStack Table column sizing with CSS variables; `@tanstack/react-virtual` if row count exceeds ~100 rows in practice.
+**From FEATURES.md (P1):** Sticky headers, frozen first column, right-aligned currency, sort, totals row. (P2): Column picker, density control, side panel detail.
+**Avoids:** Hardcoded color violations (Pitfall 2); creating a custom div-grid instead of configuring TanStack Table (confirmed anti-pattern in architecture research).
+**Research flag:** Needs `/gsd:research-phase` before planning. The combination of TanStack Table `getGroupedRowModel` with `@tanstack/react-virtual` has specific integration nuances worth verifying before implementation planning begins.
 
-**Rationale:** Everything downstream depends on valid lifecycle state. PDF generation references phase (change order PDFs are only valid in execution phase). Feature gating requires mode to be assigned. The complexity mode default decision for existing projects cannot be undone safely after users are live — it must be decided and audited before the column ships.
+### Phase 5: Change Order and Payment App Redesign
+**Rationale:** CO and Pay App surfaces share the same structural pattern — list view with filter chips and bulk actions, detail page with prominent approval buttons and activity trail, and a financial table with inline line items. They are tackled together in sequence because the side panel pattern, bulk action bar, and status badge system established in Phase 4 apply directly.
+**Delivers:** CO list with filter chips, bulk action floating bar, inline approve/reject action, status badges, empty states, and export CSV. CO detail with prominent Approve/Reject buttons in page header area, activity/audit trail, and single-page form with inline line item entry (no modal). Pay App list and detail redesigned to match the CO pattern.
+**From FEATURES.md (P1):** Status badges, filter chips, empty states, prominent approval actions. (P2): Bulk action bar, inline approve from list, side panel for detail.
+**Avoids:** Approval actions buried in menus; modal for line item entry; form state regression (Pitfall 4) — full form submission UAT required for CO and Pay App create and edit forms.
+**Research flag:** Standard patterns — skip `/gsd:research-phase`. Approval workflow UI is well-documented against Procore patterns in FEATURES.md.
 
-**Delivers:**
-- `project_lifecycle_state` table + indexes
-- tRPC mutations: `advanceProjectPhase`, `revertProjectPhase` (with SELECT FOR UPDATE)
-- Pre-flight checks before advancing (no open COs before close_out, all bids awarded before execution)
-- Transition audit log in `auditLogs` table (user, timestamp, reason, from/to phase)
-- Backward compat: `projects.status` synced from lifecycle state as read-only
-- Simple vs. GC mode selector on project creation form
-- Feature gating by mode (change orders, lien waivers, subcontractor mgmt)
-- Project soft delete (`deleted_at`, `deleted_by`) + 30-day trash restore
-- Hard delete gate: admin-only, zero financial records, multi-step confirmation
+### Phase 6: Estimates Redesign
+**Rationale:** Estimates is the most complex domain — 6-step wizard, inline-edit `EstimateLineItemsTable` with drag-and-drop, SOV builder with reorderable rows. It is tackled after Budget and CO/Pay Apps because it is unique enough that the simpler domain patterns do not transfer directly, and it has the highest form state regression risk (most `<Controller>` instances, most `useFieldArray` usage).
+**Delivers:** Improved step indicator — horizontal stepper bar with labels and completion state. `EstimateLineItemsTable` density cleanup — 32px rows, tabular-nums, right-aligned currency, sticky section header rows. SOV builder drag-handle styling and row density improvement. Auto-save visual feedback on step transitions. Final review step layout polish.
+**From STACK.md:** `motion` for step transition animations (must use `"use client"`; animate outer step container only, not individual Controllers). `react-number-format` for currency inputs in line item entry.
+**From FEATURES.md (P1):** Right-aligned currency in line item table. (P2): Inline row addition (remove modal), keyboard navigation in line item table.
+**Avoids:** Form state regression (Pitfall 4) — this is the highest-risk phase for Controller remounting; CSS visibility toggling for step hiding is mandatory; `key={field.id}` on all `useFieldArray` items must be verified after any layout change. Full 6-step form submission UAT required.
+**Research flag:** Standard patterns — skip `/gsd:research-phase`. Wizard and inline-edit table patterns are well-documented. The dnd-kit integration in SOV builder should be verified not to have regressed from Phase 2 table changes.
 
-**Features from FEATURES.md:** 9-phase lifecycle, Simple/GC mode, project deletion safeguards
-
-**Pitfalls this phase must avoid:**
-- Run `SELECT DISTINCT(status) FROM projects` on production before writing any migration SQL (Pitfall 2)
-- Transaction-wrap the entire backfill; dry-run on staging (Pitfall 15)
-- Analyze existing project feature usage before assigning mode default (Pitfall 5)
-- Design state machine independent of mode from day one (Pitfall 6)
-
-**Research flag: YES — stakeholder validation required.** Transition trigger rules (what data gates each of the 9 transitions) are BIDAXIOM-specific and cannot be resolved by external research. Document explicit entry/exit criteria per phase before implementation starts. See FEATURES.md validation gaps #1 and #2.
-
----
-
-### Phase 2: PDF Generation (Standard Documents)
-
-**Rationale:** PDF generation is the top differentiator for v1.5 and depends on stable lifecycle state (PDFs reference project phase; only certain doc types are valid per phase). Build standard document types first using pdfmake (structured, predictable) before extending to custom template imports via Puppeteer. This validates the field-mapping architecture against known AIA document structures before facing arbitrary user templates.
-
-**Delivers:**
-- Proposal PDF (project summary, SOV breakdown, pricing, terms, signature blocks, company branding)
-- Change Order PDF (description, cost impact, schedule impact, AIA signature blocks)
-- AIA G702/G703 Payment Application PDF (auto-populate from payment app entries; G702 contract sections + G703 SOV by cost code)
-- RFQ PDF (scope items, qty, unit, deadline, vendor info)
-- Document naming convention system (`{jobNumber}-PA-{seq}`, `CO-{year}-{seq}`)
-- Counter table (`document_naming_conventions`) with `SELECT FOR UPDATE` increment
-- BullMQ queue infrastructure: pdf-generation queue, email queue, export queue
-- BullMQ workers: PDF worker (concurrency=2 for Puppeteer; unlimited for pdfmake)
-- Bull Board monitoring dashboard at `/admin/queues`
-- Email delivery via Nodemailer + BullMQ (queued with retry + exponential backoff)
-
-**Stack from STACK.md:** pdfmake, BullMQ, Nodemailer, MinIO (existing), Redis (existing)
-
-**Pitfalls this phase must avoid:**
-- Implement sequence locking BEFORE first document generation goes live — not as a follow-up (Pitfall 1)
-- Use flow-based PDF layout; test with 1-item, 5-item, 50-item content sizes (Pitfall 4)
-- Load test concurrent generation before launch; set Puppeteer worker concurrency = 2 (Pitfall 10/12)
-- pdfmake runs in-process; Puppeteer always via BullMQ worker — enforce this boundary strictly
-
-**Research flag: NO.** AIA G702/G703 required fields are documented and verified. pdfmake + BullMQ are established patterns. Standard phase — no phase research needed.
-
----
-
-### Phase 3: Custom Template Import
-
-**Rationale:** Custom template import is architecturally distinct from standard PDF generation (Puppeteer vs. pdfmake, file upload vs. in-memory data, field detection vs. fixed schema). Deferred to Phase 3 so the core pipeline is validated before facing arbitrary user-supplied templates. Field mapping UI is the highest-complexity user-facing feature in v1.5 and needs a stable document generation foundation beneath it.
-
-**Delivers:**
-- DOCX/XLSX template upload endpoint
-- Field detection via officeparser (AST-based, handles both simple and complex OOXML fields)
-- Field mapping UI: "12/15 fields mapped" progress; must explicitly handle all unmapped fields
-- Template merge and DOCX/XLSX output via docxtemplater
-- Puppeteer-based rendering for HTML/PDF custom templates (via BullMQ worker)
-- Template versioning: `template_version` stored on every generated document; templates archive-only
-- UTF-8 encoding enforcement in all XML parsing paths
-- `document_templates` table with JSONB config (field mappings, layout, signature block positions)
-
-**Stack from STACK.md:** docxtemplater, officeparser, Puppeteer (via BullMQ worker)
-
-**Pitfalls this phase must avoid:**
-- Never regex-scan for merge fields — use docxtemplater to handle complex OOXML split-tag fields (Pitfall 3)
-- Require explicit handling of ALL unmapped fields before save; show progress indicator (Pitfall 7)
-- Implement template versioning before any user-facing template editing is possible (Pitfall 11)
-- Explicit UTF-8 encoding in all XML parsing paths (Pitfall 12)
-
-**Research flag: YES — design spike required.** Field mapping UX has no established construction SaaS reference pattern. The mapping interface (drag-drop vs. dropdown vs. `{field}` syntax) significantly impacts adoption. A UX design spike or prototype review should precede Phase 3 planning.
-
----
-
-### Phase 4: Document Metadata Redesign (Flat System)
-
-**Rationale:** Document metadata redesign is last because it depends on the `documentType` taxonomy finalized in Phases 2-3. Migrating folder → metadata requires knowing which document types exist and what their metadata fields are. Doing this earlier would require re-migrating existing documents as types are added. Phase 4 also has the highest data-loss rollback risk and must run on stable infrastructure.
-
-**Delivers:**
-- New columns on `documents`: `documentType`, `relatedEntityType`, `relatedEntityId`, `isTemplate`, `templateConfig` (JSONB)
-- Flat document list UI replacing folder tree navigation
-- Faceted filter by: document type, status, phase, cost code, date range, author, approval status
-- ISO 19650-inspired taxonomy (document type enum, status codes, revision, discipline)
-- `folder_archive` table preserving original folder-document mapping for rollback/audit
-- Backfill migration: infer `documentType` from existing `category` + folder name context
-- Soft-deprecation of `folderId`: nullable, not dropped, kept for gradual transition
-
-**Pitfalls this phase must avoid:**
-- Pre-migration audit of all folder naming patterns before writing migration SQL (Pitfall 8)
-- Dry-run migration on 100 test documents; validate doc count before == after
-- Keep `folder_path_legacy` column for at least 3 releases
-- Defer DROP COLUMN `folderId` to v1.6 minimum
-
-**Research flag: YES — data audit required.** Existing folder naming patterns in production are unknown and will determine migration complexity and classification accuracy. Run `SELECT DISTINCT name FROM folders ORDER BY name` before Phase 4 planning begins. Do not write migration SQL without this data.
-
----
+### Phase 7: Project Header, Tabs, and Navigation Chrome
+**Rationale:** The project header and tabs are shared across all 10 project tabs — a regression here breaks the entire project detail experience for every user on every project. They are saved for last precisely because all domain-level content (Budget, CO, Estimates, Documents) is stable and verified before the shared chrome is modified. Modifying the chrome first would require re-verifying all domain pages after every header change.
+**Delivers:** Compact sticky project header (60–80px max height) with project name, status badge, job number, 3–5 key financial stat bar metrics, quick create button, and dark mode violations resolved. Tab count badges for action items on project navigation tabs. Routing convention documentation added before any code: `<Link href scroll={false}>` for navigation-level tabs; Radix `<Tabs>` reserved for in-page sub-sections only. `sectionPrefetchMap` verified complete for all existing tabs.
+**From FEATURES.md (P1):** Compact sticky project header, financial stat bar. (P2): Tab count badges, financial health indicator.
+**Avoids:** Navigation pattern regression (Pitfall 5) — `<Link href scroll={false}>` pattern and `sectionPrefetchMap` registrations must be preserved; document the URL-vs-state tabs rule before writing any code. Stale shared component APIs (Pitfall 6) — grep all 10 project tab pages for header prop call sites before any prop change.
+**Research flag:** Standard patterns — skip `/gsd:research-phase`. Sticky header pattern is well-documented. The critical verification is responsive testing: combined sticky header + tabs height (target 80–110px) at both 1280px and 375px viewport widths.
 
 ### Phase Ordering Rationale
 
-- **Phase 1 is an absolute prerequisite.** Lifecycle state is referenced by PDFs (phase gates doc type), feature gating (mode gates UI), and document metadata (phase is a filter tag). No other phase can ship correctly without valid lifecycle state.
-- **Phase 2 precedes Phase 3** because the field-mapping architecture needs validation on known AIA document structures (fixed schema, well-documented requirements) before being extended to arbitrary user templates. Bugs in field mapping are much cheaper to fix with known inputs.
-- **Phase 4 is intentionally last** because `documentType` enum values must be finalized before migrating existing documents to them. An incomplete taxonomy requires a second migration, which is expensive and risky.
-- PITFALLS.md explicitly warns against building template import before state machine migration (Anti-Pattern 1), adding complexity mode without existing data analysis (Anti-Pattern 2), and document metadata redesign before core document stability (Anti-Pattern 3).
+- Token foundation before everything: CSS variable changes propagate globally; wrong tokens compound across all seven phases.
+- Shared primitives before domain: `table.tsx` row height is set once and inherited by every domain — set it right before domain work begins.
+- Shared domain components before page-level: `StatusBadge` and `CurrencyDisplay` APIs must be locked before pages depend on them in redesigned form.
+- Budget before CO and Pay Apps: Budget has the most tables and the most color violations; it establishes the domain redesign pattern.
+- Estimates last in domain redesigns: most complex form state, unique drag-and-drop, patterns from simpler domains do not transfer directly.
+- Navigation chrome last: shared across everything; highest regression cost if broken before domain pages are stable.
 
----
+### Research Flags
 
-### Research Flags Summary
+Phases needing `/gsd:research-phase` before planning:
+- **Phase 4 (Budget):** TanStack Table `getGroupedRowModel` combined with `@tanstack/react-virtual` is a specific pairing with integration nuances. Verify the interaction before implementation planning begins.
 
-| Phase | Research Needed | Reason | Who Resolves |
-|-------|----------------|--------|-------------|
-| Phase 1: Lifecycle transition triggers | YES — stakeholder validation | Entry/exit criteria per phase are BIDAXIOM-specific; no external research resolves them | Product owner + lead developer workshop |
-| Phase 1: Complexity mode default | YES — data audit | Must analyze real feature usage patterns before schema change | Data audit query on production |
-| Phase 2: Standard PDF generation | NO | AIA G702/G703 fields documented; pdfmake + BullMQ are standard patterns | N/A |
-| Phase 3: Custom template import | YES — design spike | Field mapping UX has no established construction SaaS reference pattern | UX prototyping before planning |
-| Phase 4: Document metadata | YES — data audit | Existing folder naming patterns unknown; migration SQL cannot be written blind | Data audit query on production |
+Phases with well-documented patterns (skip research):
+- **Phase 1 (Foundation):** CSS variable token overhaul is standard.
+- **Phase 2 (Primitives):** shadcn/ui component modification and TanStack Table density configuration are well-documented in official docs.
+- **Phase 3 (Shared Components):** StatusBadge consolidation is a standard component merge.
+- **Phase 5 (CO and Pay Apps):** Approval workflow UI patterns are directly mapped from Procore research in FEATURES-UX-REDESIGN.md.
+- **Phase 6 (Estimates):** Wizard and inline-edit table patterns are well-documented; complexity is integration and form-state discipline, not pattern discovery.
+- **Phase 7 (Chrome):** Sticky header patterns are well-documented; risk is responsive testing, not pattern discovery.
 
 ---
 
@@ -304,61 +216,59 @@ Phase 4: Document Metadata Redesign <-- depends on stable documentType taxonomy 
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| **Stack** | HIGH | All six library additions verified (versions, Node.js compatibility, TypeScript support, integration patterns). Dual-track PDF approach (pdfmake + Puppeteer) is well-established. BullMQ + existing Redis is drop-in. |
-| **Features** | MEDIUM | Core standards (AIA G702/G703, ISO 19650, FAR 4.7) documented and verified. BIDAXIOM-specific transition triggers and exact Simple mode feature list need stakeholder definition — no external source can resolve these. |
-| **Architecture** | HIGH | All patterns (tRPC mutations, SELECT FOR UPDATE, JSONB configs, schema-per-tenant extensions) verified against the existing codebase. No novel architecture introduced. Migration strategy is additive and reversible. |
-| **Pitfalls** | MEDIUM-HIGH | State migration and sequence race condition risks are well-documented (CWE-362, PostgreSQL docs, cybertec-postgresql.com). PDF layout and OOXML template pitfalls verified via library GitHub issues and specs. No construction SaaS-specific post-mortems found — general enterprise SaaS patterns applied. |
+| Stack | HIGH | All versions verified against npm registry Feb 2026; Radix ScrollArea sticky header bug confirmed via open GitHub issue; TanStack family pairing confirmed via official docs; motion license confirmed MIT |
+| Features | MEDIUM-HIGH | Procore patterns verified via official support docs and release notes; NN/G sticky header guidelines are authoritative; BuilderTrend patterns from third-party reviews (not primary source) |
+| Architecture | HIGH | All findings grounded in direct codebase inspection with specific file paths and line numbers; no inference; token system, component boundaries, and existing violations all confirmed |
+| Pitfalls | HIGH | All pitfalls confirmed from direct codebase inspection; grep counts verified; specific line numbers confirmed (e.g., `change-order-form.tsx` line 63 `useForm<any>` cast, line 362 `key={field.id}`); no theoretical pitfalls |
 
-**Overall confidence: MEDIUM-HIGH**
+**Overall confidence: HIGH**
 
----
+### Gaps to Address
 
-### Gaps to Address During Planning or Before Coding
-
-| Gap | If Unresolved | How to Handle |
-|-----|--------------|---------------|
-| **Lifecycle transition triggers** — what data/events gate each of the 9 transitions? | Pre-flight checks are guessed; wrong checks cause state machine to be either too permissive or frustratingly strict | Stakeholder workshop before Phase 1 planning; document explicit entry/exit criteria per phase |
-| **Simple mode feature list** — exact set of features visible/hidden vs. GC mode | Feature gating implementation is undefined; any code written is speculative | Define feature matrix (mode × feature) before Phase 1 planning; decisions lock at mode-column-add |
-| **Existing project status distribution** — current status values and any outliers | Migration SQL is guessed; `on_hold` alone may map to multiple phases | Run `SELECT status, COUNT(*) FROM projects GROUP BY status` on production before Phase 1 |
-| **Existing folder naming patterns** — how folders are currently named and nested | Folder → metadata migration accuracy unknown; classification will be incomplete | Run `SELECT DISTINCT name FROM folders ORDER BY name` before Phase 4 planning |
-| **PDF branding preferences** — logo placement, color scheme, signature block layout per doc type | Phase 2 output documents have wrong layout; rework required | Stakeholder review of sample PDF mock-ups before Phase 2 implementation starts |
-| **Mode upgrade path for existing projects** — allow Simple → GC mid-project or lock at creation? | If unlocked: Pitfall 6 (state + mode interaction) triggers; if locked: user frustration when scope expands | Decision required before Phase 1 ships; default recommendation is lock at creation with documented escalation path |
+- **Budget table row count at runtime:** Whether `@tanstack/react-virtual` is actually necessary depends on how many rows budget tables have in production tenants. Flag for Phase 4 planner — suggested threshold: add virtualization if any tenant has more than 100 budget rows. Test with production data before deciding.
+- **`react-resizable-panels` installation status:** STACK.md notes it already backs shadcn `Resizable`. Verify with `npm ls react-resizable-panels` in `apps/web/` before Phase 4 — it may already be available.
+- **`vaul` installation status:** Verify with `npm ls vaul` in `apps/web/` before Phase 6 — it may already be a transitive dependency of shadcn `Drawer`.
+- **Mobile breakpoints for project header:** Research recommends 60–80px max sticky header height, but BIDAXIOM's actual tab overflow behavior at 375px needs DevTools verification before Phase 7 planning.
+- **Phase 40 document table as reference:** The `unified-document-table.tsx` from Phase 40 (the most recent and most mature table in the codebase) should be explicitly reviewed at the start of Phase 4 to establish the density baseline — the budget table and document table should converge visually, not diverge.
 
 ---
 
 ## Sources
 
-### Primary (HIGH confidence — official documentation and specifications)
+### Primary (HIGH confidence — direct codebase inspection or official documentation)
 
-- [AIA G702/G703 Payment Application Standards](https://help.aiacontracts.com/hc/en-us/articles/1500009308242) — required fields for payment applications; G702/G703 structure
-- [AIA: Substantial Completion definition](https://learn.aiacontracts.com/articles/substantial-completion-vs-final-completion-understanding-key-construction-milestones/) — contractual lifecycle milestone
-- [FAR 4.7 — Federal Contractor Records Retention](https://www.acquisition.gov/far/subpart-4.7) — 3-year minimum retention
-- [CWE-362 — Concurrent Execution Improper Synchronization](https://cwe.mitre.org/data/definitions/362.html) — race condition classification
-- [PostgreSQL SELECT FOR UPDATE documentation](https://www.postgresql.org/docs/current/sql-select.html#SQL-FOR-UPDATE-SHARE) — row-level locking for concurrent safety
-- [Cybertec: Gaps in PostgreSQL Sequences](https://www.cybertec-postgresql.com/en/gaps-in-sequences-postgresql/) — why SEQUENCE objects don't prevent duplicate numbering
-- [BullMQ Official Documentation](https://docs.bullmq.io/) — queue architecture, concurrency controls, monitoring
-- [docxtemplater Official Documentation](https://docxtemplater.com/docs/) — DOCX/XLSX merge field handling, complex field support
-- [Puppeteer Official Documentation](https://pptr.dev/) — headless Chrome PDF rendering
-- [Open-XML-SDK Issue #275](https://github.com/OfficeDev/Open-XML-SDK/issues/275) — confirmed complex merge field detection failure in OOXML
+- Codebase inspection: `apps/web/app/globals.css` — token system, dark mode variable values
+- Codebase inspection: `apps/web/tailwind.config.ts` — custom utilities and token registration
+- Codebase inspection: `apps/web/components/ui/table.tsx` — current row heights (`h-10`, `p-2`)
+- Codebase inspection: `apps/web/components/shared/status-badge.tsx` and `currency-display.tsx`
+- Codebase inspection: `apps/web/components/budget/budget-summary-cards.tsx` and `budget-line-item-table.tsx`
+- Codebase inspection: `apps/web/app/(dashboard)/projects/[projectSlug]/components/project-tabs.tsx` and `project-header.tsx`
+- Codebase inspection: `apps/web/components/change-order/change-order-form.tsx`
+- Codebase inspection: `apps/web/COMPONENT-ORGANIZATION.md`
+- Grep audit: 52 TSX files in `apps/web/` containing hardcoded palette color classes (confirmed)
+- Grep audit: `bg-amber-50` confirmed in 4 production files without dark variants
+- [TanStack Table v8 — Virtualized Rows Example](https://tanstack.com/table/v8/docs/framework/react/examples/virtualized-rows) — official docs
+- [TanStack Virtual v3 Installation](https://tanstack.com/virtual/latest/docs/installation) — v3.13.18 verified npm registry Feb 2026
+- [Motion npm package](https://www.npmjs.com/package/motion) — v12.34.3 verified npm registry Feb 2026; MIT license confirmed
+- [Radix ScrollArea + sticky positioning bug](https://github.com/radix-ui/primitives/issues/2783) — open GitHub issue; confirms table sticky header pitfall
+- [Procore Change Order Statuses](https://support.procore.com/faq/what-are-the-default-statuses-for-change-orders-in-procore) — 10 default statuses with budget impact mapping
+- [Procore Budget Improvements](https://www.procore.com/whats-new/budget-improvements) — column resizing, keyboard nav, side panel additions
+- [NN/G — Sticky Headers](https://www.nngroup.com/articles/sticky-headers/) — height guidelines, content-to-chrome ratio
 
-### Secondary (MEDIUM confidence — multiple sources in agreement)
+### Secondary (MEDIUM confidence — third-party sources, editorial)
 
-- [Procore Document Management Naming Standards](https://support.procore.com/faq/what-is-a-naming-standard-in-the-document-management-tool) — naming convention patterns; ISO 19650 reference
-- [Autodesk: 6 Stages of Construction](https://www.autodesk.com/blogs/construction/the-6-stages-of-construction/) — lifecycle phase reference model
-- [Blackwater Tech: Document Metadata Best Practices](https://blackwater.tech/metadata-tagging-best-practices-for-construction-industry-document-management/) — ISO 19650 taxonomy for construction
-- [Nodemailer Official Documentation](https://nodemailer.com/) — SMTP transport, DKIM, attachments
-- [AIDI: Differences between Construction Owner and GC Software](https://www.aidi.io/blog/the-differences-between-construction-owner-and-gc-software) — Simple vs. Advanced mode justification
-
-### Tertiary (MEDIUM-LOW — general enterprise patterns applied to construction context)
-
-- SharePoint metadata vs. folder migration patterns — general enterprise DMS patterns applied to construction document migration; not construction-specific
-- Procore/Buildertrend Simple vs. GC mode patterns — inferred from public product documentation; not verified via direct API inspection or construction PM interviews
+- [Pencil & Paper — Enterprise Data Tables UX Patterns](https://www.pencilandpaper.io/articles/ux-pattern-analysis-enterprise-data-tables) — row density standards, bulk actions, sticky footers
+- [Procore What's New — NGX Change Orders](https://www.procore.com/whats-new) — NGX list view pattern, keyboard nav, multi-select
+- [Procore User Reviews — Capterra](https://www.capterra.com/p/56250/Procore/reviews/) — real user UX pain points
+- [Buildertrend Review 2026 — The Digital Project Manager](https://thedigitalprojectmanager.com/tools/buildertrend-review/) — UX strengths and weaknesses
+- [react-number-format npm](https://www.npmjs.com/package/react-number-format) — v5.4.4 verified npm registry Feb 2026
+- [shadcn/ui Inline Edit Table Block](https://ui.shadcn.com/blocks/tables-inline-edit) — official shadcn blocks
 
 ---
 
-*Research completed: 2026-02-18*
-*Synthesized: 2026-02-18*
+*Research completed: 2026-02-21*
+*Synthesized: 2026-02-21*
 *Ready for roadmap: yes*
-*Suggested phases: 4*
-*Research flags: Phase 1 (stakeholder validation + data audit), Phase 3 (UX design spike), Phase 4 (data audit)*
-*Standard phases (no research needed): Phase 2*
+*Suggested phases: 7*
+*Research flags: Phase 4 (TanStack grouped rows + virtualization pairing)*
+*Standard phases (no research needed): Phases 1, 2, 3, 5, 6, 7*
