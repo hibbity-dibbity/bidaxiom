@@ -18,10 +18,14 @@ import {
   AuditAction,
 } from "@construction/shared";
 import { generateUploadUrl, generateDownloadUrl } from "../../storage/presigned.js";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { getStorageClient, getBucketName } from "../../storage/client.js";
 import { createAuditLog } from "../../audit/logger.js";
 import { defineAbilitiesFor, loadDocumentPermissions } from "../../auth/abilities.js";
-import { eq, desc, and, or, isNull, inArray, like, sql } from "drizzle-orm";
+import { eq, desc, and, or, isNull, inArray, like, ilike, gte, lte, sql } from "drizzle-orm";
 import { ForbiddenError } from "@casl/ability";
+import { sendDocumentEmail } from "../../services/email.js";
 
 /**
  * Load project-level abilities for the current user.
@@ -492,6 +496,263 @@ export const documentRouter = router({
         }));
 
       return documents;
+    }),
+
+  /**
+   * Unified document list query for the document center UI.
+   * Returns all project documents with workflow metadata joined and author info.
+   * Supports filtering by type, status, date range, author, and search.
+   */
+  listUnified: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string().uuid(),
+        search: z.string().optional(),
+        type: z.enum([
+          "rfi",
+          "submittal",
+          "transmittal",
+          "proposal",
+          "change_order",
+          "payment_app",
+          "rfq",
+          "file",
+        ]).optional(),
+        status: z.string().optional(),
+        dateFrom: z.string().optional(),
+        dateTo: z.string().optional(),
+        authorId: z.string().optional(),
+        limit: z.number().int().min(1).max(500).default(100),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+
+      // Load abilities and check permission
+      const abilities = await loadProjectAbilities({
+        tenant: ctx.tenant,
+        userId: ctx.userId,
+        orgRole: ctx.orgRole,
+      });
+
+      if (!abilities.can("read", "Document")) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
+
+      // Build WHERE conditions array
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const conditions: any[] = [eq(schema.documents.projectId, input.projectId)];
+
+      if (input.search) {
+        conditions.push(ilike(schema.documents.name, `%${input.search}%`));
+      }
+
+      if (input.dateFrom) {
+        conditions.push(gte(schema.documents.createdAt, new Date(input.dateFrom)));
+      }
+
+      if (input.dateTo) {
+        conditions.push(lte(schema.documents.createdAt, new Date(input.dateTo + "T23:59:59Z")));
+      }
+
+      if (input.authorId) {
+        conditions.push(eq(schema.documents.createdBy, input.authorId));
+      }
+
+      // Execute query with LEFT JOINs to document_workflows and user_profiles
+      const rows = await db
+        .select({
+          // Document columns
+          id: schema.documents.id,
+          name: schema.documents.name,
+          category: schema.documents.category,
+          description: schema.documents.description,
+          contentType: schema.documents.contentType,
+          fileSize: schema.documents.fileSize,
+          currentVersionId: schema.documents.currentVersionId,
+          createdBy: schema.documents.createdBy,
+          createdAt: schema.documents.createdAt,
+          updatedAt: schema.documents.updatedAt,
+          templateId: schema.documents.templateId,
+          // Workflow columns (aliased)
+          workflowId: schema.documentWorkflows.id,
+          workflowType: schema.documentWorkflows.workflowType,
+          workflowNumber: schema.documentWorkflows.workflowNumber,
+          workflowStatus: schema.documentWorkflows.status,
+          workflowTitle: schema.documentWorkflows.title,
+          // Author name
+          createdByName: sql<string>`COALESCE(${schema.userProfiles.firstName} || ' ' || ${schema.userProfiles.lastName}, ${schema.userProfiles.email})`,
+        })
+        .from(schema.documents)
+        .leftJoin(
+          schema.documentWorkflows,
+          eq(schema.documentWorkflows.documentId, schema.documents.id)
+        )
+        .leftJoin(
+          schema.userProfiles,
+          eq(schema.documents.createdBy, schema.userProfiles.clerkUserId)
+        )
+        .where(and(...conditions))
+        .orderBy(desc(schema.documents.createdAt))
+        .limit(input.limit);
+
+      // Post-query type filter
+      const WORKFLOW_TYPES = ["rfi", "submittal", "transmittal"] as const;
+      const CATEGORY_TYPES = ["proposal", "change_order", "payment_app", "rfq"] as const;
+
+      let filtered = rows;
+
+      if (input.type) {
+        if ((WORKFLOW_TYPES as readonly string[]).includes(input.type)) {
+          filtered = filtered.filter((row) => row.workflowType === input.type);
+        } else if ((CATEGORY_TYPES as readonly string[]).includes(input.type)) {
+          filtered = filtered.filter(
+            (row) => row.category === input.type && row.workflowId === null
+          );
+        } else if (input.type === "file") {
+          filtered = filtered.filter(
+            (row) =>
+              row.workflowId === null &&
+              !(CATEGORY_TYPES as readonly string[]).includes(row.category ?? "")
+          );
+        }
+      }
+
+      // Post-query status filter (non-workflow docs always pass)
+      if (input.status) {
+        filtered = filtered.filter(
+          (row) => row.workflowStatus === input.status || row.workflowId === null
+        );
+      }
+
+      // Map to final shape with derived fields
+      const RELATED_ENTITY_REGEX = /(RFI|SUB|TX|CO|PAY|RFQ)-[\w-]+/i;
+
+      return filtered.map((row) => {
+        const documentType =
+          row.workflowType ??
+          ((CATEGORY_TYPES as readonly string[]).includes(row.category ?? "")
+            ? row.category
+            : "file");
+
+        const relatedEntityMatch = row.description
+          ? RELATED_ENTITY_REGEX.exec(row.description)
+          : null;
+        const relatedEntity = relatedEntityMatch ? relatedEntityMatch[0] : null;
+
+        return {
+          id: row.id,
+          name: row.name,
+          category: row.category,
+          description: row.description,
+          contentType: row.contentType,
+          fileSize: row.fileSize,
+          currentVersionId: row.currentVersionId,
+          createdBy: row.createdBy,
+          createdByName: row.createdByName,
+          createdAt: row.createdAt,
+          updatedAt: row.updatedAt,
+          templateId: row.templateId,
+          workflowId: row.workflowId,
+          workflowType: row.workflowType,
+          workflowNumber: row.workflowNumber,
+          workflowStatus: row.workflowStatus,
+          workflowTitle: row.workflowTitle,
+          documentType,
+          relatedEntity,
+        };
+      });
+    }),
+
+  /**
+   * Send a document download link via email.
+   * Generates a 7-day presigned URL and sends it to the recipient.
+   */
+  sendByEmail: protectedProcedure
+    .input(
+      z.object({
+        documentId: z.string().uuid(),
+        recipientEmail: z.string().email(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+
+      // Fetch document with current version info
+      const [document] = await db
+        .select({
+          id: schema.documents.id,
+          name: schema.documents.name,
+          projectId: schema.documents.projectId,
+          folderId: schema.documents.folderId,
+          currentVersionId: schema.documents.currentVersionId,
+        })
+        .from(schema.documents)
+        .where(eq(schema.documents.id, input.documentId))
+        .limit(1);
+
+      if (!document) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Document not found" });
+      }
+
+      if (!document.currentVersionId) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Document has no versions" });
+      }
+
+      // Check read access
+      const abilities = await loadProjectAbilities({
+        tenant: ctx.tenant,
+        userId: ctx.userId,
+        orgRole: ctx.orgRole,
+      });
+      const explicitPerms = await loadDocumentPermissions(db, schema, ctx.userId);
+      checkDocumentAccess(abilities, explicitPerms, document, "read");
+
+      // Fetch storage key from document_versions
+      const [version] = await db
+        .select({ storageKey: schema.documentVersions.storageKey })
+        .from(schema.documentVersions)
+        .where(eq(schema.documentVersions.id, document.currentVersionId))
+        .limit(1);
+
+      if (!version) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Current version not found",
+        });
+      }
+
+      // Generate 7-day presigned download URL for email sharing
+      const s3 = getStorageClient();
+      const bucket = getBucketName();
+      const downloadUrl = await getSignedUrl(
+        s3,
+        new GetObjectCommand({
+          Bucket: bucket,
+          Key: version.storageKey,
+          ResponseContentDisposition: `attachment; filename="${document.name}"`,
+        }),
+        { expiresIn: 7 * 24 * 3600 } // 7 days
+      );
+
+      // Send email with download link
+      await sendDocumentEmail(input.recipientEmail, document.name, downloadUrl);
+
+      return { success: true };
     }),
 
   /**

@@ -120,6 +120,59 @@ export async function sendPasswordResetEmail(email: string, token: string): Prom
 }
 
 /**
+ * Send document share email with a download link.
+ *
+ * @param recipientEmail - Recipient email address
+ * @param documentName - Name of the document being shared
+ * @param downloadUrl - Presigned download URL (7-day expiry)
+ */
+export async function sendDocumentEmail(
+  recipientEmail: string,
+  documentName: string,
+  downloadUrl: string
+): Promise<void> {
+  const subject = `Document shared: ${documentName}`;
+  const html = `
+    <h2>Document Shared With You</h2>
+    <p>A document has been shared with you: <strong>${documentName}</strong></p>
+    <p>
+      <a href="${downloadUrl}" style="
+        display: inline-block;
+        padding: 12px 24px;
+        background-color: #3B5BDB;
+        color: #ffffff;
+        text-decoration: none;
+        border-radius: 6px;
+        font-weight: 600;
+      ">Download Document</a>
+    </p>
+    <p style="color: #666; font-size: 14px;">This download link expires in 7 days.</p>
+  `;
+
+  const client = getResendClient();
+  if (!client) {
+    console.log(`[EMAIL DEV] Document share email to ${recipientEmail}:`);
+    console.log(`Subject: ${subject}`);
+    console.log(`Document: ${documentName}`);
+    console.log(`Download URL: ${downloadUrl}`);
+    return;
+  }
+
+  try {
+    await client.emails.send({
+      from: getFromEmail(),
+      to: recipientEmail,
+      subject,
+      html,
+    });
+    console.log(`[EMAIL] Document share email sent to ${recipientEmail} for "${documentName}"`);
+  } catch (err) {
+    console.error(`[EMAIL] Failed to send document share email to ${recipientEmail}:`, err);
+    throw new Error("Failed to send document share email");
+  }
+}
+
+/**
  * Send organization invitation email with token link.
  *
  * @param email - Recipient email address
