@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-21)
 ## Current Position
 
 Phase: 41 of 46 (Design Foundation)
-Plan: 04 complete (budget group token migration — all 6 budget components)
+Plan: 06 complete (Group G — estimates workflow, integration cards, shared components, dashboard token migration)
 Status: In progress
-Last activity: 2026-02-21 — 41-04 complete: 6 budget components migrated; financial tokens on number text, bg-muted on card backgrounds, StatusBadge for commitment status
+Last activity: 2026-02-21 — 41-06 complete: 15 files migrated to CSS variable tokens — currency-display, status-badge, estimates workflow steps (01-05), MarginCalculator, SOVBuilder, integration cards, document-uploader, workflow-detail, kpi-card
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100% | v1.5: [██████████] 100% | v1.6: [█░░░░░░░░░] 4%
 
@@ -52,6 +52,10 @@ Recent decisions relevant to v1.6:
 - [41-04]: EAC, ETC, Total Budget primary metric amounts use text-primary (not text-financial-*) — primary metric values get brand teal, not directional financial color
 - [41-04]: Recharts Bar fill props left as hex strings (#2563eb, #d97706) — chart library configuration values are not Tailwind classes, no token equivalent applies
 - [41-04]: commitment-list statusColors Record replaced by StatusBadge with statusVariants mapping: executed→active, closed→cancelled; type label badge uses variant=draft (neutral)
+- [41-06]: System errors (upload fail, sync fail) use text-destructive not text-financial-negative — destructive for actionable system errors, financial-negative for negative financial values only
+- [41-06]: Calendar provider icon colors (blue/orange) replaced with text-primary/text-muted-foreground — provider-specific palette colors have no token equivalent
+- [41-06]: Workflow approve/reject action buttons use text-financial-positive/negative with border-border — consistent token replacement for colored borders
+- [41-06]: Reject dialog button uses bg-destructive pattern not raw bg-red-600 — consistent with other destructive action buttons
 
 ### Pending Todos
 
@@ -65,5 +69,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Completed 41-04-PLAN.md — 6 budget components token migration. Next step: Continue remaining Wave 2 plans.
+Stopped at: Completed 41-06-PLAN.md — Group G 15-file token migration (estimates workflow, integration cards, shared components, dashboard). All Wave 2 plans complete (41-02 through 41-06).
 Resume file: None
