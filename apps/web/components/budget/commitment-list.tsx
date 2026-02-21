@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/shared/status-badge";
 import {
   Select,
   SelectContent,
@@ -26,12 +26,12 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 2,
 });
 
-const statusColors: Record<CommitmentStatus, string> = {
-  draft: "bg-gray-500",
-  pending: "bg-yellow-500",
-  approved: "bg-blue-500",
-  executed: "bg-green-500",
-  closed: "bg-slate-500",
+const statusVariants: Record<CommitmentStatus, "draft" | "pending" | "approved" | "active" | "cancelled"> = {
+  draft: "draft",
+  pending: "pending",
+  approved: "approved",
+  executed: "active",
+  closed: "cancelled",
 };
 
 const typeLabels: Record<CommitmentType, string> = {
@@ -140,12 +140,12 @@ export function CommitmentList({ projectId }: CommitmentListProps) {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <Badge className={statusColors[commitment.status as CommitmentStatus]}>
+                        <StatusBadge variant={statusVariants[commitment.status as CommitmentStatus]}>
                           {commitment.status}
-                        </Badge>
-                        <Badge variant="outline">
+                        </StatusBadge>
+                        <StatusBadge variant="draft">
                           {typeLabels[commitment.type as CommitmentType]}
-                        </Badge>
+                        </StatusBadge>
                       </div>
                       <CardTitle className="text-lg">
                         {commitment.vendorName}

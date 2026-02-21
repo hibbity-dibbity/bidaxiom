@@ -51,18 +51,18 @@ export function BudgetVarianceChart({ data }: BudgetVarianceChartProps) {
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="rounded-lg border bg-background p-3 shadow-lg">
+        <div className="rounded-lg border bg-card p-3 shadow-lg">
           <p className="font-medium text-sm mb-2">{payload[0].payload.name}</p>
           <div className="space-y-1 text-sm">
-            <p className="text-blue-600">
+            <p className="text-primary">
               Budgeted: {currencyFormatter.format(payload[0].payload.budgeted)}
             </p>
-            <p className="text-amber-600">
+            <p className="text-financial-pending">
               Committed: {currencyFormatter.format(payload[0].payload.committed)}
             </p>
             <p
               className={
-                payload[0].payload.variance >= 0 ? "text-green-600" : "text-red-600"
+                payload[0].payload.variance >= 0 ? "text-financial-positive" : "text-financial-negative"
               }
             >
               Variance: {currencyFormatter.format(payload[0].payload.variance)}

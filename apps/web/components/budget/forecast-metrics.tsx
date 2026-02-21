@@ -17,15 +17,15 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
 
 export function ForecastMetrics({ metrics }: ForecastMetricsProps) {
   const getCpiColor = (cpi: number) => {
-    if (cpi > 1.0) return "text-green-600 border-green-200 bg-green-50";
-    if (cpi >= 0.8) return "text-amber-600 border-amber-200 bg-amber-50";
-    return "text-red-600 border-red-200 bg-red-50";
+    if (cpi > 1.0) return "text-financial-positive border-border bg-muted/50";
+    if (cpi >= 0.8) return "text-financial-pending border-border bg-muted";
+    return "text-financial-negative border-border bg-muted";
   };
 
   const getVacColor = (vac: number) => {
-    if (vac > 0) return "text-green-600";
-    if (vac < 0) return "text-red-600";
-    return "text-slate-600";
+    if (vac > 0) return "text-financial-positive";
+    if (vac < 0) return "text-financial-negative";
+    return "text-muted-foreground";
   };
 
   return (
@@ -55,10 +55,10 @@ export function ForecastMetrics({ metrics }: ForecastMetricsProps) {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">EAC</CardTitle>
-          <TrendingUp className="h-4 w-4 text-blue-600" />
+          <TrendingUp className="h-4 w-4 text-primary" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-blue-600">
+          <div className="text-2xl font-bold text-primary">
             {currencyFormatter.format(metrics.estimateAtCompletion)}
           </div>
           <p className="text-xs text-muted-foreground mt-1">
@@ -68,8 +68,8 @@ export function ForecastMetrics({ metrics }: ForecastMetricsProps) {
             <p className="text-xs mt-1 flex items-center gap-1">
               {metrics.estimateAtCompletion > metrics.budgetAtCompletion ? (
                 <>
-                  <TrendingUp className="h-3 w-3 text-red-600" />
-                  <span className="text-red-600">
+                  <TrendingUp className="h-3 w-3 text-financial-negative" />
+                  <span className="text-financial-negative">
                     {currencyFormatter.format(
                       metrics.estimateAtCompletion - metrics.budgetAtCompletion
                     )}
@@ -77,8 +77,8 @@ export function ForecastMetrics({ metrics }: ForecastMetricsProps) {
                 </>
               ) : (
                 <>
-                  <TrendingDown className="h-3 w-3 text-green-600" />
-                  <span className="text-green-600">
+                  <TrendingDown className="h-3 w-3 text-financial-positive" />
+                  <span className="text-financial-positive">
                     {currencyFormatter.format(
                       metrics.budgetAtCompletion - metrics.estimateAtCompletion
                     )}
@@ -93,10 +93,10 @@ export function ForecastMetrics({ metrics }: ForecastMetricsProps) {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">ETC</CardTitle>
-          <AlertCircle className="h-4 w-4 text-purple-600" />
+          <AlertCircle className="h-4 w-4 text-primary" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-purple-600">
+          <div className="text-2xl font-bold text-primary">
             {currencyFormatter.format(metrics.estimateToComplete)}
           </div>
           <p className="text-xs text-muted-foreground mt-1">
@@ -108,7 +108,7 @@ export function ForecastMetrics({ metrics }: ForecastMetricsProps) {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">VAC</CardTitle>
-          <TrendingDown className="h-4 w-4 text-slate-600" />
+          <TrendingDown className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
           <div className={`text-2xl font-bold ${getVacColor(metrics.varianceAtCompletion)}`}>

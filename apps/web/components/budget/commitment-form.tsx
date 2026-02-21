@@ -160,7 +160,7 @@ export function CommitmentForm({ projectId, onSuccess }: CommitmentFormProps) {
               placeholder="Enter vendor name"
             />
             {errors.vendorName && (
-              <p className="text-sm text-red-600">{errors.vendorName.message}</p>
+              <p className="text-sm text-destructive">{errors.vendorName.message}</p>
             )}
           </div>
 
@@ -268,7 +268,7 @@ export function CommitmentForm({ projectId, onSuccess }: CommitmentFormProps) {
                   </SelectContent>
                 </Select>
                 {errors.lineItems?.[index]?.costCodeId && (
-                  <p className="text-sm text-red-600">
+                  <p className="text-sm text-destructive">
                     {errors.lineItems[index]?.costCodeId?.message}
                   </p>
                 )}
@@ -281,7 +281,7 @@ export function CommitmentForm({ projectId, onSuccess }: CommitmentFormProps) {
                   placeholder="Enter description"
                 />
                 {errors.lineItems?.[index]?.description && (
-                  <p className="text-sm text-red-600">
+                  <p className="text-sm text-destructive">
                     {errors.lineItems[index]?.description?.message}
                   </p>
                 )}
@@ -302,7 +302,7 @@ export function CommitmentForm({ projectId, onSuccess }: CommitmentFormProps) {
                   )}
                 />
                 {errors.lineItems?.[index]?.amount && (
-                  <p className="text-sm text-red-600">
+                  <p className="text-sm text-destructive">
                     {errors.lineItems[index]?.amount?.message}
                   </p>
                 )}
