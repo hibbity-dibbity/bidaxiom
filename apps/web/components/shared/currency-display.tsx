@@ -60,10 +60,10 @@ export function CurrencyDisplay({
 
   const colorClass = colorize
     ? amount < 0
-      ? "text-red-600 dark:text-red-400"
+      ? "text-financial-negative"
       : amount > 0
-      ? "text-green-600 dark:text-green-400"
-      : "text-gray-900 dark:text-gray-100"
+      ? "text-financial-positive"
+      : "text-foreground"
     : "";
 
   return (
