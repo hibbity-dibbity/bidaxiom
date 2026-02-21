@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { StatusBadge } from "@/components/shared/status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Plus, ChevronDown, ChevronRight, Award } from "lucide-react";
@@ -45,11 +46,11 @@ interface BidComparisonTableProps {
   projectSlug: string;      // For navigation
 }
 
-const levelingCategories: Record<LevelingCategory, { label: string; color: string }> = {
-  scope_gap: { label: "Scope Gap", color: "bg-red-500/10 text-red-700" },
-  scope_extra: { label: "Scope Extra", color: "bg-green-500/10 text-green-700" },
-  clarification: { label: "Clarification", color: "bg-blue-500/10 text-blue-700" },
-  risk: { label: "Risk", color: "bg-yellow-500/10 text-yellow-700" },
+const levelingCategories: Record<LevelingCategory, { label: string; variant: "rejected" | "approved" | "pending" | "warning" }> = {
+  scope_gap: { label: "Scope Gap", variant: "rejected" },
+  scope_extra: { label: "Scope Extra", variant: "approved" },
+  clarification: { label: "Clarification", variant: "pending" },
+  risk: { label: "Risk", variant: "warning" },
 };
 
 export function BidComparisonTable({ rfqId, projectId, projectSlug }: BidComparisonTableProps) {
@@ -168,16 +169,11 @@ export function BidComparisonTable({ rfqId, projectId, projectSlug }: BidCompari
                 <TableHead key={bid.bidId} className="text-center min-w-[250px]">
                   <div className="space-y-1">
                     <div className="font-semibold">{bid.bidderCompanyName}</div>
-                    <Badge
-                      variant="outline"
-                      className={
-                        bid.status === "awarded"
-                          ? "bg-green-500/10 text-green-700 border-green-200"
-                          : ""
-                      }
+                    <StatusBadge
+                      variant={bid.status === "awarded" ? "approved" : "draft"}
                     >
                       {bid.status.replace("_", " ")}
-                    </Badge>
+                    </StatusBadge>
                   </div>
                 </TableHead>
               ))}
@@ -253,12 +249,9 @@ export function BidComparisonTable({ rfqId, projectId, projectSlug }: BidCompari
                           {bid.levelingNotes.length > 0 ? (
                             bid.levelingNotes.map((note, idx) => (
                               <Card key={idx} className="p-3 text-sm">
-                                <Badge
-                                  variant="outline"
-                                  className={levelingCategories[note.category].color}
-                                >
+                                <StatusBadge variant={levelingCategories[note.category].variant}>
                                   {levelingCategories[note.category].label}
-                                </Badge>
+                                </StatusBadge>
                                 <p className="mt-2">{note.note}</p>
                                 {note.adjustmentAmount && (
                                   <p className="font-semibold mt-1">
@@ -289,7 +282,7 @@ export function BidComparisonTable({ rfqId, projectId, projectSlug }: BidCompari
                   key={bid.bidId}
                   className={`text-center text-lg ${
                     bid.leveledAmount === lowestLeveledAmount
-                      ? "bg-green-500/20 text-green-800 border-2 border-green-500"
+                      ? "bg-muted/50 text-financial-positive font-bold"
                       : ""
                   }`}
                 >
@@ -318,7 +311,7 @@ export function BidComparisonTable({ rfqId, projectId, projectSlug }: BidCompari
               {comparison.map((bid) => (
                 <TableCell
                   key={bid.bidId}
-                  className={`text-sm ${bid.exclusions ? "text-red-600" : ""}`}
+                  className={`text-sm ${bid.exclusions ? "text-financial-negative" : ""}`}
                 >
                   {bid.exclusions || "—"}
                 </TableCell>
@@ -495,8 +488,8 @@ export function BidComparisonTable({ rfqId, projectId, projectSlug }: BidCompari
               </div>
             )}
 
-            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded p-3">
-              <p className="text-sm text-yellow-800">
+            <div className="bg-muted border border-border rounded p-3">
+              <p className="text-sm text-muted-foreground">
                 <strong>Note:</strong> Awarding this bid will set its status to
                 "awarded" and reject all other bids for this RFQ.
               </p>

@@ -183,7 +183,7 @@ export function RfqForm({ projectId, projectSlug }: RfqFormProps) {
           maxLength={200}
         />
         {errors.title && (
-          <p className="text-sm text-red-500">{errors.title.message}</p>
+          <p className="text-sm text-destructive">{errors.title.message}</p>
         )}
       </div>
 
@@ -197,7 +197,7 @@ export function RfqForm({ projectId, projectSlug }: RfqFormProps) {
           maxLength={5000}
         />
         {errors.description && (
-          <p className="text-sm text-red-500">{errors.description.message}</p>
+          <p className="text-sm text-destructive">{errors.description.message}</p>
         )}
       </div>
 
@@ -211,7 +211,7 @@ export function RfqForm({ projectId, projectSlug }: RfqFormProps) {
           maxLength={10000}
         />
         {errors.scopeOfWork && (
-          <p className="text-sm text-red-500">{errors.scopeOfWork.message}</p>
+          <p className="text-sm text-destructive">{errors.scopeOfWork.message}</p>
         )}
       </div>
 
@@ -269,7 +269,7 @@ export function RfqForm({ projectId, projectSlug }: RfqFormProps) {
           </div>
         </TooltipProvider>
         {selectedTrades.length === 0 && (
-          <p className="text-sm text-red-500">At least one trade is required</p>
+          <p className="text-sm text-destructive">At least one trade is required</p>
         )}
       </div>
 
@@ -285,7 +285,7 @@ export function RfqForm({ projectId, projectSlug }: RfqFormProps) {
           />
         </div>
         {errors.dueDate && (
-          <p className="text-sm text-red-500">{errors.dueDate.message}</p>
+          <p className="text-sm text-destructive">{errors.dueDate.message}</p>
         )}
       </div>
 

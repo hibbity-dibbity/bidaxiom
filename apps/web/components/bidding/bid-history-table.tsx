@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/shared/status-badge";
 import Link from "next/link";
 import type { BidStatus } from "@construction/shared";
 
@@ -26,16 +26,16 @@ interface BidHistoryTableProps {
   bidHistory: BidHistoryItem[];
 }
 
-const getStatusColor = (status: string): string => {
-  const statusColors: Record<string, string> = {
-    submitted: "bg-blue-500/10 text-blue-500",
-    under_review: "bg-yellow-500/10 text-yellow-500",
-    shortlisted: "bg-purple-500/10 text-purple-500",
-    awarded: "bg-green-500/10 text-green-500",
-    rejected: "bg-red-500/10 text-red-500",
-    withdrawn: "bg-gray-500/10 text-gray-500",
-  };
-  return statusColors[status] || "bg-gray-500/10 text-gray-500";
+const bidStatusToVariant = (status: string) => {
+  switch (status) {
+    case "submitted": return "pending" as const;
+    case "under_review": return "warning" as const;
+    case "shortlisted": return "pending" as const;
+    case "awarded": return "approved" as const;
+    case "rejected": return "rejected" as const;
+    case "withdrawn": return "cancelled" as const;
+    default: return "draft" as const;
+  }
 };
 
 const getStatusLabel = (status: string): string => {
@@ -87,9 +87,9 @@ export function BidHistoryTable({ bidHistory }: BidHistoryTableProps) {
                 : "-"}
             </TableCell>
             <TableCell>
-              <Badge variant="secondary" className={getStatusColor(bid.status)}>
+              <StatusBadge variant={bidStatusToVariant(bid.status)}>
                 {getStatusLabel(bid.status)}
-              </Badge>
+              </StatusBadge>
             </TableCell>
             <TableCell>
               {new Date(bid.submittedAt).toLocaleDateString("en-US", {

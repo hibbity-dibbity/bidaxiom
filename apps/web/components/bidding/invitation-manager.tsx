@@ -24,6 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { StatusBadge } from "@/components/shared/status-badge";
 import { toast } from "sonner";
 import { UserPlus, Mail, X, Building2 } from "lucide-react";
 import type { InvitationStatus } from "@construction/shared";
@@ -45,11 +46,14 @@ interface InvitationManagerProps {
   }>;
 }
 
-const invitationStatusColors: Record<InvitationStatus, string> = {
-  pending: "bg-gray-500/10 text-gray-700 border-gray-200",
-  viewed: "bg-blue-500/10 text-blue-700 border-blue-200",
-  responded: "bg-green-500/10 text-green-700 border-green-200",
-  declined: "bg-red-500/10 text-red-700 border-red-200",
+const invitationStatusToVariant = (status: InvitationStatus) => {
+  switch (status) {
+    case "pending": return "draft" as const;
+    case "viewed": return "pending" as const;
+    case "responded": return "approved" as const;
+    case "declined": return "rejected" as const;
+    default: return "draft" as const;
+  }
 };
 
 export function InvitationManager({
@@ -263,12 +267,9 @@ export function InvitationManager({
                     "—"}
                 </TableCell>
                 <TableCell>
-                  <Badge
-                    variant="outline"
-                    className={invitationStatusColors[invitation.status]}
-                  >
+                  <StatusBadge variant={invitationStatusToVariant(invitation.status)}>
                     {invitation.status}
-                  </Badge>
+                  </StatusBadge>
                 </TableCell>
                 <TableCell>
                   {invitation.status === "pending" && (
