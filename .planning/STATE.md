@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-18)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 40 in progress (Plan 02 complete)
+**Current focus:** v1.5 Project Lifecycle Redesign & Document Engine — Phase 40 complete (all 3 plans done)
 
 ## Current Position
 
-Phase: 40-document-system-redesign (in progress)
-Plan: 02 complete — Workflow detail route page created; DOC-04 row-click navigation unblocked
-Status: 40-02 complete — SUMMARY at .planning/phases/40-document-system-redesign/40-02-SUMMARY.md
-Last activity: 2026-02-21 — 40-02 complete: workflow detail route at /projects/[slug]/workflows/[id] rendering WorkflowDetail component
+Phase: 40-document-system-redesign (complete)
+Plan: 03 complete — Unified document table UI built; all 5 DOC requirements satisfied
+Status: 40-03 complete — SUMMARY at .planning/phases/40-document-system-redesign/40-03-SUMMARY.md
+Last activity: 2026-02-21 — 40-03 complete: 6 document components + flat table documents page replacing tabs/folder tree
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100%
 
@@ -65,6 +65,7 @@ Progress: v1.0: [██████████] 100% | v1.1: [█████�
 | Phase 39 P05 | ~90 | 2 tasks + GAP-01 fix chain | 4 files |
 | Phase 40 P02 | 1 | 1 tasks | 1 files |
 | Phase 40-document-system-redesign P01 | 4 | 2 tasks | 4 files |
+| Phase 40 P03 | 5 | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -140,6 +141,11 @@ Decisions logged in PROJECT.md Key Decisions table (full log, 35 phases).
 - [Phase 40-01]: listUnified post-query type filter: workflow types match workflowType, category types require category match and null workflowId, file keeps remaining with no workflow attachment
 - [Phase 40-01]: sendByEmail uses raw getSignedUrl with 7-day expiry (not generateDownloadUrl 1-hour) — email recipients need longer window
 - [Phase 40-01]: bulk-download route derives tenant from JWT orgId — never trusts client-supplied tenantId; maintains same security posture as tRPC
+- [Phase 40-03]: author options sourced from project.getBySlug teamMembers (already in React Query cache from layout) — no separate user.list call needed
+- [Phase 40-03]: React Query v5 has no onError on useQuery — useEffect(documentsError) pattern used for error toast
+- [Phase 40-03]: document-filters uses useEffect to sync debouncedSearch to parent onChange — avoids render-time side effect
+- [Phase 40-03]: bulk-download fetches Bearer token via fetch('/api/auth/token') same as providers.tsx — consistent auth pattern
+- [Phase 40-03]: RowSelectionState index-based mapping: selected rows filtered by index from memoizedData array
 
 ### Quick Tasks Completed
 
@@ -160,5 +166,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Completed 40-02-PLAN.md — workflow detail route page created; Plan 03 (unified document table) is next.
+Stopped at: Completed 40-03-PLAN.md — unified document table UI complete; Phase 40 done; ready for UAT.
 Resume file: None
