@@ -214,3 +214,132 @@ export const CurrencyDisplay = ({ amount, colorize, showSign }: Props) => {
 - Context: `.planning/phases/19-component-library-architecture/19-CONTEXT.md`
 - Phase 19 Plan 01 Summary: `.planning/phases/19-component-library-architecture/19-01-SUMMARY.md`
 - Phase 19 Plan 02 Summary: `.planning/phases/19-component-library-architecture/19-02-SUMMARY.md`
+
+## Canonical Class Recipes
+
+This section defines the locked density targets and token usage rules for v1.6+. Do not deviate from these recipes without updating this document.
+
+### Table & List View Rows
+
+**Target:** 36px row height (h-9). Balanced enterprise density — one step more relaxed than Procore's 32px but still compact.
+
+```tsx
+// Data row
+<TableRow className="h-9">
+  <TableCell className="py-1.5 text-sm">Cell content</TableCell>
+</TableRow>
+
+// Column header
+<TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+  Column Name
+</TableHead>
+```
+
+**Rule:** `h-9 py-1.5 text-sm` is the canonical recipe for ALL table rows and list view rows across the application. No per-page variation permitted.
+
+### Form Inputs
+
+**Target:** 36px input height, consistent with row height for visual harmony in inline-edit and modal forms.
+
+```tsx
+<Input className="h-9 text-sm" />
+<Select>
+  <SelectTrigger className="h-9 text-sm">
+    <SelectValue />
+  </SelectTrigger>
+</Select>
+```
+
+**Rule:** `h-9 text-sm` applies to all text inputs, selects, date pickers, and textareas (except multi-line textareas which use `min-h-[72px]`).
+
+### Page Header Action Area (VISUAL-03 Pattern)
+
+Approval and workflow action buttons belong in the page header action area — NOT in card bodies, card footers, or overflow menus.
+
+```tsx
+<div className="flex items-start justify-between">
+  <div>
+    <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+    <p className="text-sm text-muted-foreground">{subtitle}</p>
+  </div>
+  <div className="flex items-center gap-2">
+    {/* Primary workflow action first */}
+    {canApprove && <Button variant="default">Approve</Button>}
+    {canApprove && <Button variant="destructive">Reject</Button>}
+    {/* Secondary/tertiary actions */}
+    <Button variant="outline">Generate PDF</Button>
+    <Button variant="outline">Edit</Button>
+  </div>
+</div>
+```
+
+**Rule:** The primary workflow action (Approve, Submit, Publish) is always the leftmost button in the action group. Destructive actions (Reject, Delete) immediately follow. Utility actions (PDF, Edit) trail.
+
+### Financial Color Token Usage
+
+Apply `text-financial-positive/negative/pending` ONLY to the number value and its directly adjacent icon.
+
+```tsx
+// Correct — token on number text and adjacent icon only
+<span className="tabular-nums text-financial-positive">
+  {formatCurrency(amount)}
+</span>
+<TrendingUp className="h-4 w-4 text-financial-positive" />
+
+// Correct — negative value
+<span className="tabular-nums text-financial-negative">
+  {formatCurrency(amount)}
+</span>
+
+// Correct — pending/neutral (submitted, under review)
+<span className="tabular-nums text-financial-pending">
+  {formatCurrency(amount)}
+</span>
+
+// WRONG — token on background
+<div className="bg-financial-positive/10">...</div>
+
+// WRONG — token on row
+<TableRow className="bg-financial-positive/5">...</TableRow>
+```
+
+**Token values:**
+- `financial-positive` = emerald-600 light / emerald-400 dark — approved amounts, profit, positive variance
+- `financial-negative` = rose-600 light / rose-400 dark — over-budget, negative variance, rejected
+- `financial-pending` = amber-600 light / amber-400 dark — submitted/pending approval, neutral
+
+**Form validation errors** use `text-destructive` — NOT `text-financial-negative`. These are separate concerns.
+
+### Dark Mode Token Rules
+
+**Forbidden classes** (hardcoded palette — break dark mode):
+- `bg-white` → use `bg-background` (page/layout) or `bg-card` (inside Card)
+- `bg-amber-50`, `bg-amber-100` → use `bg-muted`
+- `border-amber-200` → use `border-border`
+- `text-amber-800` (on amber bg) → use `text-muted-foreground`
+- `text-slate-600`, `text-slate-700` → use `text-muted-foreground`
+- `text-gray-400`, `text-gray-500`, `text-gray-600` → use `text-muted-foreground`
+- `text-gray-900`, `text-gray-800` → use `text-foreground`
+- `bg-gray-500/10 text-gray-700` (neutral badge) → use `bg-muted text-muted-foreground`
+- `text-green-600` (financial) → use `text-financial-positive`
+- `text-red-600` (financial) → use `text-financial-negative`
+- `text-red-500`, `text-red-600` (form validation) → use `text-destructive`
+
+**Surface rules:**
+- Inside a `<Card>` component → `bg-card`
+- Info/callout boxes (former amber surfaces) → `bg-muted border-border`
+- Table row hover → `bg-muted/50`
+- Input/select background → inherits from `bg-input` (border-input for border)
+
+### Package Import Paths
+
+```typescript
+// motion v12 (rebranded Framer Motion — do NOT import from "framer-motion")
+import { motion, AnimatePresence } from "motion/react";
+
+// react-number-format v5
+import { NumericFormat, PatternFormat } from "react-number-format";
+
+// @tanstack/react-virtual v3
+import { useVirtualizer } from "@tanstack/react-virtual";
+```
