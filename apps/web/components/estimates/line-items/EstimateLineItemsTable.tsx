@@ -17,10 +17,12 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { CurrencyDisplay } from "@/components/shared/currency-display";
 import {
   Select,
   SelectContent,
@@ -401,6 +403,24 @@ export function EstimateLineItemsTable({
     getCoreRowModel: getCoreRowModel(),
   });
 
+  const grandTotalCost = useMemo(
+    () => lineItems.reduce((sum, item) => sum + Number(item.quantity) * Number(item.unitCost), 0),
+    [lineItems]
+  );
+
+  const grandTotalMargin = useMemo(
+    () => lineItems.reduce((sum, item) => {
+      const qty = Number(item.quantity);
+      const unitCost = Number(item.unitCost);
+      const markupPercent = item.customMarkupPercent
+        ? Number(item.customMarkupPercent)
+        : defaultMarkup[item.costType as keyof typeof defaultMarkup] || 0;
+      const result = calculateLineItemMargin(qty, unitCost, markupPercent);
+      return sum + result.marginDollars;
+    }, 0),
+    [lineItems, defaultMarkup]
+  );
+
   const handleAddLineItem = () => {
     createLineItem.mutate({
       estimateId,
@@ -415,13 +435,16 @@ export function EstimateLineItemsTable({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border">
+      <div className="rounded-md border relative w-full overflow-auto max-h-[70vh]">
         <Table>
-          <TableHeader>
+          <TableHeader className="sticky top-0 z-20 bg-background">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
+                {headerGroup.headers.map((header, index) => (
+                  <TableHead
+                    key={header.id}
+                    className={index === 0 ? "sticky left-0 z-30 bg-background min-w-[180px] border-r" : undefined}
+                  >
                     {header.isPlaceholder
                       ? null
                       : flexRender(header.column.columnDef.header, header.getContext())}
@@ -453,7 +476,10 @@ export function EstimateLineItemsTable({
                       return (
                         <TableRow key={row.id}>
                           {row.getVisibleCells().map((cell) => (
-                            <TableCell key={cell.id}>
+                            <TableCell
+                              key={cell.id}
+                              className={cell.column.getIndex() === 0 ? "sticky left-0 z-10 bg-background border-r" : undefined}
+                            >
                               {flexRender(cell.column.columnDef.cell, cell.getContext())}
                             </TableCell>
                           ))}
@@ -471,6 +497,16 @@ export function EstimateLineItemsTable({
               })
             )}
           </TableBody>
+          <TableFooter className="sticky bottom-0 z-20 bg-muted/50">
+            <TableRow className="font-bold">
+              <TableCell className="sticky left-0 z-30 bg-muted/50 border-r">Grand Total</TableCell>
+              <TableCell colSpan={isSimpleMode ? 4 : 5} />
+              <TableCell className="text-right tabular-nums"><CurrencyDisplay amount={grandTotalCost} /></TableCell>
+              <TableCell className="text-right tabular-nums"><CurrencyDisplay amount={grandTotalMargin} colorize showSign /></TableCell>
+              <TableCell />
+              <TableCell />
+            </TableRow>
+          </TableFooter>
         </Table>
       </div>
 
