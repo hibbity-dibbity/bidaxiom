@@ -19,10 +19,12 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { CurrencyDisplay } from "@/components/shared/currency-display";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -48,11 +50,6 @@ interface ChangeOrderDetailProps {
   projectSlug: string;      // For navigation
 }
 
-const currencyFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  minimumFractionDigits: 2,
-});
 
 const statusVariantMap: Record<ChangeOrderStatus, "draft" | "pending" | "approved" | "rejected" | "cancelled" | "warning"> = {
   draft: "draft",
@@ -531,49 +528,56 @@ export function ChangeOrderDetail({ changeOrderId, projectId, projectSlug }: Cha
           <CardTitle>Line Items</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Cost Code</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead className="text-right">Amount Change</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {lineItems.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-medium">
-                    {getDivisionName(item.costCodeId)}
-                  </TableCell>
-                  <TableCell>{item.description}</TableCell>
-                  <TableCell className="text-right">
+          <div className="relative w-full overflow-auto max-h-[400px] rounded-md border">
+            <Table>
+              <TableHeader className="sticky top-0 z-20 bg-background">
+                <TableRow>
+                  <TableHead className="sticky left-0 z-30 bg-background min-w-[180px] border-r">
+                    Cost Code
+                  </TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead className="text-right">Amount Change</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {lineItems.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell className="font-medium sticky left-0 z-10 bg-background border-r">
+                      {getDivisionName(item.costCodeId)}
+                    </TableCell>
+                    <TableCell>{item.description}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      <span
+                        className={
+                          Number(item.amountChange) < 0
+                            ? "text-financial-negative"
+                            : "text-financial-positive"
+                        }
+                      >
+                        <CurrencyDisplay amount={Number(item.amountChange)} />
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+              <TableFooter className="sticky bottom-0 z-20 bg-muted/50">
+                <TableRow>
+                  <TableCell className="sticky left-0 z-30 bg-muted/50 font-bold border-r">Total</TableCell>
+                  <TableCell />
+                  <TableCell className="text-right tabular-nums font-bold">
                     <span
                       className={
-                        Number(item.amountChange) < 0
+                        Number(co.totalAmount) < 0
                           ? "text-financial-negative"
                           : "text-financial-positive"
                       }
                     >
-                      {currencyFormatter.format(Number(item.amountChange))}
+                      <CurrencyDisplay amount={Number(co.totalAmount)} />
                     </span>
                   </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <div className="mt-4 flex justify-end">
-            <div className="text-xl font-bold">
-              <span className="text-muted-foreground mr-2">Total:</span>
-              <span
-                className={
-                  Number(co.totalAmount) < 0
-                    ? "text-financial-negative"
-                    : "text-financial-positive"
-                }
-              >
-                {currencyFormatter.format(Number(co.totalAmount))}
-              </span>
-            </div>
+              </TableFooter>
+            </Table>
           </div>
         </CardContent>
       </Card>
