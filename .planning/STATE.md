@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-02-21)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.6 UX Redesign & Polish — Phase 42: Shared UI Primitives (plans 01 + 02 complete)
+**Current focus:** v1.6 UX Redesign & Polish — Phase 42: Shared UI Primitives (plans 01 + 02 + 03 complete)
 
 ## Current Position
 
 Phase: 42 of 46 (Shared UI Primitives)
-Plan: 01 + 02 complete
-Status: Phase 42 IN PROGRESS — Plans 01 and 02 complete
-Last activity: 2026-02-22 — Phase 42 Plan 01 complete: StatusBadge active variant fixed to green (text-financial-positive), lifecycle/StatusBadge.tsx deleted, estimate detail page migrated to shared badge; Phase 42 Plan 02: BudgetLineItemTable upgraded with TanStack sort + sticky header/footer + frozen col; SovEditor upgraded with sticky header/footer + frozen col; both use CurrencyDisplay (no Intl.NumberFormat)
+Plan: 04 complete
+Status: Phase 42 IN PROGRESS — Plans 01, 02, 03, 04 complete
+Last activity: 2026-02-22 — Phase 42 Plan 04 complete: ProjectsTable upgraded with sticky header + frozen Job# col + ChevronsUpDown + enableSortingRemoval; ChangeOrderList converted from card layout to TanStack Table with sticky header/footer + frozen CO# col + CurrencyDisplay
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100% | v1.5: [██████████] 100% | v1.6: [██░░░░░░░░] 17%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 165 (138 through v1.4, +19 in v1.5, +6 in v1.6 Phase 41, +2 in v1.6 Phase 42)
+- Total plans completed: 167 (138 through v1.4, +19 in v1.5, +6 in v1.6 Phase 41, +4 in v1.6 Phase 42)
 - Average duration: ~4.3 min/plan
 - Total execution time: ~11.7 hours
 
@@ -69,9 +69,9 @@ Recent decisions relevant to v1.6:
 - [42-02]: Sticky table layout uses plain div overflow-auto + max-h-[600px], NOT Radix ScrollArea (confirmed open GitHub issue radix-ui/primitives #2783)
 - [42-02]: TableFooter replaces inline totals TableRow inside TableBody — semantic HTML + enables sticky bottom-0 positioning
 - [42-02]: option element text uses inline toLocaleString (not CurrencyDisplay) — JSX elements cannot be rendered inside native option text nodes
-- [Phase 42-shared-ui-primitives]: No footer on ProjectsTable — user explicitly decided no footer needed for projects list
-- [Phase 42-shared-ui-primitives]: ChangeOrderList card-per-row layout fully replaced with TanStack Table — card layout cannot support frozen columns or tabular scanning
-- [Phase 42-shared-ui-primitives]: currencyFormatter (Intl.NumberFormat) removed from ChangeOrderList in favor of CurrencyDisplay component
+- [42-04]: No footer on ProjectsTable — user explicitly decided no footer needed for projects list
+- [42-04]: ChangeOrderList card-per-row layout fully replaced with TanStack Table — card layout cannot support frozen columns or tabular scanning
+- [42-04]: currencyFormatter (Intl.NumberFormat) removed from ChangeOrderList in favor of CurrencyDisplay component
 
 ### Pending Todos
 
