@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-21)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.6 UX Redesign & Polish — Phase 43: Budget Domain Redesign (plan 05 complete)
+**Current focus:** v1.6 UX Redesign & Polish — Phase 43: Budget Domain Redesign (plan 03 complete)
 
 ## Current Position
 
 Phase: 43 of 46 (Budget Domain Redesign)
-Plan: 05 complete
-Status: Phase 43 IN PROGRESS — Plan 05 complete
-Last activity: 2026-02-22 — Phase 43 Plan 05 complete: search bars + filter chips + EmptyState on ChangeOrderList, PaymentAppList, Estimates page, RFQs page; LIST-01/02/03 requirements satisfied
+Plan: 03 complete
+Status: Phase 43 IN PROGRESS — Plan 03 complete
+Last activity: 2026-02-22 — Phase 43 Plan 03 complete: inline draft rows replacing add Dialogs in BudgetLineItemTable and SovEditor; TABLE-07 satisfied
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100% | v1.5: [██████████] 100% | v1.6: [██░░░░░░░░] 17%
 
@@ -90,6 +90,9 @@ Recent decisions relevant to v1.6:
 - [43-05]: EstimatesPage search bar shown conditionally (only when estimates.length > 0) — avoids rendering search on a genuinely-empty page that already shows EmptyState
 - [43-05]: RFQs filteredRfqs derivation converted from ternary to useMemo with multi-condition filter — enables debouncedSearch without duplicating filter logic
 - [43-05]: RFQs ChevronLeft back-to-project button removed — redundant with sidebar navigation
+- [43-03]: Draft row state is separate from TanStack row model — footer totals computed from server array only; draft row excluded by construction (no filtering needed)
+- [43-03]: CurrencyInput onKeyDown added to props interface and passed through to underlying Input — required for Enter/Escape keyboard handling in draft rows
+- [43-03]: Empty state condition updated to `items.length === 0 && !draftRow` in both components — allows draft row to display on empty table without flicker
 
 ### Pending Todos
 
@@ -102,5 +105,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Phase 43 Plan 05 complete — search bars, filter chips, EmptyState on 4 project-scoped list views (ChangeOrderList, PaymentAppList, Estimates, RFQs). LIST-01/02/03 requirements satisfied.
+Stopped at: Phase 43 Plan 03 complete — inline draft rows replacing add Dialogs in BudgetLineItemTable and SovEditor. TABLE-07 satisfied. CurrencyInput onKeyDown added.
 Resume file: None
