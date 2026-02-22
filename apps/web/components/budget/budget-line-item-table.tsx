@@ -1,6 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
+import {
+  useReactTable,
+  getCoreRowModel,
+  getSortedRowModel,
+  flexRender,
+  type SortingState,
+  type ColumnDef,
+} from "@tanstack/react-table";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +17,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -30,18 +39,13 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { CSI_DIVISIONS } from "@construction/shared";
-import { Lock, Unlock, Pencil, Trash2, Plus } from "lucide-react";
+import { Lock, Unlock, Pencil, Trash2, Plus, ChevronsUpDown, ChevronUp, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
+import { CurrencyDisplay } from "@/components/shared/currency-display";
 
 interface BudgetLineItemTableProps {
   projectId: string;
 }
-
-const currencyFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  minimumFractionDigits: 2,
-});
 
 export function BudgetLineItemTable({ projectId }: BudgetLineItemTableProps) {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -52,6 +56,7 @@ export function BudgetLineItemTable({ projectId }: BudgetLineItemTableProps) {
     description: "",
     budgetedAmount: 0,
   });
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   const utils = trpc.useUtils();
   const { data: lineItems, isLoading } = trpc.budget.listLineItems.useQuery({
@@ -139,6 +144,50 @@ export function BudgetLineItemTable({ projectId }: BudgetLineItemTableProps) {
       ? `Div ${costCodeId}: ${division.name}`
       : `Cost Code ${costCodeId}`;
   };
+
+  const columns: ColumnDef<NonNullable<typeof lineItems>[0]>[] = React.useMemo(
+    () => [
+      {
+        id: "costCode",
+        accessorFn: (row) => getDivisionName(row.costCodeId),
+        header: "Cost Code",
+        enableSorting: true,
+      },
+      {
+        accessorKey: "description",
+        header: "Description",
+        enableSorting: true,
+      },
+      {
+        accessorKey: "budgetedAmount",
+        header: "Budgeted Amount",
+        enableSorting: true,
+        sortingFn: "basic",
+      },
+      {
+        id: "status",
+        header: "Status",
+        enableSorting: false,
+      },
+      {
+        id: "actions",
+        header: "",
+        enableSorting: false,
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [lineItems]
+  );
+
+  const table = useReactTable({
+    data: lineItems ?? [],
+    columns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    enableSortingRemoval: false,
+  });
 
   if (isLoading) {
     return (
@@ -242,57 +291,114 @@ export function BudgetLineItemTable({ projectId }: BudgetLineItemTableProps) {
           </p>
         </div>
       ) : (
-        <div className="border rounded-lg">
+        <div className="border rounded-lg relative w-full overflow-auto max-h-[600px]">
           <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Cost Code</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead className="text-right">Budgeted Amount</TableHead>
-                <TableHead className="text-center">Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {lineItems.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-medium">
-                    {getDivisionName(item.costCodeId)}
-                  </TableCell>
-                  <TableCell>{item.description}</TableCell>
-                  <TableCell className="text-right">
-                    {currencyFormatter.format(Number(item.budgetedAmount))}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {item.isLocked ? (
-                      <Lock className="h-4 w-4 text-financial-negative mx-auto" />
-                    ) : (
-                      <Unlock className="h-4 w-4 text-financial-positive mx-auto" />
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openEditDialog(item)}
-                        disabled={item.isLocked}
+            <TableHeader className="sticky top-0 z-20 bg-background">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header, colIndex) => {
+                    const isFirstCol = colIndex === 0;
+                    const canSort = header.column.getCanSort();
+                    const sortDir = header.column.getIsSorted();
+                    return (
+                      <TableHead
+                        key={header.id}
+                        className={
+                          isFirstCol
+                            ? "sticky left-0 z-30 bg-background min-w-[160px] border-r"
+                            : undefined
+                        }
                       >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(item.id, item.isLocked)}
-                        disabled={item.isLocked}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+                        {canSort ? (
+                          <div
+                            className="flex items-center gap-1.5 cursor-pointer select-none hover:text-foreground"
+                            onClick={header.column.getToggleSortingHandler()}
+                          >
+                            {flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                            {sortDir === "asc" ? (
+                              <ChevronUp className="h-3.5 w-3.5" />
+                            ) : sortDir === "desc" ? (
+                              <ChevronDown className="h-3.5 w-3.5" />
+                            ) : (
+                              <ChevronsUpDown className="h-3.5 w-3.5 opacity-40" />
+                            )}
+                          </div>
+                        ) : (
+                          flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )
+                        )}
+                      </TableHead>
+                    );
+                  })}
                 </TableRow>
               ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows.map((row) => {
+                const item = row.original;
+                return (
+                  <TableRow key={row.id}>
+                    <TableCell className="sticky left-0 z-10 bg-background font-medium border-r">
+                      {getDivisionName(item.costCodeId)}
+                    </TableCell>
+                    <TableCell>{item.description}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      <CurrencyDisplay amount={Number(item.budgetedAmount)} />
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {item.isLocked ? (
+                        <Lock className="h-4 w-4 text-financial-negative mx-auto" />
+                      ) : (
+                        <Unlock className="h-4 w-4 text-financial-positive mx-auto" />
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditDialog(item)}
+                          disabled={item.isLocked}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(item.id, item.isLocked)}
+                          disabled={item.isLocked}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
+            <TableFooter className="sticky bottom-0 z-20 bg-muted/50">
+              <TableRow>
+                <TableCell className="sticky left-0 z-30 bg-muted/50 font-bold border-r">
+                  Totals
+                </TableCell>
+                <TableCell />
+                <TableCell className="text-right tabular-nums font-bold">
+                  <CurrencyDisplay
+                    amount={lineItems.reduce(
+                      (sum, item) => sum + Number(item.budgetedAmount),
+                      0
+                    )}
+                  />
+                </TableCell>
+                <TableCell />
+                <TableCell />
+              </TableRow>
+            </TableFooter>
           </Table>
         </div>
       )}
