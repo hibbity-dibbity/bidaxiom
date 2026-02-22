@@ -130,7 +130,7 @@
 
 - [ ] **Phase 41: Design Foundation** — Dark mode audit, semantic token system, canonical class recipes, npm package installation
 - [x] **Phase 42: Shared UI Primitives** — Dense table component, badge variants, status badge consolidation, visual consistency (completed 2026-02-22)
-- [ ] **Phase 43: Budget Domain Redesign** — Dense financial tables, column picker, inline row add, filter chips, empty states
+- [x] **Phase 43: Budget Domain Redesign** — Dense financial tables, column picker, inline row add, filter chips, empty states (completed 2026-02-22)
 - [ ] **Phase 44: Change Order and Payment App Redesign** — CSV export, inline approve/reject, inline mark-paid on list rows
 - [ ] **Phase 45: Estimates Redesign** — Horizontal stepper bar, react-number-format currency inputs, form section grouping
 - [ ] **Phase 46: Project Header, Tabs, and Navigation Chrome** — Compact sticky header, financial stat bar, tab count badges, URL-based tab routing
@@ -244,7 +244,7 @@ Plans:
 | 36-40 (v1.5) | 23/23 | Complete | 2026-02-21 |
 | 41. Design Foundation | 6/6 | Complete | 2026-02-21 |
 | 42. Shared UI Primitives | 0/5 | Complete    | 2026-02-22 |
-| 43. Budget Domain Redesign | 0/5 | Not started | - |
+| 43. Budget Domain Redesign | 0/5 | Complete    | 2026-02-22 |
 | 44. Change Order and Payment App Redesign | 0/TBD | Not started | - |
 | 45. Estimates Redesign | 0/TBD | Not started | - |
 | 46. Project Header, Tabs, and Navigation Chrome | 0/TBD | Not started | - |
