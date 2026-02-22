@@ -10,12 +10,16 @@ import {
   type SortingState,
   type ColumnDef,
 } from "@tanstack/react-table";
-import { ChevronsUpDown, ChevronUp, ChevronDown, Plus, AlertTriangle, Receipt } from "lucide-react";
+import { ChevronsUpDown, ChevronUp, ChevronDown, Plus, AlertTriangle, Receipt, Search, SearchX } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { CurrencyDisplay } from "@/components/shared/currency-display";
+import { EmptyState } from "@/components/shared/empty-state";
+import { FilterChips, type FilterChip } from "@/components/shared/filter-chips";
+import { useDebounce } from "@/hooks/use-debounce";
 import {
   Select,
   SelectContent,
@@ -54,6 +58,8 @@ const statusVariantMap: Record<PaymentAppStatus, "draft" | "pending" | "approved
 export function PaymentAppList({ projectId, projectSlug }: PaymentAppListProps) {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [searchInput, setSearchInput] = useState("");
+  const debouncedSearch = useDebounce(searchInput, 300);
 
   const { data: paymentApps, isLoading } = trpc.paymentApp.list.useQuery({
     projectId,
@@ -65,6 +71,32 @@ export function PaymentAppList({ projectId, projectSlug }: PaymentAppListProps) 
   const { data: sovItems } = trpc.sov.list.useQuery({ projectId });
 
   const hasSovItems = (sovItems?.items.length || 0) > 0;
+
+  const displayedPaymentApps = React.useMemo(() => {
+    if (!paymentApps) return [];
+    if (!debouncedSearch.trim()) return paymentApps;
+    const q = debouncedSearch.toLowerCase();
+    return paymentApps.filter((pa) =>
+      pa.applicationNumber?.toString().includes(q)
+    );
+  }, [paymentApps, debouncedSearch]);
+
+  const activeChips: FilterChip[] = statusFilter !== "all"
+    ? [{
+        label: `Status: ${
+          { draft: "Draft", submitted: "Submitted", under_review: "Under Review",
+            approved: "Approved", rejected: "Rejected", paid: "Paid" }[statusFilter] ?? statusFilter
+        }`,
+        onRemove: () => setStatusFilter("all"),
+      }]
+    : [];
+
+  const clearAllFilters = () => {
+    setStatusFilter("all");
+    setSearchInput("");
+  };
+
+  const hasActiveFilters = statusFilter !== "all" || !!debouncedSearch;
 
   const columns = React.useMemo<ColumnDef<NonNullable<typeof paymentApps>[number]>[]>(() => [
     {
@@ -96,7 +128,7 @@ export function PaymentAppList({ projectId, projectSlug }: PaymentAppListProps) 
   ], []);
 
   const table = useReactTable({
-    data: paymentApps ?? [],
+    data: displayedPaymentApps,
     columns,
     state: { sorting },
     onSortingChange: setSorting,
@@ -181,43 +213,59 @@ export function PaymentAppList({ projectId, projectSlug }: PaymentAppListProps) 
         </Card>
       </div>
 
+      {/* Search bar */}
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search by application number..."
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          className="pl-9"
+        />
+      </div>
+
       {/* Filters and Actions */}
-      <div className="flex items-center justify-between">
-        <div className="flex gap-4">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="draft">Draft</SelectItem>
-              <SelectItem value="submitted">Submitted</SelectItem>
-              <SelectItem value="under_review">Under Review</SelectItem>
-              <SelectItem value="approved">Approved</SelectItem>
-              <SelectItem value="rejected">Rejected</SelectItem>
-              <SelectItem value="paid">Paid</SelectItem>
-            </SelectContent>
-          </Select>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex gap-4">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="draft">Draft</SelectItem>
+                <SelectItem value="submitted">Submitted</SelectItem>
+                <SelectItem value="under_review">Under Review</SelectItem>
+                <SelectItem value="approved">Approved</SelectItem>
+                <SelectItem value="rejected">Rejected</SelectItem>
+                <SelectItem value="paid">Paid</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {hasSovItems ? (
+            <Button asChild>
+              <Link href={`/projects/${projectSlug}/payment-apps/new`}>
+                <Plus className="mr-2 h-4 w-4" />
+                New Payment Application
+              </Link>
+            </Button>
+          ) : (
+            <div className="flex flex-col items-end gap-2">
+              <Button disabled>
+                <Plus className="mr-2 h-4 w-4" />
+                New Payment Application
+              </Button>
+              <p className="text-sm text-muted-foreground">
+                Set up SOV first
+              </p>
+            </div>
+          )}
         </div>
 
-        {hasSovItems ? (
-          <Button asChild>
-            <Link href={`/projects/${projectSlug}/payment-apps/new`}>
-              <Plus className="mr-2 h-4 w-4" />
-              New Payment Application
-            </Link>
-          </Button>
-        ) : (
-          <div className="flex flex-col items-end gap-2">
-            <Button disabled>
-              <Plus className="mr-2 h-4 w-4" />
-              New Payment Application
-            </Button>
-            <p className="text-sm text-muted-foreground">
-              Set up SOV first
-            </p>
-          </div>
-        )}
+        {/* Filter chips */}
+        <FilterChips chips={activeChips} onClearAll={clearAllFilters} />
       </div>
 
       {!hasSovItems && (
@@ -236,12 +284,12 @@ export function PaymentAppList({ projectId, projectSlug }: PaymentAppListProps) 
       )}
 
       {/* Payment Apps Table */}
-      {paymentApps && paymentApps.length > 0 ? (
+      {displayedPaymentApps.length > 0 ? (
         <Card>
           <CardHeader>
             <CardTitle>Payment Applications</CardTitle>
             <CardDescription>
-              {paymentApps.length} payment application{paymentApps.length !== 1 ? "s" : ""}
+              {displayedPaymentApps.length} payment application{displayedPaymentApps.length !== 1 ? "s" : ""}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -341,29 +389,26 @@ export function PaymentAppList({ projectId, projectSlug }: PaymentAppListProps) 
           </CardContent>
         </Card>
       ) : (
-        <div className="text-center py-12 border rounded-lg border-dashed">
-          <div className="flex flex-col items-center gap-3">
-            <div className="rounded-full bg-muted p-3">
-              <Receipt className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-lg">No payment applications yet</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                {hasSovItems
-                  ? "Create your first payment application to begin billing"
-                  : "Set up a Schedule of Values before creating payment applications"}
-              </p>
-            </div>
-            {hasSovItems && (
-              <Button asChild>
-                <Link href={`/projects/${projectSlug}/payment-apps/new`}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  New Payment Application
-                </Link>
-              </Button>
-            )}
-          </div>
-        </div>
+        <EmptyState
+          icon={hasActiveFilters ? SearchX : Receipt}
+          heading={
+            hasActiveFilters
+              ? "No payment applications match your filters"
+              : "No payment applications yet"
+          }
+          description={
+            hasActiveFilters
+              ? "Try adjusting your search or filter criteria."
+              : hasSovItems
+                ? "Create your first payment application to begin billing."
+                : "Set up a Schedule of Values before creating payment applications."
+          }
+          action={
+            !hasActiveFilters && hasSovItems
+              ? { label: "New Payment Application", href: `/projects/${projectSlug}/payment-apps/new` }
+              : undefined
+          }
+        />
       )}
     </div>
   );

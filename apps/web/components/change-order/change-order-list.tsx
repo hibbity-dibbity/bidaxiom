@@ -12,8 +12,12 @@ import {
 import { trpc } from "@/lib/trpc";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { CurrencyDisplay } from "@/components/shared/currency-display";
+import { EmptyState } from "@/components/shared/empty-state";
+import { FilterChips, type FilterChip } from "@/components/shared/filter-chips";
+import { useDebounce } from "@/hooks/use-debounce";
 import {
   Select,
   SelectContent,
@@ -30,7 +34,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ChevronsUpDown, ChevronUp, ChevronDown, Plus, FilePlus } from "lucide-react";
+import { ChevronsUpDown, ChevronUp, ChevronDown, Plus, FilePlus, Search, SearchX } from "lucide-react";
 import type { ChangeOrderStatus, ChangeOrderType } from "@construction/shared";
 
 interface ChangeOrderListProps {
@@ -64,6 +68,8 @@ export function ChangeOrderList({ projectId, projectSlug }: ChangeOrderListProps
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [searchInput, setSearchInput] = useState("");
+  const debouncedSearch = useDebounce(searchInput, 300);
 
   const { data: changeOrders, isLoading } = trpc.changeOrder.list.useQuery({
     projectId,
@@ -84,6 +90,43 @@ export function ChangeOrderList({ projectId, projectSlug }: ChangeOrderListProps
     if (co.pcoNumber) return co.pcoNumber;
     return "Draft";
   };
+
+  const displayedChangeOrders = React.useMemo(() => {
+    if (!changeOrders) return [];
+    if (!debouncedSearch.trim()) return changeOrders;
+    const q = debouncedSearch.toLowerCase();
+    return changeOrders.filter(
+      (co) =>
+        co.title?.toLowerCase().includes(q) ||
+        getChangeOrderNumber(co).toLowerCase().includes(q)
+    );
+  }, [changeOrders, debouncedSearch]);
+
+  const activeChips: FilterChip[] = [
+    ...(statusFilter !== "all"
+      ? [{
+          label: `Status: ${
+            { draft: "Draft", pco_submitted: "PCO Submitted", pending_approval: "Pending Approval",
+              approved: "Approved", rejected: "Rejected", void: "Void" }[statusFilter] ?? statusFilter
+          }`,
+          onRemove: () => setStatusFilter("all"),
+        }]
+      : []),
+    ...(typeFilter !== "all"
+      ? [{
+          label: `Type: ${{ owner: "Owner", internal: "Internal", subcontractor: "Subcontractor" }[typeFilter] ?? typeFilter}`,
+          onRemove: () => setTypeFilter("all"),
+        }]
+      : []),
+  ];
+
+  const clearAllFilters = () => {
+    setStatusFilter("all");
+    setTypeFilter("all");
+    setSearchInput("");
+  };
+
+  const hasActiveFilters = statusFilter !== "all" || typeFilter !== "all" || !!debouncedSearch;
 
   const columns = React.useMemo(() => [
     {
@@ -121,7 +164,7 @@ export function ChangeOrderList({ projectId, projectSlug }: ChangeOrderListProps
   ], []);
 
   const table = useReactTable({
-    data: changeOrders ?? [],
+    data: displayedChangeOrders,
     columns,
     state: { sorting },
     onSortingChange: setSorting,
@@ -142,66 +185,78 @@ export function ChangeOrderList({ projectId, projectSlug }: ChangeOrderListProps
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-4 justify-between items-center">
-        <div className="flex gap-4 flex-1">
-          <div className="flex-1">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="pco_submitted">PCO Submitted</SelectItem>
-                <SelectItem value="pending_approval">Pending Approval</SelectItem>
-                <SelectItem value="approved">Approved</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
-                <SelectItem value="void">Void</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex-1">
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filter by type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="owner">Owner</SelectItem>
-                <SelectItem value="internal">Internal</SelectItem>
-                <SelectItem value="subcontractor">Subcontractor</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+      <div className="space-y-2">
+        {/* Search bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by title or CO number..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="pl-9"
+          />
         </div>
-        <Button onClick={handleNavigateToNew}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Change Order
-        </Button>
-      </div>
-
-      {!changeOrders || changeOrders.length === 0 ? (
-        statusFilter !== "all" || typeFilter !== "all" ? (
-          <div className="text-center py-12 border rounded-lg border-dashed">
-            <p className="text-muted-foreground">No change orders match the selected filters</p>
-          </div>
-        ) : (
-          <div className="text-center py-12 border rounded-lg border-dashed">
-            <div className="flex flex-col items-center gap-3">
-              <div className="rounded-full bg-muted p-3">
-                <FilePlus className="h-6 w-6 text-muted-foreground" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg">No change orders yet</h3>
-                <p className="text-sm text-muted-foreground mt-1">Track scope changes and amendments to the original contract</p>
-              </div>
-              <Button onClick={handleNavigateToNew}>
-                <Plus className="h-4 w-4 mr-2" />
-                New Change Order
-              </Button>
+        {/* Filter selects + New button row */}
+        <div className="flex gap-4 justify-between items-center">
+          <div className="flex gap-4 flex-1">
+            <div className="flex-1">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="pco_submitted">PCO Submitted</SelectItem>
+                  <SelectItem value="pending_approval">Pending Approval</SelectItem>
+                  <SelectItem value="approved">Approved</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                  <SelectItem value="void">Void</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex-1">
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filter by type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="owner">Owner</SelectItem>
+                  <SelectItem value="internal">Internal</SelectItem>
+                  <SelectItem value="subcontractor">Subcontractor</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
-        )
+          <Button onClick={handleNavigateToNew}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Change Order
+          </Button>
+        </div>
+        {/* Filter chips */}
+        <FilterChips chips={activeChips} onClearAll={clearAllFilters} />
+      </div>
+
+      {displayedChangeOrders.length === 0 ? (
+        <EmptyState
+          icon={hasActiveFilters ? SearchX : FilePlus}
+          heading={
+            hasActiveFilters
+              ? "No change orders match your filters"
+              : "No change orders yet"
+          }
+          description={
+            hasActiveFilters
+              ? "Try adjusting your search or filter criteria."
+              : "Track scope changes and amendments to the original contract."
+          }
+          action={
+            !hasActiveFilters
+              ? { label: "New Change Order", onClick: handleNavigateToNew }
+              : undefined
+          }
+        />
       ) : (
         <div className="border rounded-md relative w-full overflow-auto max-h-[70vh]">
           <Table>
