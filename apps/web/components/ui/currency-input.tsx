@@ -9,6 +9,7 @@ interface CurrencyInputProps {
   value: number;
   onChange: (value: number) => void;
   onBlur?: () => void;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   placeholder?: string;
   className?: string;
   disabled?: boolean;
@@ -26,6 +27,7 @@ export function CurrencyInput({
   value,
   onChange,
   onBlur,
+  onKeyDown,
   placeholder = "0.00",
   className,
   disabled,
@@ -77,6 +79,7 @@ export function CurrencyInput({
       onChange={handleChange}
       onFocus={handleFocus}
       onBlur={handleBlur}
+      onKeyDown={onKeyDown}
       placeholder={placeholder}
       className={cn(className)}
       disabled={disabled}

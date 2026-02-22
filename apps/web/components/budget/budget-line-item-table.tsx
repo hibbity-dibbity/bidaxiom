@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -28,18 +28,10 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { CSI_DIVISIONS } from "@construction/shared";
-import { Lock, Unlock, Pencil, Trash2, Plus, ChevronsUpDown, ChevronUp, ChevronDown } from "lucide-react";
+import { Lock, Unlock, Pencil, Trash2, Plus, X, ChevronsUpDown, ChevronUp, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { CurrencyDisplay } from "@/components/shared/currency-display";
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
@@ -49,8 +41,16 @@ interface BudgetLineItemTableProps {
   projectId: string;
 }
 
+type DraftBudgetRow = {
+  costCodeId: string;
+  description: string;
+  budgetedAmount: number;
+};
+
 export function BudgetLineItemTable({ projectId }: BudgetLineItemTableProps) {
-  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [draftRow, setDraftRow] = useState<DraftBudgetRow | null>(null);
+  const [shouldFocusDraft, setShouldFocusDraft] = useState(false);
+  const firstDraftInputRef = useRef<HTMLSelectElement>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [formData, setFormData] = useState({
@@ -66,13 +66,18 @@ export function BudgetLineItemTable({ projectId }: BudgetLineItemTableProps) {
     projectId,
   });
 
+  useEffect(() => {
+    if (shouldFocusDraft && firstDraftInputRef.current) {
+      firstDraftInputRef.current.focus();
+      setShouldFocusDraft(false);
+    }
+  }, [shouldFocusDraft, draftRow]);
+
   const createMutation = trpc.budget.createLineItem.useMutation({
     onSuccess: () => {
       utils.budget.listLineItems.invalidate({ projectId });
       utils.budget.getProjectSummary.invalidate({ projectId });
       toast.success("Budget line item created");
-      setAddDialogOpen(false);
-      setFormData({ costCodeId: "", description: "", budgetedAmount: 0 });
     },
     onError: (error) => {
       toast.error(error.message || "Failed to create budget line item");
@@ -103,13 +108,34 @@ export function BudgetLineItemTable({ projectId }: BudgetLineItemTableProps) {
     },
   });
 
-  const handleAdd = () => {
+  const handleAddClick = () => {
+    setDraftRow({ costCodeId: "", description: "", budgetedAmount: 0 });
+    setShouldFocusDraft(true);
+  };
+
+  const handleDraftSave = () => {
+    if (!draftRow || !draftRow.costCodeId || !draftRow.description.trim()) {
+      setDraftRow(null);
+      return;
+    }
     createMutation.mutate({
       projectId,
-      costCodeId: parseInt(formData.costCodeId),
-      description: formData.description,
-      budgetedAmount: formData.budgetedAmount,
+      costCodeId: parseInt(draftRow.costCodeId),
+      description: draftRow.description,
+      budgetedAmount: draftRow.budgetedAmount,
     });
+    setDraftRow(null);
+  };
+
+  const handleDraftKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      setDraftRow(null);
+    }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleDraftSave();
+    }
   };
 
   const handleEdit = () => {
@@ -209,90 +235,14 @@ export function BudgetLineItemTable({ projectId }: BudgetLineItemTableProps) {
         <h3 className="text-lg font-semibold">Budget Line Items</h3>
         <div className="flex items-center gap-2">
           <ColumnPicker table={table} />
-          <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Line Item
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add Budget Line Item</DialogTitle>
-                <DialogDescription>
-                  Create a new budget line item for this project
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="costCode">Cost Code</Label>
-                  <Select
-                    value={formData.costCodeId}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, costCodeId: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select cost code" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CSI_DIVISIONS.map((division) => (
-                        <SelectItem
-                          key={division.division}
-                          value={division.division.toString()}
-                        >
-                          Div {division.division}: {division.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Input
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) =>
-                      setFormData({ ...formData, description: e.target.value })
-                    }
-                    placeholder="Enter description"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="budgetedAmount">Budgeted Amount</Label>
-                  <CurrencyInput
-                    id="budgetedAmount"
-                    value={formData.budgetedAmount}
-                    onChange={(n) => setFormData({ ...formData, budgetedAmount: n })}
-                    placeholder="0.00"
-                  />
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setAddDialogOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleAdd}
-                    disabled={
-                      !formData.costCodeId ||
-                      !formData.description ||
-                      !formData.budgetedAmount ||
-                      createMutation.isPending
-                    }
-                  >
-                    {createMutation.isPending ? "Creating..." : "Create"}
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <Button onClick={handleAddClick} disabled={!!draftRow}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Line Item
+          </Button>
         </div>
       </div>
 
-      {!lineItems || lineItems.length === 0 ? (
+      {!lineItems || (lineItems.length === 0 && !draftRow) ? (
         <div className="text-center py-12 border rounded-lg border-dashed">
           <p className="text-muted-foreground">
             No budget line items yet. Add your first line item above.
@@ -396,6 +346,63 @@ export function BudgetLineItemTable({ projectId }: BudgetLineItemTableProps) {
                   </TableRow>
                 );
               })}
+              {draftRow && (
+                <TableRow className="bg-muted/20">
+                  <TableCell className="sticky left-0 z-10 bg-muted/20 border-r">
+                    <select
+                      ref={firstDraftInputRef}
+                      value={draftRow.costCodeId}
+                      onChange={(e) => setDraftRow({ ...draftRow, costCodeId: e.target.value })}
+                      onKeyDown={handleDraftKeyDown}
+                      className="w-full rounded border border-input bg-background px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                    >
+                      <option value="">Select cost code...</option>
+                      {CSI_DIVISIONS.map((division) => (
+                        <option key={division.division} value={division.division.toString()}>
+                          Div {division.division}: {division.name}
+                        </option>
+                      ))}
+                    </select>
+                  </TableCell>
+                  {table.getColumn("description")?.getIsVisible() && (
+                    <TableCell>
+                      <Input
+                        value={draftRow.description}
+                        onChange={(e) => setDraftRow({ ...draftRow, description: e.target.value })}
+                        onKeyDown={handleDraftKeyDown}
+                        placeholder="Enter description..."
+                        className="h-7 text-sm"
+                      />
+                    </TableCell>
+                  )}
+                  {table.getColumn("budgetedAmount")?.getIsVisible() && (
+                    <TableCell>
+                      <CurrencyInput
+                        value={draftRow.budgetedAmount}
+                        onChange={(n) => setDraftRow({ ...draftRow, budgetedAmount: n })}
+                        onBlur={handleDraftSave}
+                        onKeyDown={handleDraftKeyDown}
+                        className="h-7"
+                      />
+                    </TableCell>
+                  )}
+                  {table.getColumn("status")?.getIsVisible() && (
+                    <TableCell />
+                  )}
+                  {table.getColumn("actions")?.getIsVisible() && (
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDraftRow(null)}
+                        title="Cancel"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  )}
+                </TableRow>
+              )}
             </TableBody>
             <TableFooter className="sticky bottom-0 z-20 bg-muted/50">
               <TableRow>
@@ -408,10 +415,10 @@ export function BudgetLineItemTable({ projectId }: BudgetLineItemTableProps) {
                 {table.getColumn("budgetedAmount")?.getIsVisible() && (
                   <TableCell className="text-right tabular-nums font-bold">
                     <CurrencyDisplay
-                      amount={lineItems.reduce(
+                      amount={lineItems ? lineItems.reduce(
                         (sum, item) => sum + Number(item.budgetedAmount),
                         0
-                      )}
+                      ) : 0}
                     />
                   </TableCell>
                 )}
