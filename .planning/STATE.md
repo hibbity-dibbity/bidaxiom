@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-02-21)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.6 UX Redesign & Polish — Phase 43: Budget Domain Redesign (plan 01 complete)
+**Current focus:** v1.6 UX Redesign & Polish — Phase 43: Budget Domain Redesign (plan 05 complete)
 
 ## Current Position
 
 Phase: 43 of 46 (Budget Domain Redesign)
-Plan: 01 complete
-Status: Phase 43 IN PROGRESS — Plan 01 complete
-Last activity: 2026-02-22 — Phase 43 Plan 01 complete: useColumnVisibility hook (localStorage-backed, SSR-safe); ColumnPicker gear icon popover; EmptyState component; FilterChips removable badge row
+Plan: 05 complete
+Status: Phase 43 IN PROGRESS — Plan 05 complete
+Last activity: 2026-02-22 — Phase 43 Plan 05 complete: search bars + filter chips + EmptyState on ChangeOrderList, PaymentAppList, Estimates page, RFQs page; LIST-01/02/03 requirements satisfied
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100% | v1.5: [██████████] 100% | v1.6: [██░░░░░░░░] 17%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 169 (138 through v1.4, +19 in v1.5, +6 in v1.6 Phase 41, +5 in v1.6 Phase 42, +1 in v1.6 Phase 43)
+- Total plans completed: 173 (138 through v1.4, +19 in v1.5, +6 in v1.6 Phase 41, +5 in v1.6 Phase 42, +5 in v1.6 Phase 43)
 - Average duration: ~4.3 min/plan
 - Total execution time: ~11.7 hours
 
@@ -80,6 +80,9 @@ Recent decisions relevant to v1.6:
 - [43-01]: FilterChip interface exported from filter-chips.tsx so caller components can import the type without re-declaring it
 - [43-01]: ColumnPicker returns null when no hideable columns — safe to render in any context
 - [43-01]: storageKey uses col-picker:{tableKey} prefix to prevent cross-table localStorage key collision
+- [43-05]: EstimatesPage search bar shown conditionally (only when estimates.length > 0) — avoids rendering search on a genuinely-empty page that already shows EmptyState
+- [43-05]: RFQs filteredRfqs derivation converted from ternary to useMemo with multi-condition filter — enables debouncedSearch without duplicating filter logic
+- [43-05]: RFQs ChevronLeft back-to-project button removed — redundant with sidebar navigation
 
 ### Pending Todos
 
@@ -87,11 +90,10 @@ None.
 
 ### Blockers/Concerns
 
-- Phase 43 Plan 01 complete. Plans 02+ (Budget table views) need to be planned.
 - Clerk webhook secret is still placeholder (`whsec_xxx`). Tenant auto-provisioning via webhooks won't work until configured with real secret from Clerk dashboard.
 
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Phase 43 Plan 01 complete — 4 shared primitives created (useColumnVisibility hook, ColumnPicker, EmptyState, FilterChips). Next: Phase 43 Plan 02+.
+Stopped at: Phase 43 Plan 05 complete — search bars, filter chips, EmptyState on 4 project-scoped list views (ChangeOrderList, PaymentAppList, Estimates, RFQs). LIST-01/02/03 requirements satisfied.
 Resume file: None
