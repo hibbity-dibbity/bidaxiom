@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-02-21)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.6 UX Redesign & Polish — Phase 42: Shared UI Primitives (plan 02 complete)
+**Current focus:** v1.6 UX Redesign & Polish — Phase 42: Shared UI Primitives (plans 01 + 02 complete)
 
 ## Current Position
 
 Phase: 42 of 46 (Shared UI Primitives)
-Plan: 02 complete
-Status: Phase 42 IN PROGRESS — Plan 02 complete (sticky tables + CurrencyDisplay upgrade)
-Last activity: 2026-02-22 — Phase 42 Plan 02 complete: BudgetLineItemTable upgraded with TanStack sort + sticky header/footer + frozen col; SovEditor upgraded with sticky header/footer + frozen col; both use CurrencyDisplay (no Intl.NumberFormat)
+Plan: 01 + 02 complete
+Status: Phase 42 IN PROGRESS — Plans 01 and 02 complete
+Last activity: 2026-02-22 — Phase 42 Plan 01 complete: StatusBadge active variant fixed to green (text-financial-positive), lifecycle/StatusBadge.tsx deleted, estimate detail page migrated to shared badge; Phase 42 Plan 02: BudgetLineItemTable upgraded with TanStack sort + sticky header/footer + frozen col; SovEditor upgraded with sticky header/footer + frozen col; both use CurrencyDisplay (no Intl.NumberFormat)
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100% | v1.5: [██████████] 100% | v1.6: [██░░░░░░░░] 17%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 164 (138 through v1.4, +19 in v1.5, +6 in v1.6 Phase 41, +1 in v1.6 Phase 42)
+- Total plans completed: 165 (138 through v1.4, +19 in v1.5, +6 in v1.6 Phase 41, +2 in v1.6 Phase 42)
 - Average duration: ~4.3 min/plan
 - Total execution time: ~11.7 hours
 
@@ -62,11 +62,16 @@ Recent decisions relevant to v1.6:
 - [41-05]: aging-report-table 31-60 and 61-90 day buckets use text-muted-foreground — severity gradient: current=financial-positive, mid-range=muted-foreground, severely-overdue=financial-negative
 - [41-05]: VISUAL-03 pattern — canCurrentUserApprove queried at detail level; dialog state flows down as props to ApprovalPanel; action button triggers live in page headers
 - [41-05]: G702Form is now display-only; Submit/Mark Paid mutations lifted to paymentAppId page.tsx
+- [42-01]: StatusBadge active variant = GREEN tier (text-financial-positive), same as approved/completed — not brand-blue (text-primary); active/operational states signal positive progress
+- [42-01]: Lifecycle domain wrapper components (e.g., estimates/lifecycle/StatusBadge.tsx) eliminated; call sites hold local variant/label maps as module-level constants instead
 - [42-02]: BudgetLineItemTable uses TanStack sort with enableSortingRemoval: false — 2-state cycle only (asc/desc, no unsorted after first click)
 - [42-02]: SovEditor intentionally omits TanStack sort — row order controlled by up/down mutation buttons; sort would conflict with manual ordering UX
 - [42-02]: Sticky table layout uses plain div overflow-auto + max-h-[600px], NOT Radix ScrollArea (confirmed open GitHub issue radix-ui/primitives #2783)
 - [42-02]: TableFooter replaces inline totals TableRow inside TableBody — semantic HTML + enables sticky bottom-0 positioning
 - [42-02]: option element text uses inline toLocaleString (not CurrencyDisplay) — JSX elements cannot be rendered inside native option text nodes
+- [Phase 42-shared-ui-primitives]: No footer on ProjectsTable — user explicitly decided no footer needed for projects list
+- [Phase 42-shared-ui-primitives]: ChangeOrderList card-per-row layout fully replaced with TanStack Table — card layout cannot support frozen columns or tabular scanning
+- [Phase 42-shared-ui-primitives]: currencyFormatter (Intl.NumberFormat) removed from ChangeOrderList in favor of CurrencyDisplay component
 
 ### Pending Todos
 
@@ -80,5 +85,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Phase 42 Plan 02 complete — BudgetLineItemTable + SovEditor upgraded with sticky tables and CurrencyDisplay. Next: Phase 42 Plan 03 (if exists) or Phase 43 planning.
+Stopped at: Phase 42 Plans 01 + 02 complete — StatusBadge consolidated (Plan 01), sticky tables + CurrencyDisplay (Plan 02). Next: Phase 42 Plan 03 (if exists) or Phase 43 planning.
 Resume file: None
