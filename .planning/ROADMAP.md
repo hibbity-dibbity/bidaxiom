@@ -129,7 +129,7 @@
 ### Phases
 
 - [ ] **Phase 41: Design Foundation** — Dark mode audit, semantic token system, canonical class recipes, npm package installation
-- [x] **Phase 42: Shared UI Primitives** — Dense table component, badge variants, status badge consolidation, visual consistency (completed 2026-02-22)
+- [x] **Phase 42: Shared UI Primitives** — Dense table component, badge variants, status badge consolidation, visual consistency (completed 2026-02-22)
 - [ ] **Phase 43: Budget Domain Redesign** — Dense financial tables, column picker, inline row add, filter chips, empty states
 - [ ] **Phase 44: Change Order and Payment App Redesign** — CSV export, inline approve/reject, inline mark-paid on list rows
 - [ ] **Phase 45: Estimates Redesign** — Horizontal stepper bar, react-number-format currency inputs, form section grouping
@@ -182,14 +182,20 @@ Plans:
 **Goal**: The budget domain surfaces — line item table, summary cards, and list views — are redesigned to Procore-level density with column picker, inline row addition, filter chips, and consistent empty states, establishing the domain redesign pattern that change order and payment app phases will replicate.
 **Depends on**: Phase 42
 **Requirements**: TABLE-06, TABLE-07, LIST-01, LIST-02, LIST-03
-**Note**: Requires `/gsd:research-phase` before planning. TanStack Table `getGroupedRowModel` combined with `@tanstack/react-virtual` has integration nuances that must be verified before implementation planning begins.
 **Success Criteria** (what must be TRUE):
   1. The budget line item table and projects list view have a column picker control (popover with checkbox list) that shows and hides individual columns; the user's selection is reflected immediately without a page reload.
   2. SOV line items and change order line items can be added as a new inline row directly in the table by clicking "Add line item" — no modal dialog opens.
   3. Every major list view (projects, customers, subcontractors, change orders, payment applications, estimates, RFQs) has an inline search bar directly above the table that filters the visible result set.
   4. Active filter selections on all list views display as removable filter chips below the search bar; each chip shows the filter label and value with an × dismiss button; a "Clear all" link removes all active filters simultaneously.
   5. Every list view displays a contextual empty state with icon, heading, description, and a context-appropriate CTA button when no records match the current filters or when the list is genuinely empty.
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+- [ ] 43-01-PLAN.md — Shared primitives: useColumnVisibility hook, ColumnPicker, EmptyState, FilterChips components
+- [ ] 43-02-PLAN.md — Column picker integration: BudgetLineItemTable, ProjectsTable, G703Continuation, CommitmentList
+- [ ] 43-03-PLAN.md — Inline row add: BudgetLineItemTable and SovEditor (replace Dialog with draft row)
+- [ ] 43-04-PLAN.md — Search + chips + empty states: Projects, Customers, Subcontractors pages
+- [ ] 43-05-PLAN.md — Search + chips + empty states: ChangeOrderList, PaymentAppList, Estimates, RFQs pages
 
 ### Phase 44: Change Order and Payment App Redesign
 **Goal**: Change order and payment application list views gain CSV export and inline approval actions — users can approve, reject, or mark paid directly from the list row without navigating to the detail page.
@@ -238,7 +244,7 @@ Plans:
 | 36-40 (v1.5) | 23/23 | Complete | 2026-02-21 |
 | 41. Design Foundation | 6/6 | Complete | 2026-02-21 |
 | 42. Shared UI Primitives | 0/5 | Complete    | 2026-02-22 |
-| 43. Budget Domain Redesign | 0/TBD | Not started | - |
+| 43. Budget Domain Redesign | 0/5 | Not started | - |
 | 44. Change Order and Payment App Redesign | 0/TBD | Not started | - |
 | 45. Estimates Redesign | 0/TBD | Not started | - |
 | 46. Project Header, Tabs, and Navigation Chrome | 0/TBD | Not started | - |
