@@ -1,9 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  useReactTable,
+  getCoreRowModel,
+  getSortedRowModel,
+  flexRender,
+  type SortingState,
+} from "@tanstack/react-table";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,7 +43,7 @@ import {
 } from "@/components/ui/form";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { AddressInput } from "@/components/ui/address-input";
-import { Plus, Edit, Trash2, Building2, User, Mail, Phone, MapPin } from "lucide-react";
+import { Plus, Edit, Trash2, Building2, User, Mail, Phone, MapPin, ChevronsUpDown, ChevronUp, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { createCustomerSchema } from "@construction/shared";
 import type { Customer } from "@construction/shared";
@@ -50,6 +57,7 @@ export default function CustomersPage() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [sorting, setSorting] = React.useState<SortingState>([]);
 
   const form = useForm<CustomerFormData>({
     resolver: zodResolver(createCustomerSchema),
@@ -199,6 +207,50 @@ export default function CustomersPage() {
 
   const customers = data?.items || [];
 
+  const columns = React.useMemo(() => [
+    {
+      id: "customer",
+      accessorFn: (row: Customer) => row.companyName || row.contactName,
+      header: "Customer",
+      enableSorting: true,
+    },
+    {
+      accessorKey: "contactName",
+      header: "Contact",
+      enableSorting: true,
+    },
+    {
+      accessorKey: "email",
+      header: "Email",
+      enableSorting: true,
+    },
+    {
+      accessorKey: "phone",
+      header: "Phone",
+      enableSorting: false,
+    },
+    {
+      id: "address",
+      header: "Address",
+      enableSorting: false,
+    },
+    {
+      id: "actions",
+      header: "",
+      enableSorting: false,
+    },
+  ], []);
+
+  const table = useReactTable({
+    data: customers,
+    columns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    enableSortingRemoval: false,
+  });
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -240,86 +292,114 @@ export default function CustomersPage() {
         </Card>
       ) : customers.length > 0 ? (
         <Card>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Customer</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Address</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {customers.map((customer) => (
-                <TableRow
-                  key={customer.id}
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => router.push(`/customers/${customer.slug}`)}
-                >
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {customer.companyName ? (
-                        <>
-                          <Building2 className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium">{customer.companyName}</span>
-                        </>
-                      ) : (
-                        <>
-                          <User className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium">{customer.contactName}</span>
-                        </>
+          <div className="relative w-full overflow-auto max-h-[70vh]">
+            <Table>
+              <TableHeader className="sticky top-0 z-20 bg-background">
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header, index) => {
+                      const canSort = header.column.getCanSort();
+                      const isSorted = header.column.getIsSorted();
+                      return (
+                        <TableHead
+                          key={header.id}
+                          className={index === 0 ? "sticky left-0 z-30 bg-background min-w-[160px] border-r" : undefined}
+                        >
+                          {header.isPlaceholder ? null : (
+                            <div
+                              className={canSort ? "flex items-center gap-1.5 cursor-pointer select-none hover:text-foreground" : undefined}
+                              onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
+                            >
+                              {flexRender(header.column.columnDef.header, header.getContext())}
+                              {canSort && (
+                                <span className="text-muted-foreground">
+                                  {isSorted === "asc" ? (
+                                    <ChevronUp className="h-3.5 w-3.5" />
+                                  ) : isSorted === "desc" ? (
+                                    <ChevronDown className="h-3.5 w-3.5" />
+                                  ) : (
+                                    <ChevronsUpDown className="h-3.5 w-3.5 opacity-40" />
+                                  )}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </TableHead>
+                      );
+                    })}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => router.push(`/customers/${row.original.slug}`)}
+                  >
+                    <TableCell className="sticky left-0 z-10 bg-background border-r">
+                      <div className="flex items-center gap-2">
+                        {row.original.companyName ? (
+                          <>
+                            <Building2 className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium">{row.original.companyName}</span>
+                          </>
+                        ) : (
+                          <>
+                            <User className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium">{row.original.contactName}</span>
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>{row.original.contactName}</TableCell>
+                    <TableCell>
+                      {row.original.email && (
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <Mail className="h-3 w-3" />
+                          {row.original.email}
+                        </div>
                       )}
-                    </div>
-                  </TableCell>
-                  <TableCell>{customer.contactName}</TableCell>
-                  <TableCell>
-                    {customer.email && (
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Mail className="h-3 w-3" />
-                        {customer.email}
+                    </TableCell>
+                    <TableCell>
+                      {row.original.phone && (
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <Phone className="h-3 w-3" />
+                          {row.original.phone}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {row.original.street1 && (
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <MapPin className="h-3 w-3" />
+                          <span className="line-clamp-1">{formatAddress(row.original)}</span>
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEdit(row.original)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(row.original)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {customer.phone && (
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Phone className="h-3 w-3" />
-                        {customer.phone}
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {customer.street1 && (
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <MapPin className="h-3 w-3" />
-                        <span className="line-clamp-1">{formatAddress(customer)}</span>
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(customer)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(customer)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </Card>
       ) : (
         <Card className="p-12">

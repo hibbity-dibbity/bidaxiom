@@ -1,7 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  useReactTable,
+  getCoreRowModel,
+  getSortedRowModel,
+  flexRender,
+  type SortingState,
+} from "@tanstack/react-table";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Building2 } from "lucide-react";
+import { Plus, Building2, ChevronsUpDown, ChevronUp, ChevronDown } from "lucide-react";
 import { CSI_DIVISIONS } from "@/lib/csi-divisions";
 import { StatusBadge } from "@/components/shared/status-badge";
 import type { SubcontractorStatus } from "@construction/shared";
@@ -34,6 +41,7 @@ export default function SubcontractorsPage() {
   const [search, setSearch] = useState("");
   const [tradeFilter, setTradeFilter] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState<SubcontractorStatus | "all">("all");
+  const [sorting, setSorting] = React.useState<SortingState>([]);
 
   const { data, isLoading } = trpc.subcontractor.list.useQuery({
     search: search || undefined,
@@ -83,6 +91,51 @@ export default function SubcontractorsPage() {
       </div>
     );
   };
+
+  const columns = React.useMemo(() => [
+    {
+      accessorKey: "companyName",
+      header: "Company Name",
+      enableSorting: true,
+    },
+    {
+      accessorKey: "contactName",
+      header: "Contact",
+      enableSorting: true,
+    },
+    {
+      id: "email",
+      accessorKey: "contactEmail",
+      header: "Email",
+      enableSorting: true,
+    },
+    {
+      id: "phone",
+      accessorKey: "contactPhone",
+      header: "Phone",
+      enableSorting: false,
+    },
+    {
+      id: "trades",
+      header: "Trades",
+      enableSorting: false,
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      enableSorting: true,
+    },
+  ], []);
+
+  const table = useReactTable({
+    data: subcontractors,
+    columns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    enableSortingRemoval: false,
+  });
 
   return (
     <div className="space-y-6">
@@ -156,42 +209,72 @@ export default function SubcontractorsPage() {
         </Card>
       ) : subcontractors.length > 0 ? (
         <Card>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Company Name</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Trades</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {subcontractors.map((sub) => (
-                <TableRow
-                  key={sub.id}
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => router.push(`/subcontractors/${sub.slug}`)}
-                >
-                  <TableCell className="font-medium">{sub.companyName}</TableCell>
-                  <TableCell>{sub.contactName || "-"}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {sub.contactEmail || "-"}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {sub.contactPhone || "-"}
-                  </TableCell>
-                  <TableCell>{getTradeBadges(sub.trades)}</TableCell>
-                  <TableCell>
-                    <StatusBadge variant={subStatusToVariant(sub.status)}>
-                      {getStatusLabel(sub.status)}
-                    </StatusBadge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <div className="relative w-full overflow-auto max-h-[70vh]">
+            <Table>
+              <TableHeader className="sticky top-0 z-20 bg-background">
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header, index) => {
+                      const canSort = header.column.getCanSort();
+                      const isSorted = header.column.getIsSorted();
+                      return (
+                        <TableHead
+                          key={header.id}
+                          className={index === 0 ? "sticky left-0 z-30 bg-background min-w-[160px] border-r" : undefined}
+                        >
+                          {header.isPlaceholder ? null : (
+                            <div
+                              className={canSort ? "flex items-center gap-1.5 cursor-pointer select-none hover:text-foreground" : undefined}
+                              onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
+                            >
+                              {flexRender(header.column.columnDef.header, header.getContext())}
+                              {canSort && (
+                                <span className="text-muted-foreground">
+                                  {isSorted === "asc" ? (
+                                    <ChevronUp className="h-3.5 w-3.5" />
+                                  ) : isSorted === "desc" ? (
+                                    <ChevronDown className="h-3.5 w-3.5" />
+                                  ) : (
+                                    <ChevronsUpDown className="h-3.5 w-3.5 opacity-40" />
+                                  )}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </TableHead>
+                      );
+                    })}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => router.push(`/subcontractors/${row.original.slug}`)}
+                  >
+                    <TableCell className="font-medium sticky left-0 z-10 bg-background border-r">
+                      {row.original.companyName}
+                    </TableCell>
+                    <TableCell>{row.original.contactName || "-"}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {row.original.contactEmail || "-"}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {row.original.contactPhone || "-"}
+                    </TableCell>
+                    <TableCell>{getTradeBadges(row.original.trades)}</TableCell>
+                    <TableCell>
+                      <StatusBadge variant={subStatusToVariant(row.original.status)}>
+                        {getStatusLabel(row.original.status)}
+                      </StatusBadge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </Card>
       ) : (
         <Card className="p-12">
