@@ -9,6 +9,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -26,16 +27,11 @@ import { Label } from "@/components/ui/label";
 import { Plus, Pencil, Trash2, Upload, AlertTriangle, ChevronUp, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { CurrencyDisplay } from "@/components/shared/currency-display";
 
 interface SovEditorProps {
   projectId: string;
 }
-
-const currencyFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  minimumFractionDigits: 2,
-});
 
 export function SovEditor({ projectId }: SovEditorProps) {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -252,7 +248,7 @@ export function SovEditor({ projectId }: SovEditorProps) {
                     <option value="">None</option>
                     {budgetItems?.map((item) => (
                       <option key={item.id} value={item.id}>
-                        {item.description} - {currencyFormatter.format(Number(item.budgetedAmount))}
+                        {item.description} - ${Number(item.budgetedAmount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </option>
                     ))}
                   </select>
@@ -288,11 +284,11 @@ export function SovEditor({ projectId }: SovEditorProps) {
         </Alert>
       ) : (
         <>
-          <div className="border rounded-md">
+          <div className="border rounded-md relative w-full overflow-auto max-h-[600px]">
             <Table>
-              <TableHeader>
+              <TableHeader className="sticky top-0 z-20 bg-background">
                 <TableRow>
-                  <TableHead className="w-[80px]">Item #</TableHead>
+                  <TableHead className="w-[80px] sticky left-0 z-30 bg-background border-r">Item #</TableHead>
                   <TableHead>Description</TableHead>
                   <TableHead className="w-[150px]">Scheduled Value</TableHead>
                   <TableHead className="w-[200px]">Budget Link</TableHead>
@@ -302,10 +298,10 @@ export function SovEditor({ projectId }: SovEditorProps) {
               <TableBody>
                 {items.map((item, index) => (
                   <TableRow key={item.id}>
-                    <TableCell className="font-mono">{item.itemNumber}</TableCell>
+                    <TableCell className="font-mono sticky left-0 z-10 bg-background border-r">{item.itemNumber}</TableCell>
                     <TableCell>{item.description}</TableCell>
-                    <TableCell className="font-mono">
-                      {currencyFormatter.format(Number(item.scheduledValue))}
+                    <TableCell className="text-right tabular-nums">
+                      <CurrencyDisplay amount={Number(item.scheduledValue)} />
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {item.budgetLineItemId
@@ -350,14 +346,18 @@ export function SovEditor({ projectId }: SovEditorProps) {
                     </TableCell>
                   </TableRow>
                 ))}
-                <TableRow className="font-bold bg-muted/50">
-                  <TableCell colSpan={2}>Total Scheduled Value</TableCell>
-                  <TableCell className="font-mono">
-                    {currencyFormatter.format(totalScheduledValue)}
-                  </TableCell>
-                  <TableCell colSpan={2}></TableCell>
-                </TableRow>
               </TableBody>
+              <TableFooter className="sticky bottom-0 z-20 bg-muted/50">
+                <TableRow>
+                  <TableCell className="sticky left-0 z-30 bg-muted/50 font-bold border-r">Totals</TableCell>
+                  <TableCell className="font-bold">Total Scheduled Value</TableCell>
+                  <TableCell className="text-right tabular-nums font-bold">
+                    <CurrencyDisplay amount={totalScheduledValue} />
+                  </TableCell>
+                  <TableCell />
+                  <TableCell />
+                </TableRow>
+              </TableFooter>
             </Table>
           </div>
         </>
@@ -408,7 +408,7 @@ export function SovEditor({ projectId }: SovEditorProps) {
                 <option value="">None</option>
                 {budgetItems?.map((item) => (
                   <option key={item.id} value={item.id}>
-                    {item.description} - {currencyFormatter.format(Number(item.budgetedAmount))}
+                    {item.description} - ${Number(item.budgetedAmount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </option>
                 ))}
               </select>
