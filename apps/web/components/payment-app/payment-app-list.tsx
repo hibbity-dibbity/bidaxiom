@@ -1,11 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
+import {
+  useReactTable,
+  getCoreRowModel,
+  getSortedRowModel,
+  flexRender,
+  type SortingState,
+  type ColumnDef,
+} from "@tanstack/react-table";
+import { ChevronsUpDown, ChevronUp, ChevronDown, Plus, AlertTriangle, Receipt } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { CurrencyDisplay } from "@/components/shared/currency-display";
 import {
   Select,
   SelectContent,
@@ -17,11 +27,11 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, AlertTriangle, Receipt } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface PaymentAppListProps {
@@ -29,11 +39,6 @@ interface PaymentAppListProps {
   projectSlug: string;      // For navigation
 }
 
-const currencyFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  minimumFractionDigits: 2,
-});
 
 type PaymentAppStatus = "draft" | "submitted" | "under_review" | "approved" | "rejected" | "paid";
 
@@ -48,6 +53,7 @@ const statusVariantMap: Record<PaymentAppStatus, "draft" | "pending" | "approved
 
 export function PaymentAppList({ projectId, projectSlug }: PaymentAppListProps) {
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sorting, setSorting] = React.useState<SortingState>([]);
 
   const { data: paymentApps, isLoading } = trpc.paymentApp.list.useQuery({
     projectId,
@@ -59,6 +65,51 @@ export function PaymentAppList({ projectId, projectSlug }: PaymentAppListProps) 
   const { data: sovItems } = trpc.sov.list.useQuery({ projectId });
 
   const hasSovItems = (sovItems?.items.length || 0) > 0;
+
+  const columns = React.useMemo<ColumnDef<NonNullable<typeof paymentApps>[number]>[]>(() => [
+    {
+      accessorKey: "applicationNumber",
+      header: "Application #",
+      enableSorting: true,
+    },
+    {
+      id: "period",
+      header: "Period",
+      enableSorting: false,
+    },
+    {
+      accessorKey: "currentPaymentDue",
+      header: "Current Payment Due",
+      enableSorting: true,
+      sortingFn: "basic" as const,
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      enableSorting: true,
+    },
+    {
+      id: "actions",
+      header: "",
+      enableSorting: false,
+    },
+  ], []);
+
+  const table = useReactTable({
+    data: paymentApps ?? [],
+    columns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    enableSortingRemoval: false,
+  });
+
+  const visibleTotal = React.useMemo(
+    () => table.getRowModel().rows.reduce((sum, row) => sum + Number(row.original.currentPaymentDue), 0),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [table.getRowModel().rows]
+  );
 
   if (isLoading) {
     return (
@@ -84,7 +135,7 @@ export function PaymentAppList({ projectId, projectSlug }: PaymentAppListProps) 
           <CardContent>
             <div className="text-2xl font-bold">
               {summary
-                ? currencyFormatter.format(Number(summary.amounts.totalApproved))
+                ? <CurrencyDisplay amount={Number(summary.amounts.totalApproved)} />
                 : "$0.00"}
             </div>
           </CardContent>
@@ -97,7 +148,7 @@ export function PaymentAppList({ projectId, projectSlug }: PaymentAppListProps) 
           <CardContent>
             <div className="text-2xl font-bold">
               {summary
-                ? currencyFormatter.format(Number(summary.amounts.totalPending))
+                ? <CurrencyDisplay amount={Number(summary.amounts.totalPending)} />
                 : "$0.00"}
             </div>
           </CardContent>
@@ -110,7 +161,7 @@ export function PaymentAppList({ projectId, projectSlug }: PaymentAppListProps) 
           <CardContent>
             <div className="text-2xl font-bold">
               {summary
-                ? currencyFormatter.format(Number(summary.amounts.totalPaid))
+                ? <CurrencyDisplay amount={Number(summary.amounts.totalPaid)} />
                 : "$0.00"}
             </div>
           </CardContent>
@@ -123,7 +174,7 @@ export function PaymentAppList({ projectId, projectSlug }: PaymentAppListProps) 
           <CardContent>
             <div className="text-2xl font-bold">
               {retainage?.totals?.totalHeld
-                ? currencyFormatter.format(Number(retainage.totals.totalHeld))
+                ? <CurrencyDisplay amount={Number(retainage.totals.totalHeld)} />
                 : "$0.00"}
             </div>
           </CardContent>
@@ -194,45 +245,99 @@ export function PaymentAppList({ projectId, projectSlug }: PaymentAppListProps) 
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Application #</TableHead>
-                  <TableHead>Period</TableHead>
-                  <TableHead>Current Payment Due</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paymentApps.map((app) => (
-                  <TableRow key={app.id}>
-                    <TableCell className="font-mono">{app.applicationNumber}</TableCell>
-                    <TableCell>
-                      {new Date(app.periodStart).toLocaleDateString()} -{" "}
-                      {new Date(app.periodEnd).toLocaleDateString()}
+            <div className="relative w-full overflow-auto max-h-[600px]">
+              <Table>
+                <TableHeader className="sticky top-0 z-20 bg-background">
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <TableRow key={headerGroup.id}>
+                      {headerGroup.headers.map((header, idx) => {
+                        const canSort = header.column.getCanSort();
+                        const isSorted = header.column.getIsSorted();
+                        const isFirst = idx === 0;
+
+                        return (
+                          <TableHead
+                            key={header.id}
+                            className={
+                              isFirst
+                                ? "sticky top-0 left-0 z-30 bg-background min-w-[120px] border-r"
+                                : "sticky top-0 z-20 bg-background"
+                            }
+                          >
+                            {header.isPlaceholder ? null : (
+                              <div
+                                className={
+                                  canSort
+                                    ? "flex items-center gap-1.5 cursor-pointer select-none hover:text-foreground"
+                                    : undefined
+                                }
+                                onClick={
+                                  canSort
+                                    ? header.column.getToggleSortingHandler()
+                                    : undefined
+                                }
+                              >
+                                {flexRender(header.column.columnDef.header, header.getContext())}
+                                {canSort && (
+                                  <span className="text-muted-foreground">
+                                    {isSorted === "asc" ? (
+                                      <ChevronUp className="h-4 w-4" />
+                                    ) : isSorted === "desc" ? (
+                                      <ChevronDown className="h-4 w-4" />
+                                    ) : (
+                                      <ChevronsUpDown className="h-4 w-4" />
+                                    )}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </TableHead>
+                        );
+                      })}
+                    </TableRow>
+                  ))}
+                </TableHeader>
+                <TableBody>
+                  {table.getRowModel().rows.map((row) => (
+                    <TableRow key={row.id}>
+                      <TableCell className="font-mono sticky left-0 z-10 bg-background border-r">
+                        {row.original.applicationNumber}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(row.original.periodStart).toLocaleDateString()} &mdash;{" "}
+                        {new Date(row.original.periodEnd).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        <CurrencyDisplay amount={Number(row.original.currentPaymentDue)} />
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge variant={statusVariantMap[row.original.status as PaymentAppStatus] || "draft"}>
+                          {row.original.status.replace("_", " ")}
+                        </StatusBadge>
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="outline" size="sm" asChild>
+                          <Link href={`/projects/${projectSlug}/payment-apps/${row.original.id}`}>
+                            View
+                          </Link>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+                <TableFooter className="sticky bottom-0 z-20 bg-muted/50">
+                  <TableRow>
+                    <TableCell className="sticky left-0 z-30 bg-muted/50 font-bold border-r">Totals</TableCell>
+                    <TableCell />
+                    <TableCell className="text-right tabular-nums font-bold">
+                      <CurrencyDisplay amount={visibleTotal} />
                     </TableCell>
-                    <TableCell className="font-mono">
-                      {currencyFormatter.format(Number(app.currentPaymentDue))}
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge
-                        variant={statusVariantMap[app.status as PaymentAppStatus] || "draft"}
-                      >
-                        {app.status.replace("_", " ")}
-                      </StatusBadge>
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="outline" size="sm" asChild>
-                        <Link href={`/projects/${projectSlug}/payment-apps/${app.id}`}>
-                          View
-                        </Link>
-                      </Button>
-                    </TableCell>
+                    <TableCell />
+                    <TableCell />
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableFooter>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       ) : (
