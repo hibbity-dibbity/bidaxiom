@@ -20,8 +20,9 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronDown, ChevronUp, Plus } from "lucide-react";
+import { ChevronDown, ChevronUp, ChevronsUpDown, Plus } from "lucide-react";
 import { createColumns } from "./columns";
+import { cn } from "@/lib/utils";
 
 interface Project {
   id: string;
@@ -74,6 +75,7 @@ export function ProjectsTable({
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    enableSortingRemoval: false,
   });
 
   // Skeleton columns for loading state (non-admin baseline)
@@ -141,19 +143,21 @@ export function ProjectsTable({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border">
+      <div className="rounded-md border relative w-full overflow-auto max-h-[70vh]">
         <Table>
-          <TableHeader>
+          <TableHeader className="sticky top-0 z-20 bg-background">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   const canSort = header.column.getCanSort();
                   const isSorted = header.column.getIsSorted();
+                  const isFirstCol = header.id === "jobNumber";
 
                   return (
                     <TableHead
                       key={header.id}
                       style={{ width: header.column.getSize() }}
+                      className={isFirstCol ? "sticky left-0 z-30 bg-background border-r" : undefined}
                     >
                       {header.isPlaceholder ? null : (
                         <div
@@ -175,11 +179,11 @@ export function ProjectsTable({
                           {canSort && (
                             <span className="text-muted-foreground">
                               {isSorted === "asc" ? (
-                                <ChevronUp className="h-4 w-4" />
+                                <ChevronUp className="h-3.5 w-3.5" />
                               ) : isSorted === "desc" ? (
-                                <ChevronDown className="h-4 w-4" />
+                                <ChevronDown className="h-3.5 w-3.5" />
                               ) : (
-                                <ChevronDown className="h-4 w-4 opacity-30" />
+                                <ChevronsUpDown className="h-3.5 w-3.5 opacity-40" />
                               )}
                             </span>
                           )}
@@ -198,7 +202,13 @@ export function ProjectsTable({
                 className="hover:bg-muted/50 group"
               >
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id} className="py-2 text-sm">
+                  <TableCell
+                    key={cell.id}
+                    className={cn(
+                      "py-2 text-sm",
+                      cell.column.id === "jobNumber" && "sticky left-0 z-10 bg-background border-r"
+                    )}
+                  >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}
