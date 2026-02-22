@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-02-21)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.6 UX Redesign & Polish — Phase 42: Shared UI Primitives (plans 01-05 complete)
+**Current focus:** v1.6 UX Redesign & Polish — Phase 43: Budget Domain Redesign (plan 01 complete)
 
 ## Current Position
 
-Phase: 42 of 46 (Shared UI Primitives)
-Plan: 05 complete
-Status: Phase 42 IN PROGRESS — Plans 01-05 complete
-Last activity: 2026-02-21 — Phase 42 Plan 05 complete: Customers + Subcontractors TanStack sort; CommitmentList card-to-table conversion; CO line items sticky layout + CurrencyDisplay; EstimateLineItemsTable sticky header + frozen col + sticky footer with grand totals
+Phase: 43 of 46 (Budget Domain Redesign)
+Plan: 01 complete
+Status: Phase 43 IN PROGRESS — Plan 01 complete
+Last activity: 2026-02-22 — Phase 43 Plan 01 complete: useColumnVisibility hook (localStorage-backed, SSR-safe); ColumnPicker gear icon popover; EmptyState component; FilterChips removable badge row
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100% | v1.5: [██████████] 100% | v1.6: [██░░░░░░░░] 17%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 168 (138 through v1.4, +19 in v1.5, +6 in v1.6 Phase 41, +5 in v1.6 Phase 42)
+- Total plans completed: 169 (138 through v1.4, +19 in v1.5, +6 in v1.6 Phase 41, +5 in v1.6 Phase 42, +1 in v1.6 Phase 43)
 - Average duration: ~4.3 min/plan
 - Total execution time: ~11.7 hours
 
@@ -77,6 +77,9 @@ Recent decisions relevant to v1.6:
 - [42-05]: EstimateLineItemsTable: no TanStack sort — grouped section rendering via lineItemsByDivision is incompatible with getSortedRowModel data flow
 - [42-05]: grandTotalCost/grandTotalMargin computed from lineItems prop (not TanStack row model) to preserve correctness with grouped rendering
 - [42-05]: Footer colSpan math: GC/Advanced mode (colSpan=5); Simple mode omits CSI Code column (colSpan=4)
+- [43-01]: FilterChip interface exported from filter-chips.tsx so caller components can import the type without re-declaring it
+- [43-01]: ColumnPicker returns null when no hideable columns — safe to render in any context
+- [43-01]: storageKey uses col-picker:{tableKey} prefix to prevent cross-table localStorage key collision
 
 ### Pending Todos
 
@@ -84,11 +87,11 @@ None.
 
 ### Blockers/Concerns
 
-- Phase 43 (Budget Domain Redesign) requires `/gsd:research-phase` before planning — TanStack Table `getGroupedRowModel` + `@tanstack/react-virtual` pairing has integration nuances.
+- Phase 43 Plan 01 complete. Plans 02+ (Budget table views) need to be planned.
 - Clerk webhook secret is still placeholder (`whsec_xxx`). Tenant auto-provisioning via webhooks won't work until configured with real secret from Clerk dashboard.
 
 ## Session Continuity
 
-Last session: 2026-02-21
-Stopped at: Phase 42 Plan 05 complete — all 5 tables upgraded (customers, subcontractors, commitment-list, CO line items, EstimateLineItemsTable). Next: Phase 42 Plan 06 (if exists) or Phase 43 planning.
+Last session: 2026-02-22
+Stopped at: Phase 43 Plan 01 complete — 4 shared primitives created (useColumnVisibility hook, ColumnPicker, EmptyState, FilterChips). Next: Phase 43 Plan 02+.
 Resume file: None
