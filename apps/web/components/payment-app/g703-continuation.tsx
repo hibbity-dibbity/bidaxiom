@@ -1,5 +1,12 @@
 "use client";
 
+import React from "react";
+import {
+  useReactTable,
+  getCoreRowModel,
+  flexRender,
+  type ColumnDef,
+} from "@tanstack/react-table";
 import {
   Table,
   TableBody,
@@ -11,6 +18,8 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { CurrencyDisplay } from "@/components/shared/currency-display";
+import { useColumnVisibility } from "@/hooks/use-column-visibility";
+import { ColumnPicker } from "@/components/shared/column-picker";
 
 interface G703LineItem {
   sovItemNumber: number;
@@ -52,123 +61,236 @@ export function G703Continuation({ lineItems, editable = false, onLineItemChange
     }
   );
 
+  const columns: ColumnDef<G703LineItem>[] = React.useMemo(() => [
+    { id: "item", header: "Item", enableHiding: false },
+    { id: "description", header: "Description of Work", enableHiding: false },
+    { id: "scheduledValue", header: "Scheduled Value" },
+    { id: "fromPreviousPct", header: "From Previous %" },
+    { id: "thisPeriodPct", header: "This Period %" },
+    { id: "workThisPeriod", header: "Work This Period" },
+    { id: "materialsStored", header: "Materials Stored" },
+    { id: "totalCompleted", header: "Total Completed" },
+    { id: "pctComplete", header: "% Complete" },
+    { id: "balanceToFinish", header: "Balance to Finish" },
+    { id: "retainage", header: "Retainage" },
+  ], []);
+
+  const { columnVisibility, onColumnVisibilityChange } = useColumnVisibility("g703-continuation");
+
+  const table = useReactTable({
+    data: lineItems,
+    columns,
+    state: { columnVisibility },
+    onColumnVisibilityChange,
+    getCoreRowModel: getCoreRowModel(),
+  });
+
   return (
-    <div className="relative w-full overflow-auto max-h-[70vh] rounded-md border">
-      <Table>
-        <TableHeader className="sticky top-0 z-20 bg-background">
-          <TableRow>
-            <TableHead className="w-[60px] sticky left-0 z-30 bg-background border-r">Item</TableHead>
-            <TableHead className="min-w-[200px] sticky left-[60px] z-30 bg-background border-r">Description of Work</TableHead>
-            <TableHead className="w-[120px]">Scheduled Value</TableHead>
-            <TableHead className="w-[100px]">From Previous (%)</TableHead>
-            <TableHead className="w-[100px]">This Period (%)</TableHead>
-            <TableHead className="w-[120px]">Work This Period</TableHead>
-            <TableHead className="w-[120px]">Materials Stored</TableHead>
-            <TableHead className="w-[120px]">Total Completed</TableHead>
-            <TableHead className="w-[100px]">% Complete</TableHead>
-            <TableHead className="w-[120px]">Balance to Finish</TableHead>
-            <TableHead className="w-[120px]">Retainage</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {lineItems.map((item, index) => {
-            const hasError = item.currentPercent < item.previousPercent;
-            return (
-              <TableRow key={item.sovItemNumber} className={hasError ? "bg-muted" : ""}>
-                <TableCell className="font-mono sticky left-0 z-10 bg-background border-r">{item.sovItemNumber}</TableCell>
-                <TableCell className="sticky left-[60px] z-10 bg-background border-r">{item.sovDescription}</TableCell>
-                <TableCell className="text-right tabular-nums">
-                  <CurrencyDisplay amount={item.scheduledValue} />
-                </TableCell>
-                <TableCell className="text-center">
-                  {item.previousPercent.toFixed(2)}%
-                </TableCell>
-                <TableCell>
-                  {editable ? (
-                    <Input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.01"
-                      value={item.currentPercent}
-                      onChange={(e) =>
-                        onLineItemChange?.(index, "currentPercent", parseFloat(e.target.value) || 0)
+    <>
+      <div className="flex justify-end mb-1">
+        <ColumnPicker table={table} />
+      </div>
+      <div className="relative w-full overflow-auto max-h-[70vh] rounded-md border">
+        <Table>
+          <TableHeader className="sticky top-0 z-20 bg-background">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => {
+                  const isItem = header.id === "item";
+                  const isDesc = header.id === "description";
+                  return (
+                    <TableHead
+                      key={header.id}
+                      className={
+                        isItem
+                          ? "w-[60px] sticky left-0 z-30 bg-background border-r"
+                          : isDesc
+                          ? "min-w-[200px] sticky left-[60px] z-30 bg-background border-r"
+                          : undefined
                       }
-                      className={`w-full text-center ${hasError ? "border-destructive" : ""}`}
-                    />
-                  ) : (
-                    <div className="text-center">{item.currentPercent.toFixed(2)}%</div>
-                  )}
-                </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  <CurrencyDisplay amount={item.workThisPeriod} />
-                </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {editable ? (
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={item.materialsStored}
-                      onChange={(e) =>
-                        onLineItemChange?.(index, "materialsStored", parseFloat(e.target.value) || 0)
-                      }
-                      className="w-full"
-                    />
-                  ) : (
-                    <CurrencyDisplay amount={item.materialsStored} />
-                  )}
-                </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  <CurrencyDisplay amount={item.totalCompleted} />
-                </TableCell>
-                <TableCell className="text-center">
-                  {item.currentPercent.toFixed(2)}%
-                </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {hasError ? (
-                    <span className="text-financial-negative">
-                      <CurrencyDisplay amount={item.balanceToFinish} />
-                    </span>
-                  ) : (
-                    <CurrencyDisplay amount={item.balanceToFinish} />
-                  )}
-                </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  <CurrencyDisplay amount={item.retainageAmount} />
-                </TableCell>
+                    >
+                      {flexRender(header.column.columnDef.header, header.getContext())}
+                    </TableHead>
+                  );
+                })}
               </TableRow>
-            );
-          })}
-        </TableBody>
-        <TableFooter className="sticky bottom-0 z-20 bg-muted/50">
-          <TableRow className="font-bold">
-            <TableCell className="sticky left-0 z-30 bg-muted/50 border-r">Totals</TableCell>
-            <TableCell className="sticky left-[60px] z-30 bg-muted/50 border-r" />
-            <TableCell className="text-right tabular-nums">
-              <CurrencyDisplay amount={totals.scheduledValue} />
-            </TableCell>
-            <TableCell />
-            <TableCell />
-            <TableCell className="text-right tabular-nums">
-              <CurrencyDisplay amount={totals.workThisPeriod} />
-            </TableCell>
-            <TableCell className="text-right tabular-nums">
-              <CurrencyDisplay amount={totals.materialsStored} />
-            </TableCell>
-            <TableCell className="text-right tabular-nums">
-              <CurrencyDisplay amount={totals.totalCompleted} />
-            </TableCell>
-            <TableCell />
-            <TableCell className="text-right tabular-nums">
-              <CurrencyDisplay amount={totals.balanceToFinish} />
-            </TableCell>
-            <TableCell className="text-right tabular-nums">
-              <CurrencyDisplay amount={totals.retainageAmount} />
-            </TableCell>
-          </TableRow>
-        </TableFooter>
-      </Table>
-    </div>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows.map((row) => {
+              const item = row.original;
+              const hasError = item.currentPercent < item.previousPercent;
+              const rowIndex = lineItems.indexOf(item);
+              return (
+                <TableRow key={row.id} className={hasError ? "bg-muted" : ""}>
+                  {row.getVisibleCells().map((cell) => {
+                    const colId = cell.column.id;
+
+                    if (colId === "item") {
+                      return (
+                        <TableCell key={cell.id} className="font-mono sticky left-0 z-10 bg-background border-r w-[60px]">
+                          {item.sovItemNumber}
+                        </TableCell>
+                      );
+                    }
+                    if (colId === "description") {
+                      return (
+                        <TableCell key={cell.id} className="min-w-[200px] sticky left-[60px] z-10 bg-background border-r">
+                          {item.sovDescription}
+                        </TableCell>
+                      );
+                    }
+                    if (colId === "scheduledValue") {
+                      return (
+                        <TableCell key={cell.id} className="text-right tabular-nums min-w-[100px]">
+                          <CurrencyDisplay amount={item.scheduledValue} />
+                        </TableCell>
+                      );
+                    }
+                    if (colId === "fromPreviousPct") {
+                      return (
+                        <TableCell key={cell.id} className="text-center min-w-[100px]">
+                          {item.previousPercent.toFixed(2)}%
+                        </TableCell>
+                      );
+                    }
+                    if (colId === "thisPeriodPct") {
+                      return (
+                        <TableCell key={cell.id} className="min-w-[100px]">
+                          {editable ? (
+                            <Input
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="0.01"
+                              value={item.currentPercent}
+                              onChange={(e) =>
+                                onLineItemChange?.(rowIndex, "currentPercent", parseFloat(e.target.value) || 0)
+                              }
+                              className={`w-full text-center ${hasError ? "border-destructive" : ""}`}
+                            />
+                          ) : (
+                            <div className="text-center">{item.currentPercent.toFixed(2)}%</div>
+                          )}
+                        </TableCell>
+                      );
+                    }
+                    if (colId === "workThisPeriod") {
+                      return (
+                        <TableCell key={cell.id} className="text-right tabular-nums min-w-[100px]">
+                          <CurrencyDisplay amount={item.workThisPeriod} />
+                        </TableCell>
+                      );
+                    }
+                    if (colId === "materialsStored") {
+                      return (
+                        <TableCell key={cell.id} className="text-right tabular-nums min-w-[100px]">
+                          {editable ? (
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={item.materialsStored}
+                              onChange={(e) =>
+                                onLineItemChange?.(rowIndex, "materialsStored", parseFloat(e.target.value) || 0)
+                              }
+                              className="w-full"
+                            />
+                          ) : (
+                            <CurrencyDisplay amount={item.materialsStored} />
+                          )}
+                        </TableCell>
+                      );
+                    }
+                    if (colId === "totalCompleted") {
+                      return (
+                        <TableCell key={cell.id} className="text-right tabular-nums min-w-[100px]">
+                          <CurrencyDisplay amount={item.totalCompleted} />
+                        </TableCell>
+                      );
+                    }
+                    if (colId === "pctComplete") {
+                      return (
+                        <TableCell key={cell.id} className="text-center min-w-[80px]">
+                          {item.currentPercent.toFixed(2)}%
+                        </TableCell>
+                      );
+                    }
+                    if (colId === "balanceToFinish") {
+                      return (
+                        <TableCell key={cell.id} className="text-right tabular-nums min-w-[100px]">
+                          {hasError ? (
+                            <span className="text-financial-negative">
+                              <CurrencyDisplay amount={item.balanceToFinish} />
+                            </span>
+                          ) : (
+                            <CurrencyDisplay amount={item.balanceToFinish} />
+                          )}
+                        </TableCell>
+                      );
+                    }
+                    if (colId === "retainage") {
+                      return (
+                        <TableCell key={cell.id} className="text-right tabular-nums min-w-[100px]">
+                          <CurrencyDisplay amount={item.retainageAmount} />
+                        </TableCell>
+                      );
+                    }
+                    return <TableCell key={cell.id} />;
+                  })}
+                </TableRow>
+              );
+            })}
+          </TableBody>
+          <TableFooter className="sticky bottom-0 z-20 bg-muted/50">
+            <TableRow className="font-bold">
+              {/* Item column — always visible */}
+              <TableCell className="sticky left-0 z-30 bg-muted/50 border-r">Totals</TableCell>
+              {/* Description column — always visible */}
+              <TableCell className="sticky left-[60px] z-30 bg-muted/50 border-r" />
+              {table.getColumn("scheduledValue")?.getIsVisible() && (
+                <TableCell className="text-right tabular-nums">
+                  <CurrencyDisplay amount={totals.scheduledValue} />
+                </TableCell>
+              )}
+              {table.getColumn("fromPreviousPct")?.getIsVisible() && (
+                <TableCell />
+              )}
+              {table.getColumn("thisPeriodPct")?.getIsVisible() && (
+                <TableCell />
+              )}
+              {table.getColumn("workThisPeriod")?.getIsVisible() && (
+                <TableCell className="text-right tabular-nums">
+                  <CurrencyDisplay amount={totals.workThisPeriod} />
+                </TableCell>
+              )}
+              {table.getColumn("materialsStored")?.getIsVisible() && (
+                <TableCell className="text-right tabular-nums">
+                  <CurrencyDisplay amount={totals.materialsStored} />
+                </TableCell>
+              )}
+              {table.getColumn("totalCompleted")?.getIsVisible() && (
+                <TableCell className="text-right tabular-nums">
+                  <CurrencyDisplay amount={totals.totalCompleted} />
+                </TableCell>
+              )}
+              {table.getColumn("pctComplete")?.getIsVisible() && (
+                <TableCell />
+              )}
+              {table.getColumn("balanceToFinish")?.getIsVisible() && (
+                <TableCell className="text-right tabular-nums">
+                  <CurrencyDisplay amount={totals.balanceToFinish} />
+                </TableCell>
+              )}
+              {table.getColumn("retainage")?.getIsVisible() && (
+                <TableCell className="text-right tabular-nums">
+                  <CurrencyDisplay amount={totals.retainageAmount} />
+                </TableCell>
+              )}
+            </TableRow>
+          </TableFooter>
+        </Table>
+      </div>
+    </>
   );
 }

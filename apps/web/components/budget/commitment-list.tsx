@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import {
   Select,
@@ -32,6 +31,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useColumnVisibility } from "@/hooks/use-column-visibility";
+import { ColumnPicker } from "@/components/shared/column-picker";
 
 interface CommitmentListProps {
   projectId: string;
@@ -55,6 +56,7 @@ export function CommitmentList({ projectId }: CommitmentListProps) {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [expandedCommitmentId, setExpandedCommitmentId] = useState<string | null>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
+  const { columnVisibility, onColumnVisibilityChange } = useColumnVisibility("commitment-list");
 
   const { data: commitments, isLoading } = trpc.commitment.list.useQuery({
     projectId,
@@ -88,6 +90,7 @@ export function CommitmentList({ projectId }: CommitmentListProps) {
       accessorKey: "vendorName",
       header: "Vendor",
       enableSorting: true,
+      enableHiding: false,
     },
     {
       id: "contractNumber",
@@ -129,8 +132,9 @@ export function CommitmentList({ projectId }: CommitmentListProps) {
   const table = useReactTable({
     data: filteredCommitments ?? [],
     columns,
-    state: { sorting },
+    state: { sorting, columnVisibility },
     onSortingChange: setSorting,
+    onColumnVisibilityChange,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     enableSortingRemoval: false,
@@ -148,34 +152,37 @@ export function CommitmentList({ projectId }: CommitmentListProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-4">
-        <div className="flex-1">
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger>
-              <SelectValue placeholder="Filter by type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="subcontract">Subcontract</SelectItem>
-              <SelectItem value="purchase_order">Purchase Order</SelectItem>
-            </SelectContent>
-          </Select>
+      <div className="flex justify-between items-center">
+        <div className="flex gap-4">
+          <div className="flex-1">
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filter by type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="subcontract">Subcontract</SelectItem>
+                <SelectItem value="purchase_order">Purchase Order</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex-1">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="draft">Draft</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="approved">Approved</SelectItem>
+                <SelectItem value="executed">Executed</SelectItem>
+                <SelectItem value="closed">Closed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-        <div className="flex-1">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger>
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="draft">Draft</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="approved">Approved</SelectItem>
-              <SelectItem value="executed">Executed</SelectItem>
-              <SelectItem value="closed">Closed</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <ColumnPicker table={table} />
       </div>
 
       {!filteredCommitments || filteredCommitments.length === 0 ? (
@@ -242,52 +249,64 @@ export function CommitmentList({ projectId }: CommitmentListProps) {
                 return (
                   <React.Fragment key={row.id}>
                     <TableRow className="cursor-pointer hover:bg-muted/50">
-                      {/* Vendor — frozen first column */}
+                      {/* Vendor — frozen first column, always visible */}
                       <TableCell className="sticky left-0 z-10 bg-background font-medium border-r">
                         {commitment.vendorName}
                       </TableCell>
                       {/* Contract # */}
-                      <TableCell className="text-muted-foreground text-sm">
-                        {commitment.contractNumber || "-"}
-                      </TableCell>
+                      {table.getColumn("contractNumber")?.getIsVisible() && (
+                        <TableCell className="text-muted-foreground text-sm">
+                          {commitment.contractNumber || "-"}
+                        </TableCell>
+                      )}
                       {/* Type */}
-                      <TableCell>
-                        <StatusBadge variant="draft">
-                          {typeLabels[commitment.type as CommitmentType]}
-                        </StatusBadge>
-                      </TableCell>
+                      {table.getColumn("type")?.getIsVisible() && (
+                        <TableCell>
+                          <StatusBadge variant="draft">
+                            {typeLabels[commitment.type as CommitmentType]}
+                          </StatusBadge>
+                        </TableCell>
+                      )}
                       {/* Status */}
-                      <TableCell>
-                        <StatusBadge variant={statusVariants[commitment.status as CommitmentStatus]}>
-                          {commitment.status}
-                        </StatusBadge>
-                      </TableCell>
+                      {table.getColumn("status")?.getIsVisible() && (
+                        <TableCell>
+                          <StatusBadge variant={statusVariants[commitment.status as CommitmentStatus]}>
+                            {commitment.status}
+                          </StatusBadge>
+                        </TableCell>
+                      )}
                       {/* Amount */}
-                      <TableCell className="text-right tabular-nums font-semibold">
-                        <CurrencyDisplay amount={Number(commitment.totalAmount)} />
-                      </TableCell>
+                      {table.getColumn("totalAmount")?.getIsVisible() && (
+                        <TableCell className="text-right tabular-nums font-semibold">
+                          <CurrencyDisplay amount={Number(commitment.totalAmount)} />
+                        </TableCell>
+                      )}
                       {/* Date */}
-                      <TableCell className="text-sm text-muted-foreground">
-                        {new Date(commitment.createdAt).toLocaleDateString()}
-                      </TableCell>
+                      {table.getColumn("createdAt")?.getIsVisible() && (
+                        <TableCell className="text-sm text-muted-foreground">
+                          {new Date(commitment.createdAt).toLocaleDateString()}
+                        </TableCell>
+                      )}
                       {/* Expand toggle */}
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleExpand(commitment.id)}
-                        >
-                          {isExpanded ? (
-                            <ChevronUp className="h-4 w-4" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </TableCell>
+                      {table.getColumn("expand")?.getIsVisible() && (
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleExpand(commitment.id)}
+                          >
+                            {isExpanded ? (
+                              <ChevronUp className="h-4 w-4" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </TableCell>
+                      )}
                     </TableRow>
                     {isExpanded && lineItems && (
                       <TableRow>
-                        <TableCell colSpan={7} className="bg-muted/30 p-0">
+                        <TableCell colSpan={table.getVisibleLeafColumns().length} className="bg-muted/30 p-0">
                           <div className="p-4 space-y-2">
                             {lineItems.map((item) => (
                               <div
@@ -318,13 +337,28 @@ export function CommitmentList({ projectId }: CommitmentListProps) {
             <TableFooter className="sticky bottom-0 z-20 bg-muted/50">
               <TableRow>
                 <TableCell className="sticky left-0 z-30 bg-muted/50 font-bold border-r">Totals</TableCell>
-                <TableCell colSpan={3} />
-                <TableCell className="text-right tabular-nums font-bold">
-                  <CurrencyDisplay
-                    amount={table.getRowModel().rows.reduce((sum, row) => sum + Number(row.original.totalAmount), 0)}
-                  />
-                </TableCell>
-                <TableCell colSpan={2} />
+                {table.getColumn("contractNumber")?.getIsVisible() && (
+                  <TableCell />
+                )}
+                {table.getColumn("type")?.getIsVisible() && (
+                  <TableCell />
+                )}
+                {table.getColumn("status")?.getIsVisible() && (
+                  <TableCell />
+                )}
+                {table.getColumn("totalAmount")?.getIsVisible() && (
+                  <TableCell className="text-right tabular-nums font-bold">
+                    <CurrencyDisplay
+                      amount={table.getRowModel().rows.reduce((sum, row) => sum + Number(row.original.totalAmount), 0)}
+                    />
+                  </TableCell>
+                )}
+                {table.getColumn("createdAt")?.getIsVisible() && (
+                  <TableCell />
+                )}
+                {table.getColumn("expand")?.getIsVisible() && (
+                  <TableCell />
+                )}
               </TableRow>
             </TableFooter>
           </Table>
