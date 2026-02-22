@@ -80,6 +80,10 @@ Recent decisions relevant to v1.6:
 - [43-01]: FilterChip interface exported from filter-chips.tsx so caller components can import the type without re-declaring it
 - [43-01]: ColumnPicker returns null when no hideable columns — safe to render in any context
 - [43-01]: storageKey uses col-picker:{tableKey} prefix to prevent cross-table localStorage key collision
+- [43-02]: G703Continuation converted from plain Table to useReactTable to enable column visibility state — plain Table has no column model
+- [43-02]: G703 rowIndex for onLineItemChange computed via lineItems.indexOf(item) to preserve original array index semantics
+- [43-02]: ProjectsTable isFiltered changed from optional to required — page already passes it; required ensures future consumers cannot omit it
+- [43-02]: CommitmentList expand row colSpan uses table.getVisibleLeafColumns().length for dynamic visible column count
 - [43-04]: Search input not chipped on Projects/Subcontractors — search box is the UI representation; only secondary filter dimensions (status, customer, assignedUser, dates, trade) become chips
 - [43-04]: Customers page has no FilterChips — only a search filter, no secondary filter dimensions to chip
 - [43-04]: HardHat replaces Building2 as domain icon for Subcontractors EmptyState — more domain-specific
