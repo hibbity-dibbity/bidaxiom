@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -22,7 +23,10 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RfqStatusBadge } from "@/components/bidding/rfq-status-badge";
-import { Plus, ChevronLeft, FileText } from "lucide-react";
+import { EmptyState } from "@/components/shared/empty-state";
+import { FilterChips, type FilterChip } from "@/components/shared/filter-chips";
+import { useDebounce } from "@/hooks/use-debounce";
+import { Plus, Search, SearchX, FileQuestion } from "lucide-react";
 import type { RfqStatus } from "@construction/shared";
 
 const CSI_DIVISION_MAP: Record<number, string> = {
@@ -55,6 +59,8 @@ export default function RfqsPage({
 }) {
   const { projectSlug } = params;
   const [statusFilter, setStatusFilter] = useState<RfqStatus | "all">("all");
+  const [searchInput, setSearchInput] = useState("");
+  const debouncedSearch = useDebounce(searchInput, 300);
 
   // Resolve project by slug (cached from layout)
   const { data: project } = trpc.project.getBySlug.useQuery({ slug: projectSlug });
@@ -62,10 +68,36 @@ export default function RfqsPage({
 
   const { data: rfqs, isLoading } = trpc.rfq.list.useQuery({ projectId: projectId! }, { enabled: !!projectId });
 
-  const filteredRfqs =
-    statusFilter === "all"
-      ? rfqs
-      : rfqs?.filter((rfq) => rfq.status === statusFilter);
+  const filteredRfqs = useMemo(() => {
+    if (!rfqs) return [];
+    let result = rfqs;
+    if (statusFilter !== "all") {
+      result = result.filter((rfq) => rfq.status === statusFilter);
+    }
+    if (debouncedSearch.trim()) {
+      const q = debouncedSearch.toLowerCase();
+      result = result.filter(
+        (rfq) =>
+          rfq.title?.toLowerCase().includes(q) ||
+          rfq.rfqNumber?.toLowerCase().includes(q)
+      );
+    }
+    return result;
+  }, [rfqs, statusFilter, debouncedSearch]);
+
+  const activeChips: FilterChip[] = statusFilter !== "all"
+    ? [{
+        label: `Status: ${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}`,
+        onRemove: () => setStatusFilter("all" as RfqStatus | "all"),
+      }]
+    : [];
+
+  const clearAllFilters = () => {
+    setStatusFilter("all" as RfqStatus | "all");
+    setSearchInput("");
+  };
+
+  const hasActiveFilters = statusFilter !== "all" || !!debouncedSearch;
 
   if (isLoading) {
     return (
@@ -83,15 +115,6 @@ export default function RfqsPage({
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href={`/projects/${projectSlug}`}>
-            <ChevronLeft className="h-4 w-4 mr-2" />
-            Back to Project
-          </Link>
-        </Button>
-      </div>
-
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Requests for Quotation</h1>
@@ -105,26 +128,41 @@ export default function RfqsPage({
         </Button>
       </div>
 
-      <div className="flex gap-3">
-        <Select
-          value={statusFilter}
-          onValueChange={(value) => setStatusFilter(value as RfqStatus | "all")}
-        >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="draft">Draft</SelectItem>
-            <SelectItem value="issued">Issued</SelectItem>
-            <SelectItem value="closed">Closed</SelectItem>
-            <SelectItem value="awarded">Awarded</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="space-y-2">
+        {/* Search bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by title or RFQ number..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        {/* Status filter */}
+        <div className="flex gap-3">
+          <Select
+            value={statusFilter}
+            onValueChange={(value) => setStatusFilter(value as RfqStatus | "all")}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="draft">Draft</SelectItem>
+              <SelectItem value="issued">Issued</SelectItem>
+              <SelectItem value="closed">Closed</SelectItem>
+              <SelectItem value="awarded">Awarded</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        {/* Filter chips */}
+        <FilterChips chips={activeChips} onClearAll={clearAllFilters} />
       </div>
 
-      {filteredRfqs && filteredRfqs.length > 0 ? (
+      {filteredRfqs.length > 0 ? (
         <Card>
           <CardContent className="p-0">
             <Table>
@@ -188,25 +226,24 @@ export default function RfqsPage({
           </CardContent>
         </Card>
       ) : (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <FileText className="h-16 w-16 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No RFQs Found</h3>
-            <p className="text-muted-foreground text-center mb-6 max-w-md">
-              {statusFilter === "all"
-                ? "Get started by creating your first RFQ"
-                : `No RFQs with status "${statusFilter}"`}
-            </p>
-            {statusFilter === "all" && (
-              <Button asChild>
-                <Link href={`/projects/${projectSlug}/rfqs/new`}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create RFQ
-                </Link>
-              </Button>
-            )}
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={hasActiveFilters ? SearchX : FileQuestion}
+          heading={
+            hasActiveFilters
+              ? "No RFQs match your filters"
+              : "No RFQs yet"
+          }
+          description={
+            hasActiveFilters
+              ? "Try adjusting your search or filter criteria."
+              : "Get started by creating your first Request for Quotation."
+          }
+          action={
+            !hasActiveFilters
+              ? { label: "New RFQ", href: `/projects/${projectSlug}/rfqs/new` }
+              : undefined
+          }
+        />
       )}
     </div>
   );
