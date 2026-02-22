@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-02-21)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.6 UX Redesign & Polish — Phase 42: Shared UI Primitives (plans 01 + 02 + 03 complete)
+**Current focus:** v1.6 UX Redesign & Polish — Phase 42: Shared UI Primitives (plans 01-05 complete)
 
 ## Current Position
 
 Phase: 42 of 46 (Shared UI Primitives)
-Plan: 04 complete
-Status: Phase 42 IN PROGRESS — Plans 01, 02, 03, 04 complete
-Last activity: 2026-02-22 — Phase 42 Plan 04 complete: ProjectsTable upgraded with sticky header + frozen Job# col + ChevronsUpDown + enableSortingRemoval; ChangeOrderList converted from card layout to TanStack Table with sticky header/footer + frozen CO# col + CurrencyDisplay
+Plan: 05 complete
+Status: Phase 42 IN PROGRESS — Plans 01-05 complete
+Last activity: 2026-02-21 — Phase 42 Plan 05 complete: Customers + Subcontractors TanStack sort; CommitmentList card-to-table conversion; CO line items sticky layout + CurrencyDisplay; EstimateLineItemsTable sticky header + frozen col + sticky footer with grand totals
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100% | v1.5: [██████████] 100% | v1.6: [██░░░░░░░░] 17%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 167 (138 through v1.4, +19 in v1.5, +6 in v1.6 Phase 41, +4 in v1.6 Phase 42)
+- Total plans completed: 168 (138 through v1.4, +19 in v1.5, +6 in v1.6 Phase 41, +5 in v1.6 Phase 42)
 - Average duration: ~4.3 min/plan
 - Total execution time: ~11.7 hours
 
@@ -72,6 +72,11 @@ Recent decisions relevant to v1.6:
 - [42-04]: No footer on ProjectsTable — user explicitly decided no footer needed for projects list
 - [42-04]: ChangeOrderList card-per-row layout fully replaced with TanStack Table — card layout cannot support frozen columns or tabular scanning
 - [42-04]: currencyFormatter (Intl.NumberFormat) removed from ChangeOrderList in favor of CurrencyDisplay component
+- [42-05]: CommitmentList card-per-row layout fully replaced with TanStack Table — card layout cannot support frozen columns or tabular scanning
+- [42-05]: CO line items table: no TanStack sort (no sort UX requirement); sticky layout only — same decision as SovEditor in 42-02
+- [42-05]: EstimateLineItemsTable: no TanStack sort — grouped section rendering via lineItemsByDivision is incompatible with getSortedRowModel data flow
+- [42-05]: grandTotalCost/grandTotalMargin computed from lineItems prop (not TanStack row model) to preserve correctness with grouped rendering
+- [42-05]: Footer colSpan math: GC/Advanced mode (colSpan=5); Simple mode omits CSI Code column (colSpan=4)
 
 ### Pending Todos
 
@@ -84,6 +89,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-22
-Stopped at: Phase 42 Plans 01 + 02 complete — StatusBadge consolidated (Plan 01), sticky tables + CurrencyDisplay (Plan 02). Next: Phase 42 Plan 03 (if exists) or Phase 43 planning.
+Last session: 2026-02-21
+Stopped at: Phase 42 Plan 05 complete — all 5 tables upgraded (customers, subcontractors, commitment-list, CO line items, EstimateLineItemsTable). Next: Phase 42 Plan 06 (if exists) or Phase 43 planning.
 Resume file: None
