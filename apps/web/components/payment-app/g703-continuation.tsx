@@ -4,11 +4,13 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
+import { CurrencyDisplay } from "@/components/shared/currency-display";
 
 interface G703LineItem {
   sovItemNumber: number;
@@ -29,12 +31,6 @@ interface G703ContinuationProps {
   editable?: boolean;
   onLineItemChange?: (index: number, field: "currentPercent" | "materialsStored", value: number) => void;
 }
-
-const currencyFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  minimumFractionDigits: 2,
-});
 
 export function G703Continuation({ lineItems, editable = false, onLineItemChange }: G703ContinuationProps) {
   const totals = lineItems.reduce(
@@ -57,12 +53,12 @@ export function G703Continuation({ lineItems, editable = false, onLineItemChange
   );
 
   return (
-    <div className="overflow-x-auto">
+    <div className="relative w-full overflow-auto max-h-[70vh] rounded-md border">
       <Table>
-        <TableHeader>
+        <TableHeader className="sticky top-0 z-20 bg-background">
           <TableRow>
-            <TableHead className="w-[60px]">Item</TableHead>
-            <TableHead className="min-w-[200px]">Description of Work</TableHead>
+            <TableHead className="w-[60px] sticky left-0 z-30 bg-background border-r">Item</TableHead>
+            <TableHead className="min-w-[200px] sticky left-[60px] z-30 bg-background border-r">Description of Work</TableHead>
             <TableHead className="w-[120px]">Scheduled Value</TableHead>
             <TableHead className="w-[100px]">From Previous (%)</TableHead>
             <TableHead className="w-[100px]">This Period (%)</TableHead>
@@ -79,10 +75,10 @@ export function G703Continuation({ lineItems, editable = false, onLineItemChange
             const hasError = item.currentPercent < item.previousPercent;
             return (
               <TableRow key={item.sovItemNumber} className={hasError ? "bg-muted" : ""}>
-                <TableCell className="font-mono">{item.sovItemNumber}</TableCell>
-                <TableCell>{item.sovDescription}</TableCell>
-                <TableCell className="font-mono">
-                  {currencyFormatter.format(item.scheduledValue)}
+                <TableCell className="font-mono sticky left-0 z-10 bg-background border-r">{item.sovItemNumber}</TableCell>
+                <TableCell className="sticky left-[60px] z-10 bg-background border-r">{item.sovDescription}</TableCell>
+                <TableCell className="text-right tabular-nums">
+                  <CurrencyDisplay amount={item.scheduledValue} />
                 </TableCell>
                 <TableCell className="text-center">
                   {item.previousPercent.toFixed(2)}%
@@ -104,10 +100,10 @@ export function G703Continuation({ lineItems, editable = false, onLineItemChange
                     <div className="text-center">{item.currentPercent.toFixed(2)}%</div>
                   )}
                 </TableCell>
-                <TableCell className="font-mono">
-                  {currencyFormatter.format(item.workThisPeriod)}
+                <TableCell className="text-right tabular-nums">
+                  <CurrencyDisplay amount={item.workThisPeriod} />
                 </TableCell>
-                <TableCell>
+                <TableCell className="text-right tabular-nums">
                   {editable ? (
                     <Input
                       type="number"
@@ -120,56 +116,58 @@ export function G703Continuation({ lineItems, editable = false, onLineItemChange
                       className="w-full"
                     />
                   ) : (
-                    <div className="font-mono">{currencyFormatter.format(item.materialsStored)}</div>
+                    <CurrencyDisplay amount={item.materialsStored} />
                   )}
                 </TableCell>
-                <TableCell className="font-mono">
-                  {currencyFormatter.format(item.totalCompleted)}
+                <TableCell className="text-right tabular-nums">
+                  <CurrencyDisplay amount={item.totalCompleted} />
                 </TableCell>
                 <TableCell className="text-center">
                   {item.currentPercent.toFixed(2)}%
                 </TableCell>
-                <TableCell className="font-mono">
+                <TableCell className="text-right tabular-nums">
                   {hasError ? (
                     <span className="text-financial-negative">
-                      {currencyFormatter.format(item.balanceToFinish)}
+                      <CurrencyDisplay amount={item.balanceToFinish} />
                     </span>
                   ) : (
-                    currencyFormatter.format(item.balanceToFinish)
+                    <CurrencyDisplay amount={item.balanceToFinish} />
                   )}
                 </TableCell>
-                <TableCell className="font-mono">
-                  {currencyFormatter.format(item.retainageAmount)}
+                <TableCell className="text-right tabular-nums">
+                  <CurrencyDisplay amount={item.retainageAmount} />
                 </TableCell>
               </TableRow>
             );
           })}
-          {/* Totals Row */}
-          <TableRow className="font-bold bg-muted/50">
-            <TableCell colSpan={2}>Totals</TableCell>
-            <TableCell className="font-mono">
-              {currencyFormatter.format(totals.scheduledValue)}
+        </TableBody>
+        <TableFooter className="sticky bottom-0 z-20 bg-muted/50">
+          <TableRow className="font-bold">
+            <TableCell className="sticky left-0 z-30 bg-muted/50 border-r">Totals</TableCell>
+            <TableCell className="sticky left-[60px] z-30 bg-muted/50 border-r" />
+            <TableCell className="text-right tabular-nums">
+              <CurrencyDisplay amount={totals.scheduledValue} />
             </TableCell>
-            <TableCell></TableCell>
-            <TableCell></TableCell>
-            <TableCell className="font-mono">
-              {currencyFormatter.format(totals.workThisPeriod)}
+            <TableCell />
+            <TableCell />
+            <TableCell className="text-right tabular-nums">
+              <CurrencyDisplay amount={totals.workThisPeriod} />
             </TableCell>
-            <TableCell className="font-mono">
-              {currencyFormatter.format(totals.materialsStored)}
+            <TableCell className="text-right tabular-nums">
+              <CurrencyDisplay amount={totals.materialsStored} />
             </TableCell>
-            <TableCell className="font-mono">
-              {currencyFormatter.format(totals.totalCompleted)}
+            <TableCell className="text-right tabular-nums">
+              <CurrencyDisplay amount={totals.totalCompleted} />
             </TableCell>
-            <TableCell></TableCell>
-            <TableCell className="font-mono">
-              {currencyFormatter.format(totals.balanceToFinish)}
+            <TableCell />
+            <TableCell className="text-right tabular-nums">
+              <CurrencyDisplay amount={totals.balanceToFinish} />
             </TableCell>
-            <TableCell className="font-mono">
-              {currencyFormatter.format(totals.retainageAmount)}
+            <TableCell className="text-right tabular-nums">
+              <CurrencyDisplay amount={totals.retainageAmount} />
             </TableCell>
           </TableRow>
-        </TableBody>
+        </TableFooter>
       </Table>
     </div>
   );
