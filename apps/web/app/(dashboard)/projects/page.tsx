@@ -43,6 +43,16 @@ export default function ProjectsPage() {
   const { data: customersData } = trpc.customer.list.useQuery({ limit: 100, offset: 0 });
   const { data: usersData } = trpc.user.list.useQuery({ limit: 100, offset: 0 });
 
+  // Compute isFiltered — any secondary filter or search active
+  const isFiltered = !!(
+    filters.search ||
+    filters.customer ||
+    filters.status ||
+    filters.assignedUser ||
+    filters.startDateFrom ||
+    filters.startDateTo
+  );
+
   // Handle page change
   const handlePageChange = (newPage: number) => {
     setFilters({ page: newPage });
@@ -84,6 +94,7 @@ export default function ProjectsPage() {
         onPageChange={handlePageChange}
         isAdmin={isAdmin}
         onDelete={handleProjectDeleted}
+        isFiltered={isFiltered}
       />
     </div>
   );

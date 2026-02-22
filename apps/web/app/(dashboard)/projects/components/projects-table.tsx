@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
 import {
   useReactTable,
   getCoreRowModel,
@@ -20,9 +19,12 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronDown, ChevronUp, ChevronsUpDown, Plus } from "lucide-react";
+import { ChevronDown, ChevronUp, ChevronsUpDown, FolderOpen, SearchX } from "lucide-react";
 import { createColumns } from "./columns";
 import { cn } from "@/lib/utils";
+import { useColumnVisibility } from "@/hooks/use-column-visibility";
+import { ColumnPicker } from "@/components/shared/column-picker";
+import { EmptyState } from "@/components/shared/empty-state";
 
 interface Project {
   id: string;
@@ -43,6 +45,8 @@ interface ProjectsTableProps {
   pageSize: number;
   isAdmin: boolean;
   onDelete: (projectId: string) => void;
+  /** True when any filter or search is active — selects EmptyState variant */
+  isFiltered: boolean;
 }
 
 export function ProjectsTable({
@@ -54,8 +58,10 @@ export function ProjectsTable({
   pageSize,
   isAdmin,
   onDelete,
+  isFiltered,
 }: ProjectsTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
+  const { columnVisibility, onColumnVisibilityChange } = useColumnVisibility("projects-list");
 
   // Wrap data in useMemo to prevent infinite re-renders
   const memoizedData = React.useMemo(() => data, [data]);
@@ -71,8 +77,10 @@ export function ProjectsTable({
     columns: columns as ColumnDef<Project>[],
     state: {
       sorting,
+      columnVisibility,
     },
     onSortingChange: setSorting,
+    onColumnVisibilityChange,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     enableSortingRemoval: false,
@@ -117,32 +125,24 @@ export function ProjectsTable({
 
   if (data.length === 0) {
     return (
-      <div className="rounded-md border p-12">
-        <div className="flex flex-col items-center justify-center text-center space-y-3">
-          <div className="rounded-full bg-muted p-3">
-            <Plus className="h-6 w-6 text-muted-foreground" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-lg">No projects found</h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              {total === 0
-                ? "Create your first project to get started"
-                : "Try adjusting your filters to find projects"}
-            </p>
-          </div>
-          <Button asChild>
-            <Link href="/projects/new">
-              <Plus className="mr-2 h-4 w-4" />
-              Create Project
-            </Link>
-          </Button>
-        </div>
-      </div>
+      <EmptyState
+        icon={isFiltered ? SearchX : FolderOpen}
+        heading={isFiltered ? "No projects match your filters" : "No projects yet"}
+        description={
+          isFiltered
+            ? "Try adjusting your search or filter criteria."
+            : "Create your first project to get started."
+        }
+        action={!isFiltered ? { label: "Create Project", href: "/projects/new" } : undefined}
+      />
     );
   }
 
   return (
     <div className="space-y-4">
+      <div className="flex justify-end">
+        <ColumnPicker table={table} />
+      </div>
       <div className="rounded-md border relative w-full overflow-auto max-h-[70vh]">
         <Table>
           <TableHeader className="sticky top-0 z-20 bg-background">
