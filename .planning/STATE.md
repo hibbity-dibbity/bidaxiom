@@ -80,6 +80,9 @@ Recent decisions relevant to v1.6:
 - [43-01]: FilterChip interface exported from filter-chips.tsx so caller components can import the type without re-declaring it
 - [43-01]: ColumnPicker returns null when no hideable columns — safe to render in any context
 - [43-01]: storageKey uses col-picker:{tableKey} prefix to prevent cross-table localStorage key collision
+- [43-04]: Search input not chipped on Projects/Subcontractors — search box is the UI representation; only secondary filter dimensions (status, customer, assignedUser, dates, trade) become chips
+- [43-04]: Customers page has no FilterChips — only a search filter, no secondary filter dimensions to chip
+- [43-04]: HardHat replaces Building2 as domain icon for Subcontractors EmptyState — more domain-specific
 - [43-05]: EstimatesPage search bar shown conditionally (only when estimates.length > 0) — avoids rendering search on a genuinely-empty page that already shows EmptyState
 - [43-05]: RFQs filteredRfqs derivation converted from ternary to useMemo with multi-condition filter — enables debouncedSearch without duplicating filter logic
 - [43-05]: RFQs ChevronLeft back-to-project button removed — redundant with sidebar navigation
