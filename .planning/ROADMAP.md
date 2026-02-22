@@ -164,8 +164,8 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. All financial tables rendered by the updated `table.tsx` display a sticky frozen header row that stays visible during vertical scroll — achieved without Radix ScrollArea.
   2. Wide financial tables (budget, SOV) freeze their first column so that the cost code or description remains visible when the user scrolls horizontally.
-  3. All financial amount columns are right-aligned with tabular-nums font variant and `$` prefix; `CurrencyDisplay` is used for read-only cells and `react-number-format` for edit inputs throughout.
-  4. Clicking any financial table column header cycles through ascending, descending, and unsorted states with a visible chevron indicator at each state.
+  3. All financial amount columns are right-aligned with tabular-nums font variant and `$` prefix; `CurrencyDisplay` is used for read-only cells throughout.
+  4. Clicking any financial table column header cycles between ascending and descending sort states (2-state cycle, `enableSortingRemoval: false`) with a dual-chevron (`ChevronsUpDown`) indicator for the unsorted state and a directional chevron for the active sort state.
   5. All financial tables display a sticky summary footer row at the bottom of the scrollable area showing column totals or key aggregates.
   6. The duplicate `estimates/lifecycle/StatusBadge.tsx` component is deleted and every one of its former call sites uses `components/shared/status-badge.tsx` instead.
   7. Status badges across all surfaces (projects, change orders, estimates, payment applications, documents, RFQs) render using the 4-tier semantic model: gray for draft/inactive, amber for pending/review, green for approved/active/complete, red for rejected/void.
