@@ -42,6 +42,8 @@ import { CSI_DIVISIONS } from "@construction/shared";
 import { Lock, Unlock, Pencil, Trash2, Plus, ChevronsUpDown, ChevronUp, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { CurrencyDisplay } from "@/components/shared/currency-display";
+import { useColumnVisibility } from "@/hooks/use-column-visibility";
+import { ColumnPicker } from "@/components/shared/column-picker";
 
 interface BudgetLineItemTableProps {
   projectId: string;
@@ -57,6 +59,7 @@ export function BudgetLineItemTable({ projectId }: BudgetLineItemTableProps) {
     budgetedAmount: 0,
   });
   const [sorting, setSorting] = useState<SortingState>([]);
+  const { columnVisibility, onColumnVisibilityChange } = useColumnVisibility("budget-line-items");
 
   const utils = trpc.useUtils();
   const { data: lineItems, isLoading } = trpc.budget.listLineItems.useQuery({
@@ -152,6 +155,7 @@ export function BudgetLineItemTable({ projectId }: BudgetLineItemTableProps) {
         accessorFn: (row) => getDivisionName(row.costCodeId),
         header: "Cost Code",
         enableSorting: true,
+        enableHiding: false,
       },
       {
         accessorKey: "description",
@@ -171,7 +175,7 @@ export function BudgetLineItemTable({ projectId }: BudgetLineItemTableProps) {
       },
       {
         id: "actions",
-        header: "",
+        header: "Actions",
         enableSorting: false,
       },
     ],
@@ -182,8 +186,9 @@ export function BudgetLineItemTable({ projectId }: BudgetLineItemTableProps) {
   const table = useReactTable({
     data: lineItems ?? [],
     columns,
-    state: { sorting },
+    state: { sorting, columnVisibility },
     onSortingChange: setSorting,
+    onColumnVisibilityChange,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     enableSortingRemoval: false,
@@ -202,86 +207,89 @@ export function BudgetLineItemTable({ projectId }: BudgetLineItemTableProps) {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Budget Line Items</h3>
-        <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Line Item
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add Budget Line Item</DialogTitle>
-              <DialogDescription>
-                Create a new budget line item for this project
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="costCode">Cost Code</Label>
-                <Select
-                  value={formData.costCodeId}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, costCodeId: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select cost code" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CSI_DIVISIONS.map((division) => (
-                      <SelectItem
-                        key={division.division}
-                        value={division.division.toString()}
-                      >
-                        Div {division.division}: {division.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+        <div className="flex items-center gap-2">
+          <ColumnPicker table={table} />
+          <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Line Item
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add Budget Line Item</DialogTitle>
+                <DialogDescription>
+                  Create a new budget line item for this project
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="costCode">Cost Code</Label>
+                  <Select
+                    value={formData.costCodeId}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, costCodeId: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select cost code" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CSI_DIVISIONS.map((division) => (
+                        <SelectItem
+                          key={division.division}
+                          value={division.division.toString()}
+                        >
+                          Div {division.division}: {division.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Input
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
+                    placeholder="Enter description"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="budgetedAmount">Budgeted Amount</Label>
+                  <CurrencyInput
+                    id="budgetedAmount"
+                    value={formData.budgetedAmount}
+                    onChange={(n) => setFormData({ ...formData, budgetedAmount: n })}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setAddDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleAdd}
+                    disabled={
+                      !formData.costCodeId ||
+                      !formData.description ||
+                      !formData.budgetedAmount ||
+                      createMutation.isPending
+                    }
+                  >
+                    {createMutation.isPending ? "Creating..." : "Create"}
+                  </Button>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Input
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  placeholder="Enter description"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="budgetedAmount">Budgeted Amount</Label>
-                <CurrencyInput
-                  id="budgetedAmount"
-                  value={formData.budgetedAmount}
-                  onChange={(n) => setFormData({ ...formData, budgetedAmount: n })}
-                  placeholder="0.00"
-                />
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setAddDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleAdd}
-                  disabled={
-                    !formData.costCodeId ||
-                    !formData.description ||
-                    !formData.budgetedAmount ||
-                    createMutation.isPending
-                  }
-                >
-                  {createMutation.isPending ? "Creating..." : "Create"}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {!lineItems || lineItems.length === 0 ? (
@@ -346,37 +354,45 @@ export function BudgetLineItemTable({ projectId }: BudgetLineItemTableProps) {
                     <TableCell className="sticky left-0 z-10 bg-background font-medium border-r">
                       {getDivisionName(item.costCodeId)}
                     </TableCell>
-                    <TableCell>{item.description}</TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      <CurrencyDisplay amount={Number(item.budgetedAmount)} />
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {item.isLocked ? (
-                        <Lock className="h-4 w-4 text-financial-negative mx-auto" />
-                      ) : (
-                        <Unlock className="h-4 w-4 text-financial-positive mx-auto" />
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEditDialog(item)}
-                          disabled={item.isLocked}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(item.id, item.isLocked)}
-                          disabled={item.isLocked}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+                    {table.getColumn("description")?.getIsVisible() && (
+                      <TableCell>{item.description}</TableCell>
+                    )}
+                    {table.getColumn("budgetedAmount")?.getIsVisible() && (
+                      <TableCell className="text-right tabular-nums">
+                        <CurrencyDisplay amount={Number(item.budgetedAmount)} />
+                      </TableCell>
+                    )}
+                    {table.getColumn("status")?.getIsVisible() && (
+                      <TableCell className="text-center">
+                        {item.isLocked ? (
+                          <Lock className="h-4 w-4 text-financial-negative mx-auto" />
+                        ) : (
+                          <Unlock className="h-4 w-4 text-financial-positive mx-auto" />
+                        )}
+                      </TableCell>
+                    )}
+                    {table.getColumn("actions")?.getIsVisible() && (
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEditDialog(item)}
+                            disabled={item.isLocked}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(item.id, item.isLocked)}
+                            disabled={item.isLocked}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 );
               })}
@@ -386,17 +402,25 @@ export function BudgetLineItemTable({ projectId }: BudgetLineItemTableProps) {
                 <TableCell className="sticky left-0 z-30 bg-muted/50 font-bold border-r">
                   Totals
                 </TableCell>
-                <TableCell />
-                <TableCell className="text-right tabular-nums font-bold">
-                  <CurrencyDisplay
-                    amount={lineItems.reduce(
-                      (sum, item) => sum + Number(item.budgetedAmount),
-                      0
-                    )}
-                  />
-                </TableCell>
-                <TableCell />
-                <TableCell />
+                {table.getColumn("description")?.getIsVisible() && (
+                  <TableCell />
+                )}
+                {table.getColumn("budgetedAmount")?.getIsVisible() && (
+                  <TableCell className="text-right tabular-nums font-bold">
+                    <CurrencyDisplay
+                      amount={lineItems.reduce(
+                        (sum, item) => sum + Number(item.budgetedAmount),
+                        0
+                      )}
+                    />
+                  </TableCell>
+                )}
+                {table.getColumn("status")?.getIsVisible() && (
+                  <TableCell />
+                )}
+                {table.getColumn("actions")?.getIsVisible() && (
+                  <TableCell />
+                )}
               </TableRow>
             </TableFooter>
           </Table>

@@ -43,6 +43,7 @@ export function createColumns(
       accessorKey: "jobNumber",
       header: "Job #",
       size: 100,
+      enableHiding: false,
       cell: ({ row }) => {
         const jobNumber = row.getValue("jobNumber") as string | null;
         return (
