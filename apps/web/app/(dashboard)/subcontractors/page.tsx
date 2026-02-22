@@ -31,9 +31,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Building2, ChevronsUpDown, ChevronUp, ChevronDown } from "lucide-react";
+import { Plus, ChevronsUpDown, ChevronUp, ChevronDown, HardHat, SearchX } from "lucide-react";
 import { CSI_DIVISIONS } from "@/lib/csi-divisions";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { EmptyState } from "@/components/shared/empty-state";
+import { FilterChips, type FilterChip } from "@/components/shared/filter-chips";
 import type { SubcontractorStatus } from "@construction/shared";
 
 export default function SubcontractorsPage() {
@@ -137,6 +139,28 @@ export default function SubcontractorsPage() {
     enableSortingRemoval: false,
   });
 
+  // Derive filter chips from active secondary filter values
+  const activeChips: FilterChip[] = [
+    ...(statusFilter !== "all"
+      ? [{
+          label: `Status: ${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}`,
+          onRemove: () => setStatusFilter("all"),
+        }]
+      : []),
+    ...(tradeFilter !== null
+      ? [{
+          label: `Trade: ${CSI_DIVISIONS.find((d) => d.number === tradeFilter)?.name ?? tradeFilter}`,
+          onRemove: () => setTradeFilter(null),
+        }]
+      : []),
+  ];
+
+  const clearAllFilters = () => {
+    setSearch("");
+    setStatusFilter("all");
+    setTradeFilter(null);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -193,6 +217,7 @@ export default function SubcontractorsPage() {
               <TabsTrigger value="blacklisted">Blacklisted</TabsTrigger>
             </TabsList>
           </Tabs>
+          <FilterChips chips={activeChips} onClearAll={clearAllFilters} />
         </CardContent>
       </Card>
 
@@ -277,23 +302,24 @@ export default function SubcontractorsPage() {
           </div>
         </Card>
       ) : (
-        <Card className="p-12">
-          <div className="flex flex-col items-center justify-center text-center space-y-3">
-            <div className="rounded-full bg-muted p-3">
-              <Building2 className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-lg">No subcontractors found</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Add your first subcontractor to start building your directory
-              </p>
-            </div>
-            <Button onClick={() => router.push("/subcontractors/new")}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Subcontractor
-            </Button>
-          </div>
-        </Card>
+        <EmptyState
+          icon={search || tradeFilter !== null || statusFilter !== "all" ? SearchX : HardHat}
+          heading={
+            search || tradeFilter !== null || statusFilter !== "all"
+              ? "No subcontractors match your filters"
+              : "No subcontractors yet"
+          }
+          description={
+            search || tradeFilter !== null || statusFilter !== "all"
+              ? "Try adjusting your search or filter criteria."
+              : "Add your first subcontractor to start building your directory."
+          }
+          action={
+            !(search || tradeFilter !== null || statusFilter !== "all")
+              ? { label: "Add Subcontractor", href: "/subcontractors/new" }
+              : undefined
+          }
+        />
       )}
     </div>
   );

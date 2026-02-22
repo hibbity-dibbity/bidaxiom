@@ -14,7 +14,7 @@ import {
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -43,8 +43,9 @@ import {
 } from "@/components/ui/form";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { AddressInput } from "@/components/ui/address-input";
-import { Plus, Edit, Trash2, Building2, User, Mail, Phone, MapPin, ChevronsUpDown, ChevronUp, ChevronDown } from "lucide-react";
+import { Plus, Edit, Trash2, Building2, User, Mail, Phone, MapPin, ChevronsUpDown, ChevronUp, ChevronDown, Search, SearchX } from "lucide-react";
 import { toast } from "sonner";
+import { EmptyState } from "@/components/shared/empty-state";
 import { createCustomerSchema } from "@construction/shared";
 import type { Customer } from "@construction/shared";
 import type { z } from "zod";
@@ -267,17 +268,16 @@ export default function CustomersPage() {
         </Button>
       </div>
 
-      {/* Search */}
-      <Card>
-        <CardContent className="pt-6">
-          <Input
-            placeholder="Search customers by name, company, or email..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="max-w-md"
-          />
-        </CardContent>
-      </Card>
+      {/* Search — inline above table, not wrapped in Card */}
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search customers by name, company, or email..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-9"
+        />
+      </div>
 
       {/* Customers Table */}
       {isLoading ? (
@@ -402,23 +402,16 @@ export default function CustomersPage() {
           </div>
         </Card>
       ) : (
-        <Card className="p-12">
-          <div className="flex flex-col items-center justify-center text-center space-y-3">
-            <div className="rounded-full bg-muted p-3">
-              <Building2 className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-lg">No customers yet</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Add your first customer to get started
-              </p>
-            </div>
-            <Button onClick={handleAdd}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Customer
-            </Button>
-          </div>
-        </Card>
+        <EmptyState
+          icon={search ? SearchX : Building2}
+          heading={search ? "No customers match your search" : "No customers yet"}
+          description={
+            search
+              ? "Try a different search term."
+              : "Add your first customer to get started."
+          }
+          action={!search ? { label: "Add Customer", onClick: handleAdd } : undefined}
+        />
       )}
 
       {/* Add Customer Dialog */}
