@@ -10,7 +10,7 @@ const statusBadgeVariants = cva(
       variant: {
         draft: "bg-muted text-muted-foreground",
         pending: "bg-muted text-financial-pending",
-        active: "bg-primary/10 text-primary",
+        active: "bg-muted text-financial-positive",
         approved: "bg-muted text-financial-positive",
         completed: "bg-muted text-financial-positive",
         rejected: "bg-muted text-financial-negative",
@@ -34,28 +34,22 @@ export interface StatusBadgeProps
 /**
  * StatusBadge - Shared status indicator component with controlled CVA variants.
  *
- * Design System Pattern:
- * - Single variant dimension with 9 semantic options
- * - Consistent color mapping across application
- * - Light/dark mode support built-in
+ * Design System Pattern — 4-tier semantic color model:
+ * - GRAY tier  (draft, cancelled): bg-muted text-muted-foreground
+ *   Use for: draft/inactive/archived/closed states
+ * - AMBER tier (pending, warning): bg-muted text-financial-pending
+ *   Use for: submitted/under review/pending action states
+ * - GREEN tier (active, approved, completed): bg-muted text-financial-positive
+ *   Use for: active/approved/paid/won/complete states
+ * - RED tier   (rejected, error): bg-muted text-financial-negative
+ *   Use for: rejected/void/lost states
  *
  * Usage:
  * ```tsx
  * <StatusBadge variant="approved">Approved</StatusBadge>
- * <StatusBadge variant="warning">Pending Review</StatusBadge>
- * <StatusBadge variant="error">Rejected</StatusBadge>
+ * <StatusBadge variant="pending">Under Review</StatusBadge>
+ * <StatusBadge variant="rejected">Rejected</StatusBadge>
  * ```
- *
- * Variant Semantics:
- * - draft: Gray - Initial state, not yet submitted
- * - pending: Blue - Awaiting action or review
- * - active: Green - Currently in progress or operational
- * - approved: Green - Officially approved or accepted
- * - completed: Green - Finished successfully
- * - rejected: Red - Denied or declined
- * - cancelled: Gray - Cancelled or voided
- * - warning: Yellow - Requires attention
- * - error: Red - Error state or critical issue
  */
 export function StatusBadge({ className, variant, children, ...props }: StatusBadgeProps) {
   return (
