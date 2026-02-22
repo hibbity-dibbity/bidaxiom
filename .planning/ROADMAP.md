@@ -169,13 +169,14 @@ Plans:
   5. All financial tables display a sticky summary footer row at the bottom of the scrollable area showing column totals or key aggregates.
   6. The duplicate `estimates/lifecycle/StatusBadge.tsx` component is deleted and every one of its former call sites uses `components/shared/status-badge.tsx` instead.
   7. Status badges across all surfaces (projects, change orders, estimates, payment applications, documents, RFQs) render using the 4-tier semantic model: gray for draft/inactive, amber for pending/review, green for approved/active/complete, red for rejected/void.
-**Plans**: 4 plans
+**Plans**: 5 plans
 
 Plans:
 - [ ] 42-01-PLAN.md — Status badge consolidation: active variant → green, delete lifecycle/StatusBadge, update estimate detail page
 - [ ] 42-02-PLAN.md — Budget + SOV tables: TanStack sort + sticky header/footer + frozen first col + CurrencyDisplay
 - [ ] 42-03-PLAN.md — G703 + PaymentAppList: sticky header/footer + frozen col + TanStack sort (PaymentAppList) + CurrencyDisplay
 - [ ] 42-04-PLAN.md — ProjectsTable + ChangeOrderList: sticky + frozen col + footer + fix sort icons + card-to-table conversion
+- [ ] 42-05-PLAN.md — Customers + Subcontractors + CommitmentList + CO line items + EstimateLineItemsTable: sticky/frozen/sort for remaining tables
 
 ### Phase 43: Budget Domain Redesign
 **Goal**: The budget domain surfaces — line item table, summary cards, and list views — are redesigned to Procore-level density with column picker, inline row addition, filter chips, and consistent empty states, establishing the domain redesign pattern that change order and payment app phases will replicate.
@@ -236,7 +237,7 @@ Plans:
 | 30-35 (v1.4) | 16/16 | Complete | 2026-02-18 |
 | 36-40 (v1.5) | 23/23 | Complete | 2026-02-21 |
 | 41. Design Foundation | 6/6 | Complete | 2026-02-21 |
-| 42. Shared UI Primitives | 0/4 | Not started | - |
+| 42. Shared UI Primitives | 0/5 | Not started | - |
 | 43. Budget Domain Redesign | 0/TBD | Not started | - |
 | 44. Change Order and Payment App Redesign | 0/TBD | Not started | - |
 | 45. Estimates Redesign | 0/TBD | Not started | - |
