@@ -1,12 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  useReactTable,
+  getCoreRowModel,
+  getSortedRowModel,
+  flexRender,
+  type SortingState,
+} from "@tanstack/react-table";
 import { trpc } from "@/lib/trpc";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { CurrencyDisplay } from "@/components/shared/currency-display";
 import {
   Select,
   SelectContent,
@@ -14,19 +21,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, FilePlus } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { ChevronsUpDown, ChevronUp, ChevronDown, Plus, FilePlus } from "lucide-react";
 import type { ChangeOrderStatus, ChangeOrderType } from "@construction/shared";
 
 interface ChangeOrderListProps {
   projectId: string;        // For tRPC queries
   projectSlug: string;      // For navigation
 }
-
-const currencyFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  minimumFractionDigits: 0,
-});
 
 const statusVariantMap: Record<ChangeOrderStatus, "draft" | "pending" | "approved" | "rejected" | "cancelled" | "warning"> = {
   draft: "draft",
@@ -53,6 +63,7 @@ export function ChangeOrderList({ projectId, projectSlug }: ChangeOrderListProps
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [sorting, setSorting] = React.useState<SortingState>([]);
 
   const { data: changeOrders, isLoading } = trpc.changeOrder.list.useQuery({
     projectId,
@@ -73,6 +84,51 @@ export function ChangeOrderList({ projectId, projectSlug }: ChangeOrderListProps
     if (co.pcoNumber) return co.pcoNumber;
     return "Draft";
   };
+
+  const columns = React.useMemo(() => [
+    {
+      id: "coNumber",
+      accessorFn: (row: any) => getChangeOrderNumber(row),
+      header: "CO #",
+      enableSorting: true,
+    },
+    {
+      accessorKey: "title",
+      header: "Title",
+      enableSorting: true,
+    },
+    {
+      id: "type",
+      header: "Type",
+      enableSorting: false,
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      enableSorting: true,
+    },
+    {
+      accessorKey: "totalAmount",
+      header: "Amount",
+      enableSorting: true,
+      sortingFn: "basic" as const,
+    },
+    {
+      accessorKey: "createdAt",
+      header: "Date",
+      enableSorting: true,
+    },
+  ], []);
+
+  const table = useReactTable({
+    data: changeOrders ?? [],
+    columns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    enableSortingRemoval: false,
+  });
 
   if (isLoading) {
     return (
@@ -147,43 +203,95 @@ export function ChangeOrderList({ projectId, projectSlug }: ChangeOrderListProps
           </div>
         )
       ) : (
-        <div className="space-y-3">
-          {changeOrders.map((co) => (
-            <Card
-              key={co.id}
-              className="cursor-pointer hover:bg-muted/50 transition-colors"
-              onClick={() => handleNavigateToDetail(co.id)}
-            >
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <StatusBadge variant={statusVariantMap[co.status as ChangeOrderStatus]}>
-                        {co.status.replace(/_/g, " ")}
-                      </StatusBadge>
-                      <Badge className={typeColors[co.type as ChangeOrderType]}>
-                        {typeLabels[co.type as ChangeOrderType]}
-                      </Badge>
-                      <span className="text-sm font-semibold text-muted-foreground">
-                        {getChangeOrderNumber(co)}
-                      </span>
-                    </div>
-                    <CardTitle className="text-lg">
-                      {co.title.length > 60 ? `${co.title.substring(0, 60)}...` : co.title}
-                    </CardTitle>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold">
-                      {currencyFormatter.format(Number(co.totalAmount))}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {new Date(co.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
-          ))}
+        <div className="border rounded-md relative w-full overflow-auto max-h-[70vh]">
+          <Table>
+            <TableHeader className="sticky top-0 z-20 bg-background">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header, index) => {
+                    const canSort = header.column.getCanSort();
+                    const isSorted = header.column.getIsSorted();
+                    return (
+                      <TableHead
+                        key={header.id}
+                        className={index === 0 ? "sticky left-0 z-30 bg-background min-w-[80px] border-r" : undefined}
+                      >
+                        {header.isPlaceholder ? null : (
+                          <div
+                            className={canSort ? "flex items-center gap-1.5 cursor-pointer select-none hover:text-foreground" : undefined}
+                            onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
+                          >
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                            {canSort && (
+                              <span className="text-muted-foreground">
+                                {isSorted === "asc" ? (
+                                  <ChevronUp className="h-3.5 w-3.5" />
+                                ) : isSorted === "desc" ? (
+                                  <ChevronDown className="h-3.5 w-3.5" />
+                                ) : (
+                                  <ChevronsUpDown className="h-3.5 w-3.5 opacity-40" />
+                                )}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </TableHead>
+                    );
+                  })}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => handleNavigateToDetail(row.original.id)}
+                >
+                  {/* CO # — frozen first column */}
+                  <TableCell className="sticky left-0 z-10 bg-background font-mono border-r">
+                    {getChangeOrderNumber(row.original)}
+                  </TableCell>
+                  {/* Title */}
+                  <TableCell className="max-w-[300px]">
+                    <span className="text-sm font-medium line-clamp-1">{row.original.title}</span>
+                  </TableCell>
+                  {/* Type */}
+                  <TableCell>
+                    <Badge className={typeColors[row.original.type as ChangeOrderType]}>
+                      {typeLabels[row.original.type as ChangeOrderType]}
+                    </Badge>
+                  </TableCell>
+                  {/* Status */}
+                  <TableCell>
+                    <StatusBadge variant={statusVariantMap[row.original.status as ChangeOrderStatus]}>
+                      {row.original.status.replace(/_/g, " ")}
+                    </StatusBadge>
+                  </TableCell>
+                  {/* Amount */}
+                  <TableCell className="text-right tabular-nums font-semibold">
+                    <CurrencyDisplay amount={Number(row.original.totalAmount)} />
+                  </TableCell>
+                  {/* Date */}
+                  <TableCell className="text-sm text-muted-foreground">
+                    {new Date(row.original.createdAt).toLocaleDateString()}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+            <TableFooter className="sticky bottom-0 z-20 bg-muted/50">
+              <TableRow>
+                <TableCell className="sticky left-0 z-30 bg-muted/50 font-bold border-r">Totals</TableCell>
+                <TableCell colSpan={3} />
+                <TableCell className="text-right tabular-nums font-bold">
+                  <CurrencyDisplay
+                    amount={table.getRowModel().rows.reduce((sum, row) => sum + Number(row.original.totalAmount), 0)}
+                  />
+                </TableCell>
+                <TableCell />
+              </TableRow>
+            </TableFooter>
+          </Table>
         </div>
       )}
     </div>
