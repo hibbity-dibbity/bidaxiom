@@ -126,7 +126,7 @@ Barrel exports break tree-shaking and inflate bundles.
 // RFQ status (apps/web/components/bidding/rfq-status-badge.tsx)
 <span className="bg-blue-100 text-blue-800 px-2 py-1">Issued</span>
 
-// Estimate status (apps/web/components/estimates/lifecycle/StatusBadge.tsx)
+// Estimate status (deleted — was apps/web/components/estimates/lifecycle/StatusBadge.tsx)
 <span className="bg-green-100 text-green-800 px-2 py-1">Accepted</span>
 
 // Integration status (apps/web/components/integrations/qbo-sync-status.tsx)

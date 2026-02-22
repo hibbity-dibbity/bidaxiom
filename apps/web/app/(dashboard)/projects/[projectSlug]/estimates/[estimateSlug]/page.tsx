@@ -5,12 +5,27 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { StatusBadge } from "@/components/estimates/lifecycle/StatusBadge";
+import { StatusBadge } from "@/components/shared/status-badge";
+import type { EstimateStatus } from "@construction/shared";
 import { NextStepsPanel } from "@/components/estimates/lifecycle/NextStepsPanel";
 import { formatCurrency } from "@construction/shared";
 import { format } from "date-fns";
 import { ArrowLeft, Edit, FileText, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+
+const estimateVariantMap: Record<EstimateStatus, "draft" | "pending" | "approved" | "active"> = {
+  draft: "draft",
+  submitted: "pending",
+  accepted: "approved",
+  under_contract: "active",
+};
+
+const estimateLabelMap: Record<EstimateStatus, string> = {
+  draft: "Draft",
+  submitted: "Submitted",
+  accepted: "Accepted",
+  under_contract: "Under Contract",
+};
 
 export default function EstimateDetailPage({
   params,
@@ -114,7 +129,9 @@ export default function EstimateDetailPage({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <CardTitle className="text-2xl">{estimate.name}</CardTitle>
-              <StatusBadge status={estimate.status} />
+              <StatusBadge variant={estimateVariantMap[estimate.status as EstimateStatus]}>
+                {estimateLabelMap[estimate.status as EstimateStatus]}
+              </StatusBadge>
             </div>
           </div>
         </CardHeader>
