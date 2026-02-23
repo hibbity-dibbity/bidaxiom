@@ -37,6 +37,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Check, CreditCard } from "lucide-react";
 
 interface PaymentAppListProps {
   projectId: string;        // For tRPC queries
@@ -60,10 +71,33 @@ export function PaymentAppList({ projectId, projectSlug }: PaymentAppListProps) 
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [searchInput, setSearchInput] = useState("");
   const debouncedSearch = useDebounce(searchInput, 300);
+  const [pendingActionId, setPendingActionId] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<"approve" | "markPaid" | null>(null);
+  const [actionComments, setActionComments] = useState("");
 
   const { data: paymentApps, isLoading } = trpc.paymentApp.list.useQuery({
     projectId,
     status: statusFilter === "all" ? undefined : statusFilter,
+  });
+
+  const utils = trpc.useUtils();
+
+  const approveMutation = trpc.paymentApp.approve.useMutation({
+    onSuccess: () => {
+      utils.paymentApp.list.invalidate({ projectId });
+      setPendingActionId(null);
+      setPendingAction(null);
+      setActionComments("");
+    },
+  });
+
+  const markPaidMutation = trpc.paymentApp.markPaid.useMutation({
+    onSuccess: () => {
+      utils.paymentApp.list.invalidate({ projectId });
+      setPendingActionId(null);
+      setPendingAction(null);
+      setActionComments("");
+    },
   });
 
   const { data: summary } = trpc.paymentApp.getSummary.useQuery({ projectId });
@@ -142,6 +176,17 @@ export function PaymentAppList({ projectId, projectSlug }: PaymentAppListProps) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [table.getRowModel().rows]
   );
+
+  const handleConfirm = () => {
+    if (!pendingActionId || !pendingAction) return;
+    if (pendingAction === "approve") {
+      approveMutation.mutate({ paymentAppId: pendingActionId, comments: actionComments || undefined });
+    } else {
+      markPaidMutation.mutate({ paymentAppId: pendingActionId });
+    }
+  };
+
+  const isMutating = approveMutation.isPending || markPaidMutation.isPending;
 
   const exportCsv = () => {
     const rows = table.getRowModel().rows;
@@ -400,12 +445,50 @@ export function PaymentAppList({ projectId, projectSlug }: PaymentAppListProps) 
                           {row.original.status.replace("_", " ")}
                         </StatusBadge>
                       </TableCell>
-                      <TableCell>
-                        <Button variant="outline" size="sm" asChild>
-                          <Link href={`/projects/${projectSlug}/payment-apps/${row.original.id}`}>
-                            View
-                          </Link>
-                        </Button>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-1">
+                          {/* Approve: submitted or under_review AND canCurrentUserApprove */}
+                          {(row.original.status === "submitted" || row.original.status === "under_review") &&
+                            (row.original as any).canCurrentUserApprove && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 px-2 text-financial-positive hover:text-financial-positive hover:bg-financial-positive/10"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPendingActionId(row.original.id);
+                                  setPendingAction("approve");
+                                  setActionComments("");
+                                }}
+                              >
+                                <Check className="h-3.5 w-3.5 mr-1" />
+                                Approve
+                              </Button>
+                            )}
+                          {/* Mark Paid: approved status, any user */}
+                          {row.original.status === "approved" && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 px-2 text-primary hover:text-primary hover:bg-primary/10"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPendingActionId(row.original.id);
+                                setPendingAction("markPaid");
+                                setActionComments("");
+                              }}
+                            >
+                              <CreditCard className="h-3.5 w-3.5 mr-1" />
+                              Mark Paid
+                            </Button>
+                          )}
+                          {/* Always show View link */}
+                          <Button variant="outline" size="sm" asChild>
+                            <Link href={`/projects/${projectSlug}/payment-apps/${row.original.id}`}>
+                              View
+                            </Link>
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -447,6 +530,65 @@ export function PaymentAppList({ projectId, projectSlug }: PaymentAppListProps) 
           }
         />
       )}
+
+      <Dialog
+        open={!!pendingActionId}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingActionId(null);
+            setPendingAction(null);
+            setActionComments("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {pendingAction === "approve" ? "Approve Payment Application" : "Mark as Paid"}
+            </DialogTitle>
+            <DialogDescription>
+              {pendingAction === "approve"
+                ? "This will approve the payment application. This action cannot be undone."
+                : "This will mark the payment application as paid. This action cannot be undone."}
+            </DialogDescription>
+          </DialogHeader>
+          {pendingAction === "approve" && (
+            <div className="space-y-2">
+              <Label htmlFor="pa-action-comments">Comments (optional)</Label>
+              <Textarea
+                id="pa-action-comments"
+                value={actionComments}
+                onChange={(e) => setActionComments(e.target.value)}
+                placeholder="Optional comments..."
+                rows={3}
+              />
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setPendingActionId(null);
+                setPendingAction(null);
+                setActionComments("");
+              }}
+              disabled={isMutating}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirm}
+              disabled={isMutating}
+            >
+              {isMutating
+                ? "Saving..."
+                : pendingAction === "approve"
+                  ? "Approve"
+                  : "Mark Paid"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
