@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-02-21)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.6 UX Redesign & Polish — Phase 46 in progress (plan 02 paused at human-verify checkpoint)
+**Current focus:** v1.6 UX Redesign & Polish — Phase 46 complete
 
 ## Current Position
 
-Phase: 46 of 46 (Project Header Tabs and Navigation)
-Plan: 02 in progress (paused at human-verify checkpoint — Tasks 1 and 2 complete)
-Status: Phase 46 in progress — plan 02 tasks complete, awaiting visual verification
-Last activity: 2026-02-23 — Phase 46 plan 02: sticky 2-row project header built (layout.tsx + project-header.tsx), financial stat bar with CurrencyDisplay, awaiting human-verify checkpoint
+Phase: 46 of 46 (Project Header Tabs and Navigation) — COMPLETE
+Plan: All 4 plans complete (46-01 through 46-04)
+Status: v1.6 milestone complete — all 46 phases done
+Last activity: 2026-02-23 — Phase 46 complete: sticky 3-row header (title/info/stats), tab count badges, gap closure for info row + dropdown fix
 
-Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100% | v1.5: [██████████] 100% | v1.6: [████░░░░░░] 33%
+Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100% | v1.5: [██████████] 100% | v1.6: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 181 (138 through v1.4, +19 in v1.5, +6 in v1.6 Phase 41, +5 in v1.6 Phase 42, +5 in v1.6 Phase 43, +4 in v1.6 Phase 44, +4 in v1.6 Phase 45)
+- Total plans completed: 185 (138 through v1.4, +19 in v1.5, +6 in v1.6 Phase 41, +5 in v1.6 Phase 42, +5 in v1.6 Phase 43, +4 in v1.6 Phase 44, +4 in v1.6 Phase 45, +4 in v1.6 Phase 46)
 - Average duration: ~4.3 min/plan
 - Total execution time: ~11.7 hours
 
@@ -116,6 +116,10 @@ Recent decisions relevant to v1.6:
 - [46-01]: paidToDate = 0 placeholder — no payments table yet; balanceToComplete = contractValue - 0
 - [Phase 46]: budgetSummary query preserved in layout.tsx (not passed to ProjectHeader) — Overview tab reads from React Query cache via void budgetSummary pattern
 - [Phase 46-02]: Mode switch button moved from Row 1 inline text to DropdownMenuItem in ellipsis menu — satisfies CHROME-01 compact Row 1 requirement
+- [46-04]: Mode switch DropdownMenuItem renders unconditionally — canTransition only gates lifecycle badge interactivity, not project mode configuration
+- [46-04]: startDate/endDate arrive as strings from tRPC serialization — no .toISOString() conversion needed in layout.tsx
+- [46-03]: Tab badge prop reuses existing headerStats query from layout.tsx — no separate useQuery in ProjectTabs
+- [46-03]: getBadgeCount uses switch on section.href — 4 cases mapped, default returns 0 (safe for all other tabs)
 
 ### Pending Todos
 
@@ -136,5 +140,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: Phase 46 plan 02 paused at human-verify checkpoint — sticky header + financial stat bar built (commits 63de7ec, 925a502). Awaiting visual approval to complete plan 02 and proceed to 46-03.
+Stopped at: Phase 46 complete — all 4 plans done (46-01 API, 46-02 sticky header, 46-03 tab badges, 46-04 gap closure). v1.6 milestone complete.
 Resume file: None
