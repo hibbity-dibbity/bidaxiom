@@ -96,6 +96,7 @@ export function ChangeOrderList({ projectId, projectSlug }: ChangeOrderListProps
   const approveMutation = trpc.changeOrder.approve.useMutation({
     onSuccess: () => {
       utils.changeOrder.list.invalidate({ projectId });
+      utils.project.getHeaderStats.invalidate({ projectId });
       setPendingActionId(null);
       setPendingAction(null);
       setActionComments("");
@@ -105,6 +106,7 @@ export function ChangeOrderList({ projectId, projectSlug }: ChangeOrderListProps
   const rejectMutation = trpc.changeOrder.reject.useMutation({
     onSuccess: () => {
       utils.changeOrder.list.invalidate({ projectId });
+      utils.project.getHeaderStats.invalidate({ projectId });
       setPendingActionId(null);
       setPendingAction(null);
       setActionComments("");

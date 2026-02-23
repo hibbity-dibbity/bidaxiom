@@ -85,6 +85,7 @@ export function PaymentAppList({ projectId, projectSlug }: PaymentAppListProps) 
   const approveMutation = trpc.paymentApp.approve.useMutation({
     onSuccess: () => {
       utils.paymentApp.list.invalidate({ projectId });
+      utils.project.getHeaderStats.invalidate({ projectId });
       setPendingActionId(null);
       setPendingAction(null);
       setActionComments("");
@@ -94,6 +95,7 @@ export function PaymentAppList({ projectId, projectSlug }: PaymentAppListProps) 
   const markPaidMutation = trpc.paymentApp.markPaid.useMutation({
     onSuccess: () => {
       utils.paymentApp.list.invalidate({ projectId });
+      utils.project.getHeaderStats.invalidate({ projectId });
       setPendingActionId(null);
       setPendingAction(null);
       setActionComments("");
