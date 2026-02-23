@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-21)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.6 UX Redesign & Polish — Phase 45 complete; Phase 46 next
+**Current focus:** v1.6 UX Redesign & Polish — Phase 46 in progress (plan 01 complete)
 
 ## Current Position
 
-Phase: 45 of 46 (Estimates Redesign) — COMPLETE
-Plan: 04 complete (all 4 plans done)
-Status: Phase 45 COMPLETE — verified 13/13
-Last activity: 2026-02-23 — Phase 45 complete: horizontal stepper bar (EstimateStepperBar) wired into workflow page, WorkflowSidebar removed, Next buttons on all 6 steps, CurrencyInput rewritten with NumericFormat live masking, section grouping on wizard Steps 1/2/4
+Phase: 46 of 46 (Project Header Tabs and Navigation)
+Plan: 01 complete
+Status: Phase 46 in progress — plan 01 done (getHeaderStats API)
+Last activity: 2026-02-23 — Phase 46 plan 01 complete: project.getHeaderStats tRPC procedure added to projectRouter with 9 parallel sub-queries (5 financial metrics + 4 badge counts) via Promise.all
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100% | v1.5: [██████████] 100% | v1.6: [████░░░░░░] 33%
 
@@ -107,6 +107,13 @@ Recent decisions relevant to v1.6:
 - [44-04]: formatTrades in subcontractors CSV uses CSI_DIVISIONS lookup with pipe separator and +N more suffix — mirrors badge display logic for consistency
 - [Phase 44]: Export CSV iterates filtered arrays (displayedEstimates, filteredRfqs) not raw API arrays
 - [Phase 44]: RFQ CSV omits Trades column — planning spec (LIST-04) only requires RFQ #, Title, Status, Due Date
+- [46-01]: getHeaderStats runs all 9 sub-queries in Promise.all — no sequential awaits per spec
+- [46-01]: contractValue priority chain: accepted estimate + approved COs > project.budget (NaN-guarded parseFloat) > 0
+- [46-01]: CO pending badge uses pco_submitted/pending_approval status values (not 'pending' or 'submitted')
+- [46-01]: Payment apps pending badge: status IN (submitted, approved) AND paidAt IS NULL
+- [46-01]: billedToDate sums currentPaymentDue from ALL payment apps regardless of status
+- [46-01]: invoicesCount uses paymentApps count as AR proxy — no separate invoices table exists
+- [46-01]: paidToDate = 0 placeholder — no payments table yet; balanceToComplete = contractValue - 0
 
 ### Pending Todos
 
@@ -127,5 +134,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: Phase 45 complete — all 4 plans executed (45-01 through 45-04), verified 13/13. FORM-01/02/03 fully satisfied. Phase 46 is next.
+Stopped at: Phase 46 plan 01 complete — project.getHeaderStats procedure added to projectRouter (commit a6ab889). Plans 46-02 and 46-03 next.
 Resume file: None
