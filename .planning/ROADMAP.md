@@ -223,7 +223,13 @@ Plans:
   1. The estimate creation wizard displays a horizontal stepper bar at the top with all 6 steps labeled, the current step highlighted, and completed steps visually marked; users can navigate back to any completed step by clicking it.
   2. All currency input fields across the application (change order amounts, budget entries, pay app values, line item unit costs) use `react-number-format` NumericFormat with `$` prefix, thousands separators, and 2 decimal precision; the value submitted to the server is a number, not a formatted string.
   3. Multi-section create and edit forms (change order, project, customer) use clear visual section grouping with section headings and consistent spacing — fields are not presented as an undivided flat list.
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 45-01-PLAN.md — useWorkflowState patch (free navigation) + EstimateStepperBar component (FORM-01 foundation)
+- [ ] 45-02-PLAN.md — CurrencyInput rewrite to NumericFormat + bid-comparison-table leveling amount (FORM-02)
+- [ ] 45-03-PLAN.md — Wire EstimateStepperBar into workflow page + remove WorkflowSidebar + Next/Submit buttons (FORM-01 completion)
+- [ ] 45-04-PLAN.md — Section grouping on Steps 1, 2, 4 of estimate wizard (FORM-03)
 
 ### Phase 46: Project Header, Tabs, and Navigation Chrome
 **Goal**: The project detail page has a compact sticky header with a financial stat bar and tab count badges, and the tab navigation system is confirmed URL-based with browser back/forward support — the shared chrome across all 10 project tabs is polished and regression-free.
@@ -253,5 +259,5 @@ Plans:
 | 42. Shared UI Primitives | 0/5 | Complete    | 2026-02-22 |
 | 43. Budget Domain Redesign | 0/5 | Complete    | 2026-02-22 |
 | 44. Change Order and Payment App Redesign | 3/5 | In progress | - |
-| 45. Estimates Redesign | 0/TBD | Not started | - |
+| 45. Estimates Redesign | 0/4 | Not started | - |
 | 46. Project Header, Tabs, and Navigation Chrome | 0/TBD | Not started | - |
