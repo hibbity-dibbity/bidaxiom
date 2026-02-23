@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-02-21)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.6 UX Redesign & Polish — Phase 43: Budget Domain Redesign (plan 03 complete)
+**Current focus:** v1.6 UX Redesign & Polish — Phase 44: Change Order & Payment App Redesign (plan 01 complete)
 
 ## Current Position
 
-Phase: 43 of 46 (Budget Domain Redesign)
-Plan: 03 complete
-Status: Phase 43 IN PROGRESS — Plan 03 complete
-Last activity: 2026-02-22 — Phase 43 Plan 03 complete: inline draft rows replacing add Dialogs in BudgetLineItemTable and SovEditor; TABLE-07 satisfied
+Phase: 44 of 46 (Change Order & Payment App Redesign)
+Plan: 01 complete
+Status: Phase 44 IN PROGRESS — Plan 01 complete
+Last activity: 2026-02-23 — Phase 44 Plan 01 complete: canCurrentUserApprove added to CO list and pay app list endpoints via bulk inArray query; LIST-05 and LIST-06 satisfied
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100% | v1.5: [██████████] 100% | v1.6: [██░░░░░░░░] 17%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 173 (138 through v1.4, +19 in v1.5, +6 in v1.6 Phase 41, +5 in v1.6 Phase 42, +5 in v1.6 Phase 43)
+- Total plans completed: 174 (138 through v1.4, +19 in v1.5, +6 in v1.6 Phase 41, +5 in v1.6 Phase 42, +5 in v1.6 Phase 43, +1 in v1.6 Phase 44)
 - Average duration: ~4.3 min/plan
 - Total execution time: ~11.7 hours
 
@@ -93,6 +93,9 @@ Recent decisions relevant to v1.6:
 - [43-03]: Draft row state is separate from TanStack row model — footer totals computed from server array only; draft row excluded by construction (no filtering needed)
 - [43-03]: CurrencyInput onKeyDown added to props interface and passed through to underlying Input — required for Enter/Escape keyboard handling in draft rows
 - [43-03]: Empty state condition updated to `items.length === 0 && !draftRow` in both components — allows draft row to display on empty table without flicker
+- [44-01]: normalizedRole computed once before .map() in both list endpoints — not recalculated per row; matches existing approve/reject mutation pattern
+- [44-01]: Empty list guard (length === 0) skips inArray DB call entirely — prevents inArray([]) edge case and avoids unnecessary DB round-trip
+- [44-01]: First pending step wins in pendingStepMap — consistent with approve/reject mutation behavior (which uses find(s => s.status === 'pending'))
 
 ### Pending Todos
 
@@ -104,6 +107,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-22
-Stopped at: Phase 43 Plan 03 complete — inline draft rows replacing add Dialogs in BudgetLineItemTable and SovEditor. TABLE-07 satisfied. CurrencyInput onKeyDown added.
+Last session: 2026-02-23
+Stopped at: Phase 44 Plan 01 complete — canCurrentUserApprove added to CO list and pay app list endpoints via bulk inArray query. LIST-05 and LIST-06 satisfied.
 Resume file: None
