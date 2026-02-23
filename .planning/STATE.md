@@ -96,6 +96,10 @@ Recent decisions relevant to v1.6:
 - [44-01]: normalizedRole computed once before .map() in both list endpoints — not recalculated per row; matches existing approve/reject mutation pattern
 - [44-01]: Empty list guard (length === 0) skips inArray DB call entirely — prevents inArray([]) edge case and avoids unnecessary DB round-trip
 - [44-01]: First pending step wins in pendingStepMap — consistent with approve/reject mutation behavior (which uses find(s => s.status === 'pending'))
+- [44-02]: Export CSV button placed LEFT of New Change Order button in filter toolbar — logical order: bulk action before create action
+- [44-02]: actions column added to TanStack columns definition (enableSorting: false, header empty) — keeps column model consistent with visible cells
+- [44-02]: canCurrentUserApprove read as `co.canCurrentUserApprove` via `row.original as any` — field comes from API (44-01) but not in local TS types
+- [44-02]: isMutating derived from approveMutation.isPending || rejectMutation.isPending — disables both Cancel and Confirm during in-flight request
 - [44-03]: Export CSV button placed in left side of filter toolbar alongside status Select — consistent with standard toolbar layout patterns
 - [44-03]: canCurrentUserApprove cast via (row.original as any) — field is present at runtime from 44-01 API change but not yet in static ColumnDef type; avoids separate type augmentation
 - [44-03]: Mark Paid shows for status===approved with no canCurrentUserApprove check — any user with project access can mark as paid per spec
