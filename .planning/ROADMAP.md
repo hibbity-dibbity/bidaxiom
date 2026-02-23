@@ -241,7 +241,12 @@ Plans:
   2. The sticky project header includes an inline financial stat bar showing contract value, approved change orders total, billed to date, balance to complete, and retainage held — all visible without scrolling or expanding any control.
   3. Project navigation tabs display a count badge for pending action items on tabs where pending items exist (e.g., "Change Orders (3)" when 3 change orders await approval).
   4. Tab navigation uses `<Link href scroll={false}>` — not Radix Tabs component state — so browser back and forward buttons work, tab URLs are shareable, and hover-prefetch via `sectionPrefetchMap` fires correctly.
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 46-01-PLAN.md — Add project.getHeaderStats tRPC endpoint (9 parallel SQL queries, financial stats + badge counts)
+- [ ] 46-02-PLAN.md — Compress project header to 2-row sticky layout with financial stat bar (layout.tsx + project-header.tsx)
+- [ ] 46-03-PLAN.md — Add tab count badge labels to ProjectTabs from headerStats prop (project-tabs.tsx)
 
 ---
 
