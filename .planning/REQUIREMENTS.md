@@ -70,32 +70,32 @@ Items explicitly excluded from v1.7:
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| NAV-01 | TBD | Pending |
-| NAV-02 | TBD | Pending |
-| NAV-03 | TBD | Pending |
-| NAV-04 | TBD | Pending |
-| NAV-05 | TBD | Pending |
-| MODE-01 | TBD | Pending |
-| MODE-02 | TBD | Pending |
-| TABS-01 | TBD | Pending |
-| TABS-02 | TBD | Pending |
-| TABS-03 | TBD | Pending |
-| TABS-04 | TBD | Pending |
-| FLOW-01 | TBD | Pending |
-| FLOW-02 | TBD | Pending |
-| FLOW-03 | TBD | Pending |
-| FLOW-04 | TBD | Pending |
-| PHASE-01 | TBD | Pending |
-| PHASE-02 | TBD | Pending |
-| PHASE-03 | TBD | Pending |
-| TRADE-01 | TBD | Pending |
-| TRADE-02 | TBD | Pending |
+| NAV-01 | Phase 47 | Pending |
+| NAV-02 | Phase 47 | Pending |
+| NAV-03 | Phase 47 | Pending |
+| NAV-04 | Phase 47 | Pending |
+| NAV-05 | Phase 47 | Pending |
+| MODE-01 | Phase 48 | Pending |
+| MODE-02 | Phase 48 | Pending |
+| TABS-01 | Phase 49 | Pending |
+| TABS-02 | Phase 49 | Pending |
+| TABS-03 | Phase 49 | Pending |
+| TABS-04 | Phase 48 | Pending |
+| FLOW-01 | Phase 50 | Pending |
+| FLOW-02 | Phase 50 | Pending |
+| FLOW-03 | Phase 50 | Pending |
+| FLOW-04 | Phase 50 | Pending |
+| PHASE-01 | Phase 51 | Pending |
+| PHASE-02 | Phase 51 | Pending |
+| PHASE-03 | Phase 51 | Pending |
+| TRADE-01 | Phase 52 | Pending |
+| TRADE-02 | Phase 52 | Pending |
 
 **Coverage:**
 - v1.7 requirements: 20 total
-- Mapped to phases: TBD (roadmapper assigns)
-- Unmapped: 20 (pending roadmap)
+- Mapped to phases: 20/20
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-23*
-*Last updated: 2026-02-23 — initial definition*
+*Last updated: 2026-02-23 — traceability assigned (roadmap Phases 47-52)*
