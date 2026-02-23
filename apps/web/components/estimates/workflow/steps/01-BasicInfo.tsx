@@ -107,69 +107,87 @@ export function BasicInfoStep({ estimateId }: BasicInfoStepProps) {
       </p>
 
       <Form {...form}>
-        <form className="space-y-4">
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Estimate Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g., Base Bid Option A" {...field} />
-                </FormControl>
-                <FormDescription>
-                  A descriptive name for this estimate
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Description (Optional)</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="Additional details about this estimate..."
-                    rows={4}
-                    onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); goToStep(2); } }}
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="projectType"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Project Type</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+        <form className="space-y-6">
+          {/* Group 1: Estimate Identity */}
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                Estimate Identity
+              </p>
+              <hr className="mb-4" />
+            </div>
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Estimate Name</FormLabel>
                   <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select project type" />
-                    </SelectTrigger>
+                    <Input placeholder="e.g., Base Bid Option A" {...field} />
                   </FormControl>
-                  <SelectContent>
-                    <SelectItem value="residential">Residential</SelectItem>
-                    <SelectItem value="commercial">Commercial</SelectItem>
-                    <SelectItem value="industrial">Industrial</SelectItem>
-                    <SelectItem value="infrastructure">Infrastructure</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormDescription>
-                  The type of construction project
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                  <FormDescription>
+                    A descriptive name for this estimate
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description (Optional)</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Additional details about this estimate..."
+                      rows={4}
+                      onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); goToStep(2); } }}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          {/* Group 2: Project Classification */}
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                Project Classification
+              </p>
+              <hr className="mb-4" />
+            </div>
+            <FormField
+              control={form.control}
+              name="projectType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Project Type</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select project type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="residential">Residential</SelectItem>
+                      <SelectItem value="commercial">Commercial</SelectItem>
+                      <SelectItem value="industrial">Industrial</SelectItem>
+                      <SelectItem value="infrastructure">Infrastructure</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    The type of construction project
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
         </form>
       </Form>
 

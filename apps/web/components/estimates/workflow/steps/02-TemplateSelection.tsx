@@ -69,7 +69,8 @@ export function TemplateSelectionStep({ estimateId }: TemplateSelectionStepProps
 
       {/* Cost Code Templates Section */}
       <div>
-        <h3 className="text-lg font-semibold mb-3">Cost Code Templates</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Cost Code Templates</h3>
+        <hr className="mb-4" />
         {templatesLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[1, 2, 3, 4].map((i) => (
@@ -145,7 +146,8 @@ export function TemplateSelectionStep({ estimateId }: TemplateSelectionStepProps
 
       {/* Labor Rate Templates Section */}
       <div>
-        <h3 className="text-lg font-semibold mb-3">Labor Rate Templates</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Labor Rate Templates</h3>
+        <hr className="mb-4" />
         {laborLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[1, 2].map((i) => (

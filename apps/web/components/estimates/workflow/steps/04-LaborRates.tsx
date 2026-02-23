@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useWorkflowState } from "../useWorkflowState";
 import { Button } from "@/components/ui/button";
@@ -72,15 +72,19 @@ export function LaborRatesStep({ estimateId }: LaborRatesStepProps) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold">Apply Labor Rates</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Select a labor rate template to apply standardized hourly rates to labor line items.
-        </p>
-      </div>
+      <p className="text-sm text-muted-foreground">
+        Select a labor rate template to apply standardized hourly rates to labor line items.
+      </p>
 
-      {/* Template Selection */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {/* Group 1: Template Selection */}
+      <div className="space-y-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+            Template Selection
+          </p>
+          <hr className="mb-4" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {templatesLoading ? (
           <div className="col-span-full text-center py-8 text-muted-foreground">
             Loading templates...
@@ -129,14 +133,18 @@ export function LaborRatesStep({ estimateId }: LaborRatesStepProps) {
             </Card>
           </div>
         )}
+        </div>
       </div>
 
-      {/* Current Labor Line Items */}
-      {laborLineItems.length > 0 && (
+      {/* Group 2: Current Labor Line Items */}
+      <div className="space-y-3">
         <div>
-          <h3 className="text-sm font-semibold mb-3">
-            Current Labor Line Items ({laborLineItems.length})
-          </h3>
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+            Current Labor Line Items
+          </p>
+          <hr className="mb-4" />
+        </div>
+        {laborLineItems.length > 0 ? (
           <div className="rounded-md border">
             <Table>
               <TableHeader>
@@ -165,19 +173,17 @@ export function LaborRatesStep({ estimateId }: LaborRatesStepProps) {
               </TableBody>
             </Table>
           </div>
-        </div>
-      )}
-
-      {laborLineItems.length === 0 && (
-        <Card>
-          <CardContent className="py-8 text-center">
-            <p className="text-muted-foreground">
-              No labor line items found. Add labor line items in Step 3 if needed, or skip this
-              step.
-            </p>
-          </CardContent>
-        </Card>
-      )}
+        ) : (
+          <Card>
+            <CardContent className="py-8 text-center">
+              <p className="text-muted-foreground">
+                No labor line items found. Add labor line items in Step 3 if needed, or skip this
+                step.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       {/* Actions */}
       <div className="flex justify-between items-center pt-4 border-t">
