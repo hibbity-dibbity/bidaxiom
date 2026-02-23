@@ -101,6 +101,13 @@ export default function ProjectLayout({ children, params }: ProjectLayoutProps) 
             projectMode: project.projectMode ?? "gc_advanced",
             customerId: project.customerId,
             customerSlug: project.customer?.slug ?? null,
+            customerName: project.customer?.companyName ?? project.customer?.contactName ?? null,
+            street1: project.street1 ?? null,
+            city: project.city ?? null,
+            state: project.state ?? null,
+            zip: project.zip ?? null,
+            startDate: project.startDate ?? null,
+            endDate: project.endDate ?? null,
             restoredAt: project.restoredAt ?? null,
           }}
           headerStats={headerStats ?? null}

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MoreVertical } from "lucide-react";
+import { MoreVertical, Building2, MapPin, Calendar } from "lucide-react";
 import type { LifecyclePhase } from "@construction/shared";
 import { LifecyclePhaseBadge } from "./lifecycle-phase-badge";
 import { trpc } from "@/lib/trpc";
@@ -27,6 +27,13 @@ interface ProjectHeaderProps {
     projectMode: string;
     customerId: string;
     customerSlug?: string | null;
+    customerName?: string | null;
+    street1?: string | null;
+    city?: string | null;
+    state?: string | null;
+    zip?: string | null;
+    startDate?: string | null;
+    endDate?: string | null;
     restoredAt?: string | null;
   };
   headerStats: {
@@ -38,6 +45,27 @@ interface ProjectHeaderProps {
   } | null;
   canTransition: boolean;
   canDelete?: boolean;
+}
+
+function formatAddress(
+  street1: string | null | undefined,
+  city: string | null | undefined,
+  state: string | null | undefined,
+  zip: string | null | undefined,
+): string | null {
+  const parts = [street1, [city, state].filter(Boolean).join(", "), zip].filter(Boolean);
+  return parts.length > 0 ? parts.join(" ") : null;
+}
+
+function formatDateRange(
+  startDate: string | null | undefined,
+  endDate: string | null | undefined,
+): string | null {
+  if (!startDate) return null;
+  const start = new Date(startDate).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  if (!endDate) return start;
+  const end = new Date(endDate).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  return `${start} – ${end}`;
 }
 
 export function ProjectHeader({ project, headerStats, canTransition, canDelete }: ProjectHeaderProps) {
@@ -105,18 +133,16 @@ export function ProjectHeader({ project, headerStats, canTransition, canDelete }
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {canTransition && (
-                <DropdownMenuItem
-                  onClick={handleModeSwitch}
-                  disabled={setModeMutation.isPending}
-                >
-                  {setModeMutation.isPending
-                    ? "Switching..."
-                    : project.projectMode === "simple"
-                    ? "Switch to GC/Advanced"
-                    : "Switch to Simple"}
-                </DropdownMenuItem>
-              )}
+              <DropdownMenuItem
+                onClick={handleModeSwitch}
+                disabled={setModeMutation.isPending}
+              >
+                {setModeMutation.isPending
+                  ? "Switching..."
+                  : project.projectMode === "simple"
+                  ? "Switch to GC/Advanced"
+                  : "Switch to Simple"}
+              </DropdownMenuItem>
               {canDelete && (
                 <DeleteProjectButton
                   projectId={project.id}
@@ -135,7 +161,43 @@ export function ProjectHeader({ project, headerStats, canTransition, canDelete }
         </div>
       </div>
 
-      {/* Row 2 (~40px): Financial stat bar — 5 fields always visible */}
+      {/* Row 2 (~30px): Customer + address + dates */}
+      {(project.customerName || formatAddress(project.street1, project.city, project.state, project.zip) || formatDateRange(project.startDate, project.endDate)) && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2 flex-wrap">
+          {project.customerName && (
+            <>
+              <Building2 className="h-3.5 w-3.5 shrink-0" />
+              {project.customerSlug ? (
+                <Link href={`/customers/${project.customerSlug}`} className="hover:underline truncate max-w-[200px]">
+                  {project.customerName}
+                </Link>
+              ) : (
+                <span className="truncate max-w-[200px]">{project.customerName}</span>
+              )}
+            </>
+          )}
+          {project.customerName && (formatAddress(project.street1, project.city, project.state, project.zip) || formatDateRange(project.startDate, project.endDate)) && (
+            <span className="text-muted-foreground/40">·</span>
+          )}
+          {formatAddress(project.street1, project.city, project.state, project.zip) && (
+            <>
+              <MapPin className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate max-w-[240px]">{formatAddress(project.street1, project.city, project.state, project.zip)}</span>
+            </>
+          )}
+          {formatAddress(project.street1, project.city, project.state, project.zip) && formatDateRange(project.startDate, project.endDate) && (
+            <span className="text-muted-foreground/40">·</span>
+          )}
+          {formatDateRange(project.startDate, project.endDate) && (
+            <>
+              <Calendar className="h-3.5 w-3.5 shrink-0" />
+              <span>{formatDateRange(project.startDate, project.endDate)}</span>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Row 3 (~40px): Financial stat bar — 5 fields always visible */}
       <div className="flex items-center gap-6 pb-3 overflow-x-auto">
         {[
           { label: "Contract Value", value: headerStats?.contractValue ?? 0 },
