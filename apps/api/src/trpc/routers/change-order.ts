@@ -299,10 +299,39 @@ export const changeOrderRouter = router({
         lineItemCounts.map(item => [item.changeOrderId, Number(item.count)])
       );
 
-      return changeOrders.map(co => ({
-        ...co,
-        lineItemCount: countMap.get(co.id) ?? 0,
-      }));
+      // Bulk query pending approval steps (single query, not per-row)
+      const pendingSteps = changeOrders.length > 0
+        ? await db
+            .select()
+            .from(schema.approvalWorkflowSteps)
+            .where(
+              and(
+                inArray(schema.approvalWorkflowSteps.changeOrderId, changeOrders.map(co => co.id)),
+                eq(schema.approvalWorkflowSteps.status, "pending")
+              )
+            )
+        : [];
+
+      // Compute normalizedRole once before the map (not per-row)
+      const normalizedRole = ctx.orgRole?.startsWith("org:") ? ctx.orgRole : `org:${ctx.orgRole}`;
+
+      // Build map: first pending step per CO (keyed by changeOrderId)
+      const pendingStepMap = new Map<string, typeof pendingSteps[number]>();
+      for (const step of pendingSteps) {
+        if (!pendingStepMap.has(step.changeOrderId)) {
+          pendingStepMap.set(step.changeOrderId, step);
+        }
+      }
+
+      return changeOrders.map(co => {
+        const pendingStep = pendingStepMap.get(co.id);
+        const canCurrentUserApprove = pendingStep
+          ? (pendingStep.approverUserId === ctx.userId) ||
+            (!!pendingStep.approverRole && pendingStep.approverRole === normalizedRole) ||
+            (!pendingStep.approverUserId && !pendingStep.approverRole)
+          : false;
+        return { ...co, lineItemCount: countMap.get(co.id) ?? 0, canCurrentUserApprove };
+      });
     }),
 
   /**
