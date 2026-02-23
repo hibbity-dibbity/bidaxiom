@@ -26,7 +26,7 @@ import { RfqStatusBadge } from "@/components/bidding/rfq-status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { FilterChips, type FilterChip } from "@/components/shared/filter-chips";
 import { useDebounce } from "@/hooks/use-debounce";
-import { Plus, Search, SearchX, FileQuestion } from "lucide-react";
+import { Download, Plus, Search, SearchX, FileQuestion } from "lucide-react";
 import type { RfqStatus } from "@construction/shared";
 
 const CSI_DIVISION_MAP: Record<number, string> = {
@@ -99,6 +99,30 @@ export default function RfqsPage({
 
   const hasActiveFilters = statusFilter !== "all" || !!debouncedSearch;
 
+  const exportCsv = () => {
+    const today = new Date().toISOString().split("T")[0];
+    const filename = `rfqs-${projectSlug}-${today}.csv`;
+
+    const escape = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
+
+    const header = ["RFQ #", "Title", "Status", "Due Date"].map(escape).join(",");
+    const csvRows = filteredRfqs.map((rfq) => [
+      rfq.rfqNumber ?? "",
+      rfq.title ?? "",
+      rfq.status.charAt(0).toUpperCase() + rfq.status.slice(1),
+      new Date(rfq.dueDate).toLocaleDateString(),
+    ].map(escape).join(","));
+
+    const csv = [header, ...csvRows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto py-6 space-y-6">
@@ -120,12 +144,23 @@ export default function RfqsPage({
           <h1 className="text-3xl font-bold">Requests for Quotation</h1>
           <p className="text-muted-foreground mt-1">{project.name}</p>
         </div>
-        <Button asChild>
-          <Link href={`/projects/${projectSlug}/rfqs/new`}>
-            <Plus className="h-4 w-4 mr-2" />
-            New RFQ
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={exportCsv}
+            disabled={filteredRfqs.length === 0}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+          <Button asChild>
+            <Link href={`/projects/${projectSlug}/rfqs/new`}>
+              <Plus className="h-4 w-4 mr-2" />
+              New RFQ
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-2">
