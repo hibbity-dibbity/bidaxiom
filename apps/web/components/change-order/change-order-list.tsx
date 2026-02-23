@@ -34,7 +34,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ChevronsUpDown, ChevronUp, ChevronDown, Plus, FilePlus, Search, SearchX } from "lucide-react";
+import { ChevronsUpDown, ChevronUp, ChevronDown, Plus, FilePlus, Search, SearchX, Download } from "lucide-react";
 import type { ChangeOrderStatus, ChangeOrderType } from "@construction/shared";
 
 interface ChangeOrderListProps {
@@ -173,6 +173,36 @@ export function ChangeOrderList({ projectId, projectSlug }: ChangeOrderListProps
     enableSortingRemoval: false,
   });
 
+  const exportCsv = () => {
+    const rows = table.getRowModel().rows;
+    const today = new Date().toISOString().split("T")[0];
+    const filename = `change-orders-${projectSlug}-${today}.csv`;
+
+    const escape = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
+
+    const header = ["CO #", "Title", "Type", "Status", "Amount", "Date"].map(escape).join(",");
+    const csvRows = rows.map((row) => {
+      const co = row.original;
+      return [
+        getChangeOrderNumber(co),
+        co.title ?? "",
+        typeLabels[co.type as ChangeOrderType] ?? co.type,
+        co.status.replace(/_/g, " "),
+        Number(co.totalAmount).toFixed(2),
+        new Date(co.createdAt).toLocaleDateString(),
+      ].map(escape).join(",");
+    });
+
+    const csv = [header, ...csvRows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -229,10 +259,20 @@ export function ChangeOrderList({ projectId, projectSlug }: ChangeOrderListProps
               </Select>
             </div>
           </div>
-          <Button onClick={handleNavigateToNew}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Change Order
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={exportCsv}
+              disabled={table.getRowModel().rows.length === 0}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export CSV
+            </Button>
+            <Button onClick={handleNavigateToNew}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Change Order
+            </Button>
+          </div>
         </div>
         {/* Filter chips */}
         <FilterChips chips={activeChips} onClearAll={clearAllFilters} />
