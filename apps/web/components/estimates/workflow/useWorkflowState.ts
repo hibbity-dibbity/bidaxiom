@@ -32,9 +32,7 @@ export const useWorkflowState = create<WorkflowState>()(
       },
 
       goToStep: (step: number) => {
-        const { maxUnlockedStep } = get();
-        // Only allow navigation to unlocked steps
-        if (step <= maxUnlockedStep) {
+        if (step >= 1 && step <= 6) {
           set({ currentStep: step });
         }
       },
