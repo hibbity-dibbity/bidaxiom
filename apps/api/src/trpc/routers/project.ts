@@ -1380,4 +1380,153 @@ export const projectRouter = router({
 
       return rows;
     }),
+
+  /**
+   * Get header stats for a project.
+   * Returns 5 financial metrics + 4 tab badge counts in a single round-trip via Promise.all.
+   * Used by the project chrome header and tab badge components.
+   */
+  getHeaderStats: protectedProcedure
+    .input(z.object({ projectId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+      const { projectId } = input;
+
+      const abilities = await loadProjectAbilities({
+        tenant: ctx.tenant,
+        userId: ctx.userId,
+        orgRole: ctx.orgRole,
+      });
+      ForbiddenError.from(abilities).throwUnlessCan("read", "Project");
+
+      // Run all 9 sub-queries in parallel
+      const [
+        acceptedEstimate,
+        approvedCOSum,
+        projectBudget,
+        billedToDate,
+        retainageHeldSum,
+        changeOrdersPendingCount,
+        paymentAppsPendingCount,
+        documentsCount,
+        invoicesCount,
+      ] = await Promise.all([
+        // 1. Accepted estimate totalCost
+        db
+          .select({ totalCost: schema.estimates.totalCost })
+          .from(schema.estimates)
+          .where(
+            and(
+              eq(schema.estimates.projectId, projectId),
+              eq(schema.estimates.status, "accepted")
+            )
+          )
+          .orderBy(desc(schema.estimates.createdAt))
+          .limit(1),
+
+        // 2. Sum of approved CO total_amount
+        db
+          .select({ total: sql<string>`COALESCE(SUM(total_amount), 0)` })
+          .from(schema.changeOrders)
+          .where(
+            and(
+              eq(schema.changeOrders.projectId, projectId),
+              eq(schema.changeOrders.status, "approved")
+            )
+          ),
+
+        // 3. Project budget field
+        db
+          .select({ budget: schema.projects.budget })
+          .from(schema.projects)
+          .where(eq(schema.projects.id, projectId))
+          .limit(1),
+
+        // 4. Billed to Date — ALL payment apps, no status filter
+        db
+          .select({ total: sql<string>`COALESCE(SUM(current_payment_due), 0)` })
+          .from(schema.paymentApps)
+          .where(eq(schema.paymentApps.projectId, projectId)),
+
+        // 5. Retainage held
+        db
+          .select({ total: sql<string>`COALESCE(SUM(amount_held - COALESCE(released_amount, 0)), 0)` })
+          .from(schema.retainageHeld)
+          .where(eq(schema.retainageHeld.projectId, projectId)),
+
+        // 6. CO pending badge count
+        db
+          .select({ count: count() })
+          .from(schema.changeOrders)
+          .where(
+            and(
+              eq(schema.changeOrders.projectId, projectId),
+              inArray(schema.changeOrders.status, ["pco_submitted", "pending_approval"])
+            )
+          ),
+
+        // 7. Payment apps pending badge count — submitted/approved and not yet paid
+        db
+          .select({ count: count() })
+          .from(schema.paymentApps)
+          .where(
+            and(
+              eq(schema.paymentApps.projectId, projectId),
+              inArray(schema.paymentApps.status, ["submitted", "approved"]),
+              isNull(schema.paymentApps.paidAt)
+            )
+          ),
+
+        // 8. Documents count
+        db
+          .select({ count: count() })
+          .from(schema.documents)
+          .where(eq(schema.documents.projectId, projectId)),
+
+        // 9. Invoices count (payment app count as AR proxy)
+        db
+          .select({ count: count() })
+          .from(schema.paymentApps)
+          .where(eq(schema.paymentApps.projectId, projectId)),
+      ]);
+
+      // Post-query computation
+      const estimateTotal = acceptedEstimate[0]?.totalCost ? Number(acceptedEstimate[0].totalCost) : null;
+      const approvedCOTotal = Number(approvedCOSum[0]?.total ?? 0);
+      const rawBudget = projectBudget[0]?.budget ?? null;
+      const budgetNum = rawBudget !== null ? parseFloat(rawBudget) : NaN;
+      const safeBudget = isNaN(budgetNum) ? null : budgetNum;
+
+      let contractValue: number;
+      if (estimateTotal !== null) {
+        contractValue = estimateTotal + approvedCOTotal;
+      } else if (safeBudget !== null) {
+        contractValue = safeBudget;
+      } else {
+        contractValue = 0;
+      }
+
+      const billedTotal = Number(billedToDate[0]?.total ?? 0);
+      const retainageTotal = Number(retainageHeldSum[0]?.total ?? 0);
+      const paidToDate = 0; // Placeholder — no payments table yet
+
+      return {
+        contractValue,
+        billedToDate: billedTotal,
+        paidToDate,
+        balanceToComplete: contractValue - paidToDate,
+        retainageHeld: retainageTotal,
+        changeOrdersPendingCount: Number(changeOrdersPendingCount[0]?.count ?? 0),
+        paymentAppsPendingCount: Number(paymentAppsPendingCount[0]?.count ?? 0),
+        documentsCount: Number(documentsCount[0]?.count ?? 0),
+        invoicesCount: Number(invoicesCount[0]?.count ?? 0),
+      };
+    }),
 });
