@@ -116,6 +116,12 @@ None.
 
 - Clerk webhook secret is still placeholder (`whsec_xxx`). Tenant auto-provisioning via webhooks won't work until configured with real secret from Clerk dashboard.
 
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 29 | Stepper checkmark → text-primary bold + document as site-wide stepper | 2026-02-23 | 1932bc4 | [29-stepper-checkmark-color-to-primary-foreg](.planning/quick/29-stepper-checkmark-color-to-primary-foreg/) |
+
 ## Session Continuity
 
 Last session: 2026-02-23
