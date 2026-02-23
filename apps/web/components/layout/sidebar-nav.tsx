@@ -5,13 +5,9 @@ import Link from "next/link";
 import {
   Home,
   FolderKanban,
-  DollarSign,
-  FileText,
   Users,
   HardHat,
   Settings,
-  BarChart,
-  Briefcase,
 } from "lucide-react";
 import {
   SidebarMenu,
@@ -24,10 +20,6 @@ const mainNav = [
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/customers", label: "Customers", icon: Users },
   { href: "/subcontractors", label: "Subcontractors", icon: HardHat },
-  { href: "/bids", label: "Bidding", icon: Briefcase },
-  { href: "/financials", label: "Financials", icon: DollarSign },
-  { href: "/documents", label: "Documents", icon: FileText },
-  { href: "/reports", label: "Reports", icon: BarChart },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
