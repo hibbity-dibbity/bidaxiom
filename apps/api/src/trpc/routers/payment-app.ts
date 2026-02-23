@@ -394,7 +394,39 @@ export const paymentAppRouter = router({
         .where(and(...conditions))
         .orderBy(desc(schema.paymentApps.createdAt));
 
-      return paymentApps;
+      // Bulk query pending approval steps (single query, not per-row)
+      const pendingSteps = paymentApps.length > 0
+        ? await db
+            .select()
+            .from(schema.paymentAppApprovalSteps)
+            .where(
+              and(
+                inArray(schema.paymentAppApprovalSteps.paymentAppId, paymentApps.map(pa => pa.id)),
+                eq(schema.paymentAppApprovalSteps.status, "pending")
+              )
+            )
+        : [];
+
+      // Compute normalizedRole once before the map (not per-row)
+      const normalizedRole = ctx.orgRole?.startsWith("org:") ? ctx.orgRole : `org:${ctx.orgRole}`;
+
+      // Build map: first pending step per pay app (keyed by paymentAppId)
+      const pendingStepMap = new Map<string, typeof pendingSteps[number]>();
+      for (const step of pendingSteps) {
+        if (!pendingStepMap.has(step.paymentAppId)) {
+          pendingStepMap.set(step.paymentAppId, step);
+        }
+      }
+
+      return paymentApps.map(pa => {
+        const pendingStep = pendingStepMap.get(pa.id);
+        const canCurrentUserApprove = pendingStep
+          ? (pendingStep.approverUserId === ctx.userId) ||
+            (!!pendingStep.approverRole && pendingStep.approverRole === normalizedRole) ||
+            (!pendingStep.approverUserId && !pendingStep.approverRole)
+          : false;
+        return { ...pa, canCurrentUserApprove };
+      });
     }),
 
   /**
