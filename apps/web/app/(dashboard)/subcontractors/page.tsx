@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, ChevronsUpDown, ChevronUp, ChevronDown, HardHat, SearchX } from "lucide-react";
+import { Plus, ChevronsUpDown, ChevronUp, ChevronDown, Download, HardHat, SearchX } from "lucide-react";
 import { CSI_DIVISIONS } from "@/lib/csi-divisions";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -139,6 +139,44 @@ export default function SubcontractorsPage() {
     enableSortingRemoval: false,
   });
 
+  const exportCsv = () => {
+    const rows = table.getRowModel().rows;
+    const today = new Date().toISOString().split("T")[0];
+    const filename = `subcontractors-${today}.csv`;
+
+    const escape = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
+
+    const formatTrades = (trades: number[]) => {
+      const names = trades.slice(0, 3).map((t) => {
+        const div = CSI_DIVISIONS.find((d) => d.number === t);
+        return div ? `${div.number} - ${div.name}` : String(t);
+      });
+      if (trades.length > 3) names.push(`+${trades.length - 3} more`);
+      return names.join(" | ");
+    };
+
+    const header = ["Company", "Contact", "Email", "Trade", "Status"].map(escape).join(",");
+    const csvRows = rows.map((row) => {
+      const s = row.original;
+      return [
+        s.companyName ?? "",
+        s.contactName ?? "",
+        s.contactEmail ?? "",
+        formatTrades(s.trades),
+        getStatusLabel(s.status),
+      ].map(escape).join(",");
+    });
+
+    const csv = [header, ...csvRows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   // Derive filter chips from active secondary filter values
   const activeChips: FilterChip[] = [
     ...(statusFilter !== "all"
@@ -171,10 +209,21 @@ export default function SubcontractorsPage() {
             Manage your subcontractor relationships and bid history
           </p>
         </div>
-        <Button onClick={() => router.push("/subcontractors/new")}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Subcontractor
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={exportCsv}
+            disabled={table.getRowModel().rows.length === 0}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+          <Button onClick={() => router.push("/subcontractors/new")}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Subcontractor
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
