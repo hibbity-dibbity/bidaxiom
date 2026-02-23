@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronDown, ChevronUp, ChevronsUpDown, FolderOpen, SearchX } from "lucide-react";
+import { ChevronDown, ChevronUp, ChevronsUpDown, Download, FolderOpen, SearchX } from "lucide-react";
 import { createColumns } from "./columns";
 import { cn } from "@/lib/utils";
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
@@ -94,6 +94,35 @@ export function ProjectsTable({
   const startIndex = total === 0 ? 0 : offset + 1;
   const endIndex = Math.min(offset + pageSize, total);
 
+  const exportCsv = () => {
+    const rows = table.getRowModel().rows;
+    const today = new Date().toISOString().split("T")[0];
+    const filename = `projects-${today}.csv`;
+
+    const escape = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
+
+    const header = ["Job #", "Name", "Customer", "Phase", "Start Date"].map(escape).join(",");
+    const csvRows = rows.map((row) => {
+      const p = row.original;
+      return [
+        p.jobNumber ?? "",
+        p.name,
+        p.customerName ?? "",
+        p.lifecyclePhase ?? "",
+        p.startDate ? new Date(p.startDate).toLocaleDateString() : "",
+      ].map(escape).join(",");
+    });
+
+    const csv = [header, ...csvRows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (isLoading) {
     return (
       <div className="rounded-md border">
@@ -140,7 +169,16 @@ export function ProjectsTable({
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex justify-end items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={exportCsv}
+          disabled={table.getRowModel().rows.length === 0}
+        >
+          <Download className="mr-2 h-4 w-4" />
+          Export CSV
+        </Button>
         <ColumnPicker table={table} />
       </div>
       <div className="rounded-md border relative w-full overflow-auto max-h-[70vh]">
