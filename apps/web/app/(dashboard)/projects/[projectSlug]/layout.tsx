@@ -24,7 +24,15 @@ export default function ProjectLayout({ children, params }: ProjectLayoutProps) 
   });
 
   // Fetch budget summary (enabled only when project is loaded)
+  // NOTE: Keep this query — the Overview tab uses the cached result
   const { data: budgetSummary } = trpc.budget.getProjectSummary.useQuery(
+    { projectId: project?.id ?? "" },
+    { enabled: !!project?.id }
+  );
+  void budgetSummary; // consumed by Overview tab via React Query cache
+
+  // Fetch header stats for the financial stat bar (enabled only when project is loaded)
+  const { data: headerStats } = trpc.project.getHeaderStats.useQuery(
     { projectId: project?.id ?? "" },
     { enabled: !!project?.id }
   );
@@ -78,45 +86,35 @@ export default function ProjectLayout({ children, params }: ProjectLayoutProps) 
     );
   }
 
-  // Success state: Render persistent header + tabs + dynamic children
+  // Success state: Sticky chrome wrapper + scrollable content
   return (
-    <div className="space-y-4">
-      {/* Persistent header - never reloads when navigating between sections */}
-      <ProjectHeader
-        project={{
-          id: project.id,
-          jobNumber: project.jobNumber,
-          name: project.name,
-          slug: project.slug ?? "",
-          lifecyclePhase: project.lifecyclePhase ?? "opportunity",
-          projectMode: project.projectMode ?? "gc_advanced",
-          customerId: project.customerId,
-          customerSlug: project.customer?.slug ?? null,
-          customerName: project.customer?.companyName || project.customer?.contactName || null,
-          street1: project.street1,
-          city: project.city,
-          state: project.state,
-          zip: project.zip,
-          startDate: project.startDate,
-          endDate: project.endDate,
-          budget: project.budget,
-          restoredAt: project.restoredAt ?? null,
-        }}
-        budgetSummary={budgetSummary ?? null}
-        teamMemberCount={project.teamMembers?.length ?? 0}
-        canTransition={canTransition}
-        canDelete={isAdmin}
-      />
-
-      {/* Persistent tabs - highlight active section */}
-      <ProjectTabs
-        projectSlug={projectSlug}
-        projectMode={project.projectMode ?? "gc_advanced"}
-        lifecyclePhase={project.lifecyclePhase ?? "opportunity"}
-      />
-
-      {/* Dynamic content area - page.tsx renders here */}
-      <div className="mt-4">{children}</div>
+    <div>
+      {/* Sticky chrome wrapper — sticks within main's overflow-auto scroll context */}
+      <div className="sticky top-0 z-10 bg-background -mx-6 -mt-6 px-6 pt-4 border-b">
+        <ProjectHeader
+          project={{
+            id: project.id,
+            jobNumber: project.jobNumber,
+            name: project.name,
+            slug: project.slug ?? "",
+            lifecyclePhase: project.lifecyclePhase ?? "opportunity",
+            projectMode: project.projectMode ?? "gc_advanced",
+            customerId: project.customerId,
+            customerSlug: project.customer?.slug ?? null,
+            restoredAt: project.restoredAt ?? null,
+          }}
+          headerStats={headerStats ?? null}
+          canTransition={canTransition}
+          canDelete={isAdmin}
+        />
+        <ProjectTabs
+          projectSlug={projectSlug}
+          projectMode={project.projectMode ?? "gc_advanced"}
+          lifecyclePhase={project.lifecyclePhase ?? "opportunity"}
+        />
+      </div>
+      {/* Scrollable content area with restored top padding */}
+      <div className="pt-4">{children}</div>
     </div>
   );
 }
