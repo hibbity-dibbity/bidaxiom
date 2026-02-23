@@ -31,15 +31,13 @@ export function EstimateStepperBar() {
                 onClick={() => goToStep(step.number)}
                 className={cn(
                   "w-8 h-8 rounded-full border-2 flex items-center justify-center flex-shrink-0 cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                  isActive
+                  (isDone || isActive)
                     ? "bg-primary border-primary"
-                    : isDone
-                    ? "bg-transparent border-primary"
                     : "bg-transparent border-muted-foreground/40"
                 )}
               >
                 {isDone ? (
-                  <Check className="h-4 w-4 text-primary" strokeWidth={2.5} />
+                  <Check className="h-5 w-5 text-brand-slate" strokeWidth={3} />
                 ) : (
                   <span
                     className={cn(

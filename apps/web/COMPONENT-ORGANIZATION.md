@@ -338,7 +338,7 @@ Apply `text-financial-positive/negative/pending` ONLY to the number value and it
 Use for any page that requires a structured multi-step workflow with visible step progress navigation. This is the site-wide standard — do not build a custom stepper; adapt this component or create a parallel store.
 
 **Visual design (locked):**
-- **Done:** outlined teal circle (`bg-transparent border-primary`) + teal bold checkmark (`text-primary`, `strokeWidth={2.5}`)
+- **Done:** solid teal circle (`bg-primary border-primary`) + large bold slate checkmark (`text-brand-slate`, `h-5 w-5`, `strokeWidth={3}`) — matches company logo icon
 - **Active:** filled teal circle (`bg-primary border-primary`) + white step number (`text-primary-foreground`, `font-semibold`)
 - **Future:** gray outlined circle (`bg-transparent border-muted-foreground/40`) + muted number (`text-muted-foreground`)
 - **Connecting lines:** `bg-primary` for completed segments, `bg-border` for incomplete
