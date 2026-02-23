@@ -10,16 +10,16 @@ See: .planning/PROJECT.md (updated 2026-02-23)
 ## Current Position
 
 Phase: 47 of 52 (Sidebar Cleanup)
-Plan: —
-Status: Ready to plan
-Last activity: 2026-02-23 — v1.7 roadmap created (6 phases, 20 requirements mapped, Phases 47-52)
+Plan: 01 complete
+Status: In progress (1/1 plans done for Phase 47)
+Last activity: 2026-02-23 — 47-01 complete: sidebar trimmed to 5 nav items, Navigation heading removed
 
-Progress: v1.0-v1.6: [██████████] 100% | v1.7: [░░░░░░░░░░] 0% (Phase 47 next)
+Progress: v1.0-v1.6: [██████████] 100% | v1.7: [█░░░░░░░░░] 10% (Phase 47 complete, Phase 48 next)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 185
+- Total plans completed: 186
 - Average duration: ~4.3 min/plan
 - Total execution time: ~11.7 hours
 
@@ -41,6 +41,8 @@ Recent decisions relevant to v1.7:
 - [Phase 46]: project-tabs.tsx tab routing uses `<Link href scroll={false}>` — preserve this pattern when redesigning tabs in Phase 49
 - [Phase 46]: Mode switch DropdownMenuItem in ellipsis menu — this entire control is removed in Phase 48
 - [Phase 36]: lifecyclePhase defaults to opportunity; projectMode defaults to gc_advanced for existing tenants — Phase 48 hides mode UI but preserves underlying data
+- [Phase 47]: Removed Bidding, Financials, Documents, Reports nav entries — routes remain on disk
+- [Phase 47]: Removed Navigation group heading; SidebarGroup wrapper retained for future use
 
 ### Pending Todos
 
@@ -54,5 +56,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: v1.7 roadmap created — 6 phases (47-52), 20/20 requirements mapped. Phase 47 ready to plan.
+Stopped at: Completed 47-01-PLAN.md — sidebar nav cleaned up, 2 tasks, 2 commits (bf6d2bd, c41d84e)
 Resume file: None
