@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-23)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.6 archived — planning next milestone
+**Current focus:** v1.7 Project Flow Enhancements — defining roadmap
 
 ## Current Position
 
-Phase: v1.6 ARCHIVED
-Plan: All 46 phases complete (185 plans)
-Status: v1.6 milestone archived — ready for /gsd:new-milestone
-Last activity: 2026-02-23 — v1.6 archived: ROADMAP collapsed, REQUIREMENTS archived, PROJECT.md evolved, git tag v1.6
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements for v1.7
+Last activity: 2026-02-23 — Milestone v1.7 started: requirements defined (20 requirements, 6 categories)
 
-Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100% | v1.5: [██████████] 100% | v1.6: [██████████] 100%
+Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100% | v1.5: [██████████] 100% | v1.6: [██████████] 100% | v1.7: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
@@ -140,5 +140,5 @@ None — v1.6 milestone archived. Start next milestone with /gsd:new-milestone.
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: v1.6 milestone archived — audit passed (27/27), cache invalidation fix applied, ROADMAP collapsed, REQUIREMENTS archived, PROJECT.md evolved, git tag v1.6 created.
+Stopped at: v1.7 started — 20 requirements defined across NAV/MODE/TABS/FLOW/PHASE/TRADE categories. Roadmap creation next.
 Resume file: None

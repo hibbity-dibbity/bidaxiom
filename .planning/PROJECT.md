@@ -128,7 +128,19 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 
 ### Active
 
-<!-- Next milestone requirements go here — use /gsd:new-milestone to define -->
+<!-- v1.7 Project Flow Enhancements -->
+
+**Milestone v1.7: Project Flow Enhancements** (Started: 2026-02-23)
+
+**Goal:** Simplify and streamline the project experience — remove GC/Advanced complexity, redesign project tabs for a clean Simple mode flow, eliminate approval bottlenecks, allow free lifecycle navigation, and simplify trade terminology.
+
+**Target features:**
+- Sidebar cleanup: remove Bidding, Financials, Documents, Reports sections + "Navigation" heading
+- Remove project mode switcher entirely; hide all GC/Advanced features
+- Project tabs redesign: Overview → Documents → Proposals → Change Orders → Invoices → Expenses
+- Remove approval workflows; add "Send to Customer" button with customer auto-populate
+- Free lifecycle phase navigation: any phase to any phase, no guards
+- Trade simplification: replace CSI codes with simple trade names on subcontractor page
 
 ### Out of Scope
 
