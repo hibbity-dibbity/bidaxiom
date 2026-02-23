@@ -131,8 +131,8 @@
 - [ ] **Phase 41: Design Foundation** — Dark mode audit, semantic token system, canonical class recipes, npm package installation
 - [x] **Phase 42: Shared UI Primitives** — Dense table component, badge variants, status badge consolidation, visual consistency (completed 2026-02-22)
 - [x] **Phase 43: Budget Domain Redesign** — Dense financial tables, column picker, inline row add, filter chips, empty states (completed 2026-02-22)
-- [ ] **Phase 44: Change Order and Payment App Redesign** — CSV export, inline approve/reject, inline mark-paid on list rows
-- [ ] **Phase 45: Estimates Redesign** — Horizontal stepper bar, react-number-format currency inputs, form section grouping
+- [x] **Phase 44: Change Order and Payment App Redesign** — CSV export, inline approve/reject, inline mark-paid on list rows (completed 2026-02-23)
+- [x] **Phase 45: Estimates Redesign** — Horizontal stepper bar, react-number-format currency inputs, form section grouping (completed 2026-02-23)
 - [ ] **Phase 46: Project Header, Tabs, and Navigation Chrome** — Compact sticky header, financial stat bar, tab count badges, URL-based tab routing
 
 ## Phase Details
@@ -258,6 +258,6 @@ Plans:
 | 41. Design Foundation | 6/6 | Complete | 2026-02-21 |
 | 42. Shared UI Primitives | 0/5 | Complete    | 2026-02-22 |
 | 43. Budget Domain Redesign | 0/5 | Complete    | 2026-02-22 |
-| 44. Change Order and Payment App Redesign | 3/5 | In progress | - |
-| 45. Estimates Redesign | 0/4 | Not started | - |
+| 44. Change Order and Payment App Redesign | 5/5 | Complete | 2026-02-23 |
+| 45. Estimates Redesign | 4/4 | Complete | 2026-02-23 |
 | 46. Project Header, Tabs, and Navigation Chrome | 0/TBD | Not started | - |

@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-02-21)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.6 UX Redesign & Polish — Phase 44 complete; Phase 45 next
+**Current focus:** v1.6 UX Redesign & Polish — Phase 45 complete; Phase 46 next
 
 ## Current Position
 
-Phase: 44 of 46 (Change Order & Payment App Redesign) — COMPLETE
-Plan: 05 complete (all 5 plans done, 2 gap closure plans)
-Status: Phase 44 COMPLETE — verified 11/11
-Last activity: 2026-02-23 — Phase 44 complete: all 5 plans executed and verified; LIST-04 fully closed with CSV export on all 6 filtered list views (CO, pay apps, projects, subcontractors, estimates, RFQs)
+Phase: 45 of 46 (Estimates Redesign) — COMPLETE
+Plan: 04 complete (all 4 plans done)
+Status: Phase 45 COMPLETE — verified 13/13
+Last activity: 2026-02-23 — Phase 45 complete: horizontal stepper bar (EstimateStepperBar) wired into workflow page, WorkflowSidebar removed, Next buttons on all 6 steps, CurrencyInput rewritten with NumericFormat live masking, section grouping on wizard Steps 1/2/4
 
-Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100% | v1.5: [██████████] 100% | v1.6: [██░░░░░░░░] 17%
+Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100% | v1.5: [██████████] 100% | v1.6: [████░░░░░░] 33%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 177 (138 through v1.4, +19 in v1.5, +6 in v1.6 Phase 41, +5 in v1.6 Phase 42, +5 in v1.6 Phase 43, +4 in v1.6 Phase 44)
+- Total plans completed: 181 (138 through v1.4, +19 in v1.5, +6 in v1.6 Phase 41, +5 in v1.6 Phase 42, +5 in v1.6 Phase 43, +4 in v1.6 Phase 44, +4 in v1.6 Phase 45)
 - Average duration: ~4.3 min/plan
 - Total execution time: ~11.7 hours
 
@@ -119,5 +119,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: Phase 44 complete — all 5 plans executed (44-01 through 44-05), verified 11/11. LIST-04 fully satisfied. Phase 45 is next.
+Stopped at: Phase 45 complete — all 4 plans executed (45-01 through 45-04), verified 13/13. FORM-01/02/03 fully satisfied. Phase 46 is next.
 Resume file: None
