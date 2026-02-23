@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-21)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.6 UX Redesign & Polish — Phase 44: Change Order & Payment App Redesign (plan 01 complete)
+**Current focus:** v1.6 UX Redesign & Polish — Phase 44: Change Order & Payment App Redesign (plan 03 complete)
 
 ## Current Position
 
 Phase: 44 of 46 (Change Order & Payment App Redesign)
-Plan: 01 complete
-Status: Phase 44 IN PROGRESS — Plan 01 complete
-Last activity: 2026-02-23 — Phase 44 Plan 01 complete: canCurrentUserApprove added to CO list and pay app list endpoints via bulk inArray query; LIST-05 and LIST-06 satisfied
+Plan: 03 complete
+Status: Phase 44 IN PROGRESS — Plan 03 complete
+Last activity: 2026-02-23 — Phase 44 Plan 03 complete: CSV export and inline Approve/Mark Paid actions added to PaymentAppList; LIST-04 and LIST-06 satisfied
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100% | v1.5: [██████████] 100% | v1.6: [██░░░░░░░░] 17%
 
@@ -96,6 +96,9 @@ Recent decisions relevant to v1.6:
 - [44-01]: normalizedRole computed once before .map() in both list endpoints — not recalculated per row; matches existing approve/reject mutation pattern
 - [44-01]: Empty list guard (length === 0) skips inArray DB call entirely — prevents inArray([]) edge case and avoids unnecessary DB round-trip
 - [44-01]: First pending step wins in pendingStepMap — consistent with approve/reject mutation behavior (which uses find(s => s.status === 'pending'))
+- [44-03]: Export CSV button placed in left side of filter toolbar alongside status Select — consistent with standard toolbar layout patterns
+- [44-03]: canCurrentUserApprove cast via (row.original as any) — field is present at runtime from 44-01 API change but not yet in static ColumnDef type; avoids separate type augmentation
+- [44-03]: Mark Paid shows for status===approved with no canCurrentUserApprove check — any user with project access can mark as paid per spec
 
 ### Pending Todos
 
@@ -108,5 +111,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: Phase 44 Plan 01 complete — canCurrentUserApprove added to CO list and pay app list endpoints via bulk inArray query. LIST-05 and LIST-06 satisfied.
+Stopped at: Phase 44 Plan 03 complete — CSV export and inline Approve/Mark Paid actions added to PaymentAppList. LIST-04 and LIST-06 satisfied.
 Resume file: None
