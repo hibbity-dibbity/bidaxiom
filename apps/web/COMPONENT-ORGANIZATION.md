@@ -331,6 +331,23 @@ Apply `text-financial-positive/negative/pending` ONLY to the number value and it
 - Table row hover → `bg-muted/50`
 - Input/select background → inherits from `bg-input` (border-input for border)
 
+### Progress Stepper (Multi-Step Workflow)
+
+**Canonical component:** `components/estimates/workflow/EstimateStepperBar.tsx`
+
+Use for any page that requires a structured multi-step workflow with visible step progress navigation. This is the site-wide standard — do not build a custom stepper; adapt this component or create a parallel store.
+
+**Visual design (locked):**
+- **Done:** outlined teal circle (`bg-transparent border-primary`) + teal bold checkmark (`text-primary`, `strokeWidth={2.5}`)
+- **Active:** filled teal circle (`bg-primary border-primary`) + white step number (`text-primary-foreground`, `font-semibold`)
+- **Future:** gray outlined circle (`bg-transparent border-muted-foreground/40`) + muted number (`text-muted-foreground`)
+- **Connecting lines:** `bg-primary` for completed segments, `bg-border` for incomplete
+- **Label:** only the active step shows a label (`text-xs font-semibold uppercase tracking-wider text-muted-foreground`); non-active steps render `<span className="h-4" />` placeholder to prevent layout shifts
+
+**State:** Zustand via `useWorkflowState` — for new workflows, create a parallel `useXxxWorkflowState` store with the same `currentStep` / `goToStep` interface.
+
+---
+
 ### Package Import Paths
 
 ```typescript
