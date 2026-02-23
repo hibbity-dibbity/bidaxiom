@@ -34,7 +34,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ChevronsUpDown, ChevronUp, ChevronDown, Plus, FilePlus, Search, SearchX, Download } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { ChevronsUpDown, ChevronUp, ChevronDown, Plus, FilePlus, Search, SearchX, Download, Check, X } from "lucide-react";
 import type { ChangeOrderStatus, ChangeOrderType } from "@construction/shared";
 
 interface ChangeOrderListProps {
@@ -71,11 +81,48 @@ export function ChangeOrderList({ projectId, projectSlug }: ChangeOrderListProps
   const [searchInput, setSearchInput] = useState("");
   const debouncedSearch = useDebounce(searchInput, 300);
 
+  const [pendingActionId, setPendingActionId] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<"approve" | "reject" | null>(null);
+  const [actionComments, setActionComments] = useState("");
+
   const { data: changeOrders, isLoading } = trpc.changeOrder.list.useQuery({
     projectId,
     status: statusFilter === "all" ? undefined : (statusFilter as ChangeOrderStatus),
     type: typeFilter === "all" ? undefined : (typeFilter as ChangeOrderType),
   });
+
+  const utils = trpc.useUtils();
+
+  const approveMutation = trpc.changeOrder.approve.useMutation({
+    onSuccess: () => {
+      utils.changeOrder.list.invalidate({ projectId });
+      setPendingActionId(null);
+      setPendingAction(null);
+      setActionComments("");
+    },
+  });
+
+  const rejectMutation = trpc.changeOrder.reject.useMutation({
+    onSuccess: () => {
+      utils.changeOrder.list.invalidate({ projectId });
+      setPendingActionId(null);
+      setPendingAction(null);
+      setActionComments("");
+    },
+  });
+
+  const handleConfirm = () => {
+    if (!pendingActionId || !pendingAction) return;
+    if (pendingAction === "approve") {
+      approveMutation.mutate({ changeOrderId: pendingActionId, comments: actionComments || undefined });
+    } else {
+      rejectMutation.mutate({ changeOrderId: pendingActionId, comments: actionComments });
+    }
+  };
+
+  const isRejecting = pendingAction === "reject";
+  const canConfirm = isRejecting ? actionComments.trim().length > 0 : true;
+  const isMutating = approveMutation.isPending || rejectMutation.isPending;
 
   const handleNavigateToDetail = (changeOrderId: string) => {
     router.push(`/projects/${projectSlug}/change-orders/${changeOrderId}`);
@@ -160,6 +207,11 @@ export function ChangeOrderList({ projectId, projectSlug }: ChangeOrderListProps
       accessorKey: "createdAt",
       header: "Date",
       enableSorting: true,
+    },
+    {
+      id: "actions",
+      header: "",
+      enableSorting: false,
     },
   ], []);
 
@@ -371,6 +423,46 @@ export function ChangeOrderList({ projectId, projectSlug }: ChangeOrderListProps
                   <TableCell className="text-sm text-muted-foreground">
                     {new Date(row.original.createdAt).toLocaleDateString()}
                   </TableCell>
+                  {/* Actions */}
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    {(() => {
+                      const co = row.original as any;
+                      const isPending = co.status === "pco_submitted" || co.status === "pending_approval";
+                      if (!isPending || !co.canCurrentUserApprove) return null;
+                      return (
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 text-financial-positive hover:text-financial-positive hover:bg-financial-positive/10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPendingActionId(co.id);
+                              setPendingAction("approve");
+                              setActionComments("");
+                            }}
+                          >
+                            <Check className="h-3.5 w-3.5 mr-1" />
+                            Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 text-financial-negative hover:text-financial-negative hover:bg-financial-negative/10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPendingActionId(co.id);
+                              setPendingAction("reject");
+                              setActionComments("");
+                            }}
+                          >
+                            <X className="h-3.5 w-3.5 mr-1" />
+                            Reject
+                          </Button>
+                        </div>
+                      );
+                    })()}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -384,11 +476,68 @@ export function ChangeOrderList({ projectId, projectSlug }: ChangeOrderListProps
                   />
                 </TableCell>
                 <TableCell />
+                <TableCell />
               </TableRow>
             </TableFooter>
           </Table>
         </div>
       )}
+
+      <Dialog
+        open={!!pendingActionId}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingActionId(null);
+            setPendingAction(null);
+            setActionComments("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {pendingAction === "approve" ? "Approve Change Order" : "Reject Change Order"}
+            </DialogTitle>
+            <DialogDescription>
+              {pendingAction === "approve"
+                ? "This will approve the change order. This action cannot be undone."
+                : "This will reject the change order. This action cannot be undone."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="co-action-comments">
+              Comments {isRejecting ? "(required)" : "(optional)"}
+            </Label>
+            <Textarea
+              id="co-action-comments"
+              value={actionComments}
+              onChange={(e) => setActionComments(e.target.value)}
+              placeholder={isRejecting ? "Reason for rejection..." : "Optional comments..."}
+              rows={3}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setPendingActionId(null);
+                setPendingAction(null);
+                setActionComments("");
+              }}
+              disabled={isMutating}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant={pendingAction === "reject" ? "destructive" : "default"}
+              onClick={handleConfirm}
+              disabled={!canConfirm || isMutating}
+            >
+              {isMutating ? "Saving..." : pendingAction === "approve" ? "Approve" : "Reject"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
