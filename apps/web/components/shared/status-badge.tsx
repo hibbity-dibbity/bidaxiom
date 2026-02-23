@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
@@ -51,12 +52,15 @@ export interface StatusBadgeProps
  * <StatusBadge variant="rejected">Rejected</StatusBadge>
  * ```
  */
-export function StatusBadge({ className, variant, children, ...props }: StatusBadgeProps) {
-  return (
-    <span className={cn(statusBadgeVariants({ variant }), className)} {...props}>
-      {children}
-    </span>
-  );
-}
+export const StatusBadge = React.forwardRef<HTMLSpanElement, StatusBadgeProps>(
+  ({ className, variant, children, ...props }, ref) => {
+    return (
+      <span ref={ref} className={cn(statusBadgeVariants({ variant }), className)} {...props}>
+        {children}
+      </span>
+    );
+  }
+);
+StatusBadge.displayName = "StatusBadge";
 
 export { statusBadgeVariants };
