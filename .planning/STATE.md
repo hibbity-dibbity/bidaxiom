@@ -2,17 +2,17 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-21)
+See: .planning/PROJECT.md (updated 2026-02-23)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.6 UX Redesign & Polish — Phase 46 complete
+**Current focus:** v1.6 archived — planning next milestone
 
 ## Current Position
 
-Phase: 46 of 46 (Project Header Tabs and Navigation) — COMPLETE
-Plan: All 4 plans complete (46-01 through 46-04)
-Status: v1.6 milestone complete — all 46 phases done
-Last activity: 2026-02-23 — Phase 46 complete: sticky 3-row header (title/info/stats), tab count badges, gap closure for info row + dropdown fix
+Phase: v1.6 ARCHIVED
+Plan: All 46 phases complete (185 plans)
+Status: v1.6 milestone archived — ready for /gsd:new-milestone
+Last activity: 2026-02-23 — v1.6 archived: ROADMAP collapsed, REQUIREMENTS archived, PROJECT.md evolved, git tag v1.6
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100% | v1.5: [██████████] 100% | v1.6: [██████████] 100%
 
@@ -123,7 +123,7 @@ Recent decisions relevant to v1.6:
 
 ### Pending Todos
 
-None.
+None — v1.6 milestone archived. Start next milestone with /gsd:new-milestone.
 
 ### Blockers/Concerns
 
@@ -140,5 +140,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: Phase 46 complete — all 4 plans done (46-01 API, 46-02 sticky header, 46-03 tab badges, 46-04 gap closure). v1.6 milestone complete.
+Stopped at: v1.6 milestone archived — audit passed (27/27), cache invalidation fix applied, ROADMAP collapsed, REQUIREMENTS archived, PROJECT.md evolved, git tag v1.6 created.
 Resume file: None

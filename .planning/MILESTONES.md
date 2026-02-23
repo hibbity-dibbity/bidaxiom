@@ -75,3 +75,20 @@
 
 ---
 
+
+## v1.6 UX Redesign & Polish (Shipped: 2026-02-23)
+
+**Phases completed:** 6 phases (Phases 41-46), 29 plans
+**Timeline:** 2026-02-21 → 2026-02-23 (3 days)
+**Files changed:** 167 files, +21,487 / -2,340 lines
+
+**Key accomplishments:**
+- CSS variable design token system (`text-financial-positive/negative/pending`) migrated across 56 files — dark-mode-ready financial color semantics application-wide
+- 12 financial tables upgraded to Procore-level density — sticky headers, frozen first columns, TanStack sort, sticky financial footers — plus unified 4-tier StatusBadge
+- ColumnPicker (column visibility), inline draft rows, debounced search, removable FilterChips, and contextual EmptyState with CTAs across all 7 major list views
+- Inline Approve/Reject/Mark Paid in CO and pay app list rows with confirmation dialogs + CSV export across all 6 filtered table views
+- New horizontal stepper bar with teal/slate visual states + react-number-format live currency masking in estimate wizard
+- Sticky 3-row project chrome: title/info/stats header, 5-field financial stat bar, "(N)" count badges on CO/Pay App/Documents/Invoices tabs
+
+---
+

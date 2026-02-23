@@ -10,7 +10,7 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 
 ## Current State
 
-**Shipped:** v1.0–v1.5 (all milestones complete as of Feb 21, 2026)
+**Shipped:** v1.0–v1.6 (all milestones complete as of Feb 23, 2026)
 
 **What's built:**
 - Complete project financial lifecycle (RFQs → bidding → budget → change orders → payment apps)
@@ -26,10 +26,15 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 - Document workflows (RFIs, submittals, transmittals) with approval chains
 - Reporting & analytics with custom builder and scheduled delivery
 - Calendar integration (Google, Microsoft) with bi-directional sync
+- Procore-level UX density: CSS design token system (`text-financial-positive/negative/pending`), 12 financial tables with sticky headers/frozen columns/TanStack sort, unified 4-tier StatusBadge
+- Inline approval actions (Approve/Reject/Mark Paid) in CO and pay app list views without page navigation
+- CSV export across all 6 filtered table views
+- ColumnPicker (column visibility), inline draft rows, search + FilterChips, contextual EmptyState on all major list views
+- Horizontal stepper bar in estimate wizard with live react-number-format currency masking
+- Sticky 3-row project chrome: title/info/stats header, 5-field financial stat bar, count badges on key tabs
 - Enterprise-grade UI with dark mode, global ⌘K search (projects, customers, estimates, subcontractors)
 - Full BIDAXIOM rebrand — cyan-teal palette, flat design system, BIDAXIOM favicon
 - Company selector in user dropdown (switch companies without page reload)
-- Currency format on blur ($X,XXX.XX) across all 7 amount fields
 - Guided estimate workflow with cost code templates, labor rates, and SOV builder
 - Estimate lifecycle (draft → submitted → bid → won → active project)
 - Slug-based routing for projects, customers, and subcontractors (fully migrated)
@@ -38,9 +43,9 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 - Consolidated account settings (/settings/account) with password change and MFA management
 - Consistent empty states, skeleton loading, and global API error toast handling
 
-**Tech stack:** Next.js 14, Fastify, tRPC, Drizzle ORM, PostgreSQL (schema-per-tenant), Redis, MinIO (S3), Tailwind CSS, Puppeteer, docxtemplater, LibreOffice (optional), archiver
+**Tech stack:** Next.js 14, Fastify, tRPC, Drizzle ORM, PostgreSQL (schema-per-tenant), Redis, MinIO (S3), Tailwind CSS, Puppeteer, docxtemplater, LibreOffice (optional), archiver, react-number-format, motion v12, @tanstack/react-virtual
 
-**Codebase:** ~164,000+ lines of TypeScript across 40 phases
+**Codebase:** ~185,000+ lines of TypeScript across 46 phases
 
 ## Requirements
 
@@ -110,20 +115,20 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 - ✓ Custom .docx/.xlsx template import with visual field mapping and preview PDF (docxtemplater+mammoth) — v1.5
 - ✓ Unified flat document table — all document types in one view with type/status/date/author filters — v1.5
 
+**v1.6 UX Redesign & Polish (Phases 41-46):**
+- ✓ CSS variable design token system (`text-financial-positive/negative/pending`) — dark-mode-ready semantic colors across 56 files — v1.6
+- ✓ 12 financial tables upgraded to Procore density: sticky headers, frozen first columns, TanStack sort (2-state), sticky financial footers — v1.6
+- ✓ Unified 4-tier StatusBadge (gray/amber/green/red) — eliminated all domain-specific badge components — v1.6
+- ✓ ColumnPicker (column visibility), inline draft rows (no dialog), debounced search, FilterChips, EmptyState with CTAs on all 7 major list views — v1.6
+- ✓ Inline Approve/Reject/Mark Paid in CO and pay app list rows with confirmation dialogs; getHeaderStats cache invalidated on approval — v1.6
+- ✓ CSV export across all 6 filtered table views (Projects, Subcontractors, Change Orders, Payment Apps, Estimates, RFQs) — v1.6
+- ✓ Horizontal stepper bar in estimate wizard (teal/slate visual states); react-number-format live `$` masking on all currency inputs — v1.6
+- ✓ Sticky 3-row project chrome: compact title/info/stats header, 5-field financial stat bar, "(N)" count badges on CO/Pay App/Documents/Invoices tabs — v1.6
+- ✓ Canonical COMPONENT-ORGANIZATION.md recipes enforced across all surfaces — v1.6
+
 ### Active
 
-<!-- v1.6 UX Redesign -->
-
-**Milestone v1.6: UX Redesign & Polish** (Started: 2026-02-21)
-
-**Goal:** Redesign BIDAXIOM's UX to Procore-level density and polish — systematic audit of every surface, comprehensive overhaul of project detail pages, list/table views, and data entry forms, with visual consistency enforced across the entire application.
-
-**Target features:**
-- Project detail pages redesign — tabs, header, financial data layout at Procore density
-- List/table views overhaul — projects, estimates, customers, subs, change orders, pay apps
-- Forms and data entry improvement — progressive disclosure, field layout, multi-step flows
-- Visual consistency audit and enforcement — component library cleanup, spacing, typography, color use
-- Competitive UX benchmarking against Procore and BuilderTrend patterns
+<!-- Next milestone requirements go here — use /gsd:new-milestone to define -->
 
 ### Out of Scope
 
@@ -207,6 +212,16 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 | Partial unique index (doc_type WHERE is_active=true) enforces one-active-template-per-type at DB level (Phase 39) | DB-level constraint cheaper and more reliable than application-level enforcement | ✓ Good |
 | listUnified post-query type filter; author options from project.getBySlug teamMembers (Phase 40) | React Query deduplicates teamMembers request; post-query filter avoids complex SQL for 8 document types | ✓ Good |
 | Bulk-download proxied through Next.js API route to eliminate CORS (Phase 40) | Direct browser→Fastify POST blocked by CORS preflight; server-side proxy consistent with tRPC pattern | ✓ Good |
+| No Radix ScrollArea for sticky tables (Phase 41) | Open GitHub issue radix-ui/primitives #2783 — sticky headers break inside ScrollArea; use plain div overflow-auto + max-height | ✓ Good |
+| Financial tokens: flat string format in tailwind.config.ts (Phase 41) | No nested object; no foreground variant needed for semantic financial colors | ✓ Good |
+| motion v12 import path is 'motion/react' not 'framer-motion' (Phase 41) | Breaking change in v12; wrong import silently falls back to no-op | ✓ Good |
+| React Hook Form Controller show/hide via CSS visibility, never conditional JS mounting (Phase 41) | Conditional mount triggers unmount+remount, resetting field values to undefined | ✓ Good |
+| project-tabs.tsx tab routing via `<Link href scroll={false}>`, NOT Radix Tabs state (Phase 41) | URL-based routing preserves back button, shareable URLs, and sectionPrefetchMap hover-prefetch | ✓ Good |
+| StatusBadge active variant = green (text-financial-positive), same as approved (Phase 42) | Active/operational states signal positive progress, not brand-blue; consistent with approved/completed | ✓ Good |
+| TanStack sort: enableSortingRemoval: false — 2-state cycle only (Phase 42) | No unsorted state after first click; more predictable for financial tables | ✓ Good |
+| canCurrentUserApprove computed per-request in bulk list endpoint via inArray (Phase 44) | Same pattern as approve/reject mutations; first pending step wins; empty guard skips inArray([]) | ✓ Good |
+| getHeaderStats runs all 9 sub-queries in Promise.all (Phase 46) | No sequential awaits; contractValue priority chain: accepted estimate + approved COs > project.budget > 0 | ✓ Good |
+| Approval mutations invalidate getHeaderStats alongside list queries (Phase 46) | Without this, tab badge counts go stale for up to 5 min after inline approval | ✓ Good |
 
 ---
-*Last updated: 2026-02-21 — v1.5 milestone complete*
+*Last updated: 2026-02-23 — v1.6 milestone complete*
