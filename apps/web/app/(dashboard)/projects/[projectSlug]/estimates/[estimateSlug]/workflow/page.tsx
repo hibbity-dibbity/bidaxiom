@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Skeleton } from "@/components/ui/skeleton";
-import { WorkflowSidebar } from "@/components/estimates/workflow/WorkflowSidebar";
+import { EstimateStepperBar } from "@/components/estimates/workflow/EstimateStepperBar";
 import { WorkflowStepContainer } from "@/components/estimates/workflow/WorkflowStepContainer";
 import { useWorkflowState } from "@/components/estimates/workflow/useWorkflowState";
 import { useIsMutating } from "@tanstack/react-query";
@@ -31,18 +31,10 @@ export default function EstimateWorkflowPage({
 
   if (isLoading) {
     return (
-      <div className="flex h-screen">
-        <div className="w-64 border-r p-6">
-          <Skeleton className="h-8 w-32 mb-4" />
-          <div className="space-y-2">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <Skeleton key={i} className="h-10 w-full" />
-            ))}
-          </div>
-        </div>
-        <div className="flex-1 p-6">
-          <Skeleton className="h-96 w-full" />
-        </div>
+      <div className="p-6">
+        <Skeleton className="h-8 w-64 mb-4" />
+        <Skeleton className="h-12 w-full mb-6" />
+        <Skeleton className="h-96 w-full" />
       </div>
     );
   }
@@ -61,31 +53,30 @@ export default function EstimateWorkflowPage({
   }
 
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar Navigation */}
-      <WorkflowSidebar />
-
-      {/* Main Content Area */}
-      <div className="flex-1 p-6">
-        {/* Saving Indicator */}
-        <div className="mb-4 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold">{estimate.name}</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Status: {estimate.status.charAt(0).toUpperCase() + estimate.status.slice(1)}
-            </p>
-          </div>
-          {isMutating > 0 && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
-              <span>Saving...</span>
-            </div>
-          )}
+    <div className="p-6">
+      {/* Page header: estimate name + saving indicator */}
+      <div className="mb-4 flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold">{estimate.name}</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Status: {estimate.status.charAt(0).toUpperCase() + estimate.status.slice(1)}
+          </p>
         </div>
-
-        {/* Step Content */}
-        <WorkflowStepContainer estimateId={estimate.id} currentStep={currentStep} />
+        {isMutating > 0 && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+            <span>Saving...</span>
+          </div>
+        )}
       </div>
+
+      {/* Step progress stepper (FORM-01) — replaces WorkflowSidebar for navigation.
+          Note: wizard steps are rendered via switch/case in WorkflowStepContainer,
+          NOT conditionally mounted in a single form. No Controller unmount risk here. */}
+      <EstimateStepperBar />
+
+      {/* Step content */}
+      <WorkflowStepContainer estimateId={estimate.id} currentStep={currentStep} />
     </div>
   );
 }

@@ -28,7 +28,7 @@ interface LaborRatesStepProps {
  * Unlocks Step 5 after applying rates or clicking Skip.
  */
 export function LaborRatesStep({ estimateId }: LaborRatesStepProps) {
-  const { unlockStep } = useWorkflowState();
+  const { unlockStep, goToStep } = useWorkflowState();
   const utils = trpc.useUtils();
   const [appliedTemplateId, setAppliedTemplateId] = useState<string | null>(null);
 
@@ -66,6 +66,7 @@ export function LaborRatesStep({ estimateId }: LaborRatesStepProps) {
 
   const handleSkip = () => {
     unlockStep(5);
+    goToStep(5);
     toast.info("Labor rates step skipped");
   };
 
@@ -183,15 +184,7 @@ export function LaborRatesStep({ estimateId }: LaborRatesStepProps) {
         <Button variant="ghost" onClick={handleSkip}>
           Skip Labor Rates
         </Button>
-        <p className="text-sm text-muted-foreground">
-          {appliedTemplateId ? (
-            <span className="text-financial-positive font-medium">
-              ✓ Step 5 unlocked - proceed to Markup Configuration
-            </span>
-          ) : (
-            <span>Apply rates or skip to continue</span>
-          )}
-        </p>
+        <Button onClick={() => goToStep(5)}>Next</Button>
       </div>
     </div>
   );

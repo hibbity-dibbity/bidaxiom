@@ -1,6 +1,8 @@
 "use client";
 
+import { useRouter, useParams } from "next/navigation";
 import { trpc } from "@/lib/trpc";
+import { Button } from "@/components/ui/button";
 import { SOVBuilder } from "../../sov/SOVBuilder";
 
 interface SOVBuilderStepProps {
@@ -12,6 +14,11 @@ interface SOVBuilderStepProps {
  * Final step: Generate and adjust Schedule of Values from estimate.
  */
 export function SOVBuilderStep({ estimateId }: SOVBuilderStepProps) {
+  const router = useRouter();
+  const params = useParams<{ projectSlug: string; estimateSlug: string }>();
+  const projectSlug = params.projectSlug;
+  const estimateSlug = params.estimateSlug;
+
   // Load company profile to get default SOV grouping method
   const { data: companyProfile } = trpc.company.getActiveProfile.useQuery();
 
@@ -31,11 +38,16 @@ export function SOVBuilderStep({ estimateId }: SOVBuilderStepProps) {
 
       <SOVBuilder estimateId={estimateId} defaultGroupingMethod={defaultGroupingMethod} />
 
-      <div className="pt-4 border-t">
-        <p className="text-sm text-muted-foreground text-center">
+      <div className="pt-4 border-t flex justify-between items-center">
+        <p className="text-sm text-muted-foreground">
           Once finalized, the SOV will be locked and versioned. Use change orders to modify the
           contract value after finalization.
         </p>
+        <Button
+          onClick={() => router.push(`/projects/${projectSlug}/estimates/${estimateSlug}`)}
+        >
+          Finalize Estimate
+        </Button>
       </div>
     </div>
   );

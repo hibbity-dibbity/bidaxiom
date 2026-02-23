@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { useWorkflowState } from "../useWorkflowState";
+import { Button } from "@/components/ui/button";
 import { EstimateLineItemsTable } from "../../line-items/EstimateLineItemsTable";
 import { formatCurrency } from "../../line-items/MarginCalculator";
 
@@ -16,7 +17,7 @@ interface LineItemsStepProps {
  * Unlocks Step 4 once at least one line item exists.
  */
 export function LineItemsStep({ estimateId }: LineItemsStepProps) {
-  const { unlockStep } = useWorkflowState();
+  const { unlockStep, goToStep } = useWorkflowState();
 
   // Load estimate with line items
   const { data: estimate, isLoading } = trpc.estimates.getById.useQuery(
@@ -75,21 +76,11 @@ export function LineItemsStep({ estimateId }: LineItemsStepProps) {
       />
 
       <div className="pt-4 border-t flex justify-between items-center">
-        <div>
-          <p className="text-sm text-muted-foreground">
-            {estimate.lineItems && estimate.lineItems.length > 0 ? (
-              <span className="text-financial-positive font-medium">
-                ✓ Step 4 unlocked - proceed to Labor Rates
-              </span>
-            ) : (
-              <span>Add at least one line item to unlock the next step</span>
-            )}
-          </p>
-        </div>
         <div className="text-right">
           <p className="text-sm text-muted-foreground">Total Estimate Cost</p>
           <p className="text-2xl font-bold">{formatCurrency(totalCost)}</p>
         </div>
+        <Button onClick={() => goToStep(4)}>Next</Button>
       </div>
     </div>
   );

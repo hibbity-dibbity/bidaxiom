@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { overheadTypeEnum, markupBaseEnum, formatCurrency } from "@construction/shared";
 import { trpc } from "@/lib/trpc";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -43,7 +44,7 @@ interface MarkupConfigStepProps {
 
 export function MarkupConfigStep({ estimateId }: MarkupConfigStepProps) {
   const utils = trpc.useUtils();
-  const { unlockStep } = useWorkflowState();
+  const { unlockStep, goToStep } = useWorkflowState();
 
   // Load company defaults
   const { data: companyProfile } = trpc.company.getCurrent.useQuery();
@@ -336,6 +337,7 @@ export function MarkupConfigStep({ estimateId }: MarkupConfigStepProps) {
                       <Input
                         type="number"
                         step="0.1"
+                        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); goToStep(6); } }}
                         {...field}
                         onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                       />
@@ -386,6 +388,10 @@ export function MarkupConfigStep({ estimateId }: MarkupConfigStepProps) {
           </CardContent>
         </Card>
       )}
+
+      <div className="mt-6 flex justify-end">
+        <Button onClick={() => goToStep(6)}>Next</Button>
+      </div>
     </div>
   );
 }

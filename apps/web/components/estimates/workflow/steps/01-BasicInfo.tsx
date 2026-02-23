@@ -44,7 +44,7 @@ interface BasicInfoStepProps {
 }
 
 export function BasicInfoStep({ estimateId }: BasicInfoStepProps) {
-  const { unlockStep } = useWorkflowState();
+  const { unlockStep, goToStep } = useWorkflowState();
   const utils = trpc.useUtils();
 
   // Load current estimate data
@@ -135,6 +135,7 @@ export function BasicInfoStep({ estimateId }: BasicInfoStepProps) {
                   <Textarea
                     placeholder="Additional details about this estimate..."
                     rows={4}
+                    onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); goToStep(2); } }}
                     {...field}
                   />
                 </FormControl>
@@ -172,18 +173,8 @@ export function BasicInfoStep({ estimateId }: BasicInfoStepProps) {
         </form>
       </Form>
 
-      <div className="pt-4 border-t">
-        <p className="text-sm text-muted-foreground">
-          {watchedData.name && watchedData.projectType ? (
-            <span className="text-financial-positive font-medium">
-              ✓ Step 2 unlocked - proceed to Template Selection
-            </span>
-          ) : (
-            <span>
-              Complete the name and project type to unlock the next step
-            </span>
-          )}
-        </p>
+      <div className="mt-6 flex justify-end">
+        <Button onClick={() => goToStep(2)}>Next</Button>
       </div>
     </div>
   );
