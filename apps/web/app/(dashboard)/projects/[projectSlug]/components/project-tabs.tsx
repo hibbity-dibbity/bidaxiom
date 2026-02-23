@@ -10,6 +10,12 @@ interface ProjectTabsProps {
   projectSlug: string;
   projectMode: string;
   lifecyclePhase: string;
+  headerStats?: {
+    changeOrdersPendingCount: number;
+    paymentAppsPendingCount: number;
+    documentsCount: number;
+    invoicesCount: number;
+  } | null;
 }
 
 const ALL_SECTIONS = [
@@ -25,7 +31,7 @@ const ALL_SECTIONS = [
   { name: "Estimates", href: "/estimates" },
 ] as const;
 
-export function ProjectTabs({ projectSlug, projectMode, lifecyclePhase }: ProjectTabsProps) {
+export function ProjectTabs({ projectSlug, projectMode, lifecyclePhase, headerStats }: ProjectTabsProps) {
   const pathname = usePathname();
   const utils = trpc.useUtils();
 
@@ -117,6 +123,17 @@ export function ProjectTabs({ projectSlug, projectMode, lifecyclePhase }: Projec
     "/estimates": prefetchEstimates,
   };
 
+  const getBadgeCount = (href: string): number => {
+    if (!headerStats) return 0;
+    switch (href) {
+      case "/change-orders": return headerStats.changeOrdersPendingCount;
+      case "/payment-apps": return headerStats.paymentAppsPendingCount;
+      case "/documents": return headerStats.documentsCount;
+      case "/invoices": return headerStats.invoicesCount;
+      default: return 0;
+    }
+  };
+
   return (
     <nav className="border-b">
       <div className="flex gap-6 overflow-x-auto">
@@ -130,6 +147,8 @@ export function ProjectTabs({ projectSlug, projectMode, lifecyclePhase }: Projec
               : pathname.startsWith(fullHref);
 
           const prefetchHandler = sectionPrefetchMap[section.href];
+          const badge = getBadgeCount(section.href);
+          const label = badge > 0 ? `${section.name} (${badge})` : section.name;
 
           return (
             <Link
@@ -144,7 +163,7 @@ export function ProjectTabs({ projectSlug, projectMode, lifecyclePhase }: Projec
                   : "border-transparent text-muted-foreground hover:text-foreground"
               )}
             >
-              {section.name}
+              {label}
             </Link>
           );
         })}

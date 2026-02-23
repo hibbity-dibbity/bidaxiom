@@ -118,6 +118,7 @@ export default function ProjectLayout({ children, params }: ProjectLayoutProps) 
           projectSlug={projectSlug}
           projectMode={project.projectMode ?? "gc_advanced"}
           lifecyclePhase={project.lifecyclePhase ?? "opportunity"}
+          headerStats={headerStats ?? null}
         />
       </div>
       {/* Scrollable content area with restored top padding */}
