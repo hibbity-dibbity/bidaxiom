@@ -3,8 +3,8 @@ phase: 43-budget-domain-redesign
 uat_started: 2026-02-22
 status: complete
 tests_total: 18
-tests_passed: 17
-tests_failed: 1
+tests_passed: 18
+tests_failed: 0
 tests_skipped: 0
 gaps:
   - id: GAP-01
@@ -19,7 +19,9 @@ gaps:
           change chip prefix from "Status:" to "Phase:" with proper display labels.
       (3) isFiltered in page.tsx: switch from `filters.status` to `filters.lifecyclePhase`.
     severity: minor
-    files_likely:
+    status: resolved
+    fix_commit: 8c14e57
+    files_fixed:
       - apps/web/app/(dashboard)/projects/page.tsx
       - apps/web/app/(dashboard)/projects/components/projects-filters.tsx
 ---
@@ -37,7 +39,7 @@ gaps:
 | 5 | Budget inline add row — no modal | pass | |
 | 6 | Budget inline add — Enter saves, Escape cancels | pass | |
 | 7 | SOV inline add row — no modal | pass | |
-| 8 | Projects filter chips appear | fail | Chip appears but label says "Status: X" — projects use phases now, chip label should match current filter dimension name |
+| 8 | Projects filter chips appear | pass | Fixed: filter switched to lifecyclePhase (9 phases), chip now shows "Phase: X" — commit 8c14e57 |
 | 9 | Projects chip × removes filter | pass | |
 | 10 | Projects Clear all chips | pass | |
 | 11 | Projects empty state (no data vs filtered) | pass | |
