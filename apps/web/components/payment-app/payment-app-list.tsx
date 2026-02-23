@@ -10,7 +10,7 @@ import {
   type SortingState,
   type ColumnDef,
 } from "@tanstack/react-table";
-import { ChevronsUpDown, ChevronUp, ChevronDown, Plus, AlertTriangle, Receipt, Search, SearchX } from "lucide-react";
+import { ChevronsUpDown, ChevronUp, ChevronDown, Plus, AlertTriangle, Receipt, Search, SearchX, Download } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -143,6 +143,35 @@ export function PaymentAppList({ projectId, projectSlug }: PaymentAppListProps) 
     [table.getRowModel().rows]
   );
 
+  const exportCsv = () => {
+    const rows = table.getRowModel().rows;
+    const today = new Date().toISOString().split("T")[0];
+    const filename = `payment-apps-${projectSlug}-${today}.csv`;
+
+    const escape = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
+
+    const header = ["App #", "Status", "Period Start", "Period End", "Amount Due"].map(escape).join(",");
+    const csvRows = rows.map((row) => {
+      const pa = row.original;
+      return [
+        pa.applicationNumber ?? "",
+        pa.status.replace(/_/g, " "),
+        new Date(pa.periodStart).toLocaleDateString(),
+        new Date(pa.periodEnd).toLocaleDateString(),
+        Number(pa.currentPaymentDue).toFixed(2),
+      ].map(escape).join(",");
+    });
+
+    const csv = [header, ...csvRows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -228,6 +257,14 @@ export function PaymentAppList({ projectId, projectSlug }: PaymentAppListProps) 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex gap-4">
+            <Button
+              variant="outline"
+              onClick={exportCsv}
+              disabled={table.getRowModel().rows.length === 0}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export CSV
+            </Button>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Filter by status" />
