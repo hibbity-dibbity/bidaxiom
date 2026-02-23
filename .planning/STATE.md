@@ -122,6 +122,7 @@ None.
 |---|-------------|------|--------|-----------|
 | 29 | Stepper checkmark → text-primary bold + document as site-wide stepper | 2026-02-23 | 1932bc4 | [29-stepper-checkmark-color-to-primary-foreg](.planning/quick/29-stepper-checkmark-color-to-primary-foreg/) |
 | 30 | Fix clickable phase badge on project pages — unreliable click handling | 2026-02-23 | 41f332d | [30-fix-clickable-phase-badge-on-project-pag](.planning/quick/30-fix-clickable-phase-badge-on-project-pag/) |
+| 31 | Fix stepper done-step: solid teal circle + large bold brand-slate checkmark matching logo | 2026-02-23 | 09f72ba | [31-fix-stepper-done-step-solid-teal-circle-](.planning/quick/31-fix-stepper-done-step-solid-teal-circle-/) |
 
 ## Session Continuity
 
