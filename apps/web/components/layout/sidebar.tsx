@@ -7,7 +7,6 @@ import {
   SidebarContent,
   SidebarHeader,
   SidebarGroup,
-  SidebarGroupLabel,
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
@@ -82,7 +81,6 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarNav />
         </SidebarGroup>
       </SidebarContent>
