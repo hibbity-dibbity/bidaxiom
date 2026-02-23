@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-21)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.6 UX Redesign & Polish — Phase 46 in progress (plan 01 complete)
+**Current focus:** v1.6 UX Redesign & Polish — Phase 46 in progress (plan 02 paused at human-verify checkpoint)
 
 ## Current Position
 
 Phase: 46 of 46 (Project Header Tabs and Navigation)
-Plan: 01 complete
-Status: Phase 46 in progress — plan 01 done (getHeaderStats API)
-Last activity: 2026-02-23 — Phase 46 plan 01 complete: project.getHeaderStats tRPC procedure added to projectRouter with 9 parallel sub-queries (5 financial metrics + 4 badge counts) via Promise.all
+Plan: 02 in progress (paused at human-verify checkpoint — Tasks 1 and 2 complete)
+Status: Phase 46 in progress — plan 02 tasks complete, awaiting visual verification
+Last activity: 2026-02-23 — Phase 46 plan 02: sticky 2-row project header built (layout.tsx + project-header.tsx), financial stat bar with CurrencyDisplay, awaiting human-verify checkpoint
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100% | v1.5: [██████████] 100% | v1.6: [████░░░░░░] 33%
 
@@ -114,6 +114,8 @@ Recent decisions relevant to v1.6:
 - [46-01]: billedToDate sums currentPaymentDue from ALL payment apps regardless of status
 - [46-01]: invoicesCount uses paymentApps count as AR proxy — no separate invoices table exists
 - [46-01]: paidToDate = 0 placeholder — no payments table yet; balanceToComplete = contractValue - 0
+- [Phase 46]: budgetSummary query preserved in layout.tsx (not passed to ProjectHeader) — Overview tab reads from React Query cache via void budgetSummary pattern
+- [Phase 46-02]: Mode switch button moved from Row 1 inline text to DropdownMenuItem in ellipsis menu — satisfies CHROME-01 compact Row 1 requirement
 
 ### Pending Todos
 
@@ -134,5 +136,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: Phase 46 plan 01 complete — project.getHeaderStats procedure added to projectRouter (commit a6ab889). Plans 46-02 and 46-03 next.
+Stopped at: Phase 46 plan 02 paused at human-verify checkpoint — sticky header + financial stat bar built (commits 63de7ec, 925a502). Awaiting visual approval to complete plan 02 and proceed to 46-03.
 Resume file: None
