@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-02-21)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.6 UX Redesign & Polish — Phase 44: Change Order & Payment App Redesign (plan 03 complete)
+**Current focus:** v1.6 UX Redesign & Polish — Phase 44: Change Order & Payment App Redesign (plan 04 complete)
 
 ## Current Position
 
 Phase: 44 of 46 (Change Order & Payment App Redesign)
-Plan: 03 complete
-Status: Phase 44 IN PROGRESS — Plan 03 complete
-Last activity: 2026-02-23 — Phase 44 Plan 03 complete: CSV export and inline Approve/Mark Paid actions added to PaymentAppList; LIST-04 and LIST-06 satisfied
+Plan: 04 complete
+Status: Phase 44 IN PROGRESS — Plan 04 complete
+Last activity: 2026-02-23 — Phase 44 Plan 04 complete: Export CSV buttons added to Projects and Subcontractors lists; LIST-04 gap fully closed
 
 Progress: v1.0: [██████████] 100% | v1.1: [██████████] 100% | v1.2: [██████████] 100% | v1.3: [██████████] 100% | v1.4: [██████████] 100% | v1.5: [██████████] 100% | v1.6: [██░░░░░░░░] 17%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 174 (138 through v1.4, +19 in v1.5, +6 in v1.6 Phase 41, +5 in v1.6 Phase 42, +5 in v1.6 Phase 43, +1 in v1.6 Phase 44)
+- Total plans completed: 175 (138 through v1.4, +19 in v1.5, +6 in v1.6 Phase 41, +5 in v1.6 Phase 42, +5 in v1.6 Phase 43, +2 in v1.6 Phase 44)
 - Average duration: ~4.3 min/plan
 - Total execution time: ~11.7 hours
 
@@ -103,6 +103,10 @@ Recent decisions relevant to v1.6:
 - [44-03]: Export CSV button placed in left side of filter toolbar alongside status Select — consistent with standard toolbar layout patterns
 - [44-03]: canCurrentUserApprove cast via (row.original as any) — field is present at runtime from 44-01 API change but not yet in static ColumnDef type; avoids separate type augmentation
 - [44-03]: Mark Paid shows for status===approved with no canCurrentUserApprove check — any user with project access can mark as paid per spec
+- [44-04]: exportCsv iterates table.getRowModel().rows (not raw data array) — export reflects current sort state; consistent with CO/pay app pattern from 44-02/44-03
+- [44-04]: formatTrades in subcontractors CSV uses CSI_DIVISIONS lookup with pipe separator and +N more suffix — mirrors badge display logic for consistency
+- [Phase 44]: Export CSV iterates filtered arrays (displayedEstimates, filteredRfqs) not raw API arrays
+- [Phase 44]: RFQ CSV omits Trades column — planning spec (LIST-04) only requires RFQ #, Title, Status, Due Date
 
 ### Pending Todos
 
@@ -115,5 +119,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: Phase 44 Plan 03 complete — CSV export and inline Approve/Mark Paid actions added to PaymentAppList. LIST-04 and LIST-06 satisfied.
+Stopped at: Phase 44 Plan 04 complete — Export CSV buttons added to Projects and Subcontractors lists. LIST-04 gap fully closed.
 Resume file: None
