@@ -205,12 +205,14 @@ Plans:
   1. All list views with filtering support have an "Export CSV" button that downloads the currently filtered and sorted result set as a CSV file.
   2. Change order list rows display inline Approve and Reject action buttons for pending COs; activating either shows a confirmation before the irreversible status change is applied; the CO status updates without a full page navigation.
   3. Payment application list rows display inline Approve and Mark Paid action buttons for pending pay apps; the status updates without navigating to the detail page.
-**Plans**: 3 plans
+**Plans**: 5 plans
 
 Plans:
 - [ ] 44-01-PLAN.md — API: add canCurrentUserApprove to CO list and pay app list endpoints (bulk inArray query)
 - [ ] 44-02-PLAN.md — ChangeOrderList: CSV export + inline Approve/Reject with confirmation dialog
 - [ ] 44-03-PLAN.md — PaymentAppList: CSV export + inline Approve/Mark Paid with confirmation dialog
+- [ ] 44-04-PLAN.md — Gap closure: Export CSV on Projects list and Subcontractors list (TanStack Table pattern)
+- [ ] 44-05-PLAN.md — Gap closure: Export CSV on Estimates page and RFQs page (filtered array pattern)
 
 ### Phase 45: Estimates Redesign
 **Goal**: The estimate creation wizard and its forms are redesigned with a visible progress stepper, properly masked currency inputs across all amount fields, and visual section grouping on multi-section forms — the most complex form surface in BIDAXIOM is also the most polished.
@@ -250,6 +252,6 @@ Plans:
 | 41. Design Foundation | 6/6 | Complete | 2026-02-21 |
 | 42. Shared UI Primitives | 0/5 | Complete    | 2026-02-22 |
 | 43. Budget Domain Redesign | 0/5 | Complete    | 2026-02-22 |
-| 44. Change Order and Payment App Redesign | 0/3 | Not started | - |
+| 44. Change Order and Payment App Redesign | 3/5 | In progress | - |
 | 45. Estimates Redesign | 0/TBD | Not started | - |
 | 46. Project Header, Tabs, and Navigation Chrome | 0/TBD | Not started | - |
