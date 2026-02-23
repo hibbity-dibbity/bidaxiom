@@ -30,7 +30,7 @@ interface User {
 export type FilterState = {
   search: string | null;
   customer: string | null;
-  status: string | null;  // nuqs returns string, not the specific enum
+  lifecyclePhase: string | null;  // nuqs returns string, not the specific enum
   assignedUser: string | null;
   startDateFrom: string | null;
   startDateTo: string | null;
@@ -64,7 +64,7 @@ export function ProjectsFilters({ customers, users, filters, setFilters }: Proje
     setFilters({
       search: null,
       customer: null,
-      status: null,
+      lifecyclePhase: null,
       assignedUser: null,
       startDateFrom: null,
       startDateTo: null,
@@ -82,17 +82,23 @@ export function ProjectsFilters({ customers, users, filters, setFilters }: Proje
 
   // Derive filter chips from active secondary filter values
   // Search input is NOT chipped — the search box itself represents the search
+  const lifecyclePhaseLabels: Record<string, string> = {
+    opportunity: "Opportunity",
+    estimating: "Estimating",
+    submitted: "Submitted",
+    awarded: "Awarded",
+    active: "Active",
+    substantial_completion: "Substantial Completion",
+    closed: "Closed",
+    warranty: "Warranty",
+    archived: "Archived",
+  };
+
   const activeChips: FilterChip[] = [
-    ...(filters.status
+    ...(filters.lifecyclePhase
       ? [{
-          label: `Status: ${
-            filters.status === "active" ? "Active"
-            : filters.status === "on_hold" ? "On Hold"
-            : filters.status === "completed" ? "Completed"
-            : filters.status === "archived" ? "Archived"
-            : filters.status
-          }`,
-          onRemove: () => handleFilterChange("status", null),
+          label: `Phase: ${lifecyclePhaseLabels[filters.lifecyclePhase] ?? filters.lifecyclePhase}`,
+          onRemove: () => handleFilterChange("lifecyclePhase", null),
         }]
       : []),
     ...(filters.customer
@@ -144,21 +150,26 @@ export function ProjectsFilters({ customers, users, filters, setFilters }: Proje
           />
         </div>
 
-        {/* Status Filter */}
+        {/* Phase Filter */}
         <Select
-          value={filters.status || "all"}
+          value={filters.lifecyclePhase || "all"}
           onValueChange={(value) =>
-            handleFilterChange("status", value === "all" ? null : value)
+            handleFilterChange("lifecyclePhase", value === "all" ? null : value)
           }
         >
-          <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="Status" />
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Phase" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="all">All Phases</SelectItem>
+            <SelectItem value="opportunity">Opportunity</SelectItem>
+            <SelectItem value="estimating">Estimating</SelectItem>
+            <SelectItem value="submitted">Submitted</SelectItem>
+            <SelectItem value="awarded">Awarded</SelectItem>
             <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="on_hold">On Hold</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
+            <SelectItem value="substantial_completion">Substantial Completion</SelectItem>
+            <SelectItem value="closed">Closed</SelectItem>
+            <SelectItem value="warranty">Warranty</SelectItem>
             <SelectItem value="archived">Archived</SelectItem>
           </SelectContent>
         </Select>

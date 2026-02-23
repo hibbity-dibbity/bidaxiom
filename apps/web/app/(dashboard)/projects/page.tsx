@@ -18,7 +18,7 @@ export default function ProjectsPage() {
   const [filters, setFilters] = useQueryStates({
     search: parseAsString,
     customer: parseAsString,
-    status: parseAsStringEnum(['active', 'on_hold', 'completed', 'archived']),
+    lifecyclePhase: parseAsStringEnum(['opportunity', 'estimating', 'submitted', 'awarded', 'active', 'substantial_completion', 'closed', 'warranty', 'archived']),
     assignedUser: parseAsString,
     startDateFrom: parseAsString,
     startDateTo: parseAsString,
@@ -31,7 +31,7 @@ export default function ProjectsPage() {
   const { data, isLoading } = trpc.project.list.useQuery({
     search: filters.search ?? undefined,
     customerId: filters.customer ?? undefined,
-    status: filters.status ?? undefined,
+    lifecyclePhase: filters.lifecyclePhase ?? undefined,
     assignedUserId: filters.assignedUser ?? undefined,
     startDateFrom: filters.startDateFrom ? new Date(filters.startDateFrom).toISOString() : undefined,
     startDateTo: filters.startDateTo ? new Date(filters.startDateTo).toISOString() : undefined,
@@ -47,7 +47,7 @@ export default function ProjectsPage() {
   const isFiltered = !!(
     filters.search ||
     filters.customer ||
-    filters.status ||
+    filters.lifecyclePhase ||
     filters.assignedUser ||
     filters.startDateFrom ||
     filters.startDateTo
