@@ -5,16 +5,15 @@
 See: .planning/PROJECT.md (updated 2026-02-23)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.7 Project Flow Enhancements — Phase 52: Trade Simplification
+**Current focus:** v1.7 Project Flow Enhancements — COMPLETE (Phase 52 done)
 
 ## Current Position
 
-Phase: 52 of 52 (Trade Simplification)
-Plan: 01 complete
-Status: Phase 52 in progress (1/? plans done)
-Last activity: 2026-02-24 — 52-01 complete: SIMPLE_TRADES constant created, trade/trade_other columns added to schema and migrated to all active tenant schemas
+Phase: 52 of 52 (Trade Simplification) — COMPLETE
+Status: All phases complete — v1.7 ready for milestone audit
+Last activity: 2026-02-24 — Phase 52 complete: all 4 plans executed, 8/8 UAT checks passing
 
-Progress: v1.0-v1.6: [██████████] 100% | v1.7: [████████░░] 80% (Phase 52 in progress)
+Progress: v1.0-v1.6: [██████████] 100% | v1.7: [██████████] 100%
 
 ## Performance Metrics
 
@@ -29,7 +28,7 @@ Progress: v1.0-v1.6: [██████████] 100% | v1.7: [████
 - Phase 49: 3 plans complete — tab bar reordered, Expenses placeholder, Proposal rename, Change Orders ungated
 - Phase 50: 4 plans complete — send email infrastructure (50-01), SendToCustomerDialog component (50-02), proposal detail page header + dialog wiring (50-03), CO detail header rebuild + ApprovalPanel removal (50-04)
 - Phase 51: 2 plans complete — removed isValidTransition guard from router, rewrote badge with optimistic update + spinner (51-01); human verified all 5 test scenarios pass (51-02)
-- Phase 52: 52-01 complete — SIMPLE_TRADES constant (12 trades) in shared package, trade JSONB + trade_other TEXT columns added to subcontractor_directory schema and provision.ts, migrated 1 active tenant
+- Phase 52: 4 plans complete — SIMPLE_TRADES constant + DB migration (52-01), tRPC router updates (52-02), TradeCombobox UI component + SubcontractorForm (52-03), list/detail/command-palette surfaces + freeze bug fix (52-04); all 8 UAT checks pass
 
 *Updated after each plan completion*
 
@@ -84,5 +83,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Completed 52-01-PLAN.md — SIMPLE_TRADES constant and DB schema/migration complete; ready for 52-02
+Stopped at: Phase 52 complete — v1.7 all phases done; ready for /gsd:audit-milestone v1.7
 Resume file: None
