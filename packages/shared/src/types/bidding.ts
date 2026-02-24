@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { phoneSchema, addressSchema } from "../schemas/common";
+import { tradeValueEnum } from "../constants/trades";
 
 /**
  * RFQ status enum
@@ -149,6 +150,8 @@ export const createSubcontractorSchema = z.object({
   state: z.string().length(2).optional(),
   zip: z.string().max(10).optional(),
   trades: z.array(z.number().int()),
+  trade: z.array(tradeValueEnum).default([]),
+  tradeOther: z.string().max(200).optional(),
   notes: z.string().optional(),
 });
 
@@ -169,6 +172,8 @@ export const updateSubcontractorSchema = z.object({
   state: z.string().length(2).nullable().optional(),
   zip: z.string().max(10).nullable().optional(),
   trades: z.array(z.number().int()).optional(),
+  trade: z.array(tradeValueEnum).optional(),
+  tradeOther: z.string().max(200).nullable().optional(),
   notes: z.string().nullable().optional(),
   status: subcontractorStatusEnum.optional(),
 });
