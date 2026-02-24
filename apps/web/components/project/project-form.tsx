@@ -214,7 +214,7 @@ export function ProjectForm() {
       description: "",
       location: { street1: "", street2: "", city: "", state: "", zipCode: "" },
       projectType: "commercial",
-      projectMode: "gc_advanced",
+      projectMode: "simple",
       startDate: undefined,
       endDate: undefined,
       costCodes: [],
@@ -399,31 +399,6 @@ export function ProjectForm() {
                       <SelectItem value="industrial">Industrial</SelectItem>
                     </SelectContent>
                   </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="projectMode"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Project Mode</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select mode" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="gc_advanced">GC / Advanced</SelectItem>
-                      <SelectItem value="simple">Simple</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    Simple mode hides advanced GC features (SOV, RFQs, lien waivers).
-                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
