@@ -78,6 +78,8 @@ export const searchRouter = router({
           id: subcontractorDirectory.id,
           companyName: subcontractorDirectory.companyName,
           slug: subcontractorDirectory.slug,
+          trade: subcontractorDirectory.trade,
+          tradeOther: subcontractorDirectory.tradeOther,
         })
         .from(subcontractorDirectory)
         .where(
@@ -111,13 +113,21 @@ export const searchRouter = router({
           subtitle: e.projectName,
           url: `/projects/${e.projectSlug}/estimates/${e.slug}`,
         })),
-        ...subcontractorResults.map((s) => ({
-          type: "subcontractor" as const,
-          id: s.id,
-          title: s.companyName,
-          subtitle: null,
-          url: `/subcontractors/${s.slug}`,
-        })),
+        ...subcontractorResults.map((s) => {
+          const tradeArr = (s.trade as string[]) ?? [];
+          const subtitle = tradeArr.length === 0
+            ? null
+            : tradeArr
+                .map((t) => (t === "Other" && s.tradeOther ? s.tradeOther : t))
+                .join(", ");
+          return {
+            type: "subcontractor" as const,
+            id: s.id,
+            title: s.companyName,
+            subtitle,
+            url: `/subcontractors/${s.slug}`,
+          };
+        }),
       ];
 
       return results.slice(0, limit);
