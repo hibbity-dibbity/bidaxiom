@@ -738,6 +738,8 @@ export function createTenantSchema(schemaName: string) {
     state: text("state"), // 2-char US state abbreviation
     zip: text("zip"),
     trades: jsonb("trades").notNull().default([]).$type<number[]>(),
+    trade: jsonb("trade").notNull().default([]).$type<string[]>(),
+    tradeOther: text("trade_other"),
     notes: text("notes"),
     status: text("status").notNull().default("active"), // active, inactive, blacklisted
     slug: text("slug").unique(), // URL-safe slug for routing

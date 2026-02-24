@@ -1026,7 +1026,9 @@ export async function provisionTenantSchema(
           status TEXT NOT NULL DEFAULT 'active',
           created_by TEXT NOT NULL,
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          trade JSONB NOT NULL DEFAULT '[]'::jsonb,
+          trade_other TEXT
         )
       `);
 
