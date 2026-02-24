@@ -1,16 +1,23 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { SendToCustomerDialog } from "@/components/shared/send-to-customer-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { EstimateStatus } from "@construction/shared";
-import { NextStepsPanel } from "@/components/estimates/lifecycle/NextStepsPanel";
 import { formatCurrency } from "@construction/shared";
 import { format } from "date-fns";
-import { ArrowLeft, Edit, FileText, Loader2 } from "lucide-react";
+import { ArrowLeft, Edit, FileText, Loader2, MoreVertical, Send } from "lucide-react";
 import { toast } from "sonner";
 
 const estimateVariantMap: Record<EstimateStatus, "draft" | "pending" | "approved" | "active"> = {
@@ -34,13 +41,14 @@ export default function EstimateDetailPage({
 }) {
   const { projectSlug, estimateSlug } = params;
   const utils = trpc.useUtils();
+  const [sendDialogOpen, setSendDialogOpen] = useState(false);
 
   // Load estimate data
   const { data: estimate, isLoading } = trpc.estimates.getBySlug.useQuery({
     slug: estimateSlug,
   });
 
-  // Load project data for navigation
+  // Load project data for navigation and customer email pre-population
   const { data: project } = trpc.project.getBySlug.useQuery({ slug: projectSlug });
 
   // Generate Proposal PDF mutation
@@ -52,6 +60,26 @@ export default function EstimateDetailPage({
       toast.error(error.message ?? "Failed to generate Proposal PDF");
     },
   });
+
+  // Send to Customer mutation
+  const sendToCustomerMutation = trpc.estimates.sendToCustomer.useMutation({
+    onSuccess: () => {
+      void utils.estimates.getBySlug.invalidate({ slug: estimateSlug });
+      toast.success("Proposal sent to customer");
+      setSendDialogOpen(false);
+    },
+    onError: (error) => {
+      toast.error(error.message ?? "Failed to send proposal");
+    },
+  });
+
+  const handleGeneratePdf = () => {
+    if (!estimate) return;
+    generateProposalMutation.mutate({
+      projectSlug,
+      estimateId: estimate.id,
+    });
+  };
 
   if (isLoading) {
     return (
@@ -84,42 +112,56 @@ export default function EstimateDetailPage({
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
+      {/* Header — Phase 46 two-row layout */}
+      <div className="space-y-4">
+        {/* Row 1: Back navigation */}
+        <Button variant="ghost" size="sm" asChild>
+          <Link href={`/projects/${projectSlug}/estimates`}>
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back to Proposals
+          </Link>
+        </Button>
+
+        {/* Row 2: Name, status badge, actions */}
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href={`/projects/${projectSlug}/estimates`}>
-                <ArrowLeft className="h-4 w-4" />
+            <h1 className="text-2xl font-bold">{estimate.name}</h1>
+            <StatusBadge variant={estimateVariantMap[estimate.status as EstimateStatus]}>
+              {estimateLabelMap[estimate.status as EstimateStatus]}
+            </StatusBadge>
+          </div>
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={handleGeneratePdf}
+                  disabled={generateProposalMutation.isPending}
+                >
+                  {generateProposalMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <FileText className="h-4 w-4 mr-2" />
+                  )}
+                  Generate PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSendDialogOpen(true)}>
+                  <Send className="h-4 w-4 mr-2" />
+                  Send to Customer
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button asChild>
+              <Link href={`/projects/${projectSlug}/estimates/${estimateSlug}/workflow`}>
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Proposal
               </Link>
             </Button>
-            <h1 className="text-3xl font-bold">Proposal Details</h1>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            disabled={generateProposalMutation.isPending}
-            onClick={() => {
-              generateProposalMutation.mutate({
-                projectSlug,
-                estimateId: estimate.id,
-              });
-            }}
-          >
-            {generateProposalMutation.isPending ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <FileText className="h-4 w-4 mr-2" />
-            )}
-            Generate Proposal PDF
-          </Button>
-          <Button asChild>
-            <Link href={`/projects/${projectSlug}/estimates/${estimateSlug}/workflow`}>
-              <Edit className="h-4 w-4 mr-2" />
-              Edit Proposal
-            </Link>
-          </Button>
         </div>
       </div>
 
@@ -165,14 +207,18 @@ export default function EstimateDetailPage({
         </CardContent>
       </Card>
 
-      {/* Next Steps Panel */}
-      <NextStepsPanel
-        estimateId={estimate.id}
-        status={estimate.status}
-        projectId={estimate.projectId}
-        onActionComplete={() => {
-          // Refresh estimate data
-          void utils.estimates.getBySlug.invalidate({ slug: estimateSlug });
+      <SendToCustomerDialog
+        open={sendDialogOpen}
+        onOpenChange={setSendDialogOpen}
+        documentName={estimate.name}
+        prePopulatedEmail={project?.customer?.email}
+        prePopulatedSubject={`Proposal: ${estimate.name}`}
+        isPending={sendToCustomerMutation.isPending}
+        onSend={({ recipients, subject, note }) => {
+          void recipients;
+          void subject;
+          void note;
+          sendToCustomerMutation.mutate({ estimateId: estimate.id });
         }}
       />
     </div>
