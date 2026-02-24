@@ -122,7 +122,7 @@ export default function ProjectLayout({ children, params }: ProjectLayoutProps) 
         />
       </div>
       {/* Scrollable content area with restored top padding */}
-      <div className="pt-6">{children}</div>
+      <div className="pt-8">{children}</div>
     </div>
   );
 }
