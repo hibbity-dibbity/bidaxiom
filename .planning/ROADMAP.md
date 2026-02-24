@@ -148,7 +148,7 @@
 - [x] **Phase 48: Project Mode Removal** — Remove the mode switcher from all UI surfaces and hide all GC/Advanced-specific tabs and features (completed 2026-02-24)
 - [x] **Phase 49: Project Tabs Redesign** — Reorder and relabel tabs: Overview → Documents → Proposals → Change Orders → Invoices → Expenses (completed 2026-02-24)
 - [x] **Phase 50: Send-to-Customer Flow** — Remove approval requirement; add "Send to Customer" dialog with auto-populated recipient and status-advance on confirm (completed 2026-02-24)
-- [x] **Phase 51: Lifecycle Phase Freedom** — Remove all phase guards; allow free navigation to any lifecycle phase from any phase (completed 2026-02-24)
+- [x] **Phase 51: Lifecycle Phase Freedom** — Remove all phase guards; allow free navigation to any lifecycle phase from any phase (completed 2026-02-24)
 - [ ] **Phase 52: Trade Simplification** — Replace CSI codes with a simple 12-trade list on subcontractor forms and filter dropdowns
 
 ## Phase Details
@@ -231,7 +231,12 @@ Plans:
   1. The trade selector on the subcontractor create and edit forms shows exactly: Plumbing, Electrical, HVAC, Concrete, Metal Buildings, Framing, Roofing, Painting, Flooring, Drywall, General, Other — no CSI codes or division numbers
   2. The trade filter dropdown on the subcontractors list page uses the same 12-item list
   3. No CSI division code or section reference (e.g., "03 00 00 Concrete" or "Division 15") appears in any subcontractor form, filter, badge, or search result
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 52-01-PLAN.md — SIMPLE_TRADES constant, DB schema columns (trade/tradeOther), provision.ts raw SQL, migration script run
+- [ ] 52-02-PLAN.md — tRPC router updates: list filter (string), create/update persist trade[], search subtitle
+- [ ] 52-03-PLAN.md — TradeCombobox component, SubcontractorForm replacement (parallel with 52-02)
+- [ ] 52-04-PLAN.md — List page filter + badges, detail page trade display, command palette subtitle, human verify
 
 ---
 
@@ -251,4 +256,4 @@ Plans:
 | 49. Project Tabs Redesign | v1.7 | Complete    | 2026-02-24 | - |
 | 50. Send-to-Customer Flow | v1.7 | Complete    | 2026-02-24 | - |
 | 51. Lifecycle Phase Freedom | v1.7 | Complete    | 2026-02-24 | - |
-| 52. Trade Simplification | v1.7 | 0/TBD | Not started | - |
+| 52. Trade Simplification | v1.7 | 0/4 | Not started | - |
