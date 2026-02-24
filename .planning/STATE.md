@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-23)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.7 Project Flow Enhancements — Phase 51: Lifecycle Phase Freedom
+**Current focus:** v1.7 Project Flow Enhancements — Phase 52: Trade Simplification
 
 ## Current Position
 
-Phase: 51 of 52 (Lifecycle Phase Freedom)
-Plan: 02 complete
-Status: Phase 51 complete (2/2 plans done)
-Last activity: 2026-02-24 — 51-02 complete: human verified all 5 lifecycle transition test scenarios — forward skip, backward without dialog, Archived non-terminal, pending spinner, no success toast — all passed
+Phase: 52 of 52 (Trade Simplification)
+Plan: 01 complete
+Status: Phase 52 in progress (1/? plans done)
+Last activity: 2026-02-24 — 52-01 complete: SIMPLE_TRADES constant created, trade/trade_other columns added to schema and migrated to all active tenant schemas
 
-Progress: v1.0-v1.6: [██████████] 100% | v1.7: [███████░░░] 70% (Phase 51 complete)
+Progress: v1.0-v1.6: [██████████] 100% | v1.7: [████████░░] 80% (Phase 52 in progress)
 
 ## Performance Metrics
 
@@ -29,6 +29,7 @@ Progress: v1.0-v1.6: [██████████] 100% | v1.7: [████
 - Phase 49: 3 plans complete — tab bar reordered, Expenses placeholder, Proposal rename, Change Orders ungated
 - Phase 50: 4 plans complete — send email infrastructure (50-01), SendToCustomerDialog component (50-02), proposal detail page header + dialog wiring (50-03), CO detail header rebuild + ApprovalPanel removal (50-04)
 - Phase 51: 2 plans complete — removed isValidTransition guard from router, rewrote badge with optimistic update + spinner (51-01); human verified all 5 test scenarios pass (51-02)
+- Phase 52: 52-01 complete — SIMPLE_TRADES constant (12 trades) in shared package, trade JSONB + trade_other TEXT columns added to subcontractor_directory schema and provision.ts, migrated 1 active tenant
 
 *Updated after each plan completion*
 
@@ -67,6 +68,9 @@ Recent decisions relevant to v1.7:
 - [Phase 51-01]: No success toast on lifecycle phase transition — badge optimistic update is the confirmation
 - [Phase 51-01]: reason field kept optional on transitionLifecyclePhaseSchema — passed as undefined from badge, harmless
 - [Phase 51-01]: isBackward variable retained in router despite guard removal — still used in audit log metadata
+- [Phase 52-01]: Preserve old trades JSONB (number[]) column for RFQ compatibility — do not repurpose
+- [Phase 52-01]: New trade column uses JSONB string[] to support multi-trade selection
+- [Phase 52-01]: Clear existing CSI number[] data on migration — no auto-mapping to new 12 trades
 
 ### Pending Todos
 
@@ -79,5 +83,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Completed 51-02-PLAN.md — human verified all 5 lifecycle transition scenarios pass; Phase 51 complete
+Stopped at: Completed 52-01-PLAN.md — SIMPLE_TRADES constant and DB schema/migration complete; ready for 52-02
 Resume file: None
