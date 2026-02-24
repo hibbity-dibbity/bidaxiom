@@ -21,6 +21,8 @@ const segmentLabels: Record<string, string> = {
   financials: "Financials",
   documents: "Documents",
   settings: "Settings",
+  estimates: "Proposals",
+  expenses: "Expenses",
 };
 
 /**
