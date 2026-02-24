@@ -155,8 +155,7 @@ export function ChangeOrderList({ projectId, projectSlug }: ChangeOrderListProps
     ...(statusFilter !== "all"
       ? [{
           label: `Status: ${
-            { draft: "Draft", pco_submitted: "PCO Submitted", pending_approval: "Pending Approval",
-              approved: "Approved", rejected: "Rejected", void: "Void" }[statusFilter] ?? statusFilter
+            { draft: "Draft", pco_submitted: "PCO Submitted", void: "Void" }[statusFilter] ?? statusFilter
           }`,
           onRemove: () => setStatusFilter("all"),
         }]
@@ -292,9 +291,6 @@ export function ChangeOrderList({ projectId, projectSlug }: ChangeOrderListProps
                   <SelectItem value="all">All Statuses</SelectItem>
                   <SelectItem value="draft">Draft</SelectItem>
                   <SelectItem value="pco_submitted">PCO Submitted</SelectItem>
-                  <SelectItem value="pending_approval">Pending Approval</SelectItem>
-                  <SelectItem value="approved">Approved</SelectItem>
-                  <SelectItem value="rejected">Rejected</SelectItem>
                   <SelectItem value="void">Void</SelectItem>
                 </SelectContent>
               </Select>
