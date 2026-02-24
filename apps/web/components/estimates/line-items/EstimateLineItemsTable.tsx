@@ -95,7 +95,7 @@ export function EstimateLineItemsTable({
     { enabled: !!projectSlug && projectModeProp === undefined }
   );
 
-  const resolvedProjectMode = projectModeProp ?? project?.projectMode ?? "gc_advanced";
+  const resolvedProjectMode = projectModeProp ?? project?.projectMode ?? "simple";
   const isSimpleMode = resolvedProjectMode === "simple";
 
   // Update mutation with debouncing handled by cell onBlur

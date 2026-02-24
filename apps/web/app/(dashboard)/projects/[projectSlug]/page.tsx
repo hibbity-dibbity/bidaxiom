@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Calendar, DollarSign, Users, FileText, Edit, UserPlus, X, CheckCircle2, Circle, Clock, Building2, User, Mail, Phone, MapPin, Plus, Info } from "lucide-react";
+import { Calendar, Users, FileText, UserPlus, X, CheckCircle2, Circle, Clock, Building2, User, Mail, Phone, MapPin, Plus, Info } from "lucide-react";
 import type { ProjectRole } from "@construction/shared";
 import { TransitionHistory } from "./components/transition-history";
 import { toast } from "sonner";
@@ -203,13 +203,6 @@ export default function ProjectOverviewPage({
   const { data: companyProfile } = trpc.company.getCurrent.useQuery();
   const { data: customersData } = trpc.customer.list.useQuery({ limit: 100, offset: 0 });
   const { data: usersData } = trpc.user.list.useQuery({ limit: 100, offset: 0 });
-  const { data: budgetSummary } = trpc.budget.getProjectSummary.useQuery(
-    { projectId },
-    {
-      enabled: !!projectId,
-      placeholderData: (previousData) => previousData,
-    }
-  );
   const { data: changeOrders } = trpc.changeOrder.list.useQuery(
     { projectId },
     {
@@ -217,35 +210,6 @@ export default function ProjectOverviewPage({
       placeholderData: (previousData) => previousData,
     }
   );
-  const { data: paymentAppSummary } = trpc.paymentApp.getSummary.useQuery(
-    { projectId },
-    {
-      enabled: !!projectId,
-      placeholderData: (previousData) => previousData,
-    }
-  );
-  const { data: sovItems } = trpc.sov.list.useQuery(
-    { projectId },
-    {
-      enabled: !!projectId,
-      placeholderData: (previousData) => previousData,
-    }
-  );
-  const { data: retainage } = trpc.paymentApp.getRetainage.useQuery(
-    { projectId },
-    {
-      enabled: !!projectId,
-      placeholderData: (previousData) => previousData,
-    }
-  );
-  const { data: rfqs } = trpc.rfq.list.useQuery(
-    { projectId },
-    {
-      enabled: !!projectId,
-      placeholderData: (previousData) => previousData,
-    }
-  );
-
   const updateProjectMutation = trpc.project.update.useMutation({
     onSuccess: () => {
       utils.project.getBySlug.invalidate({ slug: projectSlug });
@@ -339,40 +303,6 @@ export default function ProjectOverviewPage({
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Budget</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {budgetSummary ? (
-              <>
-                <div className="text-2xl font-bold">
-                  {new Intl.NumberFormat("en-US", {
-                    style: "currency",
-                    currency: "USD",
-                    minimumFractionDigits: 0,
-                  }).format(budgetSummary.totalBudgeted)}
-                </div>
-                <Button variant="link" className="h-auto p-0 text-xs" asChild>
-                  <Link href={`/projects/${project.slug}/budget`}>
-                    View budget details
-                  </Link>
-                </Button>
-              </>
-            ) : (
-              <>
-                <div className="text-2xl font-bold">--</div>
-                <Button variant="link" className="h-auto p-0 text-xs" asChild>
-                  <Link href={`/projects/${project.slug}/budget`}>
-                    Set up budget
-                  </Link>
-                </Button>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Schedule</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -443,123 +373,6 @@ export default function ProjectOverviewPage({
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">SOV</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {sovItems && sovItems.items.length > 0 ? (
-              <>
-                <div className="text-2xl font-bold">{sovItems.items.length}</div>
-                <p className="text-xs text-muted-foreground">
-                  {new Intl.NumberFormat("en-US", {
-                    style: "currency",
-                    currency: "USD",
-                    minimumFractionDigits: 0,
-                  }).format(
-                    sovItems.items.reduce((sum, item) => sum + Number(item.scheduledValue), 0)
-                  )}{" "}
-                  scheduled
-                </p>
-                <Button variant="link" className="h-auto p-0 text-xs" asChild>
-                  <Link href={`/projects/${project.slug}/sov`}>Manage SOV</Link>
-                </Button>
-              </>
-            ) : (
-              <>
-                <div className="text-2xl font-bold">--</div>
-                <Button variant="link" className="h-auto p-0 text-xs" asChild>
-                  <Link href={`/projects/${project.slug}/sov`}>Set up SOV</Link>
-                </Button>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Payment Apps</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {paymentAppSummary ? (
-              <>
-                <div className="text-2xl font-bold">
-                  {paymentAppSummary.counts.submitted + paymentAppSummary.counts.underReview}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Pending ({paymentAppSummary.counts.approved} approved)
-                </p>
-                <Button variant="link" className="h-auto p-0 text-xs" asChild>
-                  <Link href={`/projects/${project.slug}/payment-apps`}>View payment apps</Link>
-                </Button>
-              </>
-            ) : (
-              <>
-                <div className="text-2xl font-bold">--</div>
-                <Button variant="link" className="h-auto p-0 text-xs" asChild>
-                  <Link href={`/projects/${project.slug}/payment-apps`}>Create payment app</Link>
-                </Button>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Retainage</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {retainage?.totals?.totalHeld ? (
-              <>
-                <div className="text-2xl font-bold">
-                  {new Intl.NumberFormat("en-US", {
-                    style: "currency",
-                    currency: "USD",
-                    minimumFractionDigits: 0,
-                  }).format(Number(retainage.totals.totalHeld))}
-                </div>
-                <p className="text-xs text-muted-foreground">Total held</p>
-              </>
-            ) : (
-              <>
-                <div className="text-2xl font-bold">$0</div>
-                <p className="text-xs text-muted-foreground">No retainage</p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">RFQs</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {rfqs ? (
-              <>
-                <div className="text-2xl font-bold">
-                  {rfqs.filter((r) => r.status === "issued").length}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Issued ({rfqs.reduce((sum, r) => sum + (r.bidCount || 0), 0)} bids received)
-                </p>
-                <Button variant="link" className="h-auto p-0 text-xs" asChild>
-                  <Link href={`/projects/${project.slug}/rfqs`}>View RFQs</Link>
-                </Button>
-              </>
-            ) : (
-              <>
-                <div className="text-2xl font-bold">--</div>
-                <Button variant="link" className="h-auto p-0 text-xs" asChild>
-                  <Link href={`/projects/${project.slug}/rfqs`}>Create RFQ</Link>
-                </Button>
-              </>
-            )}
-          </CardContent>
-        </Card>
       </div>
 
       {/* Customer Information */}

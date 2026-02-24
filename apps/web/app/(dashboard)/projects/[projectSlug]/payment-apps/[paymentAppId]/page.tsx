@@ -128,8 +128,6 @@ export default function PaymentAppDetailPage({
     return null; // Layout handles loading/error states
   }
 
-  const isSimpleMode = project.projectMode === "simple";
-
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center gap-4">
@@ -189,9 +187,6 @@ export default function PaymentAppDetailPage({
         <TabsList>
           <TabsTrigger value="summary">G702 Summary</TabsTrigger>
           <TabsTrigger value="line-items">G703 Line Items</TabsTrigger>
-          {!isSimpleMode && (
-            <TabsTrigger value="lien-waivers">Lien Waivers</TabsTrigger>
-          )}
           <TabsTrigger value="retainage">Retainage</TabsTrigger>
         </TabsList>
 
@@ -210,12 +205,6 @@ export default function PaymentAppDetailPage({
             </CardContent>
           </Card>
         </TabsContent>
-
-        {!isSimpleMode && (
-          <TabsContent value="lien-waivers">
-            <LienWaiverTracker paymentAppId={paymentAppId} projectId={projectId!} />
-          </TabsContent>
-        )}
 
         <TabsContent value="retainage">
           <RetainageSummary projectId={projectId!} />
