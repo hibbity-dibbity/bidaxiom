@@ -10,16 +10,16 @@ See: .planning/PROJECT.md (updated 2026-02-23)
 ## Current Position
 
 Phase: 50 of 52 (Send to Customer Flow)
-Plan: 02 complete
-Status: In progress (2/? plans done for Phase 50)
-Last activity: 2026-02-24 — 50-02 complete: created SendToCustomerDialog shared component — controlled Radix dialog with four fields, pre-population on open, reset on close
+Plan: 03 complete
+Status: In progress (3/? plans done for Phase 50)
+Last activity: 2026-02-24 — 50-03 complete: rebuilt proposal detail page header to Phase 46 two-row layout, wired SendToCustomerDialog with pre-populated email/subject, removed NextStepsPanel
 
-Progress: v1.0-v1.6: [██████████] 100% | v1.7: [████░░░░░░] 45% (Phase 50 Plan 02 complete)
+Progress: v1.0-v1.6: [██████████] 100% | v1.7: [█████░░░░░] 50% (Phase 50 Plan 03 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 189
+- Total plans completed: 190
 - Average duration: ~4.3 min/plan
 - Total execution time: ~11.7 hours
 
@@ -27,7 +27,7 @@ Progress: v1.0-v1.6: [██████████] 100% | v1.7: [████
 - Phase 47: 1 plan — sidebar trimmed to 5 nav items
 - Phase 48: 2 plans — tab bar trimmed, 4 placeholder pages, mode UI fully removed from 5 files
 - Phase 49: 3 plans complete — tab bar reordered, Expenses placeholder, Proposal rename, Change Orders ungated
-- Phase 50: 2 plans complete — send email infrastructure (50-01), SendToCustomerDialog component (50-02)
+- Phase 50: 3 plans complete — send email infrastructure (50-01), SendToCustomerDialog component (50-02), proposal detail page header + dialog wiring (50-03)
 
 *Updated after each plan completion*
 
@@ -58,6 +58,8 @@ Recent decisions relevant to v1.7:
 - [Phase 50-02]: Pre-population guards check open===true AND field==="" to avoid overwriting user edits on dialog reopen
 - [Phase 50-02]: Reset useEffect fires on open===false — dialog always starts clean on next open
 - [Phase 50-02]: eslint-disable on pre-population effect dependency array — intentional one-time-on-open behavior
+- [Phase 50-03]: estimates list page has no status filter dropdown — accepted/rejected filter cleanup not applicable; documented as not present
+- [Phase 50-03]: void recipients/subject/note in onSend callback — mutation takes only estimateId; dialog data is ephemeral per spec
 
 ### Pending Todos
 
@@ -70,5 +72,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Completed 50-01-PLAN.md — added estimates.sendToCustomer and changeOrder.sendToCustomer mutations; 2 tasks, 2 commits (7339bf1, 2b92d00)
+Stopped at: Completed 50-03-PLAN.md — rebuilt proposal detail page header to Phase 46 two-row layout, wired SendToCustomerDialog, removed NextStepsPanel; 2 tasks, 1 commit (b01f204)
 Resume file: None
