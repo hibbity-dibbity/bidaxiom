@@ -1114,6 +1114,63 @@ export const estimatesRouter = router({
     }),
 
   /**
+   * Send estimate to customer.
+   * Sets status to "submitted" unconditionally (idempotent for all non-under_contract statuses).
+   * Bypasses the state machine constraint in submitEstimate — business intent is "re-sendable at any time".
+   */
+  sendToCustomer: protectedProcedure
+    .input(z.object({ estimateId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+      const abilities = await loadProjectAbilities({
+        tenant: ctx.tenant,
+        userId: ctx.userId,
+        orgRole: ctx.orgRole,
+      });
+
+      ForbiddenError.from(abilities).throwUnlessCan("manage", "Estimate");
+
+      const [estimate] = await db
+        .select()
+        .from(schema.estimates)
+        .where(eq(schema.estimates.id, input.estimateId))
+        .limit(1);
+
+      if (!estimate) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Estimate not found",
+        });
+      }
+
+      if (estimate.status === "under_contract") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Cannot re-send a proposal that is already under contract",
+        });
+      }
+
+      const [updated] = await db
+        .update(schema.estimates)
+        .set({
+          status: "submitted",
+          submittedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.estimates.id, input.estimateId))
+        .returning();
+
+      return updated;
+    }),
+
+  /**
    * Update bid status (won/lost).
    * Validates status transition and updates estimate status when bid is won.
    */
