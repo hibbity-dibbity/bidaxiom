@@ -25,7 +25,7 @@ import {
 } from "@construction/shared";
 import { createAuditLog } from "../../audit/logger.js";
 import { defineAbilitiesFor } from "../../auth/abilities.js";
-import { isValidTransition, tryAutoAdvance } from "../../lib/lifecycle-state-machine.js";
+import { tryAutoAdvance } from "../../lib/lifecycle-state-machine.js";
 import { eq, desc, inArray, and, like, or, asc, count, sql, gte, lte, isNull, isNotNull, ilike, ne } from "drizzle-orm";
 import { ForbiddenError } from "@casl/ability";
 import { db as publicDb } from "../../db/client.js";
@@ -1051,9 +1051,6 @@ export const projectRouter = router({
           message: "Only Project Managers, Estimators, and Project Administrators can transition lifecycle phases.",
         });
       }
-
-      // Validate transition (throws TRPCError on invalid)
-      isValidTransition(project.lifecyclePhase as LifecyclePhase, input.toPhase, input.reason);
 
       const toIdx = LIFECYCLE_ORDER.indexOf(input.toPhase);
       const fromIdx = LIFECYCLE_ORDER.indexOf(project.lifecyclePhase as LifecyclePhase);
