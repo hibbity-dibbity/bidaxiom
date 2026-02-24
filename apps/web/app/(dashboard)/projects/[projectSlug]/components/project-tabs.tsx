@@ -21,13 +21,8 @@ interface ProjectTabsProps {
 const ALL_SECTIONS = [
   { name: "Overview", href: "" },
   { name: "Documents", href: "/documents" },
-  { name: "Budget", href: "/budget" },
-  { name: "Commitments", href: "/commitments" },
   { name: "Change Orders", href: "/change-orders", phaseGated: "change_orders" },
-  { name: "SOV", href: "/sov", gcOnly: true },
-  { name: "Payment Apps", href: "/payment-apps" },
   { name: "Invoices", href: "/invoices" },
-  { name: "RFQs", href: "/rfqs", gcOnly: true },
   { name: "Estimates", href: "/estimates" },
 ] as const;
 
