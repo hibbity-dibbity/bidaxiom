@@ -9,6 +9,7 @@ import {
   flexRender,
   type SortingState,
 } from "@tanstack/react-table";
+
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +38,12 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { FilterChips, type FilterChip } from "@/components/shared/filter-chips";
 import type { SubcontractorStatus } from "@construction/shared";
 
+// Stable row model factories — must be module-level to avoid
+// TanStack Table's useLayoutEffect triggering an infinite re-render loop
+// when factory references change on every render.
+const stableCoreRowModel = getCoreRowModel();
+const stableSortedRowModel = getSortedRowModel();
+
 export default function SubcontractorsPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
@@ -50,7 +57,7 @@ export default function SubcontractorsPage() {
     status: statusFilter === "all" ? undefined : statusFilter,
   });
 
-  const subcontractors = data || [];
+  const subcontractors = React.useMemo(() => data ?? [], [data]);
 
   const subStatusToVariant = (status: string) => {
     switch (status) {
@@ -110,8 +117,8 @@ export default function SubcontractorsPage() {
     columns,
     state: { sorting },
     onSortingChange: setSorting,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
+    getCoreRowModel: stableCoreRowModel,
+    getSortedRowModel: stableSortedRowModel,
     enableSortingRemoval: false,
   });
 
