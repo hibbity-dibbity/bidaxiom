@@ -116,15 +116,9 @@ export default function ProjectDocumentsPage() {
   }, [handleDeleteSuccess]);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-start gap-2">
-        <div className="flex-1">
-          <DocumentFilters
-            filters={currentFilters}
-            onChange={handleFilterChange}
-            authorOptions={authorOptions}
-          />
-        </div>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Documents</h1>
         <Button
           size="sm"
           variant="outline"
@@ -135,6 +129,11 @@ export default function ProjectDocumentsPage() {
           {showUploader ? "Cancel" : "Upload"}
         </Button>
       </div>
+      <DocumentFilters
+        filters={currentFilters}
+        onChange={handleFilterChange}
+        authorOptions={authorOptions}
+      />
       {showUploader && projectId && (
         <DocumentUploader
           projectId={projectId}

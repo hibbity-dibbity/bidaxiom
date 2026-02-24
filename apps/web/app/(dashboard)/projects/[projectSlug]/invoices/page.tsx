@@ -2,11 +2,8 @@
 
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AgingReportTable } from "@/components/payment-app/aging-report-table";
-import { ChevronLeft } from "lucide-react";
 
 export default function InvoicesPage({
   params,
@@ -25,16 +22,7 @@ export default function InvoicesPage({
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href={`/projects/${projectSlug}`}>
-            <ChevronLeft className="mr-2 h-4 w-4" />
-            Back to Project
-          </Link>
-        </Button>
-      </div>
-
+    <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Invoice Tracking</h1>
         <p className="text-muted-foreground mt-1">

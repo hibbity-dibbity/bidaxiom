@@ -74,7 +74,7 @@ export default function EstimatesPage({
   // Loading state
   if (isLoading) {
     return (
-      <div className="container mx-auto py-6 space-y-4">
+      <div className="space-y-4">
         <div className="flex justify-between items-center">
           <Skeleton className="h-8 w-32" />
           <Skeleton className="h-10 w-40" />
@@ -85,7 +85,7 @@ export default function EstimatesPage({
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Proposals</h1>
         <div className="flex items-center gap-2">
