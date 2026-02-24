@@ -52,6 +52,9 @@ Recent decisions relevant to v1.7:
 - [Phase 49-02]: Only display strings renamed to Proposal/Proposals; URL paths (/estimates/...), variable names, tRPC procedures, component names, TypeScript types, and CSV filename intentionally unchanged
 - [Phase 49-02]: WorkflowSidebar.tsx excluded from rename — confirmed dead UI (commented out in workflow/page.tsx)
 - [Phase 49-03]: Removed phaseGated: "change_orders" from tab config only — PHASE_FEATURE_GATES in packages/shared left intact as server-side mutation guard
+- [Phase 50-01]: estimates.sendToCustomer uses CASL "manage" action (stronger than submitEstimate's "update") — per plan spec
+- [Phase 50-01]: under_contract blocks resend on estimates (terminal status guard); all other statuses idempotently transition to "submitted"
+- [Phase 50-01]: changeOrder.sendToCustomer: PCO number assigned once and reused — if (!co.pcoNumber) guard prevents duplicate sequential numbers
 - [Phase 50-02]: Pre-population guards check open===true AND field==="" to avoid overwriting user edits on dialog reopen
 - [Phase 50-02]: Reset useEffect fires on open===false — dialog always starts clean on next open
 - [Phase 50-02]: eslint-disable on pre-population effect dependency array — intentional one-time-on-open behavior
@@ -67,5 +70,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Completed 50-02-PLAN.md — created SendToCustomerDialog shared component; 1 task, 1 commit (d582ce9)
+Stopped at: Completed 50-01-PLAN.md — added estimates.sendToCustomer and changeOrder.sendToCustomer mutations; 2 tasks, 2 commits (7339bf1, 2b92d00)
 Resume file: None
