@@ -19,11 +19,12 @@ interface ProjectTabsProps {
 }
 
 const ALL_SECTIONS = [
-  { name: "Overview", href: "" },
-  { name: "Documents", href: "/documents" },
+  { name: "Overview",      href: "" },
+  { name: "Documents",     href: "/documents" },
+  { name: "Proposals",     href: "/estimates" },
   { name: "Change Orders", href: "/change-orders", phaseGated: "change_orders" },
-  { name: "Invoices", href: "/invoices" },
-  { name: "Estimates", href: "/estimates" },
+  { name: "Invoices",      href: "/invoices" },
+  { name: "Expenses",      href: "/expenses" },
 ] as const;
 
 export function ProjectTabs({ projectSlug, projectMode, lifecyclePhase, headerStats }: ProjectTabsProps) {
@@ -116,6 +117,7 @@ export function ProjectTabs({ projectSlug, projectMode, lifecyclePhase, headerSt
     "/invoices": prefetchInvoices,
     "/rfqs": prefetchRFQs,
     "/estimates": prefetchEstimates,
+    "/expenses": () => {},
   };
 
   const getBadgeCount = (href: string): number => {
