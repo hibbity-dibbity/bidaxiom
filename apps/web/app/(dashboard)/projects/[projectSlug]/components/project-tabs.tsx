@@ -22,7 +22,7 @@ const ALL_SECTIONS = [
   { name: "Overview",      href: "" },
   { name: "Documents",     href: "/documents" },
   { name: "Proposals",     href: "/estimates" },
-  { name: "Change Orders", href: "/change-orders", phaseGated: "change_orders" },
+  { name: "Change Orders", href: "/change-orders" },
   { name: "Invoices",      href: "/invoices" },
   { name: "Expenses",      href: "/expenses" },
 ] as const;
