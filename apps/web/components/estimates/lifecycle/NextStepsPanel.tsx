@@ -20,7 +20,7 @@ export function NextStepsPanel({ estimateId, status, projectId, onActionComplete
         return (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Your estimate is ready. Submit for approval or generate a bid to send to clients.
+              Your proposal is ready. Submit for approval or generate a bid to send to clients.
             </p>
             <div className="flex gap-2">
               <SubmitEstimateButton
@@ -41,7 +41,7 @@ export function NextStepsPanel({ estimateId, status, projectId, onActionComplete
         return (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Estimate has been submitted. Mark as accepted if bid is won.
+              Proposal has been submitted. Mark as accepted if bid is won.
             </p>
             <div className="flex gap-2">
               <GenerateBidButton
@@ -57,7 +57,7 @@ export function NextStepsPanel({ estimateId, status, projectId, onActionComplete
         return (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Congratulations! Convert this estimate to an active project with one click.
+              Congratulations! Convert this proposal to an active project with one click.
             </p>
             <div className="flex gap-2">
               <ConvertToProjectButton
@@ -73,7 +73,7 @@ export function NextStepsPanel({ estimateId, status, projectId, onActionComplete
         return (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              This estimate has been converted to an active project. Budget line items have been created.
+              This proposal has been converted to an active project. Budget line items have been created.
             </p>
           </div>
         );

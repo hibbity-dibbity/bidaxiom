@@ -67,14 +67,14 @@ export default function EstimateDetailPage({
     return (
       <div className="container mx-auto py-6">
         <div className="flex flex-col items-center justify-center py-12">
-          <h2 className="text-2xl font-bold mb-2">Estimate Not Found</h2>
+          <h2 className="text-2xl font-bold mb-2">Proposal Not Found</h2>
           <p className="text-muted-foreground mb-6">
-            The estimate you&apos;re looking for doesn&apos;t exist.
+            The proposal you&apos;re looking for doesn&apos;t exist.
           </p>
           <Button asChild>
             <Link href={`/projects/${projectSlug}/estimates`}>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Estimates
+              Back to Proposals
             </Link>
           </Button>
         </div>
@@ -93,7 +93,7 @@ export default function EstimateDetailPage({
                 <ArrowLeft className="h-4 w-4" />
               </Link>
             </Button>
-            <h1 className="text-3xl font-bold">Estimate Details</h1>
+            <h1 className="text-3xl font-bold">Proposal Details</h1>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -117,7 +117,7 @@ export default function EstimateDetailPage({
           <Button asChild>
             <Link href={`/projects/${projectSlug}/estimates/${estimateSlug}/workflow`}>
               <Edit className="h-4 w-4 mr-2" />
-              Edit Estimate
+              Edit Proposal
             </Link>
           </Button>
         </div>

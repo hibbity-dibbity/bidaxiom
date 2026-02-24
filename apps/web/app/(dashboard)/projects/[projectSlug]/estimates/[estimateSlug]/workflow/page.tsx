@@ -43,9 +43,9 @@ export default function EstimateWorkflowPage({
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-2">Estimate Not Found</h2>
+          <h2 className="text-2xl font-bold mb-2">Proposal Not Found</h2>
           <p className="text-muted-foreground">
-            The estimate you're looking for doesn't exist.
+            The proposal you're looking for doesn't exist.
           </p>
         </div>
       </div>

@@ -14,11 +14,11 @@ interface SubmitEstimateButtonProps {
 export function SubmitEstimateButton({ estimateId, onSuccess, variant = "default" }: SubmitEstimateButtonProps) {
   const submitEstimate = trpc.estimates.submitEstimate.useMutation({
     onSuccess: () => {
-      toast.success("Estimate submitted for approval");
+      toast.success("Proposal submitted for approval");
       onSuccess?.();
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to submit estimate");
+      toast.error(error.message || "Failed to submit proposal");
     },
   });
 
