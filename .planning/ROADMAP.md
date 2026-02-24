@@ -146,7 +146,7 @@
 
 - [x] **Phase 47: Sidebar Cleanup** — Remove Bidding, Financials, Documents, Reports sections and the "Navigation" group heading (completed 2026-02-23)
 - [x] **Phase 48: Project Mode Removal** — Remove the mode switcher from all UI surfaces and hide all GC/Advanced-specific tabs and features (completed 2026-02-24)
-- [ ] **Phase 49: Project Tabs Redesign** — Reorder and relabel tabs: Overview → Documents → Proposals → Change Orders → Invoices → Expenses
+- [x] **Phase 49: Project Tabs Redesign** — Reorder and relabel tabs: Overview → Documents → Proposals → Change Orders → Invoices → Expenses (completed 2026-02-24)
 - [ ] **Phase 50: Send-to-Customer Flow** — Remove approval requirement; add "Send to Customer" dialog with auto-populated recipient and status-advance on confirm
 - [ ] **Phase 51: Lifecycle Phase Freedom** — Remove all phase guards; allow free navigation to any lifecycle phase from any phase
 - [ ] **Phase 52: Trade Simplification** — Replace CSI codes with a simple 12-trade list on subcontractor forms and filter dropdowns
@@ -240,7 +240,7 @@ Plans:
 | 41-46. UX Redesign Phases | v1.6 | 29/29 | Complete | 2026-02-23 |
 | 47. Sidebar Cleanup | v1.7 | Complete    | 2026-02-23 | - |
 | 48. Project Mode Removal | v1.7 | Complete    | 2026-02-24 | - |
-| 49. Project Tabs Redesign | v1.7 | 0/2 | Not started | - |
+| 49. Project Tabs Redesign | v1.7 | Complete    | 2026-02-24 | - |
 | 50. Send-to-Customer Flow | v1.7 | 0/TBD | Not started | - |
 | 51. Lifecycle Phase Freedom | v1.7 | 0/TBD | Not started | - |
 | 52. Trade Simplification | v1.7 | 0/TBD | Not started | - |
