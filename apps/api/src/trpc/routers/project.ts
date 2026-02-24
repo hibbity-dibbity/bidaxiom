@@ -1007,7 +1007,7 @@ export const projectRouter = router({
 
   /**
    * Manually transition a project to a different lifecycle phase.
-   * Forward transitions must be exactly one step. Backward transitions require a reason.
+   * Transitions are unrestricted — any phase to any phase in one action.
    * RBAC: org:admin, or project-level estimator or project_administrator.
    */
   transitionLifecyclePhase: protectedProcedure
