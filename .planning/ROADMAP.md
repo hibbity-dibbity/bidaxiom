@@ -144,7 +144,7 @@
 
 ### Phases
 
-- [x] **Phase 47: Sidebar Cleanup** — Remove Bidding, Financials, Documents, Reports sections and the "Navigation" group heading (completed 2026-02-23)
+- [x] **Phase 47: Sidebar Cleanup** — Remove Bidding, Financials, Documents, Reports sections and the "Navigation" group heading (completed 2026-02-23)
 - [ ] **Phase 48: Project Mode Removal** — Remove the mode switcher from all UI surfaces and hide all GC/Advanced-specific tabs and features
 - [ ] **Phase 49: Project Tabs Redesign** — Reorder and relabel tabs: Overview → Documents → Proposals → Change Orders → Invoices → Expenses
 - [ ] **Phase 50: Send-to-Customer Flow** — Remove approval requirement; add "Send to Customer" dialog with auto-populated recipient and status-advance on confirm
@@ -174,7 +174,10 @@
   2. The project tab bar does not display Budget, SOV, Commitments, or Payment Applications tabs
   3. Any project-level entry point or action that exclusively belongs to GC/Advanced mode is absent from the UI
   4. Existing data (budget lines, SOV rows, payment apps) is preserved in the database — only the UI access points are removed
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 48-01-PLAN.md — Remove GC-only tabs from tab bar; replace four tab pages with placeholder pages
+- [ ] 48-02-PLAN.md — Remove mode badge, mode-switch menu item, Project Mode form field; clean Overview GC CTAs and in-tab mode conditionals
 
 ### Phase 49: Project Tabs Redesign
 **Goal**: The project detail page shows tabs in the correct order with updated labels, including an Expenses placeholder tab
@@ -233,7 +236,7 @@
 | 36-40. Document Engine Phases | v1.5 | 27/27 | Complete | 2026-02-21 |
 | 41-46. UX Redesign Phases | v1.6 | 29/29 | Complete | 2026-02-23 |
 | 47. Sidebar Cleanup | v1.7 | Complete    | 2026-02-23 | - |
-| 48. Project Mode Removal | v1.7 | 0/TBD | Not started | - |
+| 48. Project Mode Removal | v1.7 | 0/2 | Not started | - |
 | 49. Project Tabs Redesign | v1.7 | 0/TBD | Not started | - |
 | 50. Send-to-Customer Flow | v1.7 | 0/TBD | Not started | - |
 | 51. Lifecycle Phase Freedom | v1.7 | 0/TBD | Not started | - |
