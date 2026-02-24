@@ -60,7 +60,7 @@ export default function NewEstimatePage({
       router.push(`/projects/${projectSlug}/estimates/${data.slug}/workflow`);
     },
     onError: (error) => {
-      toast.error("Failed to create estimate", {
+      toast.error("Failed to create proposal", {
         description: error.message,
       });
     },
