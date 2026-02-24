@@ -121,9 +121,6 @@ export function ProjectHeader({ project, headerStats, canTransition, canDelete }
             currentPhase={project.lifecyclePhase as LifecyclePhase}
             canTransition={canTransition}
           />
-          <Badge variant="outline" className="bg-muted text-muted-foreground text-xs shrink-0">
-            {project.projectMode === "simple" ? "Simple" : "GC/Advanced"}
-          </Badge>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <DropdownMenu>
@@ -133,16 +130,6 @@ export function ProjectHeader({ project, headerStats, canTransition, canDelete }
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={handleModeSwitch}
-                disabled={setModeMutation.isPending}
-              >
-                {setModeMutation.isPending
-                  ? "Switching..."
-                  : project.projectMode === "simple"
-                  ? "Switch to GC/Advanced"
-                  : "Switch to Simple"}
-              </DropdownMenuItem>
               {canDelete && (
                 <DeleteProjectButton
                   projectId={project.id}
