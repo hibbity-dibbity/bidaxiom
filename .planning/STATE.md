@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-23)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.7 Project Flow Enhancements — Phase 49: Project Tabs Redesign
+**Current focus:** v1.7 Project Flow Enhancements — Phase 50: Send to Customer Flow
 
 ## Current Position
 
-Phase: 49 of 52 (Project Tabs Redesign)
-Plan: 03 complete
-Status: In progress (3/? plans done for Phase 49)
-Last activity: 2026-02-24 — 49-03 complete: removed phaseGated: "change_orders" from Change Orders tab entry in project-tabs.tsx — tab now visible on all projects regardless of lifecycle phase
+Phase: 50 of 52 (Send to Customer Flow)
+Plan: 02 complete
+Status: In progress (2/? plans done for Phase 50)
+Last activity: 2026-02-24 — 50-02 complete: created SendToCustomerDialog shared component — controlled Radix dialog with four fields, pre-population on open, reset on close
 
-Progress: v1.0-v1.6: [██████████] 100% | v1.7: [████░░░░░░] 43% (Phase 49 Plan 03 complete)
+Progress: v1.0-v1.6: [██████████] 100% | v1.7: [████░░░░░░] 45% (Phase 50 Plan 02 complete)
 
 ## Performance Metrics
 
@@ -26,7 +26,8 @@ Progress: v1.0-v1.6: [██████████] 100% | v1.7: [████
 **Recent trend (v1.7 phases):**
 - Phase 47: 1 plan — sidebar trimmed to 5 nav items
 - Phase 48: 2 plans — tab bar trimmed, 4 placeholder pages, mode UI fully removed from 5 files
-- Phase 49: 2 plans complete — tab bar reordered, Expenses placeholder, all Estimate display strings renamed to Proposal across 6 files
+- Phase 49: 3 plans complete — tab bar reordered, Expenses placeholder, Proposal rename, Change Orders ungated
+- Phase 50: 2 plans complete — send email infrastructure (50-01), SendToCustomerDialog component (50-02)
 
 *Updated after each plan completion*
 
@@ -51,6 +52,9 @@ Recent decisions relevant to v1.7:
 - [Phase 49-02]: Only display strings renamed to Proposal/Proposals; URL paths (/estimates/...), variable names, tRPC procedures, component names, TypeScript types, and CSV filename intentionally unchanged
 - [Phase 49-02]: WorkflowSidebar.tsx excluded from rename — confirmed dead UI (commented out in workflow/page.tsx)
 - [Phase 49-03]: Removed phaseGated: "change_orders" from tab config only — PHASE_FEATURE_GATES in packages/shared left intact as server-side mutation guard
+- [Phase 50-02]: Pre-population guards check open===true AND field==="" to avoid overwriting user edits on dialog reopen
+- [Phase 50-02]: Reset useEffect fires on open===false — dialog always starts clean on next open
+- [Phase 50-02]: eslint-disable on pre-population effect dependency array — intentional one-time-on-open behavior
 
 ### Pending Todos
 
@@ -63,5 +67,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Completed 49-03-PLAN.md — removed phaseGated: "change_orders" from Change Orders tab entry; 1 task, 1 commit (9f729d3)
+Stopped at: Completed 50-02-PLAN.md — created SendToCustomerDialog shared component; 1 task, 1 commit (d582ce9)
 Resume file: None
