@@ -13,7 +13,6 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -32,7 +31,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, ChevronsUpDown, ChevronUp, ChevronDown, Download, HardHat, SearchX } from "lucide-react";
-import { CSI_DIVISIONS } from "@/lib/csi-divisions";
+import { SIMPLE_TRADES } from "@construction/shared";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { FilterChips, type FilterChip } from "@/components/shared/filter-chips";
@@ -41,7 +40,7 @@ import type { SubcontractorStatus } from "@construction/shared";
 export default function SubcontractorsPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
-  const [tradeFilter, setTradeFilter] = useState<number | null>(null);
+  const [tradeFilter, setTradeFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<SubcontractorStatus | "all">("all");
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
@@ -69,29 +68,6 @@ export default function SubcontractorsPage() {
       blacklisted: "Blacklisted",
     };
     return statusLabels[status] || status;
-  };
-
-  const getTradeBadges = (trades: number[]) => {
-    const firstThree = trades.slice(0, 3);
-    const remaining = trades.length - 3;
-
-    return (
-      <div className="flex flex-wrap gap-1">
-        {firstThree.map((tradeNum) => {
-          const division = CSI_DIVISIONS.find((d) => d.number === tradeNum);
-          return (
-            <Badge key={tradeNum} variant="outline" className="text-xs">
-              {division ? `${division.number} - ${division.name}` : tradeNum}
-            </Badge>
-          );
-        })}
-        {remaining > 0 && (
-          <Badge variant="outline" className="text-xs">
-            +{remaining} more
-          </Badge>
-        )}
-      </div>
-    );
   };
 
   const columns = React.useMemo(() => [
@@ -146,13 +122,12 @@ export default function SubcontractorsPage() {
 
     const escape = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
 
-    const formatTrades = (trades: number[]) => {
-      const names = trades.slice(0, 3).map((t) => {
-        const div = CSI_DIVISIONS.find((d) => d.number === t);
-        return div ? `${div.number} - ${div.name}` : String(t);
-      });
-      if (trades.length > 3) names.push(`+${trades.length - 3} more`);
-      return names.join(" | ");
+    const formatTrades = (sub: typeof subcontractors[0]) => {
+      const tradeArr = (sub as any).trade as string[] ?? [];
+      if (tradeArr.length === 0) return "";
+      return tradeArr
+        .map((t: string) => t === "Other" && (sub as any).tradeOther ? (sub as any).tradeOther : t)
+        .join(" | ");
     };
 
     const header = ["Company", "Contact", "Email", "Trade", "Status"].map(escape).join(",");
@@ -162,7 +137,7 @@ export default function SubcontractorsPage() {
         s.companyName ?? "",
         s.contactName ?? "",
         s.contactEmail ?? "",
-        formatTrades(s.trades),
+        formatTrades(s),
         getStatusLabel(s.status),
       ].map(escape).join(",");
     });
@@ -187,7 +162,7 @@ export default function SubcontractorsPage() {
       : []),
     ...(tradeFilter !== null
       ? [{
-          label: `Trade: ${CSI_DIVISIONS.find((d) => d.number === tradeFilter)?.name ?? tradeFilter}`,
+          label: `Trade: ${tradeFilter}`,
           onRemove: () => setTradeFilter(null),
         }]
       : []),
@@ -238,17 +213,17 @@ export default function SubcontractorsPage() {
             />
 
             <Select
-              value={tradeFilter?.toString() || "all"}
-              onValueChange={(value) => setTradeFilter(value === "all" ? null : Number(value))}
+              value={tradeFilter ?? "all"}
+              onValueChange={(value) => setTradeFilter(value === "all" ? null : value)}
             >
-              <SelectTrigger className="md:w-[300px]">
+              <SelectTrigger className="md:w-[200px]">
                 <SelectValue placeholder="Filter by trade" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Trades</SelectItem>
-                {CSI_DIVISIONS.map((division) => (
-                  <SelectItem key={division.number} value={division.number.toString()}>
-                    {division.number} - {division.name}
+                {SIMPLE_TRADES.map((trade) => (
+                  <SelectItem key={trade} value={trade}>
+                    {trade}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -338,7 +313,27 @@ export default function SubcontractorsPage() {
                     <TableCell className="text-muted-foreground">
                       {row.original.contactPhone || "-"}
                     </TableCell>
-                    <TableCell>{getTradeBadges(row.original.trades)}</TableCell>
+                    <TableCell>
+                      {(() => {
+                        const tradeArr = (row.original as any).trade as string[] ?? [];
+                        if (tradeArr.length === 0) {
+                          return <span className="text-muted-foreground">—</span>;
+                        }
+                        const displayName = (t: string) =>
+                          t === "Other" && (row.original as any).tradeOther
+                            ? (row.original as any).tradeOther
+                            : t;
+                        const overflow = tradeArr.length - 1;
+                        return (
+                          <div className="flex items-center gap-1">
+                            <StatusBadge variant="draft">{displayName(tradeArr[0])}</StatusBadge>
+                            {overflow > 0 && (
+                              <span className="text-xs text-muted-foreground">+{overflow}</span>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </TableCell>
                     <TableCell>
                       <StatusBadge variant={subStatusToVariant(row.original.status)}>
                         {getStatusLabel(row.original.status)}

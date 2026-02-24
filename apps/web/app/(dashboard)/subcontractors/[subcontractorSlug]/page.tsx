@@ -27,7 +27,6 @@ import {
 import { ArrowLeft, Edit, Trash2, Building2, User, Mail, Phone, MapPin } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { CSI_DIVISIONS } from "@/lib/csi-divisions";
 import { SubcontractorForm } from "@/components/bidding/subcontractor-form";
 import { BidHistoryTable } from "@/components/bidding/bid-history-table";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -238,14 +237,22 @@ export default function SubcontractorDetailPage({ params }: { params: { subcontr
           <div className="pt-4 border-t">
             <p className="text-sm font-medium mb-3">Trade Specialties</p>
             <div className="flex flex-wrap gap-2">
-              {subcontractor.trades.map((tradeNum) => {
-                const division = CSI_DIVISIONS.find((d) => d.number === tradeNum);
-                return (
-                  <Badge key={tradeNum} variant="outline">
-                    {division ? `${division.number} - ${division.name}` : tradeNum}
-                  </Badge>
-                );
-              })}
+              {(() => {
+                const tradeArr = (subcontractor as any).trade as string[] ?? [];
+                if (tradeArr.length === 0) {
+                  return <span className="text-sm text-muted-foreground">—</span>;
+                }
+                return tradeArr.map((t: string) => {
+                  const label = t === "Other" && (subcontractor as any).tradeOther
+                    ? (subcontractor as any).tradeOther
+                    : t;
+                  return (
+                    <Badge key={t} variant="outline">
+                      {label}
+                    </Badge>
+                  );
+                });
+              })()}
             </div>
           </div>
 
@@ -294,6 +301,8 @@ export default function SubcontractorDetailPage({ params }: { params: { subcontr
               state: subcontractor.state,
               zip: subcontractor.zip,
               trades: subcontractor.trades,
+              trade: (subcontractor as any).trade ?? [],
+              tradeOther: (subcontractor as any).tradeOther ?? "",
               notes: subcontractor.notes,
             }}
             onSuccess={(updated) => {

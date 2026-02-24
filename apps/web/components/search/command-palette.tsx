@@ -197,6 +197,9 @@ function CommandPalette({ open, setOpen }: CommandPaletteProps) {
                       <Building2 className="mr-2 h-4 w-4" />
                       <div className="flex flex-col">
                         <span>{result.title}</span>
+                        {result.subtitle && (
+                          <span className="text-xs text-muted-foreground">{result.subtitle}</span>
+                        )}
                       </div>
                     </CommandItem>
                   ))}
