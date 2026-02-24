@@ -145,7 +145,7 @@
 ### Phases
 
 - [x] **Phase 47: Sidebar Cleanup** — Remove Bidding, Financials, Documents, Reports sections and the "Navigation" group heading (completed 2026-02-23)
-- [x] **Phase 48: Project Mode Removal** — Remove the mode switcher from all UI surfaces and hide all GC/Advanced-specific tabs and features (completed 2026-02-24)
+- [x] **Phase 48: Project Mode Removal** — Remove the mode switcher from all UI surfaces and hide all GC/Advanced-specific tabs and features (completed 2026-02-24)
 - [ ] **Phase 49: Project Tabs Redesign** — Reorder and relabel tabs: Overview → Documents → Proposals → Change Orders → Invoices → Expenses
 - [ ] **Phase 50: Send-to-Customer Flow** — Remove approval requirement; add "Send to Customer" dialog with auto-populated recipient and status-advance on confirm
 - [ ] **Phase 51: Lifecycle Phase Freedom** — Remove all phase guards; allow free navigation to any lifecycle phase from any phase
@@ -188,7 +188,10 @@ Plans:
   2. The tab previously labeled "Estimates" is now labeled "Proposals" and the heading, breadcrumbs, and action buttons inside the tab all read "Proposals"
   3. Clicking the Expenses tab navigates to a placeholder page with a contextual empty state (icon, heading, description) — no data entry is available
   4. No "Estimates" label appears anywhere in the project tab context
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 49-01-PLAN.md — Reorder ALL_SECTIONS, rename tab to "Proposals", add Expenses entry and placeholder page, update breadcrumb segment labels
+- [ ] 49-02-PLAN.md — Rename all user-visible "Estimate"/"Estimates" strings to "Proposal"/"Proposals" in estimates route pages and shared components
 
 ### Phase 50: Send-to-Customer Flow
 **Goal**: Proposals and change orders can be sent to the customer with a single button click that advances the document status to Sent — no approval workflow required
@@ -237,7 +240,7 @@ Plans:
 | 41-46. UX Redesign Phases | v1.6 | 29/29 | Complete | 2026-02-23 |
 | 47. Sidebar Cleanup | v1.7 | Complete    | 2026-02-23 | - |
 | 48. Project Mode Removal | v1.7 | Complete    | 2026-02-24 | - |
-| 49. Project Tabs Redesign | v1.7 | 0/TBD | Not started | - |
+| 49. Project Tabs Redesign | v1.7 | 0/2 | Not started | - |
 | 50. Send-to-Customer Flow | v1.7 | 0/TBD | Not started | - |
 | 51. Lifecycle Phase Freedom | v1.7 | 0/TBD | Not started | - |
 | 52. Trade Simplification | v1.7 | 0/TBD | Not started | - |
