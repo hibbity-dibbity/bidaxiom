@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-23)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.7 Project Flow Enhancements — Phase 50: Send to Customer Flow
+**Current focus:** v1.7 Project Flow Enhancements — Phase 51: Lifecycle Phase Freedom
 
 ## Current Position
 
-Phase: 50 of 52 (Send to Customer Flow)
-Plan: 04 complete
-Status: In progress (4/? plans done for Phase 50)
-Last activity: 2026-02-24 — 50-04 complete: rebuilt CO detail header to Phase 46 two-row layout, removed ApprovalPanel entirely, wired SendToCustomerDialog with customerEmail and changeOrder.sendToCustomer mutation, removed orphaned approval filter options from CO list
+Phase: 51 of 52 (Lifecycle Phase Freedom)
+Plan: 01 complete
+Status: In progress (1/? plans done for Phase 51)
+Last activity: 2026-02-24 — 51-01 complete: removed isValidTransition guard from transitionLifecyclePhase router mutation, rewrote LifecyclePhaseBadge with optimistic update + Loader2 pending spinner, no AlertDialog, no success toast
 
-Progress: v1.0-v1.6: [██████████] 100% | v1.7: [█████░░░░░] 55% (Phase 50 Plan 04 complete)
+Progress: v1.0-v1.6: [██████████] 100% | v1.7: [██████░░░░] 60% (Phase 51 Plan 01 complete)
 
 ## Performance Metrics
 
@@ -28,6 +28,7 @@ Progress: v1.0-v1.6: [██████████] 100% | v1.7: [████
 - Phase 48: 2 plans — tab bar trimmed, 4 placeholder pages, mode UI fully removed from 5 files
 - Phase 49: 3 plans complete — tab bar reordered, Expenses placeholder, Proposal rename, Change Orders ungated
 - Phase 50: 4 plans complete — send email infrastructure (50-01), SendToCustomerDialog component (50-02), proposal detail page header + dialog wiring (50-03), CO detail header rebuild + ApprovalPanel removal (50-04)
+- Phase 51: 1 plan complete — removed isValidTransition guard from router, rewrote badge with optimistic update + spinner
 
 *Updated after each plan completion*
 
@@ -63,6 +64,9 @@ Recent decisions relevant to v1.7:
 - [Phase 50-04]: CO detail void/delete buttons kept as secondary action row below header — not in 3-dot dropdown (destructive + status-conditional)
 - [Phase 50-04]: onSend callback voids recipients/subject/note — changeOrder.sendToCustomer only needs changeOrderId; email delivery metadata deferred to future email layer
 - [Phase 50-04]: Orphaned status filter cleanup scoped to change-order-list.tsx (the component); removed pending_approval, approved, rejected from filter dropdown
+- [Phase 51-01]: No success toast on lifecycle phase transition — badge optimistic update is the confirmation
+- [Phase 51-01]: reason field kept optional on transitionLifecyclePhaseSchema — passed as undefined from badge, harmless
+- [Phase 51-01]: isBackward variable retained in router despite guard removal — still used in audit log metadata
 
 ### Pending Todos
 
@@ -75,5 +79,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Completed 50-04-PLAN.md — rebuilt CO detail header to Phase 46 two-row layout, removed ApprovalPanel, wired SendToCustomerDialog with customerEmail, removed orphaned CO status filter options; 3 tasks, 3 commits (870f858, 0dd3560, c74ed29)
+Stopped at: Completed 51-01-PLAN.md — removed isValidTransition guard from router, rewrote LifecyclePhaseBadge with optimistic update + Loader2 spinner; 2 tasks, 2 commits (d130484, 567d3da)
 Resume file: None
