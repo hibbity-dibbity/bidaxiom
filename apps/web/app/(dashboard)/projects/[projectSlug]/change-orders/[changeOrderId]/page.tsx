@@ -12,11 +12,17 @@ export default function ChangeOrderDetailPage({
 
   // Resolve project by slug (cached from layout)
   const { data: project } = trpc.project.getBySlug.useQuery({ slug: projectSlug });
-  const projectId = project?.id;
 
   if (!project) {
     return null; // Layout handles loading/error states
   }
 
-  return <ChangeOrderDetail changeOrderId={changeOrderId} projectId={projectId} projectSlug={project.slug} />;
+  return (
+    <ChangeOrderDetail
+      changeOrderId={changeOrderId}
+      projectId={project.id}
+      projectSlug={project.slug}
+      customerEmail={project?.customer?.email}
+    />
+  );
 }
