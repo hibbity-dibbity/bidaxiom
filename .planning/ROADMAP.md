@@ -146,7 +146,7 @@
 
 - [x] **Phase 47: Sidebar Cleanup** — Remove Bidding, Financials, Documents, Reports sections and the "Navigation" group heading (completed 2026-02-23)
 - [x] **Phase 48: Project Mode Removal** — Remove the mode switcher from all UI surfaces and hide all GC/Advanced-specific tabs and features (completed 2026-02-24)
-- [x] **Phase 49: Project Tabs Redesign** — Reorder and relabel tabs: Overview → Documents → Proposals → Change Orders → Invoices → Expenses (completed 2026-02-24)
+- [x] **Phase 49: Project Tabs Redesign** — Reorder and relabel tabs: Overview → Documents → Proposals → Change Orders → Invoices → Expenses (completed 2026-02-24)
 - [ ] **Phase 50: Send-to-Customer Flow** — Remove approval requirement; add "Send to Customer" dialog with auto-populated recipient and status-advance on confirm
 - [ ] **Phase 51: Lifecycle Phase Freedom** — Remove all phase guards; allow free navigation to any lifecycle phase from any phase
 - [ ] **Phase 52: Trade Simplification** — Replace CSI codes with a simple 12-trade list on subcontractor forms and filter dropdowns
@@ -202,7 +202,12 @@ Plans:
   2. A change order detail page has a "Send to Customer" button with the same dialog behavior; no approval workflow gates it
   3. The Send to Customer dialog contains a recipient email field; when the project has a customer with a primary contact email, that email is pre-populated on open
   4. Clicking "Confirm" (or equivalent) in the dialog changes the document's status to "Sent" and closes the dialog — no email is transmitted
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 50-01-PLAN.md — Add estimates.sendToCustomer and changeOrder.sendToCustomer tRPC mutations (idempotent status transitions)
+- [ ] 50-02-PLAN.md — Create shared SendToCustomerDialog component (Radix Dialog, pre-population, four fields)
+- [ ] 50-03-PLAN.md — Rebuild proposal detail page header; remove NextStepsPanel; wire SendToCustomerDialog
+- [ ] 50-04-PLAN.md — Rebuild CO detail header; remove ApprovalPanel; add customerEmail prop; wire SendToCustomerDialog
 
 ### Phase 51: Lifecycle Phase Freedom
 **Goal**: Users can move a project to any lifecycle phase in a single click from any current phase — no guards, no confirmation dialogs, no sequential restrictions
@@ -241,6 +246,6 @@ Plans:
 | 47. Sidebar Cleanup | v1.7 | Complete    | 2026-02-23 | - |
 | 48. Project Mode Removal | v1.7 | Complete    | 2026-02-24 | - |
 | 49. Project Tabs Redesign | v1.7 | Complete    | 2026-02-24 | - |
-| 50. Send-to-Customer Flow | v1.7 | 0/TBD | Not started | - |
+| 50. Send-to-Customer Flow | v1.7 | 0/4 | Not started | - |
 | 51. Lifecycle Phase Freedom | v1.7 | 0/TBD | Not started | - |
 | 52. Trade Simplification | v1.7 | 0/TBD | Not started | - |
