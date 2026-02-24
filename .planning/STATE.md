@@ -10,24 +10,24 @@ See: .planning/PROJECT.md (updated 2026-02-23)
 ## Current Position
 
 Phase: 50 of 52 (Send to Customer Flow)
-Plan: 03 complete
-Status: In progress (3/? plans done for Phase 50)
-Last activity: 2026-02-24 — 50-03 complete: rebuilt proposal detail page header to Phase 46 two-row layout, wired SendToCustomerDialog with pre-populated email/subject, removed NextStepsPanel
+Plan: 04 complete
+Status: In progress (4/? plans done for Phase 50)
+Last activity: 2026-02-24 — 50-04 complete: rebuilt CO detail header to Phase 46 two-row layout, removed ApprovalPanel entirely, wired SendToCustomerDialog with customerEmail and changeOrder.sendToCustomer mutation, removed orphaned approval filter options from CO list
 
-Progress: v1.0-v1.6: [██████████] 100% | v1.7: [█████░░░░░] 50% (Phase 50 Plan 03 complete)
+Progress: v1.0-v1.6: [██████████] 100% | v1.7: [█████░░░░░] 55% (Phase 50 Plan 04 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 190
+- Total plans completed: 191
 - Average duration: ~4.3 min/plan
-- Total execution time: ~11.7 hours
+- Total execution time: ~11.8 hours
 
 **Recent trend (v1.7 phases):**
 - Phase 47: 1 plan — sidebar trimmed to 5 nav items
 - Phase 48: 2 plans — tab bar trimmed, 4 placeholder pages, mode UI fully removed from 5 files
 - Phase 49: 3 plans complete — tab bar reordered, Expenses placeholder, Proposal rename, Change Orders ungated
-- Phase 50: 3 plans complete — send email infrastructure (50-01), SendToCustomerDialog component (50-02), proposal detail page header + dialog wiring (50-03)
+- Phase 50: 4 plans complete — send email infrastructure (50-01), SendToCustomerDialog component (50-02), proposal detail page header + dialog wiring (50-03), CO detail header rebuild + ApprovalPanel removal (50-04)
 
 *Updated after each plan completion*
 
@@ -60,6 +60,9 @@ Recent decisions relevant to v1.7:
 - [Phase 50-02]: eslint-disable on pre-population effect dependency array — intentional one-time-on-open behavior
 - [Phase 50-03]: estimates list page has no status filter dropdown — accepted/rejected filter cleanup not applicable; documented as not present
 - [Phase 50-03]: void recipients/subject/note in onSend callback — mutation takes only estimateId; dialog data is ephemeral per spec
+- [Phase 50-04]: CO detail void/delete buttons kept as secondary action row below header — not in 3-dot dropdown (destructive + status-conditional)
+- [Phase 50-04]: onSend callback voids recipients/subject/note — changeOrder.sendToCustomer only needs changeOrderId; email delivery metadata deferred to future email layer
+- [Phase 50-04]: Orphaned status filter cleanup scoped to change-order-list.tsx (the component); removed pending_approval, approved, rejected from filter dropdown
 
 ### Pending Todos
 
@@ -72,5 +75,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Completed 50-03-PLAN.md — rebuilt proposal detail page header to Phase 46 two-row layout, wired SendToCustomerDialog, removed NextStepsPanel; 2 tasks, 1 commit (b01f204)
+Stopped at: Completed 50-04-PLAN.md — rebuilt CO detail header to Phase 46 two-row layout, removed ApprovalPanel, wired SendToCustomerDialog with customerEmail, removed orphaned CO status filter options; 3 tasks, 3 commits (870f858, 0dd3560, c74ed29)
 Resume file: None
