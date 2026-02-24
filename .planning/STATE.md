@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-23)
 ## Current Position
 
 Phase: 49 of 52 (Project Tabs Redesign)
-Plan: 02 complete
-Status: In progress (2/? plans done for Phase 49)
-Last activity: 2026-02-24 — 49-02 complete: all user-visible Estimate/Estimates strings renamed to Proposal/Proposals across 6 files (list, create, detail, workflow pages, NextStepsPanel, SubmitEstimateButton)
+Plan: 03 complete
+Status: In progress (3/? plans done for Phase 49)
+Last activity: 2026-02-24 — 49-03 complete: removed phaseGated: "change_orders" from Change Orders tab entry in project-tabs.tsx — tab now visible on all projects regardless of lifecycle phase
 
-Progress: v1.0-v1.6: [██████████] 100% | v1.7: [████░░░░░░] 40% (Phase 49 Plan 02 complete)
+Progress: v1.0-v1.6: [██████████] 100% | v1.7: [████░░░░░░] 43% (Phase 49 Plan 03 complete)
 
 ## Performance Metrics
 
@@ -50,6 +50,7 @@ Recent decisions relevant to v1.7:
 - [Phase 49-01]: Added /expenses no-op prefetch handler to sectionPrefetchMap to avoid undefined lookup on new tab
 - [Phase 49-02]: Only display strings renamed to Proposal/Proposals; URL paths (/estimates/...), variable names, tRPC procedures, component names, TypeScript types, and CSV filename intentionally unchanged
 - [Phase 49-02]: WorkflowSidebar.tsx excluded from rename — confirmed dead UI (commented out in workflow/page.tsx)
+- [Phase 49-03]: Removed phaseGated: "change_orders" from tab config only — PHASE_FEATURE_GATES in packages/shared left intact as server-side mutation guard
 
 ### Pending Todos
 
@@ -62,5 +63,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Completed 49-02-PLAN.md — all Estimate display strings renamed to Proposal across 6 files; 2 tasks, 2 commits (6a888e5, 6db647d)
+Stopped at: Completed 49-03-PLAN.md — removed phaseGated: "change_orders" from Change Orders tab entry; 1 task, 1 commit (9f729d3)
 Resume file: None
