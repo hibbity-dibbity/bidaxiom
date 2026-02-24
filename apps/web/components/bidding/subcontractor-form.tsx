@@ -6,7 +6,6 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormField,
@@ -19,8 +18,8 @@ import { PhoneInput } from "@/components/ui/phone-input";
 import { AddressInput } from "@/components/ui/address-input";
 import { toast } from "sonner";
 import { createSubcontractorSchema } from "@construction/shared";
-import type { CreateSubcontractor, UpdateSubcontractor } from "@construction/shared";
-import { CSI_DIVISIONS } from "@/lib/csi-divisions";
+import type { UpdateSubcontractor, TradeValue } from "@construction/shared";
+import { TradeCombobox } from "@/components/bidding/trade-combobox";
 import { useRouter } from "next/navigation";
 
 interface SubcontractorFormProps {
@@ -39,7 +38,8 @@ export function SubcontractorForm({ mode, defaultValues, onSuccess }: Subcontrac
   const router = useRouter();
   const utils = trpc.useUtils();
 
-  const form = useForm<CreateSubcontractor>({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const form = useForm<any>({
     resolver: zodResolver(createSubcontractorSchema),
     defaultValues: {
       companyName: defaultValues?.companyName || "",
@@ -53,7 +53,9 @@ export function SubcontractorForm({ mode, defaultValues, onSuccess }: Subcontrac
         state: defaultValues?.state || "",
         zipCode: defaultValues?.zip || "",
       },
-      trades: defaultValues?.trades || [],
+      trades: (defaultValues as any)?.trades || [],  // legacy field kept for form compat
+      trade: (defaultValues as any)?.trade || [],
+      tradeOther: (defaultValues as any)?.tradeOther || "",
       notes: defaultValues?.notes || "",
     },
   });
@@ -87,20 +89,22 @@ export function SubcontractorForm({ mode, defaultValues, onSuccess }: Subcontrac
     },
   });
 
-  const onSubmit = (data: CreateSubcontractor) => {
-    // Map form data to API schema (flatten address)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const onSubmit = (data: any) => {
+    // Map form data to API schema (flatten address from nested form shape)
     const payload = {
       companyName: data.companyName,
       contactName: data.contactName,
       contactEmail: data.contactEmail,
       contactPhone: data.contactPhone,
-      address: data.address,
       street1: data.address?.street1,
       street2: data.address?.street2,
       city: data.address?.city,
       state: data.address?.state,
       zip: data.address?.zipCode,
-      trades: data.trades,
+      trades: [],  // legacy — cleared, kept for schema compat
+      trade: data.trade ?? [],
+      tradeOther: data.tradeOther || undefined,
       notes: data.notes,
     };
 
@@ -112,16 +116,6 @@ export function SubcontractorForm({ mode, defaultValues, onSuccess }: Subcontrac
         ...payload,
       });
     }
-  };
-
-  const selectedTrades = form.watch("trades");
-
-  const handleTradeToggle = (divisionNumber: number) => {
-    const current = selectedTrades || [];
-    const updated = current.includes(divisionNumber)
-      ? current.filter((t) => t !== divisionNumber)
-      : [...current, divisionNumber];
-    form.setValue("trades", updated);
   };
 
   return (
@@ -192,26 +186,34 @@ export function SubcontractorForm({ mode, defaultValues, onSuccess }: Subcontrac
           </div>
 
           <div className="space-y-2">
-            <h4 className="text-sm font-medium">Trades (CSI Divisions) *</h4>
-            <div className="border rounded-md p-4 max-h-64 overflow-y-auto space-y-2">
-              {CSI_DIVISIONS.map((division) => (
-                <div key={division.number} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`trade-${division.number}`}
-                    checked={selectedTrades?.includes(division.number) || false}
-                    onCheckedChange={() => handleTradeToggle(division.number)}
-                  />
-                  <label
-                    htmlFor={`trade-${division.number}`}
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                  >
-                    {division.number} - {division.name}
-                  </label>
-                </div>
-              ))}
-            </div>
-            {form.formState.errors.trades && (
-              <p className="text-sm text-destructive">{form.formState.errors.trades.message}</p>
+            <h4 className="text-sm font-medium">Trades</h4>
+            <TradeCombobox
+              value={form.watch("trade") ?? []}
+              onChange={(trades: string[]) => {
+                form.setValue("trade", trades as TradeValue[]);
+                // Clear tradeOther when Other is deselected
+                if (!trades.includes("Other")) {
+                  form.setValue("tradeOther", "");
+                }
+              }}
+            />
+            {(form.watch("trade") ?? []).includes("Other") && (
+              <FormField
+                control={form.control}
+                name="tradeOther"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Specify trade (Other)</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="e.g., Demolition, Excavation..."
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             )}
           </div>
 
