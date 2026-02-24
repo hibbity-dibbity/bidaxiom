@@ -50,12 +50,14 @@ export const subcontractorRouter = router({
           contactEmail: input.contactEmail ?? null,
           contactPhone: input.contactPhone ?? null,
           address: null, // Legacy column - no longer used
-          street1: input.address?.street1 || null,
-          street2: input.address?.street2 || null,
-          city: input.address?.city || null,
-          state: input.address?.state || null,
-          zip: input.address?.zipCode || null,
+          street1: input.street1 || null,
+          street2: input.street2 || null,
+          city: input.city || null,
+          state: input.state || null,
+          zip: input.zip || null,
           trades: input.trades,
+          trade: input.trade ?? [],
+          tradeOther: input.tradeOther ?? null,
           notes: input.notes ?? null,
           status: "active",
           createdBy: ctx.userId,
@@ -92,7 +94,7 @@ export const subcontractorRouter = router({
     .input(
       z.object({
         status: subcontractorStatusEnum.optional(),
-        trade: z.number().int().optional(),
+        trade: z.string().optional(),
         search: z.string().optional(),
       })
     )
@@ -120,10 +122,10 @@ export const subcontractorRouter = router({
         conditions.push(eq(schema.subcontractorDirectory.status, input.status));
       }
 
-      // Trade filter: check if trades JSONB array contains the division number
+      // Trade filter: check if trade JSONB array contains the string trade value
       if (input.trade !== undefined) {
         conditions.push(
-          sql`${schema.subcontractorDirectory.trades}::jsonb @> ${JSON.stringify([input.trade])}::jsonb`
+          sql`${schema.subcontractorDirectory.trade}::jsonb @> ${JSON.stringify([input.trade])}::jsonb`
         );
       }
 
@@ -358,18 +360,36 @@ export const subcontractorRouter = router({
         updateValues.contactPhone = input.contactPhone;
       }
 
-      if (input.address !== undefined) {
-        // Map structured address to DB columns
-        updateValues.address = null; // Legacy column - no longer used
-        updateValues.street1 = input.address.street1 || null;
-        updateValues.street2 = input.address.street2 || null;
-        updateValues.city = input.address.city || null;
-        updateValues.state = input.address.state || null;
-        updateValues.zip = input.address.zipCode || null;
+      if (input.street1 !== undefined) {
+        updateValues.street1 = input.street1;
+      }
+
+      if (input.street2 !== undefined) {
+        updateValues.street2 = input.street2;
+      }
+
+      if (input.city !== undefined) {
+        updateValues.city = input.city;
+      }
+
+      if (input.state !== undefined) {
+        updateValues.state = input.state;
+      }
+
+      if (input.zip !== undefined) {
+        updateValues.zip = input.zip;
       }
 
       if (input.trades !== undefined) {
         updateValues.trades = input.trades;
+      }
+
+      if (input.trade !== undefined) {
+        updateValues.trade = input.trade;
+      }
+
+      if (input.tradeOther !== undefined) {
+        updateValues.tradeOther = input.tradeOther ?? null;
       }
 
       if (input.notes !== undefined) {
