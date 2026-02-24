@@ -854,6 +854,72 @@ export const changeOrderRouter = router({
     }),
 
   /**
+   * Send change order to customer.
+   * Sets status to "pco_submitted" unconditionally (idempotent for all non-void statuses).
+   * Assigns PCO number on first send only — reuses existing pcoNumber on subsequent sends.
+   * Bypasses VALID_CO_STATUS_TRANSITIONS intentionally — business intent is "re-sendable at any time".
+   */
+  sendToCustomer: protectedProcedure
+    .input(z.object({ changeOrderId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+      const abilities = await loadProjectAbilities({
+        tenant: ctx.tenant,
+        userId: ctx.userId,
+        orgRole: ctx.orgRole,
+      });
+
+      ForbiddenError.from(abilities).throwUnlessCan("manage", "ChangeOrder");
+
+      const [co] = await db
+        .select()
+        .from(schema.changeOrders)
+        .where(eq(schema.changeOrders.id, input.changeOrderId))
+        .limit(1);
+
+      if (!co) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Change order not found",
+        });
+      }
+
+      if (co.status === "void") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Cannot send a voided change order",
+        });
+      }
+
+      // Reuse existing PCO number; only generate on first send
+      let pcoNumber = co.pcoNumber;
+      if (!pcoNumber) {
+        pcoNumber = await getNextChangeOrderNumber(db, schema.changeOrderCounters, co.projectId, "pco");
+      }
+
+      const [updated] = await db
+        .update(schema.changeOrders)
+        .set({
+          status: "pco_submitted",
+          pcoNumber,
+          submittedAt: co.submittedAt ?? new Date(),
+          submittedBy: co.submittedBy ?? ctx.userId,
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.changeOrders.id, input.changeOrderId))
+        .returning();
+
+      return updated;
+    }),
+
+  /**
    * Delete a change order.
    * Only allowed in draft status.
    */
