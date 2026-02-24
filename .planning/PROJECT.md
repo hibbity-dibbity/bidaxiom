@@ -126,21 +126,17 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 - ✓ Sticky 3-row project chrome: compact title/info/stats header, 5-field financial stat bar, "(N)" count badges on CO/Pay App/Documents/Invoices tabs — v1.6
 - ✓ Canonical COMPONENT-ORGANIZATION.md recipes enforced across all surfaces — v1.6
 
+**v1.7 Project Flow Enhancements (Phases 47-52):**
+- ✓ Sidebar trimmed to 5 items — Bidding, Financials, Documents, Reports sections and "Navigation" heading removed — v1.7
+- ✓ Project mode switcher removed from all UI; GC/Advanced features hidden; Budget/SOV/Commitments/Payment Apps tabs replaced with placeholder pages; new projects default to simple mode — v1.7
+- ✓ Project tabs redesigned: Overview → Documents → Proposals → Change Orders → Invoices → Expenses; "Proposals" replaces "Estimates" label throughout project context — v1.7
+- ✓ "Send to Customer" flow: dialog with auto-populated customer email on both proposals and COs; confirms status advance to submitted/pco_submitted; no approval step required — v1.7
+- ✓ Free lifecycle phase navigation: any-to-any phase transitions in a single click, no guards or confirmation dialogs, optimistic badge update with spinner — v1.7
+- ✓ Trade simplification: 12-trade SIMPLE_TRADES list with multi-select combobox replaces CSI codes on all subcontractor surfaces (form, list filter/badges, detail, command palette) — v1.7
+
 ### Active
 
-<!-- v1.7 Project Flow Enhancements -->
-
-**Milestone v1.7: Project Flow Enhancements** (Started: 2026-02-23)
-
-**Goal:** Simplify and streamline the project experience — remove GC/Advanced complexity, redesign project tabs for a clean Simple mode flow, eliminate approval bottlenecks, allow free lifecycle navigation, and simplify trade terminology.
-
-**Target features:**
-- Sidebar cleanup: remove Bidding, Financials, Documents, Reports sections + "Navigation" heading
-- Remove project mode switcher entirely; hide all GC/Advanced features
-- Project tabs redesign: Overview → Documents → Proposals → Change Orders → Invoices → Expenses
-- Remove approval workflows; add "Send to Customer" button with customer auto-populate
-- Free lifecycle phase navigation: any phase to any phase, no guards
-- Trade simplification: replace CSI codes with simple trade names on subcontractor page
+<!-- Next milestone requirements go here after /gsd:new-milestone -->
 
 ### Out of Scope
 
@@ -159,7 +155,7 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 
 **Market:** Small-to-mid-sized commercial contractors are underserved. Enterprise tools (Procore, Sage) are expensive and complex. Smaller tools lack multi-company collaboration and financial depth. The gap is a platform that handles the full GC↔Sub lifecycle affordably.
 
-**Current status:** v1.5 shipped — lifecycle state machine, project deletion, PDF generation, custom template engine, and unified document table all complete. ~164K lines of TypeScript across 40 phases.
+**Current status:** v1.7 shipped (Feb 24, 2026) — simple-mode project flow complete; all 7 milestones v1.0–v1.7 shipped. ~195K+ lines of TypeScript across 52 phases.
 
 **Known technical debt:**
 - Phase 27 VERIFICATION.md never generated (UAT summary serves as substitute)
@@ -168,6 +164,8 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 - `type UnifiedDocument = any` in 3 document components (deferred type safety — tRPC AppRouter inference not yet wired for `listUnified`)
 - `softDelete` (project deletion) does not re-validate lifecycle phase independently — relies on UI calling `checkDeletable` first (defense-in-depth gap only)
 - `billingCategory` DB column deferred; Phase 36 shows Cost Type (UI-only bridge) — full billing category deferred to v2.0
+- SendToCustomerDialog captures recipients/subject/note but discards them (intentional — email backend deferred to future milestone; status-update-only per v1.7 spec)
+- Dead code preserved from v1.7: setModeMutation/handleModeSwitch functions, Badge import, prefetch handlers for removed GC routes (budget/sov/commitments/payment-apps/rfqs), isValidTransition export in lifecycle-state-machine.ts, stale breadcrumb keys (bids/financials), stale JSDoc in transitionLifecyclePhase router
 
 **Go-to-market:** Both GCs and subs need to find value from day one. GCs use the platform to issue RFQs and manage project financials. Subs use it to respond to RFQs and manage their own projects/bids. Free sub accounts (profile + RFQ response + limited projects) create network effects.
 
@@ -234,6 +232,20 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 | canCurrentUserApprove computed per-request in bulk list endpoint via inArray (Phase 44) | Same pattern as approve/reject mutations; first pending step wins; empty guard skips inArray([]) | ✓ Good |
 | getHeaderStats runs all 9 sub-queries in Promise.all (Phase 46) | No sequential awaits; contractValue priority chain: accepted estimate + approved COs > project.budget > 0 | ✓ Good |
 | Approval mutations invalidate getHeaderStats alongside list queries (Phase 46) | Without this, tab badge counts go stale for up to 5 min after inline approval | ✓ Good |
+| Sidebar trimmed to 5 entries; removed nav routes (Bidding, Financials, Documents, Reports) preserved on disk (Phase 47) | Routes may be needed for GC/Advanced milestone; deleting them would lose history | ✓ Good |
+| GC/Advanced dead code (setModeMutation, handleModeSwitch, LienWaiverTracker import) retained rather than deleted (Phase 48) | UI-only removal; underlying code preserved for possible GC/Advanced re-introduction | ✓ Good |
+| projectMode: "simple" as new project default; existing projects retain gc_advanced (Phase 48) | Backward compatible — existing projects unaffected; only new projects get clean simple mode | ✓ Good |
+| Proposals tab href stays /estimates; only display name "Proposals" changes (Phase 49) | URL migration would require slug renames and redirect chain — not worth the risk for a label change | ✓ Good |
+| Expenses placeholder uses Receipt icon (no toast) — future feature pattern, not phase-gate (Phase 49) | Lock icon + toast signals "upgrade required"; Receipt icon signals "coming soon" — more accurate intent | ✓ Good |
+| PHASE_FEATURE_GATES server-side guard for Change Orders preserved despite tab gate removal (Phase 49) | Tab visibility is client-side UX; server-side mutation guard is defense-in-depth; both can coexist | ✓ Good |
+| estimates.sendToCustomer uses CASL "manage" (stronger than submitEstimate "update"); under_contract blocks resend (Phase 50) | "manage" signals intentional customer-facing action; terminal contract state should never be resent | ✓ Good |
+| changeOrder.sendToCustomer: PCO number assigned once on first send; if(!co.pcoNumber) guard prevents duplicate counter increment (Phase 50) | Idempotent PCO numbering; repeat sends reuse same number without consuming sequence | ✓ Good |
+| SendToCustomerDialog pre-population fires only when open===true AND field==="" — preserves user edits on reopen (Phase 50) | One-time population guard prevents overwriting user's custom recipient entry after first fill | ✓ Good |
+| No success toast on lifecycle phase transition — badge optimistic update is the confirmation (Phase 51) | Toasts are for async results where the UI doesn't change; badge update makes the phase change immediately visible | ✓ Good |
+| isValidTransition guard removed from API router; isBackward variable retained for audit log metadata only (Phase 51) | Audit log still records direction; removing guard doesn't mean losing audit trail context | ✓ Good |
+| Preserve old trades JSONB (number[]) column; new trade JSONB (string[]) column separate (Phase 52) | RFQ procedures query old trades column; migration only adds columns, never removes — zero RFQ regression risk | ✓ Good |
+| useForm<any> with zodResolver in SubcontractorForm (Phase 52) | AddressInput requires nested address.* paths; flat Zod schema requires top-level fields; runtime validation via zodResolver preserves correctness | ✓ Good |
+| TanStack Table row model factories at module level, not inline (Phase 52 bug fix) | Inline factory calls create new references every render; TanStack Table's useLayoutEffect detects reference changes and loops infinitely when data transitions through undefined | ✓ Good |
 
 ---
-*Last updated: 2026-02-23 — v1.6 milestone complete*
+*Last updated: 2026-02-24 — v1.7 milestone complete*

@@ -9,7 +9,7 @@
 - ✅ **v1.4 Rebranding & UX Upgrades** — Phases 30-35 (shipped Feb 18, 2026)
 - ✅ **v1.5 Lifecycle, PDF Generation & Document Redesign** — Phases 36-40 (shipped Feb 21, 2026)
 - ✅ **v1.6 UX Redesign & Polish** — Phases 41-46 (shipped Feb 23, 2026)
-- 🚧 **v1.7 Project Flow Enhancements** — Phases 47-52 (in progress)
+- ✅ **v1.7 Project Flow Enhancements** — Phases 47-52 (shipped Feb 24, 2026)
 
 ## Shipped Milestones
 
@@ -136,124 +136,34 @@
 
 </details>
 
----
+<details>
+<summary>✅ v1.7 Project Flow Enhancements (Phases 47-52) — SHIPPED Feb 24, 2026</summary>
 
-## Active Milestone: v1.7 Project Flow Enhancements
+**Delivered:** Clean simple-mode project flow — sidebar trimmed, GC/Advanced features hidden, 6-tab project layout with Proposals + Expenses, Send to Customer replaces approvals, free lifecycle navigation, and simple 12-trade selector for subcontractors.
 
-**Milestone Goal:** Simplify and streamline the project experience — remove GC/Advanced complexity, redesign project tabs for a clean Simple mode flow, eliminate approval bottlenecks, allow free lifecycle navigation, and simplify trade terminology.
+**Phases:**
+- [x] Phase 47: Sidebar Cleanup (1 plan) — Bidding/Financials/Documents/Reports removed, "Navigation" heading gone
+- [x] Phase 48: Project Mode Removal (2 plans) — Mode switcher removed, GC/Advanced features hidden, new projects default simple mode
+- [x] Phase 49: Project Tabs Redesign (3 plans) — 6-tab layout, Proposals label, Expenses placeholder
+- [x] Phase 50: Send-to-Customer Flow (4 plans) — Send dialog with auto-populated email, status advance, no approval required
+- [x] Phase 51: Lifecycle Phase Freedom (2 plans) — Any-to-any phase transitions, no guards or dialogs
+- [x] Phase 52: Trade Simplification (4 plans) — SIMPLE_TRADES (12 trades), TradeCombobox, all subcontractor surfaces updated
 
-### Phases
+**Archive:** [.planning/milestones/v1.7-ROADMAP.md](./milestones/v1.7-ROADMAP.md)
 
-- [x] **Phase 47: Sidebar Cleanup** — Remove Bidding, Financials, Documents, Reports sections and the "Navigation" group heading (completed 2026-02-23)
-- [x] **Phase 48: Project Mode Removal** — Remove the mode switcher from all UI surfaces and hide all GC/Advanced-specific tabs and features (completed 2026-02-24)
-- [x] **Phase 49: Project Tabs Redesign** — Reorder and relabel tabs: Overview → Documents → Proposals → Change Orders → Invoices → Expenses (completed 2026-02-24)
-- [x] **Phase 50: Send-to-Customer Flow** — Remove approval requirement; add "Send to Customer" dialog with auto-populated recipient and status-advance on confirm (completed 2026-02-24)
-- [x] **Phase 51: Lifecycle Phase Freedom** — Remove all phase guards; allow free navigation to any lifecycle phase from any phase (completed 2026-02-24)
-- [ ] **Phase 52: Trade Simplification** — Replace CSI codes with a simple 12-trade list on subcontractor forms and filter dropdowns
-
-## Phase Details
-
-### Phase 47: Sidebar Cleanup
-**Goal**: Users see a clean sidebar with only the essential navigation entries — no sections for Bidding, Financials, Documents, or Reports
-**Depends on**: Nothing (v1.7 first phase)
-**Requirements**: NAV-01, NAV-02, NAV-03, NAV-04, NAV-05
-**Success Criteria** (what must be TRUE):
-  1. The sidebar contains no "Bidding" section or any links within it (RFQs, Bid Comparison, etc.)
-  2. The sidebar contains no "Financials" section or any links within it (Budget, Invoices, etc.)
-  3. The sidebar contains no "Documents" section or any links within it
-  4. The sidebar contains no "Reports" section or any links within it
-  5. The word "Navigation" does not appear as a heading or label anywhere in the sidebar
-**Plans**: TBD
-
-### Phase 48: Project Mode Removal
-**Goal**: No user-facing controls for switching between Simple and GC/Advanced modes exist; all GC/Advanced-only features are hidden from the project UI
-**Depends on**: Phase 47
-**Requirements**: MODE-01, MODE-02, TABS-04
-**Success Criteria** (what must be TRUE):
-  1. No project page shows a mode switcher control, toggle, or menu item for GC/Advanced vs Simple
-  2. The project tab bar does not display Budget, SOV, Commitments, or Payment Applications tabs
-  3. Any project-level entry point or action that exclusively belongs to GC/Advanced mode is absent from the UI
-  4. Existing data (budget lines, SOV rows, payment apps) is preserved in the database — only the UI access points are removed
-**Plans**: 2 plans
-Plans:
-- [ ] 48-01-PLAN.md — Remove GC-only tabs from tab bar; replace four tab pages with placeholder pages
-- [ ] 48-02-PLAN.md — Remove mode badge, mode-switch menu item, Project Mode form field; clean Overview GC CTAs and in-tab mode conditionals
-
-### Phase 49: Project Tabs Redesign
-**Goal**: The project detail page shows tabs in the correct order with updated labels, including an Expenses placeholder tab
-**Depends on**: Phase 48
-**Requirements**: TABS-01, TABS-02, TABS-03
-**Success Criteria** (what must be TRUE):
-  1. Project tabs appear left-to-right in order: Overview, Documents, Proposals, Change Orders, Invoices, Expenses
-  2. The tab previously labeled "Estimates" is now labeled "Proposals" and the heading, breadcrumbs, and action buttons inside the tab all read "Proposals"
-  3. Clicking the Expenses tab navigates to a placeholder page with a contextual empty state (icon, heading, description) — no data entry is available
-  4. No "Estimates" label appears anywhere in the project tab context
-**Plans**: 2 plans
-Plans:
-- [ ] 49-01-PLAN.md — Reorder ALL_SECTIONS, rename tab to "Proposals", add Expenses entry and placeholder page, update breadcrumb segment labels
-- [ ] 49-02-PLAN.md — Rename all user-visible "Estimate"/"Estimates" strings to "Proposal"/"Proposals" in estimates route pages and shared components
-
-### Phase 50: Send-to-Customer Flow
-**Goal**: Proposals and change orders can be sent to the customer with a single button click that advances the document status to Sent — no approval workflow required
-**Depends on**: Phase 49
-**Requirements**: FLOW-01, FLOW-02, FLOW-03, FLOW-04
-**Success Criteria** (what must be TRUE):
-  1. A proposal detail page has a "Send to Customer" button that opens a dialog; no approval step or approval status is required before the button appears
-  2. A change order detail page has a "Send to Customer" button with the same dialog behavior; no approval workflow gates it
-  3. The Send to Customer dialog contains a recipient email field; when the project has a customer with a primary contact email, that email is pre-populated on open
-  4. Clicking "Confirm" (or equivalent) in the dialog changes the document's status to "Sent" and closes the dialog — no email is transmitted
-**Plans**: 4 plans
-Plans:
-- [ ] 50-01-PLAN.md — Add estimates.sendToCustomer and changeOrder.sendToCustomer tRPC mutations (idempotent status transitions)
-- [ ] 50-02-PLAN.md — Create shared SendToCustomerDialog component (Radix Dialog, pre-population, four fields)
-- [ ] 50-03-PLAN.md — Rebuild proposal detail page header; remove NextStepsPanel; wire SendToCustomerDialog
-- [ ] 50-04-PLAN.md — Rebuild CO detail header; remove ApprovalPanel; add customerEmail prop; wire SendToCustomerDialog
-
-### Phase 51: Lifecycle Phase Freedom
-**Goal**: Users can move a project to any lifecycle phase in a single click from any current phase — no guards, no confirmation dialogs, no sequential restrictions
-**Depends on**: Phase 50
-**Requirements**: PHASE-01, PHASE-02, PHASE-03
-**Success Criteria** (what must be TRUE):
-  1. Clicking a lifecycle phase badge or control allows the user to select any phase (earlier or later) without a confirmation dialog or justification prompt
-  2. A project currently in "Active" can be moved directly to "Opportunity" or "Archived" or any other phase in one action
-  3. No error or blocking message appears when transitioning to an earlier phase
-  4. No financial state, contract status, or billing status check blocks any phase transition
-**Plans**: 2 plans
-Plans:
-- [ ] 51-01-PLAN.md — Remove isValidTransition API guard + remove AlertDialog from badge + add optimistic update with pending spinner
-- [ ] 51-02-PLAN.md — Human verification: confirm free transitions work end-to-end
-
-### Phase 52: Trade Simplification
-**Goal**: The subcontractor trade selection field uses a plain 12-item list instead of CSI codes; CSI division codes are absent from all subcontractor and filter UI surfaces
-**Depends on**: Phase 51
-**Requirements**: TRADE-01, TRADE-02
-**Success Criteria** (what must be TRUE):
-  1. The trade selector on the subcontractor create and edit forms shows exactly: Plumbing, Electrical, HVAC, Concrete, Metal Buildings, Framing, Roofing, Painting, Flooring, Drywall, General, Other — no CSI codes or division numbers
-  2. The trade filter dropdown on the subcontractors list page uses the same 12-item list
-  3. No CSI division code or section reference (e.g., "03 00 00 Concrete" or "Division 15") appears in any subcontractor form, filter, badge, or search result
-**Plans**: 4 plans
-Plans:
-- [ ] 52-01-PLAN.md — SIMPLE_TRADES constant, DB schema columns (trade/tradeOther), provision.ts raw SQL, migration script run
-- [ ] 52-02-PLAN.md — tRPC router updates: list filter (string), create/update persist trade[], search subtitle
-- [ ] 52-03-PLAN.md — TradeCombobox component, SubcontractorForm replacement (parallel with 52-02)
-- [ ] 52-04-PLAN.md — List page filter + badges, detail page trade display, command palette subtitle, human verify
+</details>
 
 ---
 
 ## Progress
 
-| Phase | Milestone | Plans Complete | Status | Completed |
-|-------|-----------|----------------|--------|-----------|
-| 1-12. MVP Phases | v1.0 | 60/60 | Complete | 2026-02-14 |
-| 13-19. Enterprise UX Phases | v1.1 | 50/50 | Complete | 2026-02-16 |
-| 20-24. Job Number Phases | v1.2 | 12/12 | Complete | 2026-02-17 |
-| 25-29. Polish Phases | v1.3 | 16/16 | Complete | 2026-02-18 |
-| 30-35. Rebrand Phases | v1.4 | 16/16 | Complete | 2026-02-18 |
-| 36-40. Document Engine Phases | v1.5 | 27/27 | Complete | 2026-02-21 |
-| 41-46. UX Redesign Phases | v1.6 | 29/29 | Complete | 2026-02-23 |
-| 47. Sidebar Cleanup | v1.7 | Complete    | 2026-02-23 | - |
-| 48. Project Mode Removal | v1.7 | Complete    | 2026-02-24 | - |
-| 49. Project Tabs Redesign | v1.7 | Complete    | 2026-02-24 | - |
-| 50. Send-to-Customer Flow | v1.7 | Complete    | 2026-02-24 | - |
-| 51. Lifecycle Phase Freedom | v1.7 | Complete    | 2026-02-24 | - |
-| 52. Trade Simplification | v1.7 | 0/4 | Not started | - |
+| Milestone | Phases | Plans | Status | Shipped |
+|-----------|--------|-------|--------|---------|
+| v1.0 MVP | 1-12 | 60 | Complete | 2026-02-14 |
+| v1.1 Enterprise UX | 13-19 | 50 | Complete | 2026-02-16 |
+| v1.2 Job Numbers | 20-24 | 12 | Complete | 2026-02-17 |
+| v1.3 Polish | 25-29 | 16 | Complete | 2026-02-18 |
+| v1.4 Rebrand | 30-35 | 16 | Complete | 2026-02-18 |
+| v1.5 Document Engine | 36-40 | 27 | Complete | 2026-02-21 |
+| v1.6 UX Redesign | 41-46 | 29 | Complete | 2026-02-23 |
+| v1.7 Project Flow | 47-52 | 16 | Complete | 2026-02-24 |

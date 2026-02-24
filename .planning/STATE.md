@@ -2,18 +2,18 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-23)
+See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.7 Project Flow Enhancements — COMPLETE (Phase 52 done)
+**Current focus:** v1.7 archived — planning next milestone
 
 ## Current Position
 
-Phase: 52 of 52 (Trade Simplification) — COMPLETE
-Status: All phases complete — v1.7 ready for milestone audit
-Last activity: 2026-02-24 — Phase 52 complete: all 4 plans executed, 8/8 UAT checks passing
+Phase: 52 of 52 (final phase of v1.7) — COMPLETE
+Status: v1.7 milestone archived and tagged — start /gsd:new-milestone for next milestone
+Last activity: 2026-02-24 — v1.7 complete: archived to milestones/, tagged v1.7, PROJECT.md evolved
 
-Progress: v1.0-v1.6: [██████████] 100% | v1.7: [██████████] 100%
+Progress: v1.0-v1.7: [██████████] 100% | Next milestone: not yet planned
 
 ## Performance Metrics
 
@@ -36,41 +36,7 @@ Progress: v1.0-v1.6: [██████████] 100% | v1.7: [████
 
 ### Decisions
 
-Full decision log in PROJECT.md Key Decisions table (46 phases, v1.6 complete).
-
-Recent decisions relevant to v1.7:
-- [Phase 46]: project-tabs.tsx tab routing uses `<Link href scroll={false}>` — preserve this pattern when redesigning tabs in Phase 49
-- [Phase 47]: Removed Bidding, Financials, Documents, Reports nav entries — routes remain on disk
-- [Phase 47]: Removed Navigation group heading; SidebarGroup wrapper retained for future use
-- [Phase 48]: Removed Budget, SOV, Commitments, Payment Apps, RFQs from ALL_SECTIONS in project-tabs.tsx — gcOnly filter logic and projectMode prop preserved as inert code
-- [Phase 48]: Replaced 4 removed tab page.tsx files with Lock icon placeholder pages; original content preserved in git history; route files stay on disk per plan
-- [Phase 48]: Placeholder page pattern uses useParams hook (not props) for projectSlug in client components
-- [Phase 48-02]: setModeMutation, handleModeSwitch, LienWaiverTracker import retained as dead code — only UI access points removed, not underlying code
-- [Phase 48-02]: New projects default to simple mode (projectMode: "simple" in form defaultValues); gc_advanced estimate fallback also changed to simple
-- [Phase 49-01]: Proposals tab href stays /estimates to preserve existing routes — only display name changes from "Estimates" to "Proposals"
-- [Phase 49-01]: Expenses placeholder uses Receipt icon (not Lock) — future feature pattern, not phase-gated; no toast
-- [Phase 49-01]: Added /expenses no-op prefetch handler to sectionPrefetchMap to avoid undefined lookup on new tab
-- [Phase 49-02]: Only display strings renamed to Proposal/Proposals; URL paths (/estimates/...), variable names, tRPC procedures, component names, TypeScript types, and CSV filename intentionally unchanged
-- [Phase 49-02]: WorkflowSidebar.tsx excluded from rename — confirmed dead UI (commented out in workflow/page.tsx)
-- [Phase 49-03]: Removed phaseGated: "change_orders" from tab config only — PHASE_FEATURE_GATES in packages/shared left intact as server-side mutation guard
-- [Phase 50-01]: estimates.sendToCustomer uses CASL "manage" action (stronger than submitEstimate's "update") — per plan spec
-- [Phase 50-01]: under_contract blocks resend on estimates (terminal status guard); all other statuses idempotently transition to "submitted"
-- [Phase 50-01]: changeOrder.sendToCustomer: PCO number assigned once and reused — if (!co.pcoNumber) guard prevents duplicate sequential numbers
-- [Phase 50-02]: Pre-population guards check open===true AND field==="" to avoid overwriting user edits on dialog reopen
-- [Phase 50-02]: Reset useEffect fires on open===false — dialog always starts clean on next open
-- [Phase 50-02]: eslint-disable on pre-population effect dependency array — intentional one-time-on-open behavior
-- [Phase 50-03]: estimates list page has no status filter dropdown — accepted/rejected filter cleanup not applicable; documented as not present
-- [Phase 50-03]: void recipients/subject/note in onSend callback — mutation takes only estimateId; dialog data is ephemeral per spec
-- [Phase 50-04]: CO detail void/delete buttons kept as secondary action row below header — not in 3-dot dropdown (destructive + status-conditional)
-- [Phase 50-04]: onSend callback voids recipients/subject/note — changeOrder.sendToCustomer only needs changeOrderId; email delivery metadata deferred to future email layer
-- [Phase 50-04]: Orphaned status filter cleanup scoped to change-order-list.tsx (the component); removed pending_approval, approved, rejected from filter dropdown
-- [Phase 51-01]: No success toast on lifecycle phase transition — badge optimistic update is the confirmation
-- [Phase 51-01]: reason field kept optional on transitionLifecyclePhaseSchema — passed as undefined from badge, harmless
-- [Phase 51-01]: isBackward variable retained in router despite guard removal — still used in audit log metadata
-- [Phase 52-01]: Preserve old trades JSONB (number[]) column for RFQ compatibility — do not repurpose
-- [Phase 52-01]: New trade column uses JSONB string[] to support multi-trade selection
-- [Phase 52-01]: Clear existing CSI number[] data on migration — no auto-mapping to new 12 trades
-- [Phase 52]: useForm<any> with zodResolver in SubcontractorForm to allow nested address shape with flat schema
+Full decision log in PROJECT.md Key Decisions table (52 phases, v1.7 complete).
 
 ### Pending Todos
 
@@ -83,5 +49,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Phase 52 complete — v1.7 all phases done; ready for /gsd:audit-milestone v1.7
+Stopped at: v1.7 milestone complete — archived, tagged v1.7, PROJECT.md evolved; ready for /gsd:new-milestone
 Resume file: None

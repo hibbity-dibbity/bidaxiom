@@ -92,3 +92,20 @@
 
 ---
 
+
+## v1.7 Project Flow Enhancements (Shipped: 2026-02-24)
+
+**Phases completed:** 6 phases (Phases 47-52), 16 plans
+**Timeline:** 2026-02-23 → 2026-02-24 (2 days)
+**Files changed:** 92 files, +9,130 / -1,208 lines
+
+**Key accomplishments:**
+- Sidebar trimmed to 5 nav items — Bidding, Financials, Documents, Reports sections and "Navigation" heading fully removed
+- Project mode switcher removed from all UI surfaces; GC/Advanced features hidden; new projects default to simple mode
+- Project tabs redesigned to 6-tab clean flow: Overview → Documents → Proposals → Change Orders → Invoices → Expenses
+- "Send to Customer" flow replaces approval workflows on both proposals and change orders — auto-populated customer email, one-click status advance, no approval required
+- Lifecycle phase freedom: any-to-any phase transitions in a single click with no guards, confirmation dialogs, or justification required
+- Trade simplification: 12-item SIMPLE_TRADES list with multi-select combobox replaces CSI codes on all subcontractor surfaces (form, list, detail, command palette)
+
+---
+
