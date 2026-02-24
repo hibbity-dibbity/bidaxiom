@@ -87,7 +87,7 @@ export default function EstimatesPage({
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Estimates</h1>
+        <h1 className="text-2xl font-bold">Proposals</h1>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
@@ -101,7 +101,7 @@ export default function EstimatesPage({
           <Button asChild>
             <Link href={`/projects/${projectSlug}/estimates/new`}>
               <Plus className="h-4 w-4 mr-2" />
-              New Estimate
+              New Proposal
             </Link>
           </Button>
         </div>
@@ -112,7 +112,7 @@ export default function EstimatesPage({
         <div className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search estimates by name..."
+            placeholder="Search proposals by name..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             className="pl-9"
@@ -170,15 +170,15 @@ export default function EstimatesPage({
       ) : (
         <EmptyState
           icon={debouncedSearch ? SearchX : FileText}
-          heading={debouncedSearch ? "No estimates match your search" : "No estimates yet"}
+          heading={debouncedSearch ? "No proposals match your search" : "No proposals yet"}
           description={
             debouncedSearch
               ? "Try a different search term."
-              : "Create your first estimate to begin the pre-bid cost estimation process."
+              : "Create your first proposal to begin the pre-bid cost estimation process."
           }
           action={
             !debouncedSearch
-              ? { label: "New Estimate", href: `/projects/${projectSlug}/estimates/new` }
+              ? { label: "New Proposal", href: `/projects/${projectSlug}/estimates/new` }
               : undefined
           }
         />

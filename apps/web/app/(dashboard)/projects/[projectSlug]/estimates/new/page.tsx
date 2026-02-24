@@ -56,7 +56,7 @@ export default function NewEstimatePage({
 
   const createMutation = trpc.estimates.create.useMutation({
     onSuccess: (data) => {
-      toast.success("Estimate created successfully");
+      toast.success("Proposal created successfully");
       router.push(`/projects/${projectSlug}/estimates/${data.slug}/workflow`);
     },
     onError: (error) => {
@@ -87,17 +87,17 @@ export default function NewEstimatePage({
         </Link>
         <ChevronRight className="h-4 w-4" />
         <Link href={`/projects/${projectSlug}/estimates`} className="hover:text-foreground">
-          Estimates
+          Proposals
         </Link>
         <ChevronRight className="h-4 w-4" />
-        <span className="text-foreground">New Estimate</span>
+        <span className="text-foreground">New Proposal</span>
       </div>
 
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Create New Estimate</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Create New Proposal</h1>
         <p className="text-muted-foreground mt-1">
-          Start a new pre-bid cost estimate with guided workflow
+          Start a new pre-bid cost proposal with guided workflow
         </p>
       </div>
 
@@ -118,7 +118,7 @@ export default function NewEstimatePage({
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Estimate Name</FormLabel>
+                      <FormLabel>Proposal Name</FormLabel>
                       <FormControl>
                         <Input placeholder="e.g., Base Bid Option A" {...field} />
                       </FormControl>
