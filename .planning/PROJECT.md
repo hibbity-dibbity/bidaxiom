@@ -136,7 +136,15 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 
 ### Active
 
-<!-- Next milestone requirements go here after /gsd:new-milestone -->
+## Current Milestone: v1.8 New Project Page Stage 1
+
+**Goal:** Streamline the new project creation form and overhaul the project detail experience — cleaner form, financial KPIs, building dimensions, notes, and document editing.
+
+**Target features:**
+- New Project Form: remove legacy sections, condense Project Number, add Customer Budget + Building Dimensions
+- Project Detail Header: add Start/End dates, Profit/Margin/Budget KPIs, remove Team Members KPI
+- Overview Tab: remove KPI cards, clean up Team Members display, add Notes section
+- Documents Tab: document editing (name + type), remove Status field
 
 ### Out of Scope
 
@@ -155,7 +163,7 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 
 **Market:** Small-to-mid-sized commercial contractors are underserved. Enterprise tools (Procore, Sage) are expensive and complex. Smaller tools lack multi-company collaboration and financial depth. The gap is a platform that handles the full GC↔Sub lifecycle affordably.
 
-**Current status:** v1.7 shipped (Feb 24, 2026) — simple-mode project flow complete; all 7 milestones v1.0–v1.7 shipped. ~195K+ lines of TypeScript across 52 phases.
+**Current status:** v1.8 in progress (started Feb 24, 2026) — v1.0–v1.7 shipped; building new project form + project detail overhaul. ~195K+ lines of TypeScript across 52 phases.
 
 **Known technical debt:**
 - Phase 27 VERIFICATION.md never generated (UAT summary serves as substitute)
@@ -248,4 +256,4 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 | TanStack Table row model factories at module level, not inline (Phase 52 bug fix) | Inline factory calls create new references every render; TanStack Table's useLayoutEffect detects reference changes and loops infinitely when data transitions through undefined | ✓ Good |
 
 ---
-*Last updated: 2026-02-24 — v1.7 milestone complete*
+*Last updated: 2026-02-24 — v1.8 milestone started*

@@ -5,15 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.7 archived — planning next milestone
+**Current focus:** v1.8 New Project Page Stage 1 — defining requirements and roadmap
 
 ## Current Position
 
-Phase: 52 of 52 (final phase of v1.7) — COMPLETE
-Status: v1.7 milestone archived and tagged — start /gsd:new-milestone for next milestone
-Last activity: 2026-02-24 — v1.7 complete: archived to milestones/, tagged v1.7, PROJECT.md evolved
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-02-24 — Milestone v1.8 started
 
-Progress: v1.0-v1.7: [██████████] 100% | Next milestone: not yet planned
+Progress: v1.8: [░░░░░░░░░░] 0% | Planning phase roadmap
 
 ## Performance Metrics
 
@@ -49,5 +50,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: v1.7 milestone complete — archived, tagged v1.7, PROJECT.md evolved; ready for /gsd:new-milestone
+Stopped at: v1.8 milestone started — requirements defined; roadmap pending
 Resume file: None
