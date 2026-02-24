@@ -71,6 +71,7 @@ Recent decisions relevant to v1.7:
 - [Phase 52-01]: Preserve old trades JSONB (number[]) column for RFQ compatibility — do not repurpose
 - [Phase 52-01]: New trade column uses JSONB string[] to support multi-trade selection
 - [Phase 52-01]: Clear existing CSI number[] data on migration — no auto-mapping to new 12 trades
+- [Phase 52]: useForm<any> with zodResolver in SubcontractorForm to allow nested address shape with flat schema
 
 ### Pending Todos
 
