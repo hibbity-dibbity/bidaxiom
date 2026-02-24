@@ -4,8 +4,6 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import Link from "next/link";
-import { ChevronRight } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -80,19 +78,6 @@ export default function NewEstimatePage({
 
   return (
     <div className="space-y-6">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Link href={`/projects/${projectSlug}`} className="hover:text-foreground">
-          Project
-        </Link>
-        <ChevronRight className="h-4 w-4" />
-        <Link href={`/projects/${projectSlug}/estimates`} className="hover:text-foreground">
-          Proposals
-        </Link>
-        <ChevronRight className="h-4 w-4" />
-        <span className="text-foreground">New Proposal</span>
-      </div>
-
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Create New Proposal</h1>
