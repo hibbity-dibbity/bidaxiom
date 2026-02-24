@@ -179,7 +179,10 @@
   3. The form contains no Team Members, Project Phases, or CSI Cost Codes sections
   4. A Customer Budget field accepts a dollar amount and formats it as $X,XXX.XX on blur
   5. A Building Dimensions section accepts Width, Length, and Height in feet; square footage (Width x Length) is calculated automatically and stored on the project record; default address placeholder is "8400 Kirby Dr, Houston, TX 77054" across all location fields
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 53-01-PLAN.md — DB migration + Drizzle/Zod schema + project router for 5 new columns
+- [ ] 53-02-PLAN.md — Page heading, form rewrite (field order, Project Number widget, dimensions, budget, address placeholder)
 
 ### Phase 54: Project Header Updates
 **Goal**: The project sticky header stat bar shows financial KPIs (Profit, Margin, Customer Budget) and inline date pickers for Start/End dates, replacing the Team Members KPI.
