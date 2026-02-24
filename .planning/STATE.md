@@ -5,27 +5,28 @@
 See: .planning/PROJECT.md (updated 2026-02-23)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.7 Project Flow Enhancements — Phase 48: Project Mode Removal
+**Current focus:** v1.7 Project Flow Enhancements — Phase 49: Project Tabs Redesign
 
 ## Current Position
 
-Phase: 48 of 52 (Project Mode Removal)
-Plan: 02 complete
-Status: In progress (2/2 plans done for Phase 48)
-Last activity: 2026-02-24 — 48-02 complete: mode badge, mode-switch menu, Project Mode form field, 5 GC CTA cards, lien waiver tabs, gc_advanced estimate fallback all removed
+Phase: 49 of 52 (Project Tabs Redesign)
+Plan: 01 complete
+Status: In progress (1/? plans done for Phase 49)
+Last activity: 2026-02-24 — 49-01 complete: tab bar reordered to 6 tabs, "Estimates" renamed to "Proposals", Expenses placeholder page created, breadcrumb labels added for estimates and expenses
 
-Progress: v1.0-v1.6: [██████████] 100% | v1.7: [███░░░░░░░] 30% (Phase 48 complete, Phase 49 next)
+Progress: v1.0-v1.6: [██████████] 100% | v1.7: [████░░░░░░] 40% (Phase 49 Plan 01 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 187
+- Total plans completed: 188
 - Average duration: ~4.3 min/plan
 - Total execution time: ~11.7 hours
 
 **Recent trend (v1.7 phases):**
 - Phase 47: 1 plan — sidebar trimmed to 5 nav items
 - Phase 48: 2 plans — tab bar trimmed, 4 placeholder pages, mode UI fully removed from 5 files
+- Phase 49: 1 plan complete — tab bar reordered, Proposals rename, Expenses placeholder
 
 *Updated after each plan completion*
 
@@ -44,6 +45,9 @@ Recent decisions relevant to v1.7:
 - [Phase 48]: Placeholder page pattern uses useParams hook (not props) for projectSlug in client components
 - [Phase 48-02]: setModeMutation, handleModeSwitch, LienWaiverTracker import retained as dead code — only UI access points removed, not underlying code
 - [Phase 48-02]: New projects default to simple mode (projectMode: "simple" in form defaultValues); gc_advanced estimate fallback also changed to simple
+- [Phase 49-01]: Proposals tab href stays /estimates to preserve existing routes — only display name changes from "Estimates" to "Proposals"
+- [Phase 49-01]: Expenses placeholder uses Receipt icon (not Lock) — future feature pattern, not phase-gated; no toast
+- [Phase 49-01]: Added /expenses no-op prefetch handler to sectionPrefetchMap to avoid undefined lookup on new tab
 
 ### Pending Todos
 
@@ -56,5 +60,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Completed 48-02-PLAN.md — mode UI removed from 5 files, 3 tasks, 3 commits (83c9888, 4333c58, b06fa47)
+Stopped at: Completed 49-01-PLAN.md — tab reorder, Proposals rename, Expenses placeholder, breadcrumb labels; 3 tasks, 3 commits (c2603c4, e3088a5, b144cd0)
 Resume file: None
