@@ -10,6 +10,7 @@
 - ✅ **v1.5 Lifecycle, PDF Generation & Document Redesign** — Phases 36-40 (shipped Feb 21, 2026)
 - ✅ **v1.6 UX Redesign & Polish** — Phases 41-46 (shipped Feb 23, 2026)
 - ✅ **v1.7 Project Flow Enhancements** — Phases 47-52 (shipped Feb 24, 2026)
+- 🚧 **v1.8 New Project Page Stage 1** — Phases 53-56 (in progress)
 
 ## Shipped Milestones
 
@@ -155,15 +156,70 @@
 
 ---
 
+## 🚧 v1.8 New Project Page Stage 1 (In Progress)
+
+**Milestone Goal:** Streamline the new project creation form and overhaul the project detail experience — cleaner form with condensed Project Number, Customer Budget + Building Dimensions fields, financial KPIs in the header stat bar, Overview tab cleanup with Notes, and document editing on the Documents tab.
+
+### Phases
+
+- [ ] **Phase 53: New Project Form Cleanup + Schema** — Remove legacy sections, condense Project Number, add Customer Budget and Building Dimensions, DB migration for new columns
+- [ ] **Phase 54: Project Header Updates** — Add Start/End date pickers, remove Team Members KPI, add Profit/Margin/Budget KPIs
+- [ ] **Phase 55: Overview Tab Redesign + Notes** — Remove KPI cards and Customer Info, update Project Details with dimensions, clean Team Members table, remove Project Phases, add Notes section
+- [ ] **Phase 56: Documents Tab Cleanup** — Add document name/type editing, remove Status column and filter
+
+## Phase Details
+
+### Phase 53: New Project Form Cleanup + Schema
+**Goal**: Users can create a project through a clean, focused form — no legacy cruft, with Project Number prominently placed, Customer Budget captured, and Building Dimensions stored.
+**Depends on**: Phase 52 (v1.7 complete)
+**Requirements**: CREATE-01, CREATE-02, CREATE-03, CREATE-04, CREATE-05, CREATE-06, CREATE-07, CREATE-08, CREATE-09, CREATE-10, CREATE-11, CREATE-12
+**Success Criteria** (what must be TRUE):
+  1. The new project form shows no page description text, no "Basic Information" heading, and no "Location" heading — just fields
+  2. Project Number appears above Project Name, displays auto-generated value as read-only text with a "Manual Entry" button, and toggles to an editable field when clicked (button label changes to "Use Auto-Generated")
+  3. The form contains no Team Members, Project Phases, or CSI Cost Codes sections
+  4. A Customer Budget field accepts a dollar amount and formats it as $X,XXX.XX on blur
+  5. A Building Dimensions section accepts Width, Length, and Height in feet; square footage (Width x Length) is calculated automatically and stored on the project record; default address placeholder is "8400 Kirby Dr, Houston, TX 77054" across all location fields
+**Plans**: TBD
+
+### Phase 54: Project Header Updates
+**Goal**: The project sticky header stat bar shows financial KPIs (Profit, Margin, Customer Budget) and inline date pickers for Start/End dates, replacing the Team Members KPI.
+**Depends on**: Phase 53
+**Requirements**: HEADER-01, HEADER-02, HEADER-03, HEADER-04, HEADER-05
+**Success Criteria** (what must be TRUE):
+  1. Start Date and End Date appear in the header info row as clickable elements that open date pickers; selecting a date saves it to the project
+  2. The Team Members count is no longer visible anywhere in the header stat bar
+  3. A Profit KPI displays Projected Profit (Contract Amount minus Total Costs from the latest active estimate's line item markups); Actual Profit shows "—"
+  4. A Margin KPI displays Projected Margin as a percentage (Projected Profit divided by Contract Amount); Actual Margin shows "—"
+  5. A Customer Budget KPI displays the stored customer budget amount and its delta versus the estimated contract amount, clearly labeled over/under
+**Plans**: TBD
+
+### Phase 55: Overview Tab Redesign + Notes
+**Goal**: The Overview tab is decluttered — no KPI cards, no Customer Info section, no Project Phases — with a clean Project Details section showing building dimensions and a functional Notes section for team communication.
+**Depends on**: Phase 54
+**Requirements**: OVERVIEW-01, OVERVIEW-02, OVERVIEW-03, OVERVIEW-04, OVERVIEW-05, OVERVIEW-06, OVERVIEW-07, OVERVIEW-08, OVERVIEW-09, OVERVIEW-10
+**Success Criteria** (what must be TRUE):
+  1. The Overview tab contains no KPI cards and no Customer Information section; customer name and link remain only in the sticky header
+  2. The Project Details section displays: project description, building width, building length, building height, and calculated square footage
+  3. The Team Members section shows only avatar, name, and role (proper case) with no description text, no assigned-date column, and no column header row
+  4. The Project Phases section is absent from the Overview tab
+  5. A Notes section provides a multi-line text input and "Add Note" button; submitted notes appear below in reverse-chronological order showing note text, author full name, and timestamp
+**Plans**: TBD
+
+### Phase 56: Documents Tab Cleanup
+**Goal**: Documents tab entries are editable (name and type) and the Status column is gone, giving users a cleaner document management surface.
+**Depends on**: Phase 55
+**Requirements**: DOCS-01, DOCS-02
+**Success Criteria** (what must be TRUE):
+  1. Each document row has an edit action that opens an inline or dialog form allowing the user to change the document's file name and document type; saving persists the changes
+  2. The Documents tab table contains no Status column and the status filter control is absent from the filter bar
+  3. All other document row data (file name, type, uploaded date, uploader) remains visible and correct after the Status column removal
+**Plans**: TBD
+
 ## Progress
 
-| Milestone | Phases | Plans | Status | Shipped |
-|-----------|--------|-------|--------|---------|
-| v1.0 MVP | 1-12 | 60 | Complete | 2026-02-14 |
-| v1.1 Enterprise UX | 13-19 | 50 | Complete | 2026-02-16 |
-| v1.2 Job Numbers | 20-24 | 12 | Complete | 2026-02-17 |
-| v1.3 Polish | 25-29 | 16 | Complete | 2026-02-18 |
-| v1.4 Rebrand | 30-35 | 16 | Complete | 2026-02-18 |
-| v1.5 Document Engine | 36-40 | 27 | Complete | 2026-02-21 |
-| v1.6 UX Redesign | 41-46 | 29 | Complete | 2026-02-23 |
-| v1.7 Project Flow | 47-52 | 16 | Complete | 2026-02-24 |
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 53. New Project Form Cleanup + Schema | v1.8 | 0/TBD | Not started | - |
+| 54. Project Header Updates | v1.8 | 0/TBD | Not started | - |
+| 55. Overview Tab Redesign + Notes | v1.8 | 0/TBD | Not started | - |
+| 56. Documents Tab Cleanup | v1.8 | 0/TBD | Not started | - |

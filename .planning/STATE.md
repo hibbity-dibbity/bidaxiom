@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.8 New Project Page Stage 1 — defining requirements and roadmap
+**Current focus:** v1.8 New Project Page Stage 1 — Phase 53 ready to plan
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-02-24 — Milestone v1.8 started
+Phase: 53 of 56 (New Project Form Cleanup + Schema)
+Plan: — of TBD
+Status: Ready to plan
+Last activity: 2026-02-24 — v1.8 roadmap created; 4 phases defined (53-56), 29/29 requirements mapped
 
-Progress: v1.8: [░░░░░░░░░░] 0% | Planning phase roadmap
+Progress: v1.8: [░░░░░░░░░░] 0% (0 phases complete)
 
 ## Performance Metrics
 
@@ -27,9 +27,9 @@ Progress: v1.8: [░░░░░░░░░░] 0% | Planning phase roadmap
 - Phase 47: 1 plan — sidebar trimmed to 5 nav items
 - Phase 48: 2 plans — tab bar trimmed, 4 placeholder pages, mode UI fully removed from 5 files
 - Phase 49: 3 plans complete — tab bar reordered, Expenses placeholder, Proposal rename, Change Orders ungated
-- Phase 50: 4 plans complete — send email infrastructure (50-01), SendToCustomerDialog component (50-02), proposal detail page header + dialog wiring (50-03), CO detail header rebuild + ApprovalPanel removal (50-04)
-- Phase 51: 2 plans complete — removed isValidTransition guard from router, rewrote badge with optimistic update + spinner (51-01); human verified all 5 test scenarios pass (51-02)
-- Phase 52: 4 plans complete — SIMPLE_TRADES constant + DB migration (52-01), tRPC router updates (52-02), TradeCombobox UI component + SubcontractorForm (52-03), list/detail/command-palette surfaces + freeze bug fix (52-04); all 8 UAT checks pass
+- Phase 50: 4 plans complete — send email infrastructure, SendToCustomerDialog, proposal + CO detail header rewrites
+- Phase 51: 2 plans complete — removed isValidTransition guard, optimistic badge update with spinner
+- Phase 52: 4 plans complete — SIMPLE_TRADES constant + DB migration, tRPC updates, TradeCombobox, list/detail/command-palette surfaces
 
 *Updated after each plan completion*
 
@@ -39,6 +39,11 @@ Progress: v1.8: [░░░░░░░░░░] 0% | Planning phase roadmap
 
 Full decision log in PROJECT.md Key Decisions table (52 phases, v1.7 complete).
 
+Recent decisions relevant to v1.8:
+- Phase 48: projectMode: "simple" as new project default; existing projects retain gc_advanced
+- Phase 49: Expenses placeholder uses Receipt icon (coming soon), not lock icon (upgrade required)
+- Phase 46: getHeaderStats runs all 9 sub-queries in Promise.all; contractValue priority chain: accepted estimate + approved COs > project.budget > 0
+
 ### Pending Todos
 
 None.
@@ -46,9 +51,11 @@ None.
 ### Blockers/Concerns
 
 - Clerk webhook secret is still placeholder (`whsec_xxx`). Tenant auto-provisioning via webhooks won't work until configured with real secret from Clerk dashboard.
+- Phase 53 requires DB migration: add `customer_budget` (numeric), `building_width` (numeric), `building_length` (numeric), `building_height` (numeric), `building_sqft` (numeric) columns to projects table.
+- Phase 55 requires new DB table: `project_notes` with tRPC endpoints `notes.create` and `notes.list`.
 
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: v1.8 milestone started — requirements defined; roadmap pending
+Stopped at: v1.8 roadmap created — 4 phases (53-56), 29 requirements mapped; ready to plan Phase 53
 Resume file: None
