@@ -1,153 +1,31 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
-import { trpc } from "@/lib/trpc";
+import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Skeleton } from "@/components/ui/skeleton";
-import { BudgetSummaryCards } from "@/components/budget/budget-summary-cards";
-import { BudgetVarianceChart } from "@/components/budget/budget-variance-chart";
-import { ForecastMetrics } from "@/components/budget/forecast-metrics";
-import { AlertCircle, FileEdit, FileText, Plus } from "lucide-react";
+import { Lock } from "lucide-react";
+import { toast } from "sonner";
 
-export default function BudgetDashboardPage({
-  params,
-}: {
-  params: { projectSlug: string };
-}) {
-  const { projectSlug } = params;
+export default function BudgetPage() {
+  const params = useParams<{ projectSlug: string }>();
 
-  // Resolve project by slug (cached from layout)
-  const { data: project } = trpc.project.getBySlug.useQuery({ slug: projectSlug });
-  const projectId = project?.id;
-
-  const { data: summary, isLoading: summaryLoading } =
-    trpc.budget.getProjectSummary.useQuery({ projectId: projectId! }, { enabled: !!projectId });
-  const { data: alerts, isLoading: alertsLoading } =
-    trpc.budget.getVarianceAlerts.useQuery({ projectId: projectId! }, { enabled: !!projectId });
-  const { data: forecast, isLoading: forecastLoading } =
-    trpc.budget.getForecast.useQuery({ projectId: projectId! }, { enabled: !!projectId });
-  const { data: lineItems, isLoading: lineItemsLoading } =
-    trpc.budget.listLineItems.useQuery({ projectId: projectId! }, { enabled: !!projectId });
-
-  const criticalAlerts = alerts?.filter((a) => a.severity === "critical") || [];
-  const warningAlerts = alerts?.filter((a) => a.severity === "warning") || [];
-
-  // Empty state - show only when data is loaded and empty
-  if (!summaryLoading && summary?.lineItemCount === 0) {
-    return (
-      <div className="container mx-auto py-6 space-y-6">
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <FileText className="h-16 w-16 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No Budget Set Up Yet</h3>
-            <p className="text-muted-foreground text-center mb-6 max-w-md">
-              Get started by adding budget line items. This will allow you to track
-              costs, create commitments, and monitor your project's financial health.
-            </p>
-            <Button asChild>
-              <Link href={`/projects/${projectSlug}/budget/line-items`}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Budget Line Items
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  useEffect(() => {
+    toast("That page isn't available");
+  }, []);
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      {/* Quick Actions */}
-      <div className="flex gap-3">
-        <Button asChild>
-          <Link href={`/projects/${projectSlug}/budget/line-items`}>
-            <FileEdit className="h-4 w-4 mr-2" />
-            Manage Line Items
-          </Link>
-        </Button>
+    <div className="flex items-center justify-center min-h-[400px]">
+      <div className="text-center space-y-3 max-w-sm">
+        <Lock className="h-10 w-10 text-muted-foreground mx-auto" />
+        <h3 className="text-lg font-semibold">This section isn't available</h3>
+        <p className="text-muted-foreground text-sm">
+          Budget tracking isn't part of your current plan.
+        </p>
         <Button variant="outline" asChild>
-          <Link href={`/projects/${projectSlug}/commitments`}>
-            <FileText className="h-4 w-4 mr-2" />
-            View Commitments
-          </Link>
-        </Button>
-        <Button variant="outline" asChild>
-          <Link href={`/projects/${projectSlug}/commitments/new`}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Commitment
-          </Link>
+          <Link href={"/projects/" + params.projectSlug}>Back to Overview</Link>
         </Button>
       </div>
-
-      {/* Summary Cards */}
-      {summaryLoading || !summary ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-32" />
-          ))}
-        </div>
-      ) : (
-        <BudgetSummaryCards summary={summary} />
-      )}
-
-      {/* Variance Alerts */}
-      {alertsLoading ? (
-        <Skeleton className="h-24" />
-      ) : (criticalAlerts.length > 0 || warningAlerts.length > 0) ? (
-        <div className="space-y-3">
-          {criticalAlerts.length > 0 && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Critical Budget Variances</AlertTitle>
-              <AlertDescription>
-                {criticalAlerts.length} cost code{criticalAlerts.length > 1 ? "s" : ""}{" "}
-                exceed budget by more than 20%. Review commitments immediately.
-              </AlertDescription>
-            </Alert>
-          )}
-          {warningAlerts.length > 0 && (
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Budget Warnings</AlertTitle>
-              <AlertDescription>
-                {warningAlerts.length} cost code{warningAlerts.length > 1 ? "s are" : " is"}{" "}
-                approaching budget limits (10-20% variance).
-              </AlertDescription>
-            </Alert>
-          )}
-        </div>
-      ) : null}
-
-      {/* Variance Chart */}
-      {alertsLoading ? (
-        <Skeleton className="h-96" />
-      ) : alerts && alerts.length > 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Budget vs Committed by Cost Code</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <BudgetVarianceChart data={alerts} />
-          </CardContent>
-        </Card>
-      ) : null}
-
-      {/* Forecast Metrics */}
-      {forecastLoading ? (
-        <Skeleton className="h-64" />
-      ) : forecast ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Earned Value Management (EVM) Metrics</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ForecastMetrics metrics={forecast} />
-          </CardContent>
-        </Card>
-      ) : null}
     </div>
   );
 }

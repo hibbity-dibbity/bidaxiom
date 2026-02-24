@@ -1,51 +1,31 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
-import { trpc } from "@/lib/trpc";
+import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { CommitmentList } from "@/components/budget/commitment-list";
-import { Plus, ChevronLeft } from "lucide-react";
+import { Lock } from "lucide-react";
+import { toast } from "sonner";
 
-export default function CommitmentsPage({
-  params,
-}: {
-  params: { projectSlug: string };
-}) {
-  const { projectSlug } = params;
+export default function CommitmentsPage() {
+  const params = useParams<{ projectSlug: string }>();
 
-  // Resolve project by slug (cached from layout)
-  const { data: project } = trpc.project.getBySlug.useQuery({ slug: projectSlug });
-  const projectId = project?.id;
-
-  if (!project) {
-    return null; // Layout handles loading/error states
-  }
+  useEffect(() => {
+    toast("That page isn't available");
+  }, []);
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href={`/projects/${projectSlug}/budget`}>
-            <ChevronLeft className="h-4 w-4 mr-2" />
-            Back to Budget
-          </Link>
-        </Button>
-        <Button asChild>
-          <Link href={`/projects/${projectSlug}/commitments/new`}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Commitment
-          </Link>
-        </Button>
-      </div>
-
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Commitments</h1>
-        <p className="text-muted-foreground">
-          Manage subcontracts and purchase orders
+    <div className="flex items-center justify-center min-h-[400px]">
+      <div className="text-center space-y-3 max-w-sm">
+        <Lock className="h-10 w-10 text-muted-foreground mx-auto" />
+        <h3 className="text-lg font-semibold">This section isn't available</h3>
+        <p className="text-muted-foreground text-sm">
+          Commitments tracking isn't part of your current plan.
         </p>
+        <Button variant="outline" asChild>
+          <Link href={"/projects/" + params.projectSlug}>Back to Overview</Link>
+        </Button>
       </div>
-
-      <CommitmentList projectId={projectId} />
     </div>
   );
 }
