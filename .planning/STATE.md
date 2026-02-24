@@ -10,23 +10,23 @@ See: .planning/PROJECT.md (updated 2026-02-23)
 ## Current Position
 
 Phase: 49 of 52 (Project Tabs Redesign)
-Plan: 01 complete
-Status: In progress (1/? plans done for Phase 49)
-Last activity: 2026-02-24 — 49-01 complete: tab bar reordered to 6 tabs, "Estimates" renamed to "Proposals", Expenses placeholder page created, breadcrumb labels added for estimates and expenses
+Plan: 02 complete
+Status: In progress (2/? plans done for Phase 49)
+Last activity: 2026-02-24 — 49-02 complete: all user-visible Estimate/Estimates strings renamed to Proposal/Proposals across 6 files (list, create, detail, workflow pages, NextStepsPanel, SubmitEstimateButton)
 
-Progress: v1.0-v1.6: [██████████] 100% | v1.7: [████░░░░░░] 40% (Phase 49 Plan 01 complete)
+Progress: v1.0-v1.6: [██████████] 100% | v1.7: [████░░░░░░] 40% (Phase 49 Plan 02 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 188
+- Total plans completed: 189
 - Average duration: ~4.3 min/plan
 - Total execution time: ~11.7 hours
 
 **Recent trend (v1.7 phases):**
 - Phase 47: 1 plan — sidebar trimmed to 5 nav items
 - Phase 48: 2 plans — tab bar trimmed, 4 placeholder pages, mode UI fully removed from 5 files
-- Phase 49: 1 plan complete — tab bar reordered, Proposals rename, Expenses placeholder
+- Phase 49: 2 plans complete — tab bar reordered, Expenses placeholder, all Estimate display strings renamed to Proposal across 6 files
 
 *Updated after each plan completion*
 
@@ -48,6 +48,8 @@ Recent decisions relevant to v1.7:
 - [Phase 49-01]: Proposals tab href stays /estimates to preserve existing routes — only display name changes from "Estimates" to "Proposals"
 - [Phase 49-01]: Expenses placeholder uses Receipt icon (not Lock) — future feature pattern, not phase-gated; no toast
 - [Phase 49-01]: Added /expenses no-op prefetch handler to sectionPrefetchMap to avoid undefined lookup on new tab
+- [Phase 49-02]: Only display strings renamed to Proposal/Proposals; URL paths (/estimates/...), variable names, tRPC procedures, component names, TypeScript types, and CSV filename intentionally unchanged
+- [Phase 49-02]: WorkflowSidebar.tsx excluded from rename — confirmed dead UI (commented out in workflow/page.tsx)
 
 ### Pending Todos
 
@@ -60,5 +62,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Completed 49-01-PLAN.md — tab reorder, Proposals rename, Expenses placeholder, breadcrumb labels; 3 tasks, 3 commits (c2603c4, e3088a5, b144cd0)
+Stopped at: Completed 49-02-PLAN.md — all Estimate display strings renamed to Proposal across 6 files; 2 tasks, 2 commits (6a888e5, 6db647d)
 Resume file: None
