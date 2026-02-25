@@ -210,7 +210,11 @@ Plans:
   3. The Team Members section shows only avatar, name, and role (proper case) with no description text, no assigned-date column, and no column header row
   4. The Project Phases section is absent from the Overview tab
   5. A Notes section provides a multi-line text input and "Add Note" button; submitted notes appear below in reverse-chronological order showing note text, author full name, and timestamp
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 55-01-PLAN.md — DB migration (project_notes table) + notesRouter (list, create, delete) + register in appRouter
+- [ ] 55-02-PLAN.md — Redesign Overview tab: strip sections, Project Details grid, compact Team Members, Notes UI
+- [ ] 55-03-PLAN.md — Human verify checkpoint: all five OVERVIEW requirements confirmed in browser
 
 ### Phase 56: Documents Tab Cleanup
 **Goal**: Documents tab entries are editable (name and type) and the Status column is gone, giving users a cleaner document management surface.
@@ -228,5 +232,5 @@ Plans:
 |-------|-----------|----------------|--------|-----------|
 | 53. New Project Form Cleanup + Schema | v1.8 | 2/2 | Complete | 2026-02-24 |
 | 54. Project Header Updates | v1.8 | 3/3 | Complete | 2026-02-24 |
-| 55. Overview Tab Redesign + Notes | v1.8 | 0/TBD | Not started | - |
+| 55. Overview Tab Redesign + Notes | v1.8 | 0/3 | Not started | - |
 | 56. Documents Tab Cleanup | v1.8 | 0/TBD | Not started | - |
