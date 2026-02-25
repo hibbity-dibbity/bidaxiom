@@ -137,30 +137,33 @@ export default function ProjectOverviewPage({
   return (
     <div className="space-y-8">
 
-      {/* Project Details */}
-      <div>
+      <h1 className="text-2xl font-bold">Overview</h1>
+
+      {/* Dimensions */}
+      <div className="space-y-3">
+        <h2 className="text-sm font-semibold">Dimensions</h2>
         {project.description && (
-          <p className="text-sm text-foreground mb-4">{project.description}</p>
+          <p className="text-sm text-muted-foreground">{project.description}</p>
         )}
-        {/* Building Dimensions — always render the 4-cell grid */}
-        <div className="grid grid-cols-4 gap-3">
+        <dl className="grid grid-cols-4 gap-4">
           {[
             { label: "Width", value: project.buildingWidth ? `${project.buildingWidth} ft` : "—" },
             { label: "Length", value: project.buildingLength ? `${project.buildingLength} ft` : "—" },
             { label: "Height", value: project.buildingHeight ? `${project.buildingHeight} ft` : "—" },
             { label: "Sq Ft", value: project.buildingSqft ? Number(project.buildingSqft).toLocaleString() : "—" },
           ].map(({ label, value }) => (
-            <div key={label} className="rounded-md border bg-muted/40 p-3 text-center">
-              <p className="text-xs text-muted-foreground">{label}</p>
-              <p className="text-sm font-semibold mt-0.5">{value}</p>
+            <div key={label}>
+              <dt className="text-xs text-muted-foreground">{label}</dt>
+              <dd className="text-sm mt-0.5">{value}</dd>
             </div>
           ))}
-        </div>
+        </dl>
       </div>
 
-      {/* Team Members */}
+      {/* Project Team */}
       <div>
-        <div className="flex justify-end mb-3">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold">Project Team</h2>
           <Dialog open={addMemberOpen} onOpenChange={setAddMemberOpen}>
             <DialogTrigger asChild>
               <Button size="sm" variant="outline">
@@ -258,8 +261,9 @@ export default function ProjectOverviewPage({
                   <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center text-xs font-medium shrink-0">
                     {initials}
                   </div>
-                  <span className="text-sm font-medium flex-1">{fullName}</span>
-                  <span className="text-xs text-muted-foreground">{roleLabel}</span>
+                  <span className="text-sm font-medium">{fullName}</span>
+                  <span className="text-xs text-muted-foreground ml-1.5">{roleLabel}</span>
+                  <div className="flex-1" />
                   <Button
                     variant="ghost"
                     size="icon"
@@ -277,10 +281,11 @@ export default function ProjectOverviewPage({
         )}
       </div>
 
-      {/* Notes */}
+      {/* Project Notes */}
       <div>
+        <h2 className="text-sm font-semibold mb-3">Project Notes</h2>
         {/* Note list (above the input, reverse-chron from API) */}
-        <div className="space-y-3 mb-4">
+        <div className="space-y-3 mb-3">
           {notesLoading && (
             <p className="text-sm text-muted-foreground">Loading notes...</p>
           )}
