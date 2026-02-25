@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.8 New Project Page Stage 1 — Phase 56 Plans 01 and 02 complete
+**Current focus:** v1.8 complete — all 4 phases shipped (Phases 53-56)
 
 ## Current Position
 
 Phase: 56 of 56 (Documents Tab Cleanup)
-Plan: 02 complete — Document table rewrite + inline edit + status cleanup
-Status: In Progress
-Last activity: 2026-02-25 — Phase 56 Plan 02 complete (UnifiedDocumentTable rewrite, DocumentRowMenu simplification, status removed from page)
+Plan: 03 complete — Human verification checkpoint passed
+Status: Complete — v1.8 shipped
+Last activity: 2026-02-25 — Phase 56 complete (all tests passed; PDF inline preview, file type filter, column reorder, filter label fixes committed)
 
-Progress: v1.8: [███████░░░] 85% (Phase 56 in progress — Plan 02/N complete)
+Progress: v1.8: [██████████] 100% (All 4 phases complete — shipped Feb 25, 2026)
 
 ## Performance Metrics
 
@@ -31,6 +31,7 @@ Progress: v1.8: [███████░░░] 85% (Phase 56 in progress — P
 - Phase 55 Plan 03: Human verification checkpoint — all 5 Overview tab criteria confirmed passing (<1 min)
 - Phase 56 Plan 01: document.update mutation (extension-preserving rename, duplicate check, CASL) + Status filter removal from DocumentFilters (~8 min)
 - Phase 56 Plan 02: UnifiedDocumentTable rewrite (7 columns, inline edit row, file format badge) + DocumentRowMenu simplification + status removed from page.tsx (~6 min)
+- Phase 56 Plan 03: Human verification checkpoint — all DOCS criteria confirmed; checkpoint fixes (column swap, file type filter, PDF inline preview, date filter removal) committed and approved (<5 min)
 
 *Updated after each plan completion*
 
@@ -66,5 +67,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-25
-Stopped at: Completed 56-02-PLAN.md — document table rewrite + inline edit + status cleanup done
+Stopped at: Phase 56 complete — v1.8 shipped
 Resume file: None
