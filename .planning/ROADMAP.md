@@ -163,7 +163,7 @@
 ### Phases
 
 - [x] **Phase 53: New Project Form Cleanup + Schema** — Remove legacy sections, condense Project Number, add Customer Budget and Building Dimensions, DB migration for new columns
-- [ ] **Phase 54: Project Header Updates** — Add Start/End date pickers, remove Team Members KPI, add Profit/Margin/Budget KPIs
+- [x] **Phase 54: Project Header Updates** — Add Start/End date pickers, remove Team Members KPI, add Profit/Margin/Budget KPIs
 - [ ] **Phase 55: Overview Tab Redesign + Notes** — Remove KPI cards and Customer Info, update Project Details with dimensions, clean Team Members table, remove Project Phases, add Notes section
 - [ ] **Phase 56: Documents Tab Cleanup** — Add document name/type editing, remove Status column and filter
 
@@ -196,9 +196,9 @@ Plans:
   5. A Customer Budget KPI displays the stored customer budget amount and its delta versus the estimated contract amount, clearly labeled over/under
 **Plans**: 3 plans
 Plans:
-- [ ] 54-01-PLAN.md — Extend getHeaderStats API (projectedProfit, projectedMargin, customerBudgetAmount, customerBudgetDelta) + customerBudget in updateProject
-- [ ] 54-02-PLAN.md — Header UI: date picker triggers in row 2, remove Team Members, add Profit/Margin/Customer Budget KPI cards
-- [ ] 54-03-PLAN.md — Human verify checkpoint: all five HEADER requirements confirmed in browser
+- [x] 54-01-PLAN.md — Extend getHeaderStats API (projectedProfit, projectedMargin, customerBudgetAmount, customerBudgetDelta) + customerBudget in updateProject
+- [x] 54-02-PLAN.md — Header UI: date picker triggers in row 2, remove Team Members, add Profit/Margin/Customer Budget KPI cards
+- [x] 54-03-PLAN.md — Human verify checkpoint: all five HEADER requirements confirmed in browser
 
 ### Phase 55: Overview Tab Redesign + Notes
 **Goal**: The Overview tab is decluttered — no KPI cards, no Customer Info section, no Project Phases — with a clean Project Details section showing building dimensions and a functional Notes section for team communication.
@@ -227,6 +227,6 @@ Plans:
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 53. New Project Form Cleanup + Schema | v1.8 | 2/2 | Complete | 2026-02-24 |
-| 54. Project Header Updates | v1.8 | 0/3 | Not started | - |
+| 54. Project Header Updates | v1.8 | 3/3 | Complete | 2026-02-24 |
 | 55. Overview Tab Redesign + Notes | v1.8 | 0/TBD | Not started | - |
 | 56. Documents Tab Cleanup | v1.8 | 0/TBD | Not started | - |
