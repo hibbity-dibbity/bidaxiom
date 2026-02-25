@@ -676,6 +676,9 @@ export const projectRouter = router({
       if (input.endDate !== undefined)
         updateValues.endDate = input.endDate ? new Date(input.endDate) : null;
       if (input.costCodes !== undefined) updateValues.costCodes = input.costCodes;
+      if (input.customerBudget !== undefined)
+        updateValues.customerBudget =
+          input.customerBudget !== null ? String(input.customerBudget) : null;
 
       // Regenerate slug if name or jobNumber changed
       if (input.name !== undefined || input.jobNumber !== undefined) {
@@ -1422,9 +1425,13 @@ export const projectRouter = router({
         documentsCount,
         invoicesCount,
       ] = await Promise.all([
-        // 1. Accepted estimate totalCost
+        // 1. Accepted estimate totalCost, directCosts, overheadAmount
         db
-          .select({ totalCost: schema.estimates.totalCost })
+          .select({
+            totalCost: schema.estimates.totalCost,
+            directCosts: schema.estimates.directCosts,
+            overheadAmount: schema.estimates.overheadAmount,
+          })
           .from(schema.estimates)
           .where(
             and(
@@ -1446,9 +1453,12 @@ export const projectRouter = router({
             )
           ),
 
-        // 3. Project budget field
+        // 3. Project budget field + customerBudget
         db
-          .select({ budget: schema.projects.budget })
+          .select({
+            budget: schema.projects.budget,
+            customerBudget: schema.projects.customerBudget,
+          })
           .from(schema.projects)
           .where(eq(schema.projects.id, projectId))
           .limit(1),
@@ -1521,6 +1531,51 @@ export const projectRouter = router({
       const retainageTotal = Number(retainageHeldSum[0]?.total ?? 0);
       const paidToDate = 0; // Placeholder — no payments table yet
 
+      // Accepted estimate's total costs (direct + overhead) = cost basis
+      const estimateDirectCosts = acceptedEstimate[0]?.directCosts
+        ? Number(acceptedEstimate[0].directCosts)
+        : null;
+      const estimateOverheadAmount = acceptedEstimate[0]?.overheadAmount
+        ? Number(acceptedEstimate[0].overheadAmount)
+        : null;
+
+      // Customer budget from project row
+      const rawCustomerBudget = projectBudget[0]?.customerBudget ?? null;
+      const customerBudgetNum =
+        rawCustomerBudget !== null ? parseFloat(rawCustomerBudget) : NaN;
+      const customerBudgetAmount = isNaN(customerBudgetNum)
+        ? null
+        : customerBudgetNum;
+
+      // Projected Profit = estimateTotal - (directCosts + overheadAmount)
+      // This equals the markup amount from the accepted estimate.
+      // CO revenue is already in contractValue but CO cost data is not yet
+      // tracked — do NOT add approvedCOTotal here, as that would inflate profit.
+      // Only computable when we have an accepted estimate with cost fields.
+      let projectedProfit: number | null = null;
+      if (
+        estimateTotal !== null &&
+        estimateDirectCosts !== null &&
+        estimateOverheadAmount !== null
+      ) {
+        projectedProfit =
+          estimateTotal - (estimateDirectCosts + estimateOverheadAmount);
+      }
+
+      // Projected Margin = projectedProfit / contractValue (decimal, not percentage)
+      let projectedMargin: number | null = null;
+      if (projectedProfit !== null && contractValue > 0) {
+        projectedMargin = projectedProfit / contractValue;
+      }
+
+      // Customer budget delta = contractValue - customerBudget
+      // Positive = contract is over customer budget (customer over budget)
+      // Negative = contract is under customer budget (customer has headroom)
+      let customerBudgetDelta: number | null = null;
+      if (customerBudgetAmount !== null && contractValue > 0) {
+        customerBudgetDelta = contractValue - customerBudgetAmount;
+      }
+
       return {
         contractValue,
         billedToDate: billedTotal,
@@ -1531,6 +1586,10 @@ export const projectRouter = router({
         paymentAppsPendingCount: Number(paymentAppsPendingCount[0]?.count ?? 0),
         documentsCount: Number(documentsCount[0]?.count ?? 0),
         invoicesCount: Number(invoicesCount[0]?.count ?? 0),
+        projectedProfit,
+        projectedMargin,
+        customerBudgetAmount,
+        customerBudgetDelta,
       };
     }),
 });
