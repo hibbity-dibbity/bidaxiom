@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.8 New Project Page Stage 1 — Phase 56 Plan 01 complete
+**Current focus:** v1.8 New Project Page Stage 1 — Phase 56 Plans 01 and 02 complete
 
 ## Current Position
 
 Phase: 56 of 56 (Documents Tab Cleanup)
-Plan: 01 complete — document.update API + Status filter removal
+Plan: 02 complete — Document table rewrite + inline edit + status cleanup
 Status: In Progress
-Last activity: 2026-02-25 — Phase 56 Plan 01 complete (document.update mutation + Status filter stripped)
+Last activity: 2026-02-25 — Phase 56 Plan 02 complete (UnifiedDocumentTable rewrite, DocumentRowMenu simplification, status removed from page)
 
-Progress: v1.8: [██████░░░░] 75% (Phase 56 in progress — Plan 01/N complete)
+Progress: v1.8: [███████░░░] 85% (Phase 56 in progress — Plan 02/N complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 196
+- Total plans completed: 197
 - Average duration: ~4.3 min/plan
-- Total execution time: ~11.8 hours
+- Total execution time: ~11.9 hours
 
 **Recent trend (v1.8 phases):**
 - Phase 53: 2 plans complete — 5 new DB columns (customer_budget, building dimensions, sqft), form rewrite (click-to-edit job number, dimensions + budget fields, no legacy sections)
@@ -30,6 +30,7 @@ Progress: v1.8: [██████░░░░] 75% (Phase 56 in progress — P
 - Phase 55 Plan 02: Overview tab complete rewrite — stripped 5 sections, rebuilt Project Details/Team Members/Notes (~8 min)
 - Phase 55 Plan 03: Human verification checkpoint — all 5 Overview tab criteria confirmed passing (<1 min)
 - Phase 56 Plan 01: document.update mutation (extension-preserving rename, duplicate check, CASL) + Status filter removal from DocumentFilters (~8 min)
+- Phase 56 Plan 02: UnifiedDocumentTable rewrite (7 columns, inline edit row, file format badge) + DocumentRowMenu simplification + status removed from page.tsx (~6 min)
 
 *Updated after each plan completion*
 
@@ -50,7 +51,9 @@ Recent decisions relevant to v1.8:
 - Phase 55: Overview tab section layout: no Card wrappers, no headings, no dividers — space-y-8 provides all separation
 - Phase 56-01: document.update file extension preserved from existing doc name (not user input) — user edits display name only
 - Phase 56-01: No audit log on document.update (consistent with Phase 55 notes router precedent)
-- Phase 56-01: status field removed from DocumentFilters; page.tsx cleanup deferred to Plan 02 as designed
+- Phase 56-02: Inline edit Save/Cancel buttons replace DocumentRowMenu in Actions cell while row is in edit mode
+- Phase 56-02: View/Preview and Download kept as separate menu items (both open URL in new tab) for semantic clarity
+- Phase 56-02: projectSlug retained in DocumentRowMenu props (renamed _projectSlug) for API stability
 
 ### Pending Todos
 
@@ -59,10 +62,9 @@ None.
 ### Blockers/Concerns
 
 - Clerk webhook secret is still placeholder (`whsec_xxx`). Tenant auto-provisioning via webhooks won't work until configured with real secret from Clerk dashboard.
-- documents/page.tsx has one new TS error (status not in DocumentFilters) — intentional, fixed in Plan 02
 
 ## Session Continuity
 
 Last session: 2026-02-25
-Stopped at: Completed 56-01-PLAN.md — document.update mutation + Status filter removal done
+Stopped at: Completed 56-02-PLAN.md — document table rewrite + inline edit + status cleanup done
 Resume file: None
