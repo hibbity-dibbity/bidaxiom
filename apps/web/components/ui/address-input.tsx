@@ -41,7 +41,7 @@ export function AddressInput({ form, prefix }: AddressInputProps) {
           <FormItem>
             <FormLabel>Street Address</FormLabel>
             <FormControl>
-              <Input placeholder="8400 Kirby Dr, Houston, TX 77054" {...field} />
+              <Input placeholder="8400 Kirby Dr" {...field} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -70,7 +70,7 @@ export function AddressInput({ form, prefix }: AddressInputProps) {
             <FormItem className="col-span-3">
               <FormLabel>City</FormLabel>
               <FormControl>
-                <Input placeholder="San Francisco" {...field} />
+                <Input placeholder="Houston" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -113,7 +113,7 @@ export function AddressInput({ form, prefix }: AddressInputProps) {
               <FormLabel>ZIP</FormLabel>
               <FormControl>
                 <Input
-                  placeholder="94102"
+                  placeholder="77054"
                   maxLength={10}
                   {...field}
                 />

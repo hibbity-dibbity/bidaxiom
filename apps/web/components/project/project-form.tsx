@@ -94,6 +94,7 @@ export function ProjectForm() {
       customerId: "",
       description: "",
       location: { street1: "", street2: "", city: "", state: "", zipCode: "" },
+      projectType: "commercial",
       projectMode: "simple",
       costCodes: [],
       customerBudget: undefined,
@@ -168,24 +169,20 @@ export function ProjectForm() {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
 
-        {/* PROJECT NUMBER — inline widget, only shown when jobNumberSettings exists */}
+        {/* PROJECT NUMBER — click-to-edit inline widget */}
         {jobNumberSettings && (
           <div className="space-y-1.5">
             <label className="text-sm font-medium leading-none">Project Number</label>
             {!manualJobNumber && jobNumberSettings.enabled ? (
-              /* READ-ONLY MODE */
-              <div className="flex items-center gap-3">
-                <span className="font-mono text-base">
+              /* READ-ONLY: click the number to edit it */
+              <div
+                className="inline-flex items-center h-9 rounded-md border border-transparent hover:border-input px-3 cursor-text transition-colors w-fit"
+                onClick={() => setManualJobNumber(true)}
+                title="Click to enter manually"
+              >
+                <span className="font-mono text-sm">
                   {previewJobNumber(jobNumberSettings.template, jobNumberSettings.nextSequenceNumber)}
                 </span>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setManualJobNumber(true)}
-                >
-                  Manual Entry
-                </Button>
               </div>
             ) : (
               /* MANUAL ENTRY MODE */
@@ -194,13 +191,14 @@ export function ProjectForm() {
                 name="jobNumber"
                 render={({ field }) => (
                   <FormItem>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                       <FormControl>
                         <Input
                           {...field}
                           value={field.value || ""}
                           className="font-mono w-48"
                           maxLength={50}
+                          autoFocus
                           onChange={(e) => {
                             field.onChange(e);
                             if (duplicateProject || form.formState.errors.jobNumber) {
@@ -215,10 +213,9 @@ export function ProjectForm() {
                         />
                       </FormControl>
                       {jobNumberSettings.enabled && (
-                        <Button
+                        <button
                           type="button"
-                          variant="outline"
-                          size="sm"
+                          className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 underline"
                           onClick={() => {
                             setManualJobNumber(false);
                             field.onChange(undefined);
@@ -226,8 +223,8 @@ export function ProjectForm() {
                             setDuplicateProject(null);
                           }}
                         >
-                          Use Auto-Generated
-                        </Button>
+                          Use auto-generated
+                        </button>
                       )}
                     </div>
                     <FormMessage />
