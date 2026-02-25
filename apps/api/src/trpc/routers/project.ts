@@ -240,6 +240,13 @@ export const projectRouter = router({
             costCodes: input.costCodes,
             createdBy: userId,
             projectMode: projectMode as "simple" | "gc_advanced",
+            customerBudget: input.customerBudget != null ? String(input.customerBudget) : null,
+            buildingWidth: input.buildingWidth != null ? String(input.buildingWidth) : null,
+            buildingLength: input.buildingLength != null ? String(input.buildingLength) : null,
+            buildingHeight: input.buildingHeight != null ? String(input.buildingHeight) : null,
+            buildingSqft: (input.buildingWidth != null && input.buildingLength != null)
+              ? String(input.buildingWidth * input.buildingLength)
+              : null,
           })
           .returning();
 

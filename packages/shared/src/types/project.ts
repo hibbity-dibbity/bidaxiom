@@ -110,6 +110,10 @@ export const createProjectSchema = z.object({
   teamMembers: z.array(teamMemberSchema).default([]),
   phases: z.array(projectPhaseSchema).default([]),
   projectMode: projectModeEnum.optional(), // defaults server-side from user preference
+  customerBudget: z.number().nonnegative().optional(),
+  buildingWidth: z.number().nonnegative().optional(),
+  buildingLength: z.number().nonnegative().optional(),
+  buildingHeight: z.number().nonnegative().optional(),
 });
 
 // Update project input
@@ -130,6 +134,10 @@ export const updateProjectSchema = z.object({
   startDate: z.string().datetime().nullable().optional(),
   endDate: z.string().datetime().nullable().optional(),
   costCodes: z.array(z.number().int().min(0).max(49)).optional(),
+  customerBudget: z.number().nonnegative().nullable().optional(),
+  buildingWidth: z.number().nonnegative().nullable().optional(),
+  buildingLength: z.number().nonnegative().nullable().optional(),
+  buildingHeight: z.number().nonnegative().nullable().optional(),
 });
 
 // List projects input schema with advanced filters
