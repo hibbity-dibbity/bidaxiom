@@ -672,6 +672,122 @@ export const documentRouter = router({
     }),
 
   /**
+   * Update a document's name and/or category.
+   * Performs a duplicate-name check (case-insensitive, full filename with extension).
+   */
+  update: protectedProcedure
+    .input(
+      z.object({
+        documentId: z.string().uuid(),
+        name: z.string().min(1).max(255).trim(),
+        category: z
+          .enum([
+            "rfi",
+            "submittal",
+            "transmittal",
+            "proposal",
+            "change_order",
+            "payment_app",
+            "rfq",
+            "file",
+          ])
+          .optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Tenant context missing",
+        });
+      }
+
+      const { db, schema } = ctx.tenant;
+
+      // Load abilities and check update permission
+      const abilities = await loadProjectAbilities({
+        tenant: ctx.tenant,
+        userId: ctx.userId,
+        orgRole: ctx.orgRole,
+      });
+
+      if (!abilities.can("update", "Document")) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You don't have permission to update documents",
+        });
+      }
+
+      // Fetch existing document
+      const [existingDoc] = await db
+        .select({
+          id: schema.documents.id,
+          projectId: schema.documents.projectId,
+          folderId: schema.documents.folderId,
+          name: schema.documents.name,
+        })
+        .from(schema.documents)
+        .where(eq(schema.documents.id, input.documentId))
+        .limit(1);
+
+      if (!existingDoc) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Document not found" });
+      }
+
+      // Check explicit permissions as well
+      const explicitPerms = await loadDocumentPermissions(db, schema, ctx.userId);
+      checkDocumentAccess(abilities, explicitPerms, existingDoc, "update");
+
+      // Build the full new filename by preserving the original file extension
+      const lastDot = existingDoc.name.lastIndexOf(".");
+      const ext = lastDot > 0 ? existingDoc.name.slice(lastDot) : "";
+      const newFullName = ext ? input.name + ext : input.name;
+
+      // Duplicate name check (case-insensitive, same project, different document)
+      const [duplicate] = await db
+        .select({ id: schema.documents.id })
+        .from(schema.documents)
+        .where(
+          and(
+            eq(schema.documents.projectId, existingDoc.projectId),
+            ilike(schema.documents.name, newFullName),
+            // exclude the document being updated
+            sql`${schema.documents.id} != ${input.documentId}`
+          )
+        )
+        .limit(1);
+
+      if (duplicate) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "A document with this name already exists in this project",
+        });
+      }
+
+      // Build the update set
+      const updateSet: Partial<typeof schema.documents.$inferInsert> = {
+        name: newFullName,
+        updatedAt: new Date(),
+      };
+      if (input.category !== undefined) {
+        updateSet.category = input.category;
+      }
+
+      // Execute update
+      const [updated] = await db
+        .update(schema.documents)
+        .set(updateSet)
+        .where(eq(schema.documents.id, input.documentId))
+        .returning();
+
+      return {
+        id: updated.id,
+        name: updated.name,
+        category: updated.category,
+      };
+    }),
+
+  /**
    * Send a document download link via email.
    * Generates a 7-day presigned URL and sends it to the recipient.
    */
