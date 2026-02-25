@@ -17,7 +17,6 @@ import { useDebounce } from "@/hooks/use-debounce";
 export interface DocumentFilters {
   search: string | null;
   type: string | null;
-  status: string | null;
   dateFrom: string | null;
   dateTo: string | null;
   author: string | null;
@@ -40,16 +39,6 @@ const TYPE_OPTIONS = [
   { label: "File", value: "file" },
 ];
 
-const STATUS_OPTIONS = [
-  { label: "Draft", value: "draft" },
-  { label: "Submitted", value: "submitted" },
-  { label: "Under Review", value: "under_review" },
-  { label: "Approved", value: "approved" },
-  { label: "Rejected", value: "rejected" },
-  { label: "Closed", value: "closed" },
-  { label: "Cancelled", value: "cancelled" },
-];
-
 export function DocumentFilters({ filters, onChange, authorOptions }: DocumentFiltersProps) {
   const [showFilters, setShowFilters] = useState(false);
   const [searchInput, setSearchInput] = useState(filters.search ?? "");
@@ -65,10 +54,6 @@ export function DocumentFilters({ filters, onChange, authorOptions }: DocumentFi
   if (filters.type) {
     const option = TYPE_OPTIONS.find((o) => o.value === filters.type);
     activeFilters.push({ key: "type", label: "Type", value: option?.label ?? filters.type });
-  }
-  if (filters.status) {
-    const option = STATUS_OPTIONS.find((o) => o.value === filters.status);
-    activeFilters.push({ key: "status", label: "Status", value: option?.label ?? filters.status });
   }
   if (filters.dateFrom) {
     activeFilters.push({ key: "dateFrom", label: "From", value: filters.dateFrom });
@@ -133,26 +118,6 @@ export function DocumentFilters({ filters, onChange, authorOptions }: DocumentFi
               </SelectTrigger>
               <SelectContent>
                 {TYPE_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>
-                    {o.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Status */}
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">Status</label>
-            <Select
-              value={filters.status ?? ""}
-              onValueChange={(val) => onChange({ status: val || null })}
-            >
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder="All Statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                {STATUS_OPTIONS.map((o) => (
                   <SelectItem key={o.value} value={o.value}>
                     {o.label}
                   </SelectItem>
