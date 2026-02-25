@@ -31,6 +31,7 @@ import { searchRouter } from "./routers/search.js";
 import { estimatesRouter } from "./routers/estimates.js";
 import { estimateTemplatesRouter } from "./routers/estimateTemplates.js";
 import { templateRouter } from "./routers/template.js";
+import { notesRouter } from "./routers/notes.js";
 
 /**
  * Root application router.
@@ -72,6 +73,7 @@ export const appRouter = router({
   estimates: estimatesRouter,
   estimateTemplates: estimateTemplatesRouter,
   template: templateRouter,
+  notes: notesRouter,
 });
 
 /**

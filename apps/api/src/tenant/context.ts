@@ -114,6 +114,7 @@ export async function buildTenantContext(
       projectLifecycleTransitions: tenantDb.projectLifecycleTransitions,
       documentNamingCounters: tenantDb.documentNamingCounters,
       documentTemplates: tenantDb.documentTemplates,
+      projectNotes: tenantDb.projectNotes,
     },
   };
 }
