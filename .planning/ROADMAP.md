@@ -164,7 +164,7 @@
 
 - [x] **Phase 53: New Project Form Cleanup + Schema** — Remove legacy sections, condense Project Number, add Customer Budget and Building Dimensions, DB migration for new columns
 - [x] **Phase 54: Project Header Updates** — Add Start/End date pickers, remove Team Members KPI, add Profit/Margin/Budget KPIs
-- [x] **Phase 55: Overview Tab Redesign + Notes** — Remove KPI cards and Customer Info, update Project Details with dimensions, clean Team Members table, remove Project Phases, add Notes section (completed 2026-02-25)
+- [x] **Phase 55: Overview Tab Redesign + Notes** — Remove KPI cards and Customer Info, update Project Details with dimensions, clean Team Members table, remove Project Phases, add Notes section (completed 2026-02-25)
 - [ ] **Phase 56: Documents Tab Cleanup** — Add document name/type editing, remove Status column and filter
 
 ## Phase Details
@@ -224,7 +224,11 @@ Plans:
   1. Each document row has an edit action that opens an inline or dialog form allowing the user to change the document's file name and document type; saving persists the changes
   2. The Documents tab table contains no Status column and the status filter control is absent from the filter bar
   3. All other document row data (file name, type, uploaded date, uploader) remains visible and correct after the Status column removal
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 56-01-PLAN.md — document.update API mutation + DocumentFilters status removal
+- [ ] 56-02-PLAN.md — Table column restructure + inline edit rows + updated row menu + page cleanup
+- [ ] 56-03-PLAN.md — Human verify checkpoint: all three DOCS requirements confirmed in browser
 
 ## Progress
 
@@ -233,4 +237,4 @@ Plans:
 | 53. New Project Form Cleanup + Schema | v1.8 | 2/2 | Complete | 2026-02-24 |
 | 54. Project Header Updates | v1.8 | 3/3 | Complete | 2026-02-24 |
 | 55. Overview Tab Redesign + Notes | v1.8 | Complete    | 2026-02-25 | - |
-| 56. Documents Tab Cleanup | v1.8 | 0/TBD | Not started | - |
+| 56. Documents Tab Cleanup | v1.8 | 0/3 | Not started | - |
