@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { useQueryStates, parseAsString } from "nuqs";
 import { trpc } from "@/lib/trpc";
@@ -13,6 +13,14 @@ import type { DocumentFilters as DocumentFiltersType } from "@/components/projec
 import { DocumentUploader } from "@/components/project/document-uploader";
 import { Button } from "@/components/ui/button";
 import { Upload } from "lucide-react";
+
+const KNOWN_EXTENSIONS = ["pdf", "docx", "doc", "xlsx", "xls", "png", "jpg", "jpeg"];
+
+function getFileExtension(filename: string): string {
+  const lastDot = filename.lastIndexOf(".");
+  if (lastDot <= 0) return "";
+  return filename.slice(lastDot + 1).toLowerCase();
+}
 
 // TODO: Replace with proper inferred type from tRPC AppRouter
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -29,8 +37,7 @@ export default function ProjectDocumentsPage() {
   // URL filter state via nuqs
   const [filters, setFilters] = useQueryStates({
     type: parseAsString,
-    dateFrom: parseAsString,
-    dateTo: parseAsString,
+    fileType: parseAsString,
     author: parseAsString,
   });
 
@@ -59,14 +66,24 @@ export default function ProjectDocumentsPage() {
         | "rfq"
         | "file"
         | undefined,
-      dateFrom: filters.dateFrom ?? undefined,
-      dateTo: filters.dateTo ?? undefined,
       authorId: filters.author ?? undefined,
     },
     {
       enabled: !!projectId,
     }
   );
+
+  // Client-side filter by file extension (API doesn't filter by extension)
+  const filteredDocuments = useMemo(() => {
+    if (!documents || !filters.fileType) return documents ?? [];
+    return documents.filter((doc: UnifiedDocument) => {
+      const ext = getFileExtension(doc.name ?? "");
+      if (filters.fileType === "other") {
+        return !KNOWN_EXTENSIONS.includes(ext);
+      }
+      return ext === filters.fileType;
+    });
+  }, [documents, filters.fileType]);
 
   // Show error toast when document list fails (React Query v5: no onError option — use useEffect)
   useEffect(() => {
@@ -84,8 +101,7 @@ export default function ProjectDocumentsPage() {
   const currentFilters: DocumentFiltersType = {
     search: localSearch || null,
     type: filters.type,
-    dateFrom: filters.dateFrom,
-    dateTo: filters.dateTo,
+    fileType: filters.fileType,
     author: filters.author,
   };
 
@@ -142,7 +158,7 @@ export default function ProjectDocumentsPage() {
         />
       )}
       <UnifiedDocumentTable
-        documents={documents ?? []}
+        documents={filteredDocuments}
         isLoading={isLoading}
         projectSlug={projectSlug}
         projectId={projectId ?? ""}

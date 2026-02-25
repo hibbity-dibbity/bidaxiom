@@ -877,7 +877,7 @@ export const documentRouter = router({
    * Checks project-level abilities first, then explicit permissions as fallback.
    */
   getDownloadUrl: protectedProcedure
-    .input(z.object({ documentId: z.string().uuid() }))
+    .input(z.object({ documentId: z.string().uuid(), forPreview: z.boolean().optional() }))
     .query(async ({ ctx, input }) => {
       if (!ctx.tenant || !ctx.userId) {
         throw new TRPCError({
@@ -942,10 +942,10 @@ export const documentRouter = router({
         });
       }
 
-      // Generate pre-signed download URL
+      // Generate pre-signed URL — inline (no Content-Disposition) for preview, attachment for download
       const downloadUrl = await generateDownloadUrl(
         currentVersion.storageKey,
-        document.name
+        input.forPreview ? undefined : document.name
       );
 
       return {

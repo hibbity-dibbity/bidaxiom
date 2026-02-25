@@ -235,7 +235,26 @@ export function UnifiedDocumentTable({
             </button>
           ),
       },
-      // Category column (was "Type" — shows document category badge; editable)
+      // Type column (file format badge, read-only)
+      {
+        id: "fileFormat",
+        header: "Type",
+        enableSorting: false,
+        cell: ({ row }) => {
+          const format = getFileFormat(row.original.name);
+          return (
+            <span
+              className={cn(
+                "text-xs font-medium px-1.5 py-0.5 rounded",
+                getFormatStyle(format)
+              )}
+            >
+              {format}
+            </span>
+          );
+        },
+      },
+      // Category column (document category badge; editable)
       {
         accessorKey: "documentType",
         header: "Category",
@@ -261,25 +280,6 @@ export function UnifiedDocumentTable({
               {TYPE_LABELS[row.original.documentType] ?? row.original.documentType}
             </Badge>
           ),
-      },
-      // Type column (NEW — file format badge, read-only)
-      {
-        id: "fileFormat",
-        header: "Type",
-        enableSorting: false,
-        cell: ({ row }) => {
-          const format = getFileFormat(row.original.name);
-          return (
-            <span
-              className={cn(
-                "text-xs font-medium px-1.5 py-0.5 rounded",
-                getFormatStyle(format)
-              )}
-            >
-              {format}
-            </span>
-          );
-        },
       },
       // Created by column
       {

@@ -16,9 +16,8 @@ import { useDebounce } from "@/hooks/use-debounce";
 
 export interface DocumentFilters {
   search: string | null;
-  type: string | null;
-  dateFrom: string | null;
-  dateTo: string | null;
+  type: string | null;       // document category (rfi, submittal, etc.)
+  fileType: string | null;   // file format (pdf, xlsx, etc.)
   author: string | null;
 }
 
@@ -28,7 +27,7 @@ interface DocumentFiltersProps {
   authorOptions: { id: string; name: string }[];
 }
 
-const TYPE_OPTIONS = [
+const CATEGORY_OPTIONS = [
   { label: "RFI", value: "rfi" },
   { label: "Submittal", value: "submittal" },
   { label: "Transmittal", value: "transmittal" },
@@ -37,6 +36,17 @@ const TYPE_OPTIONS = [
   { label: "Payment App", value: "payment_app" },
   { label: "RFQ", value: "rfq" },
   { label: "File", value: "file" },
+];
+
+const FILE_TYPE_OPTIONS = [
+  { label: "PDF", value: "pdf" },
+  { label: "Word (DOCX)", value: "docx" },
+  { label: "Word (DOC)", value: "doc" },
+  { label: "Excel (XLSX)", value: "xlsx" },
+  { label: "Excel (XLS)", value: "xls" },
+  { label: "Image (PNG)", value: "png" },
+  { label: "Image (JPG)", value: "jpg" },
+  { label: "Other", value: "other" },
 ];
 
 export function DocumentFilters({ filters, onChange, authorOptions }: DocumentFiltersProps) {
@@ -52,14 +62,12 @@ export function DocumentFilters({ filters, onChange, authorOptions }: DocumentFi
 
   const activeFilters: { key: keyof DocumentFilters; label: string; value: string }[] = [];
   if (filters.type) {
-    const option = TYPE_OPTIONS.find((o) => o.value === filters.type);
-    activeFilters.push({ key: "type", label: "Type", value: option?.label ?? filters.type });
+    const option = CATEGORY_OPTIONS.find((o) => o.value === filters.type);
+    activeFilters.push({ key: "type", label: "Category", value: option?.label ?? filters.type });
   }
-  if (filters.dateFrom) {
-    activeFilters.push({ key: "dateFrom", label: "From", value: filters.dateFrom });
-  }
-  if (filters.dateTo) {
-    activeFilters.push({ key: "dateTo", label: "To", value: filters.dateTo });
+  if (filters.fileType) {
+    const option = FILE_TYPE_OPTIONS.find((o) => o.value === filters.fileType);
+    activeFilters.push({ key: "fileType", label: "Type", value: option?.label ?? filters.fileType.toUpperCase() });
   }
   if (filters.author) {
     const option = authorOptions.find((o) => o.id === filters.author);
@@ -105,19 +113,19 @@ export function DocumentFilters({ filters, onChange, authorOptions }: DocumentFi
 
       {/* Expanded filter panel */}
       {showFilters && (
-        <div className="grid grid-cols-2 gap-3 rounded-md border p-3 sm:grid-cols-4">
-          {/* Type */}
+        <div className="grid grid-cols-2 gap-3 rounded-md border p-3 sm:grid-cols-3">
+          {/* Category */}
           <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">Type</label>
+            <label className="text-xs font-medium text-muted-foreground">Category</label>
             <Select
               value={filters.type ?? ""}
               onValueChange={(val) => onChange({ type: val || null })}
             >
               <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder="All Types" />
+                <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
-                {TYPE_OPTIONS.map((o) => (
+                {CATEGORY_OPTIONS.map((o) => (
                   <SelectItem key={o.value} value={o.value}>
                     {o.label}
                   </SelectItem>
@@ -126,26 +134,24 @@ export function DocumentFilters({ filters, onChange, authorOptions }: DocumentFi
             </Select>
           </div>
 
-          {/* Date From */}
+          {/* File Type */}
           <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">From</label>
-            <Input
-              type="date"
-              className="h-8 text-xs"
-              value={filters.dateFrom ?? ""}
-              onChange={(e) => onChange({ dateFrom: e.target.value || null })}
-            />
-          </div>
-
-          {/* Date To */}
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">To</label>
-            <Input
-              type="date"
-              className="h-8 text-xs"
-              value={filters.dateTo ?? ""}
-              onChange={(e) => onChange({ dateTo: e.target.value || null })}
-            />
+            <label className="text-xs font-medium text-muted-foreground">Type</label>
+            <Select
+              value={filters.fileType ?? ""}
+              onValueChange={(val) => onChange({ fileType: val || null })}
+            >
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue placeholder="All Types" />
+              </SelectTrigger>
+              <SelectContent>
+                {FILE_TYPE_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Author */}

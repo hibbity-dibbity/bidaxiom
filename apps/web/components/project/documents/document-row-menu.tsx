@@ -42,7 +42,11 @@ export function DocumentRowMenu({ document, projectSlug: _projectSlug, onDelete,
 
   const handleViewPreview = async () => {
     try {
-      const result = await utils.document.getDownloadUrl.fetch({ documentId: document.id });
+      const isPdf = document.name?.toLowerCase().endsWith(".pdf");
+      const result = await utils.document.getDownloadUrl.fetch({
+        documentId: document.id,
+        forPreview: isPdf,
+      });
       window.open(result.downloadUrl, "_blank");
     } catch {
       toast.error("Could not open document");
