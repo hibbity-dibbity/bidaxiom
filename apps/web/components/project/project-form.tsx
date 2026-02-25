@@ -171,7 +171,7 @@ export function ProjectForm() {
         {/* PROJECT NUMBER — inline widget, only shown when jobNumberSettings exists */}
         {jobNumberSettings && (
           <div className="space-y-1.5">
-            <FormLabel>Project Number</FormLabel>
+            <label className="text-sm font-medium leading-none">Project Number</label>
             {!manualJobNumber && jobNumberSettings.enabled ? (
               /* READ-ONLY MODE */
               <div className="flex items-center gap-3">
