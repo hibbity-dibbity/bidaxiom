@@ -176,7 +176,7 @@ export function ProjectForm() {
             {!manualJobNumber && jobNumberSettings.enabled ? (
               /* READ-ONLY: click the number to edit it */
               <div
-                className="inline-flex items-center h-9 rounded-md border border-transparent hover:border-input px-3 cursor-text transition-colors w-fit"
+                className="flex items-center h-9 rounded-md border border-transparent hover:border-input px-3 cursor-text transition-colors w-fit"
                 onClick={() => setManualJobNumber(true)}
                 title="Click to enter manually"
               >

@@ -55,7 +55,7 @@ export function AddressInput({ form, prefix }: AddressInputProps) {
           <FormItem>
             <FormLabel>Street Address 2 (Optional)</FormLabel>
             <FormControl>
-              <Input placeholder="Apt 4B" {...field} />
+              <Input placeholder="" {...field} />
             </FormControl>
             <FormMessage />
           </FormItem>
