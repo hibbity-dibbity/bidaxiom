@@ -1,19 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,134 +14,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Calendar, Users, FileText, UserPlus, X, CheckCircle2, Circle, Clock, Building2, User, Mail, Phone, MapPin, Plus, Info } from "lucide-react";
+import { UserPlus, X, Plus, Trash2 } from "lucide-react";
 import type { ProjectRole } from "@construction/shared";
-import { TransitionHistory } from "./components/transition-history";
 import { toast } from "sonner";
-import { getCustomerDisplayName } from "@construction/shared";
 import { SearchableSelect } from "@/components/ui/searchable-select";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
-const CSI_DIVISIONS = [
-  {
-    value: 0,
-    label: "00 - Procurement and Contracting",
-    description: "Bidding requirements, contract forms, conditions of the contract, and project procurement procedures"
-  },
-  {
-    value: 1,
-    label: "01 - General Requirements",
-    description: "Project management, temporary facilities, quality control, project meetings, and submittal procedures"
-  },
-  {
-    value: 2,
-    label: "02 - Existing Conditions",
-    description: "Demolition, site remediation, asbestos abatement, existing structure assessments, and hazardous material removal"
-  },
-  {
-    value: 3,
-    label: "03 - Concrete",
-    description: "Cast-in-place concrete, precast concrete, concrete finishing, formwork, and concrete accessories"
-  },
-  {
-    value: 4,
-    label: "04 - Masonry",
-    description: "Brick masonry, stone masonry, concrete block (CMU), glass block, and mortar"
-  },
-  {
-    value: 5,
-    label: "05 - Metals",
-    description: "Structural steel, metal joists, metal decking, cold-formed metal framing, and ornamental metals"
-  },
-  {
-    value: 6,
-    label: "06 - Wood, Plastics, and Composites",
-    description: "Rough carpentry, finish carpentry, architectural woodwork, plastic fabrications, and composite materials"
-  },
-  {
-    value: 7,
-    label: "07 - Thermal and Moisture Protection",
-    description: "Waterproofing, insulation, roofing, siding, membrane roofing, and joint sealants"
-  },
-  {
-    value: 8,
-    label: "08 - Openings",
-    description: "Doors, windows, skylights, glazing, curtain walls, and specialty openings"
-  },
-  {
-    value: 9,
-    label: "09 - Finishes",
-    description: "Drywall, tile, flooring, carpet, painting, wallcovering, and acoustical ceilings"
-  },
-  {
-    value: 10,
-    label: "10 - Specialties",
-    description: "Toilet partitions, fire extinguishers, signage, lockers, flagpoles, and building specialties"
-  },
-  {
-    value: 21,
-    label: "21 - Fire Suppression",
-    description: "Fire sprinkler systems, standpipes, fire pumps, and fire suppression equipment"
-  },
-  {
-    value: 22,
-    label: "22 - Plumbing",
-    description: "Plumbing fixtures, domestic water piping, sanitary waste, water heaters, and sewage systems"
-  },
-  {
-    value: 23,
-    label: "23 - HVAC",
-    description: "Heating systems, ventilation, air conditioning, ductwork, fans, and climate control equipment"
-  },
-  {
-    value: 26,
-    label: "26 - Electrical",
-    description: "Power distribution, lighting systems, fire alarm, emergency power, and electrical equipment"
-  },
-  {
-    value: 27,
-    label: "27 - Communications",
-    description: "Data cabling, structured cabling, phone systems, audio/visual, and telecommunications infrastructure"
-  },
-  {
-    value: 28,
-    label: "28 - Electronic Safety and Security",
-    description: "Access control systems, CCTV surveillance, intrusion detection, and building security systems"
-  },
-  {
-    value: 31,
-    label: "31 - Earthwork",
-    description: "Excavation, grading, soil stabilization, trenching, and earthwork operations"
-  },
-  {
-    value: 32,
-    label: "32 - Exterior Improvements",
-    description: "Paving, landscaping, fencing, retaining walls, site improvements, and irrigation"
-  },
-  {
-    value: 33,
-    label: "33 - Utilities",
-    description: "Water distribution, sanitary sewers, storm drainage, and underground utility systems"
-  },
-];
-
-const phaseStatusIcons = {
-  pending: Circle,
-  in_progress: Clock,
-  completed: CheckCircle2,
-};
-
-const phaseStatusColors = {
-  pending: "text-muted-foreground",
-  in_progress: "text-foreground",
-  completed: "text-financial-positive",
-};
+const NOTE_MAX = 500;
 
 export default function ProjectOverviewPage({
   params,
@@ -161,36 +28,13 @@ export default function ProjectOverviewPage({
 }) {
   const { projectSlug } = params;
   const [addMemberOpen, setAddMemberOpen] = useState(false);
-  const [editProjectOpen, setEditProjectOpen] = useState(false);
   const [inviteUserOpen, setInviteUserOpen] = useState(false);
   const [newMemberUserId, setNewMemberUserId] = useState("");
   const [newMemberRole, setNewMemberRole] = useState<ProjectRole>("viewer");
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteFirstName, setInviteFirstName] = useState("");
   const [inviteLastName, setInviteLastName] = useState("");
-
-  // Edit form state
-  const [editName, setEditName] = useState("");
-  const [editDescription, setEditDescription] = useState("");
-  const [editJobNumber, setEditJobNumber] = useState("");
-  const [editProjectType, setEditProjectType] = useState("");
-  const [editStatus, setEditStatus] = useState("");
-  const [editStartDate, setEditStartDate] = useState("");
-  const [editEndDate, setEditEndDate] = useState("");
-  const [editCustomerId, setEditCustomerId] = useState("");
-  const [editCostCodes, setEditCostCodes] = useState<number[]>([]);
-  const [addCustomerOpen, setAddCustomerOpen] = useState(false);
-  const [newCustomer, setNewCustomer] = useState({
-    companyName: "",
-    contactName: "",
-    phone: "",
-    email: "",
-    street1: "",
-    street2: "",
-    city: "",
-    state: "",
-    zipCode: "",
-  });
+  const [noteContent, setNoteContent] = useState("");
 
   const utils = trpc.useUtils();
 
@@ -200,26 +44,12 @@ export default function ProjectOverviewPage({
   // Use project.id for all subsequent queries
   const projectId = project?.id ?? "";
 
-  const { data: companyProfile } = trpc.company.getCurrent.useQuery();
-  const { data: customersData } = trpc.customer.list.useQuery({ limit: 100, offset: 0 });
   const { data: usersData } = trpc.user.list.useQuery({ limit: 100, offset: 0 });
-  const { data: changeOrders } = trpc.changeOrder.list.useQuery(
+
+  const { data: notesData, isLoading: notesLoading } = trpc.notes.list.useQuery(
     { projectId },
-    {
-      enabled: !!projectId,
-      placeholderData: (previousData) => previousData,
-    }
+    { enabled: !!projectId }
   );
-  const updateProjectMutation = trpc.project.update.useMutation({
-    onSuccess: () => {
-      utils.project.getBySlug.invalidate({ slug: projectSlug });
-      toast.success("Project updated");
-      setEditProjectOpen(false);
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to update project");
-    },
-  });
 
   const addTeamMemberMutation = trpc.project.addTeamMember.useMutation({
     onSuccess: () => {
@@ -244,19 +74,6 @@ export default function ProjectOverviewPage({
     },
   });
 
-  const createCustomerMutation = trpc.customer.create.useMutation({
-    onSuccess: (data) => {
-      utils.customer.list.invalidate();
-      setEditCustomerId(data.id);
-      toast.success("Customer created");
-      setAddCustomerOpen(false);
-      setNewCustomer({ companyName: "", contactName: "", phone: "", email: "", street1: "", street2: "", city: "", state: "", zipCode: "" });
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to create customer");
-    },
-  });
-
   const inviteUserMutation = trpc.user.invite.useMutation({
     onSuccess: () => {
       utils.user.list.invalidate();
@@ -271,6 +88,26 @@ export default function ProjectOverviewPage({
     },
   });
 
+  const createNoteMutation = trpc.notes.create.useMutation({
+    onSuccess: () => {
+      utils.notes.list.invalidate({ projectId });
+      setNoteContent("");
+      toast.success("Note added");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to add note");
+    },
+  });
+
+  const deleteNoteMutation = trpc.notes.delete.useMutation({
+    onSuccess: () => {
+      utils.notes.list.invalidate({ projectId });
+      toast.success("Note deleted");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to delete note");
+    },
+  });
 
   const handleAddMember = () => {
     if (!newMemberUserId.trim()) {
@@ -298,331 +135,210 @@ export default function ProjectOverviewPage({
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Overview</h1>
-      {/* Overview Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Schedule</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm font-medium">
-              {project.startDate && project.endDate
-                ? `${new Date(project.startDate).toLocaleDateString()} - ${new Date(project.endDate).toLocaleDateString()}`
-                : "Not set"}
+    <div className="space-y-8">
+
+      {/* Project Details */}
+      <div>
+        {project.description && (
+          <p className="text-sm text-foreground mb-4">{project.description}</p>
+        )}
+        {/* Building Dimensions — always render the 4-cell grid */}
+        <div className="grid grid-cols-4 gap-3">
+          {[
+            { label: "Width", value: project.buildingWidth ? `${project.buildingWidth} ft` : "—" },
+            { label: "Length", value: project.buildingLength ? `${project.buildingLength} ft` : "—" },
+            { label: "Height", value: project.buildingHeight ? `${project.buildingHeight} ft` : "—" },
+            { label: "Sq Ft", value: project.buildingSqft ? Number(project.buildingSqft).toLocaleString() : "—" },
+          ].map(({ label, value }) => (
+            <div key={label} className="rounded-md border bg-muted/40 p-3 text-center">
+              <p className="text-xs text-muted-foreground">{label}</p>
+              <p className="text-sm font-semibold mt-0.5">{value}</p>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {project.startDate && project.endDate
-                ? `${Math.ceil((new Date(project.endDate).getTime() - new Date(project.startDate).getTime()) / (1000 * 60 * 60 * 24))} days`
-                : "Set start and end dates"}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Team</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{project.teamMembers?.length || 0}</div>
-            <p className="text-xs text-muted-foreground">Active members</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Documents</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">--</div>
-            <Button variant="link" className="h-auto p-0 text-xs" asChild>
-              <Link href={`/projects/${project.slug}/documents`}>View documents</Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Change Orders</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {changeOrders ? (
-              <>
-                <div className="text-2xl font-bold">
-                  {changeOrders.filter((co) => co.status === "pending_approval" || co.status === "pco_submitted").length}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Pending ({changeOrders.filter((co) => co.status === "approved").length} approved)
-                </p>
-                <Button variant="link" className="h-auto p-0 text-xs" asChild>
-                  <Link href={`/projects/${project.slug}/change-orders`}>View change orders</Link>
-                </Button>
-              </>
-            ) : (
-              <>
-                <div className="text-2xl font-bold">--</div>
-                <Button variant="link" className="h-auto p-0 text-xs" asChild>
-                  <Link href={`/projects/${project.slug}/change-orders`}>Create change order</Link>
-                </Button>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
+          ))}
+        </div>
       </div>
 
-      {/* Customer Information */}
-      {project.customer && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Customer Information</CardTitle>
-                <CardDescription>Details about the project customer</CardDescription>
+      {/* Team Members */}
+      <div>
+        <div className="flex justify-end mb-3">
+          <Dialog open={addMemberOpen} onOpenChange={setAddMemberOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" variant="outline">
+                <UserPlus className="mr-2 h-4 w-4" />
+                Add Member
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add Team Member</DialogTitle>
+                <DialogDescription>
+                  Assign a team member to this project
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="user-select">Team Member</Label>
+                  <div className="flex gap-2">
+                    <SearchableSelect
+                      options={
+                        usersData?.items
+                          .filter((user) => {
+                            const existingMemberIds = new Set(
+                              project?.teamMembers?.map((m: any) => m.userId) || []
+                            );
+                            return !existingMemberIds.has(user.userId);
+                          })
+                          .map((user) => ({
+                            value: user.userId,
+                            label: user.firstName && user.lastName
+                              ? `${user.firstName} ${user.lastName} (${user.email})`
+                              : user.email,
+                          })) || []
+                      }
+                      value={newMemberUserId}
+                      onValueChange={setNewMemberUserId}
+                      placeholder="Select team member"
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        setAddMemberOpen(false);
+                        setInviteUserOpen(true);
+                      }}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="role">Project Role</Label>
+                  <Select value={newMemberRole} onValueChange={(value) => setNewMemberRole(value as ProjectRole)}>
+                    <SelectTrigger id="role">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="project_manager">Project Manager</SelectItem>
+                      <SelectItem value="superintendent">Superintendent</SelectItem>
+                      <SelectItem value="foreman">Foreman</SelectItem>
+                      <SelectItem value="estimator">Estimator</SelectItem>
+                      <SelectItem value="accountant">Accountant</SelectItem>
+                      <SelectItem value="viewer">Viewer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <Button variant="outline" size="sm" asChild>
-                <Link href={`/customers/${project.customer.slug || project.customer.id}`}>
-                  View Customer Portal
-                </Link>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setAddMemberOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleAddMember} disabled={addTeamMemberMutation.isPending}>
+                  {addTeamMemberMutation.isPending ? "Adding..." : "Add Member"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {project.teamMembers && project.teamMembers.length > 0 ? (
+          <div className="space-y-1">
+            {project.teamMembers.map((member: any) => {
+              const initials = [member.firstName?.[0], member.lastName?.[0]].filter(Boolean).join("").toUpperCase() || "?";
+              const fullName = member.firstName && member.lastName
+                ? `${member.firstName} ${member.lastName}`
+                : member.email || member.userId;
+              const roleLabel = (member.role as string)
+                .split("_")
+                .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+                .join(" ");
+              return (
+                <div key={member.userId} className="group flex items-center gap-2.5 py-1">
+                  <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center text-xs font-medium shrink-0">
+                    {initials}
+                  </div>
+                  <span className="text-sm font-medium flex-1">{fullName}</span>
+                  <span className="text-xs text-muted-foreground">{roleLabel}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                    onClick={() => handleRemoveMember(member.userId)}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">No team members assigned</p>
+        )}
+      </div>
+
+      {/* Notes */}
+      <div>
+        {/* Note list (above the input, reverse-chron from API) */}
+        <div className="space-y-3 mb-4">
+          {notesLoading && (
+            <p className="text-sm text-muted-foreground">Loading notes...</p>
+          )}
+          {notesData && notesData.length === 0 && null /* empty state: just show the input */}
+          {notesData?.map((note: any) => (
+            <div key={note.id} className="group flex items-start gap-2">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm whitespace-pre-wrap break-words">{note.content}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {note.authorName} &middot;{" "}
+                  {new Date(note.createdAt).toLocaleString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 opacity-0 group-hover:opacity-100 shrink-0 mt-0.5"
+                onClick={() => deleteNoteMutation.mutate({ noteId: note.id })}
+                disabled={deleteNoteMutation.isPending}
+              >
+                <Trash2 className="h-3.5 w-3.5 text-destructive" />
               </Button>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <div className="flex items-start gap-3">
-                {project.customer.companyName ? (
-                  <Building2 className="h-5 w-5 text-muted-foreground mt-0.5" />
-                ) : (
-                  <User className="h-5 w-5 text-muted-foreground mt-0.5" />
-                )}
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-muted-foreground">Customer</p>
-                  <p className="text-base font-semibold">
-                    {getCustomerDisplayName(project.customer)}
-                  </p>
-                  {project.customer.companyName && (
-                    <p className="text-xs text-muted-foreground">Contact: {project.customer.contactName}</p>
-                  )}
-                </div>
-              </div>
+          ))}
+        </div>
 
-              {project.customer.phone && (
-                <div className="flex items-start gap-3">
-                  <Phone className="h-5 w-5 text-muted-foreground mt-0.5" />
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground">Phone</p>
-                    <p className="text-base">{project.customer.phone}</p>
-                  </div>
-                </div>
-              )}
-
-              {project.customer.email && (
-                <div className="flex items-start gap-3">
-                  <Mail className="h-5 w-5 text-muted-foreground mt-0.5" />
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground">Email</p>
-                    <p className="text-base">{project.customer.email}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Team Section */}
-      <Card>
-        <CardHeader>
+        {/* Input area at bottom */}
+        <div className="space-y-2">
+          <Textarea
+            value={noteContent}
+            onChange={(e) => setNoteContent(e.target.value.slice(0, NOTE_MAX))}
+            placeholder="Add a note..."
+            className="resize-none min-h-[80px]"
+            rows={3}
+          />
           <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Team Members</CardTitle>
-              <CardDescription>People assigned to this project</CardDescription>
-            </div>
-            <Dialog open={addMemberOpen} onOpenChange={setAddMemberOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm">
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  Add Member
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add Team Member</DialogTitle>
-                  <DialogDescription>
-                    Assign a team member to this project
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="user-select">Team Member</Label>
-                    <div className="flex gap-2">
-                      <SearchableSelect
-                        options={
-                          usersData?.items
-                            .filter((user) => {
-                              const existingMemberIds = new Set(
-                                project?.teamMembers?.map((m: any) => m.userId) || []
-                              );
-                              return !existingMemberIds.has(user.userId);
-                            })
-                            .map((user) => ({
-                              value: user.userId,
-                              label: user.firstName && user.lastName
-                                ? `${user.firstName} ${user.lastName} (${user.email})`
-                                : user.email,
-                            })) || []
-                        }
-                        value={newMemberUserId}
-                        onValueChange={setNewMemberUserId}
-                        placeholder="Select team member"
-                        className="flex-1"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => {
-                          setAddMemberOpen(false);
-                          setInviteUserOpen(true);
-                        }}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="role">Project Role</Label>
-                    <Select value={newMemberRole} onValueChange={(value) => setNewMemberRole(value as ProjectRole)}>
-                      <SelectTrigger id="role">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="project_manager">Project Manager</SelectItem>
-                        <SelectItem value="superintendent">Superintendent</SelectItem>
-                        <SelectItem value="foreman">Foreman</SelectItem>
-                        <SelectItem value="estimator">Estimator</SelectItem>
-                        <SelectItem value="accountant">Accountant</SelectItem>
-                        <SelectItem value="viewer">Viewer</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setAddMemberOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleAddMember} disabled={addTeamMemberMutation.isPending}>
-                    {addTeamMemberMutation.isPending ? "Adding..." : "Add Member"}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <span className={`text-xs ${noteContent.length >= NOTE_MAX - 50 ? "text-destructive" : "text-muted-foreground"}`}>
+              {noteContent.length}/{NOTE_MAX}
+            </span>
+            <Button
+              size="sm"
+              onClick={() => {
+                if (!noteContent.trim()) return;
+                createNoteMutation.mutate({ projectId, content: noteContent.trim() });
+              }}
+              disabled={createNoteMutation.isPending || !noteContent.trim()}
+            >
+              {createNoteMutation.isPending ? "Adding..." : "Add Note"}
+            </Button>
           </div>
-        </CardHeader>
-        <CardContent>
-          {project.teamMembers && project.teamMembers.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Assigned</TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {project.teamMembers.map((member: any) => (
-                  <TableRow key={member.userId}>
-                    <TableCell className="font-medium">
-                      {member.firstName && member.lastName
-                        ? `${member.firstName} ${member.lastName}`
-                        : member.email || member.userId}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{member.role.replace("_", " ")}</Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {new Date(member.assignedAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemoveMember(member.userId)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <p className="text-sm text-muted-foreground text-center py-8">
-              No team members assigned yet
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Phases Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Project Phases</CardTitle>
-          <CardDescription>Construction phases and their status</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {project.phases && project.phases.length > 0 ? (
-            <div className="space-y-3">
-              {project.phases.map((phase: any) => {
-                const StatusIcon = phaseStatusIcons[phase.status as keyof typeof phaseStatusIcons] || Circle;
-                const statusColor = phaseStatusColors[phase.status as keyof typeof phaseStatusColors] || "text-muted-foreground";
-
-                return (
-                  <div key={phase.id} className="flex items-center justify-between p-3 rounded-lg border">
-                    <div className="flex items-center gap-3">
-                      <StatusIcon className={`h-5 w-5 ${statusColor}`} />
-                      <div>
-                        <p className="font-medium">{phase.name}</p>
-                        {(phase.startDate || phase.endDate) && (
-                          <p className="text-xs text-muted-foreground">
-                            {phase.startDate ? new Date(phase.startDate).toLocaleDateString() : "TBD"}
-                            {" - "}
-                            {phase.endDate ? new Date(phase.endDate).toLocaleDateString() : "TBD"}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <Badge variant="outline" className="capitalize">
-                      {phase.status.replace("_", " ")}
-                    </Badge>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground text-center py-8">
-              No phases defined
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Lifecycle History */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Lifecycle History</CardTitle>
-          <CardDescription>Record of all phase transitions for this project</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <TransitionHistory projectId={projectId} />
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Invite User Dialog */}
       <Dialog open={inviteUserOpen} onOpenChange={setInviteUserOpen}>
