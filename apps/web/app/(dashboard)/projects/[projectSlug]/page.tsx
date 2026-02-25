@@ -139,13 +139,14 @@ export default function ProjectOverviewPage({
 
       <h1 className="text-2xl font-bold">Overview</h1>
 
+      {project.description && (
+        <p className="text-sm text-muted-foreground -mt-4">{project.description}</p>
+      )}
+
       {/* Dimensions */}
       <div className="space-y-3">
         <h2 className="text-sm font-semibold">Dimensions</h2>
-        {project.description && (
-          <p className="text-sm text-muted-foreground">{project.description}</p>
-        )}
-        <dl className="grid grid-cols-4 gap-4">
+        <dl className="grid grid-cols-4 gap-2">
           {[
             { label: "Width", value: project.buildingWidth ? `${project.buildingWidth} ft` : "—" },
             { label: "Length", value: project.buildingLength ? `${project.buildingLength} ft` : "—" },
