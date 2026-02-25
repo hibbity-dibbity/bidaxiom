@@ -1,9 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MoreVertical, Building2, MapPin, Calendar } from "lucide-react";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { LifecyclePhase } from "@construction/shared";
 import { LifecyclePhaseBadge } from "./lifecycle-phase-badge";
 import { trpc } from "@/lib/trpc";
@@ -35,6 +38,7 @@ interface ProjectHeaderProps {
     startDate?: string | null;
     endDate?: string | null;
     restoredAt?: string | null;
+    customerBudget?: string | null;
   };
   headerStats: {
     contractValue: number;
@@ -42,6 +46,10 @@ interface ProjectHeaderProps {
     paidToDate: number;
     balanceToComplete: number;
     retainageHeld: number;
+    projectedProfit: number | null;
+    projectedMargin: number | null;
+    customerBudgetAmount: number | null;
+    customerBudgetDelta: number | null;
   } | null;
   canTransition: boolean;
   canDelete?: boolean;
@@ -57,15 +65,88 @@ function formatAddress(
   return parts.length > 0 ? parts.join(" ") : null;
 }
 
-function formatDateRange(
-  startDate: string | null | undefined,
-  endDate: string | null | undefined,
-): string | null {
-  if (!startDate) return null;
-  const start = new Date(startDate).toLocaleDateString("en-US", { month: "short", year: "numeric" });
-  if (!endDate) return start;
-  const end = new Date(endDate).toLocaleDateString("en-US", { month: "short", year: "numeric" });
-  return `${start} – ${end}`;
+function formatCurrencyDisplay(amount: number): { text: string; negative: boolean } {
+  const negative = amount < 0;
+  const abs = Math.abs(amount);
+  const formatted = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(abs);
+  return { text: negative ? `(${formatted})` : formatted, negative };
+}
+
+function formatDelta(delta: number | null): { text: string; over: boolean } | null {
+  if (delta === null) return null;
+  const abs = Math.abs(delta);
+  const formatted = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(abs);
+  // delta = contractValue - customerBudget
+  // positive delta means contract > customer budget = "over"
+  // negative delta means contract < customer budget = "under"
+  return { text: `${formatted} ${delta > 0 ? "over" : "under"}`, over: delta > 0 };
+}
+
+function DatePickerField({
+  label,
+  value,
+  projectId,
+  field,
+  onSave,
+}: {
+  label: string;
+  value: string | null | undefined;
+  projectId: string;
+  field: "startDate" | "endDate";
+  onSave: (isoDate: string | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const formatted = value
+    ? new Date(value).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : null;
+
+  const selected = value ? new Date(value) : undefined;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        {formatted ? (
+          <button className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+            {formatted}
+          </button>
+        ) : (
+          <button
+            title={label}
+            className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            aria-label={label}
+          >
+            <Calendar className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <CalendarComponent
+          mode="single"
+          selected={selected}
+          onSelect={(date) => {
+            setOpen(false);
+            onSave(date ? date.toISOString() : null);
+          }}
+          initialFocus
+        />
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 export function ProjectHeader({ project, headerStats, canTransition, canDelete }: ProjectHeaderProps) {
@@ -84,6 +165,16 @@ export function ProjectHeader({ project, headerStats, canTransition, canDelete }
   const acknowledgeRestoreMutation = trpc.project.acknowledgeRestore.useMutation({
     onSuccess: () => {
       utils.project.getBySlug.invalidate({ slug: project.slug });
+    },
+  });
+
+  const updateProjectMutation = trpc.project.update.useMutation({
+    onSuccess: () => {
+      utils.project.getBySlug.invalidate({ slug: project.slug });
+      toast.success("Project updated");
+    },
+    onError: (error: { message?: string }) => {
+      toast.error(error.message || "Failed to update project");
     },
   });
 
@@ -148,9 +239,10 @@ export function ProjectHeader({ project, headerStats, canTransition, canDelete }
         </div>
       </div>
 
-      {/* Row 2 (~30px): Customer + address + dates */}
-      {(project.customerName || formatAddress(project.street1, project.city, project.state, project.zip) || formatDateRange(project.startDate, project.endDate)) && (
+      {/* Row 2 (~30px): Customer + address + date pickers */}
+      {(project.customerName || formatAddress(project.street1, project.city, project.state, project.zip) || true) && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2 flex-wrap">
+          {/* Customer */}
           {project.customerName && (
             <>
               <Building2 className="h-3.5 w-3.5 shrink-0" />
@@ -163,7 +255,7 @@ export function ProjectHeader({ project, headerStats, canTransition, canDelete }
               )}
             </>
           )}
-          {project.customerName && (formatAddress(project.street1, project.city, project.state, project.zip) || formatDateRange(project.startDate, project.endDate)) && (
+          {project.customerName && formatAddress(project.street1, project.city, project.state, project.zip) && (
             <span className="text-muted-foreground/40">·</span>
           )}
           {formatAddress(project.street1, project.city, project.state, project.zip) && (
@@ -172,32 +264,118 @@ export function ProjectHeader({ project, headerStats, canTransition, canDelete }
               <span className="truncate max-w-[240px]">{formatAddress(project.street1, project.city, project.state, project.zip)}</span>
             </>
           )}
-          {formatAddress(project.street1, project.city, project.state, project.zip) && formatDateRange(project.startDate, project.endDate) && (
+          {formatAddress(project.street1, project.city, project.state, project.zip) && (
             <span className="text-muted-foreground/40">·</span>
           )}
-          {formatDateRange(project.startDate, project.endDate) && (
-            <>
-              <Calendar className="h-3.5 w-3.5 shrink-0" />
-              <span>{formatDateRange(project.startDate, project.endDate)}</span>
-            </>
+          {/* Start date picker */}
+          <DatePickerField
+            label="Set start date"
+            value={project.startDate}
+            projectId={project.id}
+            field="startDate"
+            onSave={(iso) =>
+              updateProjectMutation.mutate({ id: project.id, startDate: iso })
+            }
+          />
+          {/* "–" only when at least one date is set */}
+          {(project.startDate || project.endDate) && (
+            <span className="text-muted-foreground/40">–</span>
           )}
+          {/* End date picker */}
+          <DatePickerField
+            label="Set end date"
+            value={project.endDate}
+            projectId={project.id}
+            field="endDate"
+            onSave={(iso) =>
+              updateProjectMutation.mutate({ id: project.id, endDate: iso })
+            }
+          />
         </div>
       )}
 
-      {/* Row 3 (~40px): Financial stat bar — 5 fields always visible */}
+      {/* Row 3: Financial stat bar */}
       <div className="flex items-center gap-6 pb-3 overflow-x-auto">
-        {[
-          { label: "Contract Value", value: headerStats?.contractValue ?? 0 },
-          { label: "Billed to Date", value: headerStats?.billedToDate ?? 0 },
-          { label: "Paid to Date", value: headerStats?.paidToDate ?? 0 },
-          { label: "Balance to Complete", value: headerStats?.balanceToComplete ?? 0 },
-          { label: "Retainage Held", value: headerStats?.retainageHeld ?? 0 },
-        ].map(({ label, value }) => (
-          <div key={label} className="flex flex-col min-w-0 shrink-0">
-            <span className="text-xs text-muted-foreground leading-tight whitespace-nowrap">{label}</span>
-            <CurrencyDisplay amount={value} className="text-sm font-semibold" />
-          </div>
-        ))}
+        {/* Contract Value */}
+        <div className="flex flex-col min-w-0 shrink-0">
+          <span className="text-xs text-muted-foreground leading-tight whitespace-nowrap">Contract Value</span>
+          <CurrencyDisplay amount={headerStats?.contractValue ?? 0} className="text-sm font-semibold" />
+        </div>
+
+        {/* Profit — uses formatCurrencyDisplay (NOT CurrencyDisplay) for accounting parentheses */}
+        <div className="flex flex-col min-w-0 shrink-0">
+          <span className="text-xs text-muted-foreground leading-tight whitespace-nowrap">Profit</span>
+          {headerStats?.projectedProfit !== null && headerStats?.projectedProfit !== undefined ? (
+            (() => {
+              const { text, negative } = formatCurrencyDisplay(headerStats.projectedProfit);
+              return (
+                <span className={`text-sm font-semibold ${negative ? "text-destructive" : ""}`}>
+                  {text}
+                </span>
+              );
+            })()
+          ) : (
+            <span className="text-sm font-semibold">—</span>
+          )}
+          <span className="text-xs text-muted-foreground">Actual: —</span>
+        </div>
+
+        {/* Margin */}
+        <div className="flex flex-col min-w-0 shrink-0">
+          <span className="text-xs text-muted-foreground leading-tight whitespace-nowrap">Margin</span>
+          {headerStats?.projectedMargin !== null && headerStats?.projectedMargin !== undefined ? (
+            <span className="text-sm font-semibold">
+              {(headerStats.projectedMargin * 100).toFixed(1)}%
+            </span>
+          ) : (
+            <span className="text-sm font-semibold">—</span>
+          )}
+          <span className="text-xs text-muted-foreground">Actual: —</span>
+        </div>
+
+        {/* Billed to Date */}
+        <div className="flex flex-col min-w-0 shrink-0">
+          <span className="text-xs text-muted-foreground leading-tight whitespace-nowrap">Billed to Date</span>
+          <CurrencyDisplay amount={headerStats?.billedToDate ?? 0} className="text-sm font-semibold" />
+        </div>
+
+        {/* Paid to Date */}
+        <div className="flex flex-col min-w-0 shrink-0">
+          <span className="text-xs text-muted-foreground leading-tight whitespace-nowrap">Paid to Date</span>
+          <CurrencyDisplay amount={headerStats?.paidToDate ?? 0} className="text-sm font-semibold" />
+        </div>
+
+        {/* Balance to Complete */}
+        <div className="flex flex-col min-w-0 shrink-0">
+          <span className="text-xs text-muted-foreground leading-tight whitespace-nowrap">Balance to Complete</span>
+          <CurrencyDisplay amount={headerStats?.balanceToComplete ?? 0} className="text-sm font-semibold" />
+        </div>
+
+        {/* Retainage Held */}
+        <div className="flex flex-col min-w-0 shrink-0">
+          <span className="text-xs text-muted-foreground leading-tight whitespace-nowrap">Retainage Held</span>
+          <CurrencyDisplay amount={headerStats?.retainageHeld ?? 0} className="text-sm font-semibold" />
+        </div>
+
+        {/* Customer Budget — placed at end */}
+        <div className="flex flex-col min-w-0 shrink-0">
+          <span className="text-xs text-muted-foreground leading-tight whitespace-nowrap">Customer Budget</span>
+          {headerStats?.customerBudgetAmount !== null && headerStats?.customerBudgetAmount !== undefined ? (
+            <>
+              <CurrencyDisplay amount={headerStats.customerBudgetAmount} className="text-sm font-semibold" />
+              {(() => {
+                const delta = formatDelta(headerStats.customerBudgetDelta ?? null);
+                return delta ? (
+                  <span className={`text-xs ${delta.over ? "text-destructive" : "text-muted-foreground"}`}>
+                    {delta.text}
+                  </span>
+                ) : null;
+              })()}
+            </>
+          ) : (
+            <span className="text-sm font-semibold">—</span>
+          )}
+        </div>
       </div>
     </div>
   );

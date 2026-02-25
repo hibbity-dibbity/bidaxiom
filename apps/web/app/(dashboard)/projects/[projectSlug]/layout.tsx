@@ -109,6 +109,7 @@ export default function ProjectLayout({ children, params }: ProjectLayoutProps) 
             startDate: project.startDate ?? null,
             endDate: project.endDate ?? null,
             restoredAt: project.restoredAt ?? null,
+            customerBudget: project.customerBudget ?? null,
           }}
           headerStats={headerStats ?? null}
           canTransition={canTransition}
