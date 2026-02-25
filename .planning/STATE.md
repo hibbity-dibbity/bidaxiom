@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 ## Current Position
 
 Phase: 55 of 56 (Overview Tab Redesign + Notes)
-Plan: — of TBD
-Status: Ready to plan
-Last activity: 2026-02-24 — Phase 54 complete (date pickers, profit/margin/budget KPIs, UAT passed)
+Plan: 01 complete — Plan 02 up next
+Status: In progress
+Last activity: 2026-02-25 — Phase 55 Plan 01 complete (project_notes table + notesRouter)
 
-Progress: v1.8: [████░░░░░░] 50% (2/4 phases complete)
+Progress: v1.8: [████░░░░░░] 50% (2/4 phases complete; Phase 55 in progress)
 
 ## Performance Metrics
 
@@ -26,6 +26,7 @@ Progress: v1.8: [████░░░░░░] 50% (2/4 phases complete)
 **Recent trend (v1.8 phases):**
 - Phase 53: 2 plans complete — 5 new DB columns (customer_budget, building dimensions, sqft), form rewrite (click-to-edit job number, dimensions + budget fields, no legacy sections)
 - Phase 54: 3 plans complete — getHeaderStats API extended (profit/margin/budget delta), date pickers in Row 2, stat bar rewrite (Team Members removed, Profit/Margin/Customer Budget added)
+- Phase 55 Plan 01: project_notes table + notesRouter (list/create/delete) — API foundation for Overview tab Notes section (~6 min)
 
 *Updated after each plan completion*
 
@@ -41,6 +42,7 @@ Recent decisions relevant to v1.8:
 - Phase 46: getHeaderStats runs all 9 sub-queries in Promise.all; contractValue priority chain: accepted estimate + approved COs > project.budget > 0
 - Phase 54: projectedProfit = estimateTotal - (directCosts + overheadAmount); margin returned as decimal; customerBudgetDelta = contractValue - customerBudget (positive = over)
 - Phase 54: tRPC mutation for date saving is `trpc.project.update` (not `updateProject`)
+- Phase 55: Notes use hard delete (no soft delete); author name computed in JS from LEFT JOIN; 500-char limit at Zod layer only
 
 ### Pending Todos
 
@@ -49,10 +51,9 @@ None.
 ### Blockers/Concerns
 
 - Clerk webhook secret is still placeholder (`whsec_xxx`). Tenant auto-provisioning via webhooks won't work until configured with real secret from Clerk dashboard.
-- Phase 55 requires new DB table: `project_notes` with tRPC endpoints `notes.create` and `notes.list`.
 
 ## Session Continuity
 
-Last session: 2026-02-24
-Stopped at: Phase 54 complete — UAT passed; ready to plan Phase 55
+Last session: 2026-02-25
+Stopped at: Completed 55-01-PLAN.md — Notes API foundation done; ready for 55-02 (Overview tab UI)
 Resume file: None
