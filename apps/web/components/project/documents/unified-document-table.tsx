@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   useReactTable,
@@ -22,8 +22,19 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { DocumentRowMenu } from "./document-row-menu";
 
 // TODO: Replace with proper inferred type from tRPC AppRouter once inference is set up
@@ -41,15 +52,42 @@ const TYPE_LABELS: Record<string, string> = {
   file: "File",
 };
 
-const STATUS_BADGE_VARIANTS: Record<string, string> = {
-  draft: "secondary",
-  submitted: "default",
-  under_review: "warning",
-  approved: "success",
-  rejected: "destructive",
-  closed: "secondary",
-  cancelled: "secondary",
+const CATEGORY_OPTIONS = [
+  { value: "rfi", label: "RFI" },
+  { value: "submittal", label: "Submittal" },
+  { value: "transmittal", label: "Transmittal" },
+  { value: "proposal", label: "Proposal" },
+  { value: "change_order", label: "Change Order" },
+  { value: "payment_app", label: "Pay App" },
+  { value: "rfq", label: "RFQ" },
+  { value: "file", label: "File" },
+];
+
+const FILE_FORMAT_COLORS: Record<string, string> = {
+  pdf: "bg-red-100 text-red-700",
+  xlsx: "bg-green-100 text-green-700",
+  xls: "bg-green-100 text-green-700",
+  docx: "bg-blue-100 text-blue-700",
+  doc: "bg-blue-100 text-blue-700",
+  png: "bg-purple-100 text-purple-700",
+  jpg: "bg-purple-100 text-purple-700",
+  jpeg: "bg-purple-100 text-purple-700",
 };
+
+function stripExtension(filename: string): string {
+  const lastDot = filename.lastIndexOf(".");
+  return lastDot > 0 ? filename.slice(0, lastDot) : filename;
+}
+
+function getFileFormat(filename: string): string {
+  const lastDot = filename.lastIndexOf(".");
+  if (lastDot <= 0) return "FILE";
+  return filename.slice(lastDot + 1).toUpperCase();
+}
+
+function getFormatStyle(format: string): string {
+  return FILE_FORMAT_COLORS[format.toLowerCase()] ?? "bg-muted text-muted-foreground";
+}
 
 interface UnifiedDocumentTableProps {
   documents: UnifiedDocument[];
@@ -72,6 +110,28 @@ export function UnifiedDocumentTable({
   const utils = trpc.useUtils();
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
 
+  // Inline edit state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editCategory, setEditCategory] = useState("");
+  const [editNameError, setEditNameError] = useState("");
+
+  const updateMutation = trpc.document.update.useMutation({
+    onSuccess: () => {
+      toast.success("Document updated");
+      setEditingId(null);
+      utils.document.listUnified.invalidate({ projectId });
+    },
+    onError: (err) => {
+      // Surface duplicate name error inline, not as toast
+      if (err.message.includes("already exists")) {
+        setEditNameError("A document with this name already exists");
+      } else {
+        toast.error("Failed to update document");
+      }
+    },
+  });
+
   const handleRowClick = async (row: UnifiedDocument) => {
     if (
       row.workflowId !== null &&
@@ -86,6 +146,31 @@ export function UnifiedDocumentTable({
         toast.error("Could not download document");
       }
     }
+  };
+
+  const startEdit = (doc: UnifiedDocument) => {
+    setEditingId(doc.id);
+    setEditName(stripExtension(doc.name));
+    setEditCategory(doc.category ?? "file");
+    setEditNameError("");
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditNameError("");
+  };
+
+  const saveEdit = (doc: UnifiedDocument) => {
+    if (!editName.trim()) {
+      setEditNameError("Name is required");
+      return;
+    }
+    setEditNameError("");
+    updateMutation.mutate({
+      documentId: doc.id,
+      name: editName.trim(),
+      category: editCategory as "rfi" | "submittal" | "transmittal" | "proposal" | "change_order" | "payment_app" | "rfq" | "file",
+    });
   };
 
   const columns: ColumnDef<UnifiedDocument>[] = React.useMemo(
@@ -121,46 +206,80 @@ export function UnifiedDocumentTable({
       {
         accessorKey: "name",
         header: "Name",
-        cell: ({ row }) => (
-          <button
-            className="text-left hover:underline"
-            onClick={() => handleRowClick(row.original)}
-          >
-            {row.original.name}
-          </button>
-        ),
+        cell: ({ row }) =>
+          row.original.id === editingId ? (
+            <div>
+              <Input
+                value={editName}
+                onChange={(e) => {
+                  setEditName(e.target.value);
+                  setEditNameError("");
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") saveEdit(row.original);
+                  if (e.key === "Escape") cancelEdit();
+                }}
+                className="h-7 text-sm"
+                autoFocus
+              />
+              {editNameError && (
+                <p className="mt-1 text-xs text-destructive">{editNameError}</p>
+              )}
+            </div>
+          ) : (
+            <button
+              className="text-left hover:underline"
+              onClick={() => handleRowClick(row.original)}
+            >
+              {stripExtension(row.original.name)}
+            </button>
+          ),
       },
-      // Type column
+      // Category column (was "Type" — shows document category badge; editable)
       {
         accessorKey: "documentType",
-        header: "Type",
-        cell: ({ row }) => (
-          <Badge variant="secondary">
-            {TYPE_LABELS[row.original.documentType] ?? row.original.documentType}
-          </Badge>
-        ),
-      },
-      // Status column
-      {
-        accessorKey: "workflowStatus",
-        header: "Status",
-        cell: ({ row }) => {
-          const status = row.original.workflowStatus;
-          if (!status) return <span className="text-muted-foreground">—</span>;
-          const variant = STATUS_BADGE_VARIANTS[status] ?? "secondary";
-          return <Badge variant={variant as "secondary" | "default" | "destructive" | "outline"}>{status.replace(/_/g, " ")}</Badge>;
-        },
-      },
-      // Related entity column
-      {
-        id: "relatedEntity",
-        header: "Related",
+        header: "Category",
         cell: ({ row }) =>
-          row.original.relatedEntity ? (
-            <span className="text-sm">{row.original.relatedEntity}</span>
+          row.original.id === editingId ? (
+            <Select
+              value={editCategory}
+              onValueChange={(val) => setEditCategory(val)}
+            >
+              <SelectTrigger className="h-7 text-sm w-36">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CATEGORY_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           ) : (
-            <span className="text-muted-foreground">—</span>
+            <Badge variant="secondary">
+              {TYPE_LABELS[row.original.documentType] ?? row.original.documentType}
+            </Badge>
           ),
+      },
+      // Type column (NEW — file format badge, read-only)
+      {
+        id: "fileFormat",
+        header: "Type",
+        enableSorting: false,
+        cell: ({ row }) => {
+          const format = getFileFormat(row.original.name);
+          return (
+            <span
+              className={cn(
+                "text-xs font-medium px-1.5 py-0.5 rounded",
+                getFormatStyle(format)
+              )}
+            >
+              {format}
+            </span>
+          );
+        },
       },
       // Created by column
       {
@@ -187,18 +306,43 @@ export function UnifiedDocumentTable({
         id: "actions",
         header: "",
         enableSorting: false,
-        cell: ({ row }) => (
-          <DocumentRowMenu
-            document={row.original}
-            projectSlug={projectSlug}
-            onDelete={onDeleteSuccess}
-          />
-        ),
+        cell: ({ row }) =>
+          editingId === row.original.id ? (
+            <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                variant="default"
+                onClick={() => saveEdit(row.original)}
+                disabled={updateMutation.isPending}
+              >
+                {updateMutation.isPending ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  "Save"
+                )}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={cancelEdit}
+                disabled={updateMutation.isPending}
+              >
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <DocumentRowMenu
+              document={row.original}
+              projectSlug={projectSlug}
+              onDelete={onDeleteSuccess}
+              onEdit={() => startEdit(row.original)}
+            />
+          ),
         size: 48,
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [projectSlug, onDeleteSuccess]
+    [projectSlug, onDeleteSuccess, editingId, editName, editCategory, editNameError, updateMutation.isPending]
   );
 
   const memoizedData = React.useMemo(() => documents, [documents]);
@@ -221,8 +365,8 @@ export function UnifiedDocumentTable({
     getFilteredRowModel: getFilteredRowModel(),
   });
 
-  // Skeleton columns count
-  const COLUMN_COUNT = 8;
+  // Skeleton columns count (select, Name, Category, Type, Created By, Date, Actions)
+  const COLUMN_COUNT = 7;
 
   if (isLoading) {
     return (
