@@ -29,7 +29,6 @@ export default function ProjectDocumentsPage() {
   // URL filter state via nuqs
   const [filters, setFilters] = useQueryStates({
     type: parseAsString,
-    status: parseAsString,
     dateFrom: parseAsString,
     dateTo: parseAsString,
     author: parseAsString,
@@ -60,7 +59,6 @@ export default function ProjectDocumentsPage() {
         | "rfq"
         | "file"
         | undefined,
-      status: filters.status ?? undefined,
       dateFrom: filters.dateFrom ?? undefined,
       dateTo: filters.dateTo ?? undefined,
       authorId: filters.author ?? undefined,
@@ -86,7 +84,6 @@ export default function ProjectDocumentsPage() {
   const currentFilters: DocumentFiltersType = {
     search: localSearch || null,
     type: filters.type,
-    status: filters.status,
     dateFrom: filters.dateFrom,
     dateTo: filters.dateTo,
     author: filters.author,
