@@ -109,3 +109,20 @@
 
 ---
 
+
+## v1.8 New Project Page Stage 1 (Shipped: 2026-02-25)
+
+**Phases completed:** 4 phases (Phases 53-56), 11 plans
+**Timeline:** 2026-02-24 → 2026-02-25 (1 day)
+**Files changed:** 19 files, +1,452 / -1,289 lines
+
+**Key accomplishments:**
+- New project form rebuilt — click-to-edit Project Number widget, Building Dimensions section (auto-computed sqft), Customer Budget field; Team Members/Project Phases/CSI Cost Codes sections removed
+- 5 nullable DB columns added to projects across all tenants (`customer_budget`, `building_width`, `building_length`, `building_height`, `building_sqft`) with idempotent migration
+- Financial KPI stat bar — `getHeaderStats` extended with Projected Profit/Margin/Customer Budget delta; Start/End date pickers in header Row 2; Team Members KPI removed
+- `project_notes` table + `notesRouter` (list/create/delete with ownership enforcement) — multi-tenant idempotent migration, registered in `appRouter`
+- Overview tab redesigned — KPI cards, Customer Info, Project Phases removed; flat Dimensions grid, compact Team Members with title-case roles, functional Notes section (reverse-chron, char counter, hover delete)
+- Documents tab — `document.update` mutation with extension-preserving rename, duplicate check, CASL; 7-column table with inline edit; PDF inline preview via `forPreview` flag; file Type filter; Status column/filter removed
+
+---
+

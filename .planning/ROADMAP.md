@@ -154,87 +154,17 @@
 
 </details>
 
----
+<details>
+<summary>✅ v1.8 New Project Page Stage 1 (Phases 53-56) — SHIPPED Feb 25, 2026</summary>
 
-## 🚧 v1.8 New Project Page Stage 1 (In Progress)
+**Delivered:** Streamlined new project form with Building Dimensions + Customer Budget, financial KPI stat bar (Profit/Margin/Customer Budget), Overview tab rebuilt with Notes section, Documents tab with inline editing and Status removal.
 
-**Milestone Goal:** Streamline the new project creation form and overhaul the project detail experience — cleaner form with condensed Project Number, Customer Budget + Building Dimensions fields, financial KPIs in the header stat bar, Overview tab cleanup with Notes, and document editing on the Documents tab.
+**Phases:**
+- [x] Phase 53: New Project Form Cleanup + Schema (2 plans) — 5 DB columns, click-to-edit Project Number, Building Dimensions, Customer Budget, legacy sections removed
+- [x] Phase 54: Project Header Updates (3 plans) — Projected Profit/Margin/Customer Budget KPIs, Start/End date pickers, Team Members KPI removed
+- [x] Phase 55: Overview Tab Redesign + Notes (3 plans) — Flat Dimensions grid, compact Team Members, project_notes table + notesRouter, Notes section with reverse-chron display
+- [x] Phase 56: Documents Tab Cleanup (3 plans) — document.update mutation, 7-column table with inline edit, PDF inline preview, file Type filter, Status removed
 
-### Phases
+**Archive:** [.planning/milestones/v1.8-ROADMAP.md](./milestones/v1.8-ROADMAP.md)
 
-- [x] **Phase 53: New Project Form Cleanup + Schema** — Remove legacy sections, condense Project Number, add Customer Budget and Building Dimensions, DB migration for new columns
-- [x] **Phase 54: Project Header Updates** — Add Start/End date pickers, remove Team Members KPI, add Profit/Margin/Budget KPIs
-- [x] **Phase 55: Overview Tab Redesign + Notes** — Remove KPI cards and Customer Info, update Project Details with dimensions, clean Team Members table, remove Project Phases, add Notes section (completed 2026-02-25)
-- [x] **Phase 56: Documents Tab Cleanup** — Add document name/type editing, remove Status column and filter (completed 2026-02-25)
-
-## Phase Details
-
-### Phase 53: New Project Form Cleanup + Schema
-**Goal**: Users can create a project through a clean, focused form — no legacy cruft, with Project Number prominently placed, Customer Budget captured, and Building Dimensions stored.
-**Depends on**: Phase 52 (v1.7 complete)
-**Requirements**: CREATE-01, CREATE-02, CREATE-03, CREATE-04, CREATE-05, CREATE-06, CREATE-07, CREATE-08, CREATE-09, CREATE-10, CREATE-11, CREATE-12
-**Success Criteria** (what must be TRUE):
-  1. The new project form shows no page description text, no "Basic Information" heading, and no "Location" heading — just fields
-  2. Project Number appears above Project Name, displays auto-generated value as read-only text with a "Manual Entry" button, and toggles to an editable field when clicked (button label changes to "Use Auto-Generated")
-  3. The form contains no Team Members, Project Phases, or CSI Cost Codes sections
-  4. A Customer Budget field accepts a dollar amount and formats it as $X,XXX.XX on blur
-  5. A Building Dimensions section accepts Width, Length, and Height in feet; square footage (Width x Length) is calculated automatically and stored on the project record; default address placeholder is "8400 Kirby Dr, Houston, TX 77054" across all location fields
-**Plans**: 2 plans
-Plans:
-- [ ] 53-01-PLAN.md — DB migration + Drizzle/Zod schema + project router for 5 new columns
-- [ ] 53-02-PLAN.md — Page heading, form rewrite (field order, Project Number widget, dimensions, budget, address placeholder)
-
-### Phase 54: Project Header Updates
-**Goal**: The project sticky header stat bar shows financial KPIs (Profit, Margin, Customer Budget) and inline date pickers for Start/End dates, replacing the Team Members KPI.
-**Depends on**: Phase 53
-**Requirements**: HEADER-01, HEADER-02, HEADER-03, HEADER-04, HEADER-05
-**Success Criteria** (what must be TRUE):
-  1. Start Date and End Date appear in the header info row as clickable elements that open date pickers; selecting a date saves it to the project
-  2. The Team Members count is no longer visible anywhere in the header stat bar
-  3. A Profit KPI displays Projected Profit (Contract Amount minus Total Costs from the latest active estimate's line item markups); Actual Profit shows "—"
-  4. A Margin KPI displays Projected Margin as a percentage (Projected Profit divided by Contract Amount); Actual Margin shows "—"
-  5. A Customer Budget KPI displays the stored customer budget amount and its delta versus the estimated contract amount, clearly labeled over/under
-**Plans**: 3 plans
-Plans:
-- [x] 54-01-PLAN.md — Extend getHeaderStats API (projectedProfit, projectedMargin, customerBudgetAmount, customerBudgetDelta) + customerBudget in updateProject
-- [x] 54-02-PLAN.md — Header UI: date picker triggers in row 2, remove Team Members, add Profit/Margin/Customer Budget KPI cards
-- [x] 54-03-PLAN.md — Human verify checkpoint: all five HEADER requirements confirmed in browser
-
-### Phase 55: Overview Tab Redesign + Notes
-**Goal**: The Overview tab is decluttered — no KPI cards, no Customer Info section, no Project Phases — with a clean Project Details section showing building dimensions and a functional Notes section for team communication.
-**Depends on**: Phase 54
-**Requirements**: OVERVIEW-01, OVERVIEW-02, OVERVIEW-03, OVERVIEW-04, OVERVIEW-05, OVERVIEW-06, OVERVIEW-07, OVERVIEW-08, OVERVIEW-09, OVERVIEW-10
-**Success Criteria** (what must be TRUE):
-  1. The Overview tab contains no KPI cards and no Customer Information section; customer name and link remain only in the sticky header
-  2. The Project Details section displays: project description, building width, building length, building height, and calculated square footage
-  3. The Team Members section shows only avatar, name, and role (proper case) with no description text, no assigned-date column, and no column header row
-  4. The Project Phases section is absent from the Overview tab
-  5. A Notes section provides a multi-line text input and "Add Note" button; submitted notes appear below in reverse-chronological order showing note text, author full name, and timestamp
-**Plans**: 3 plans
-Plans:
-- [ ] 55-01-PLAN.md — DB migration (project_notes table) + notesRouter (list, create, delete) + register in appRouter
-- [ ] 55-02-PLAN.md — Redesign Overview tab: strip sections, Project Details grid, compact Team Members, Notes UI
-- [ ] 55-03-PLAN.md — Human verify checkpoint: all five OVERVIEW requirements confirmed in browser
-
-### Phase 56: Documents Tab Cleanup
-**Goal**: Documents tab entries are editable (name and type) and the Status column is gone, giving users a cleaner document management surface.
-**Depends on**: Phase 55
-**Requirements**: DOCS-01, DOCS-02
-**Success Criteria** (what must be TRUE):
-  1. Each document row has an edit action that opens an inline or dialog form allowing the user to change the document's file name and document type; saving persists the changes
-  2. The Documents tab table contains no Status column and the status filter control is absent from the filter bar
-  3. All other document row data (file name, type, uploaded date, uploader) remains visible and correct after the Status column removal
-**Plans**: 3 plans
-Plans:
-- [ ] 56-01-PLAN.md — document.update API mutation + DocumentFilters status removal
-- [ ] 56-02-PLAN.md — Table column restructure + inline edit rows + updated row menu + page cleanup
-- [ ] 56-03-PLAN.md — Human verify checkpoint: all three DOCS requirements confirmed in browser
-
-## Progress
-
-| Phase | Milestone | Plans Complete | Status | Completed |
-|-------|-----------|----------------|--------|-----------|
-| 53. New Project Form Cleanup + Schema | v1.8 | 2/2 | Complete | 2026-02-24 |
-| 54. Project Header Updates | v1.8 | 3/3 | Complete | 2026-02-24 |
-| 55. Overview Tab Redesign + Notes | v1.8 | Complete    | 2026-02-25 | - |
-| 56. Documents Tab Cleanup | v1.8 | 3/3 | Complete | 2026-02-25 |
+</details>

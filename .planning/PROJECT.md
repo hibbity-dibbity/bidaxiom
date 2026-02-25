@@ -134,17 +134,17 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 - ✓ Free lifecycle phase navigation: any-to-any phase transitions in a single click, no guards or confirmation dialogs, optimistic badge update with spinner — v1.7
 - ✓ Trade simplification: 12-trade SIMPLE_TRADES list with multi-select combobox replaces CSI codes on all subcontractor surfaces (form, list filter/badges, detail, command palette) — v1.7
 
+**v1.8 New Project Page Stage 1 (Phases 53-56):**
+- ✓ New project form rebuilt — click-to-edit Project Number widget, Building Dimensions section with sqft auto-compute, Customer Budget field; Team Members/Project Phases/CSI Cost Codes sections removed; address placeholder updated — v1.8
+- ✓ 5 nullable DB columns added to projects across all tenants (`customer_budget`, `building_width`, `building_length`, `building_height`, `building_sqft`) with idempotent migration — v1.8
+- ✓ Financial KPI stat bar — `getHeaderStats` extended with Projected Profit/Margin/Customer Budget delta; Start/End date pickers in header Row 2; Team Members KPI removed — v1.8
+- ✓ `project_notes` table + `notesRouter` (list/create/delete with ownership enforcement, reverse-chron, 500-char limit) — multi-tenant migration, registered in `appRouter` — v1.8
+- ✓ Overview tab rebuilt — KPI cards, Customer Info, Project Phases removed; flat Dimensions grid, compact Team Members with title-case roles, functional Notes section — v1.8
+- ✓ Documents tab — `document.update` mutation (extension-preserving rename, duplicate check, CASL); 7-column table with inline edit; PDF inline preview via `forPreview` flag; file Type filter; Status column/filter removed — v1.8
+
 ### Active
 
-## Current Milestone: v1.8 New Project Page Stage 1
-
-**Goal:** Streamline the new project creation form and overhaul the project detail experience — cleaner form, financial KPIs, building dimensions, notes, and document editing.
-
-**Target features:**
-- New Project Form: remove legacy sections, condense Project Number, add Customer Budget + Building Dimensions
-- Project Detail Header: add Start/End dates, Profit/Margin/Budget KPIs, remove Team Members KPI
-- Overview Tab: remove KPI cards, clean up Team Members display, add Notes section
-- Documents Tab: document editing (name + type), remove Status field
+*(Empty — next milestone requirements defined via `/gsd:new-milestone`)*
 
 ### Out of Scope
 
@@ -163,7 +163,7 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 
 **Market:** Small-to-mid-sized commercial contractors are underserved. Enterprise tools (Procore, Sage) are expensive and complex. Smaller tools lack multi-company collaboration and financial depth. The gap is a platform that handles the full GC↔Sub lifecycle affordably.
 
-**Current status:** v1.8 in progress (started Feb 24, 2026) — v1.0–v1.7 shipped; building new project form + project detail overhaul. ~195K+ lines of TypeScript across 52 phases.
+**Current status:** v1.8 shipped (Feb 25, 2026) — v1.0–v1.8 complete; planning next milestone. ~197K+ lines of TypeScript across 56 phases.
 
 **Known technical debt:**
 - Phase 27 VERIFICATION.md never generated (UAT summary serves as substitute)
@@ -174,6 +174,7 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 - `billingCategory` DB column deferred; Phase 36 shows Cost Type (UI-only bridge) — full billing category deferred to v2.0
 - SendToCustomerDialog captures recipients/subject/note but discards them (intentional — email backend deferred to future milestone; status-update-only per v1.7 spec)
 - Dead code preserved from v1.7: setModeMutation/handleModeSwitch functions, Badge import, prefetch handlers for removed GC routes (budget/sov/commitments/payment-apps/rfqs), isValidTransition export in lifecycle-state-machine.ts, stale breadcrumb keys (bids/financials), stale JSDoc in transitionLifecyclePhase router
+- `project.update` handler missing write blocks for `buildingWidth/Length/Height/Sqft` — dimensions set at creation are preserved but cannot be updated via edit page (4-line fix deferred to v1.9)
 
 **Go-to-market:** Both GCs and subs need to find value from day one. GCs use the platform to issue RFQs and manage project financials. Subs use it to respond to RFQs and manage their own projects/bids. Free sub accounts (profile + RFQ response + limited projects) create network effects.
 
@@ -254,6 +255,18 @@ A GC can issue an RFQ, subs can respond with bids, and both can manage the full 
 | Preserve old trades JSONB (number[]) column; new trade JSONB (string[]) column separate (Phase 52) | RFQ procedures query old trades column; migration only adds columns, never removes — zero RFQ regression risk | ✓ Good |
 | useForm<any> with zodResolver in SubcontractorForm (Phase 52) | AddressInput requires nested address.* paths; flat Zod schema requires top-level fields; runtime validation via zodResolver preserves correctness | ✓ Good |
 | TanStack Table row model factories at module level, not inline (Phase 52 bug fix) | Inline factory calls create new references every render; TanStack Table's useLayoutEffect detects reference changes and loops infinitely when data transitions through undefined | ✓ Good |
+| All new project columns nullable (no DEFAULT, no NOT NULL) for backward compat (Phase 53) | Existing projects get null values for new fields — no migration failures, no defaults needed | ✓ Good |
+| buildingSqft excluded from Zod schema; server-computed as width × length on create (Phase 53) | Prevents user from submitting a sqft value that disagrees with width × length | ✓ Good |
+| projectedProfit = estimateTotal − (directCosts + overheadAmount) from accepted estimate only (Phase 54) | CO revenue excluded from cost side to avoid profit inflation; actual profit deferred until Expenses built | ✓ Good |
+| Margin returned as decimal (e.g. 0.185) from API; UI layer converts to percentage for display (Phase 54) | Avoids format coupling between API and presentation layer | ✓ Good |
+| DatePickerField fires trpc.project.update.useMutation (not updateProject — actual procedure name is update) (Phase 54) | Correct procedure name is `update`; plan had typo; auto-fixed during execution | ✓ Good |
+| Notes use hard delete (no soft delete); ownership enforced server-side; trash icon visible to all (Phase 55) | Server enforces delete permission — simpler client, correct security boundary | ✓ Good |
+| Overview tab section layout: space-y-8 only, no Card wrappers, no section dividers (Phase 55) | Clean flat layout; section headings + spacing provide all visual separation needed | ✓ Good |
+| document.update file extension preserved from existing doc name (not user input) (Phase 56) | User always edits display name only; extension reconstruction transparent to the user | ✓ Good |
+| No audit log on document.update (Phase 56) | Consistent with Phase 55 notes router precedent — keep simple, no audit trail for name/category edits | ✓ Good |
+| Inline edit Save/Cancel buttons replace DocumentRowMenu in Actions cell while editing (Phase 56) | Prevents conflicting UI states; single-row edit constraint enforced at editingId state level | ✓ Good |
+| forPreview flag on getDownloadUrl omits filename from generateDownloadUrl (Phase 56) | Omitting filename removes Content-Disposition: attachment header → browser renders PDF inline | ✓ Good |
+| File type filter applied client-side in page.tsx via useMemo (Phase 56) | API's listUnified doesn't filter by extension; client-side filter avoids API change for simple extension matching | ✓ Good |
 
 ---
-*Last updated: 2026-02-24 — v1.8 milestone started*
+*Last updated: 2026-02-25 — v1.8 milestone complete*
