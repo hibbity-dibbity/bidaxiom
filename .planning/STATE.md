@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.8 New Project Page Stage 1 — Phase 53 ready to plan
+**Current focus:** v1.8 New Project Page Stage 1 — Phase 54 up next
 
 ## Current Position
 
-Phase: 53 of 56 (New Project Form Cleanup + Schema)
+Phase: 54 of 56 (Project Header Updates)
 Plan: — of TBD
 Status: Ready to plan
-Last activity: 2026-02-24 — v1.8 roadmap created; 4 phases defined (53-56), 29/29 requirements mapped
+Last activity: 2026-02-24 — Phase 53 complete (DB migration + form rewrite, UAT passed)
 
-Progress: v1.8: [░░░░░░░░░░] 0% (0 phases complete)
+Progress: v1.8: [██░░░░░░░░] 25% (1/4 phases complete)
 
 ## Performance Metrics
 
@@ -30,6 +30,7 @@ Progress: v1.8: [░░░░░░░░░░] 0% (0 phases complete)
 - Phase 50: 4 plans complete — send email infrastructure, SendToCustomerDialog, proposal + CO detail header rewrites
 - Phase 51: 2 plans complete — removed isValidTransition guard, optimistic badge update with spinner
 - Phase 52: 4 plans complete — SIMPLE_TRADES constant + DB migration, tRPC updates, TradeCombobox, list/detail/command-palette surfaces
+- Phase 53: 2 plans complete — 5 new DB columns (customer_budget, building dimensions, sqft), form rewrite (click-to-edit job number, dimensions + budget fields, no legacy sections)
 
 *Updated after each plan completion*
 

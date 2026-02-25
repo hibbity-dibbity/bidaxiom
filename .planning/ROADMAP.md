@@ -162,7 +162,7 @@
 
 ### Phases
 
-- [ ] **Phase 53: New Project Form Cleanup + Schema** — Remove legacy sections, condense Project Number, add Customer Budget and Building Dimensions, DB migration for new columns
+- [x] **Phase 53: New Project Form Cleanup + Schema** — Remove legacy sections, condense Project Number, add Customer Budget and Building Dimensions, DB migration for new columns
 - [ ] **Phase 54: Project Header Updates** — Add Start/End date pickers, remove Team Members KPI, add Profit/Margin/Budget KPIs
 - [ ] **Phase 55: Overview Tab Redesign + Notes** — Remove KPI cards and Customer Info, update Project Details with dimensions, clean Team Members table, remove Project Phases, add Notes section
 - [ ] **Phase 56: Documents Tab Cleanup** — Add document name/type editing, remove Status column and filter
@@ -222,7 +222,7 @@ Plans:
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 53. New Project Form Cleanup + Schema | v1.8 | 0/TBD | Not started | - |
+| 53. New Project Form Cleanup + Schema | v1.8 | 2/2 | Complete | 2026-02-24 |
 | 54. Project Header Updates | v1.8 | 0/TBD | Not started | - |
 | 55. Overview Tab Redesign + Notes | v1.8 | 0/TBD | Not started | - |
 | 56. Documents Tab Cleanup | v1.8 | 0/TBD | Not started | - |
