@@ -1251,6 +1251,18 @@ export function createTenantSchema(schemaName: string) {
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   });
 
+  /**
+   * Project notes
+   * Free-form team notes per project. Hard delete (no soft delete).
+   */
+  const projectNotes = schema.table("project_notes", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+    userId: text("user_id").notNull(), // Clerk/internal user ID (ctx.userId)
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
   return {
     schema,
     auditLogs,
@@ -1314,6 +1326,7 @@ export function createTenantSchema(schemaName: string) {
     projectLifecycleTransitions,
     documentNamingCounters,
     documentTemplates,
+    projectNotes,
   };
 }
 
