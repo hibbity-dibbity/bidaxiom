@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** A GC can issue an RFQ, subs can respond with bids, and both can manage the full project financial lifecycle (budget → change orders → pay applications) in one platform — with AI drafting assistance embedded throughout.
-**Current focus:** v1.8 New Project Page Stage 1 — Phase 55 complete (human-verified)
+**Current focus:** v1.8 New Project Page Stage 1 — Phase 56 Plan 01 complete
 
 ## Current Position
 
-Phase: 55 of 56 (Overview Tab Redesign + Notes)
-Plan: 03 complete — Phase 55 COMPLETE (all plans + human verification done)
-Status: Complete
-Last activity: 2026-02-25 — Phase 55 Plan 03 complete (human verification approved — all Overview tab criteria pass)
+Phase: 56 of 56 (Documents Tab Cleanup)
+Plan: 01 complete — document.update API + Status filter removal
+Status: In Progress
+Last activity: 2026-02-25 — Phase 56 Plan 01 complete (document.update mutation + Status filter stripped)
 
-Progress: v1.8: [██████░░░░] 75% (3/4 phases complete; Phase 56 up next)
+Progress: v1.8: [██████░░░░] 75% (Phase 56 in progress — Plan 01/N complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 195
+- Total plans completed: 196
 - Average duration: ~4.3 min/plan
 - Total execution time: ~11.8 hours
 
@@ -29,6 +29,7 @@ Progress: v1.8: [██████░░░░] 75% (3/4 phases complete; Phase
 - Phase 55 Plan 01: project_notes table + notesRouter (list/create/delete) — API foundation for Overview tab Notes section (~6 min)
 - Phase 55 Plan 02: Overview tab complete rewrite — stripped 5 sections, rebuilt Project Details/Team Members/Notes (~8 min)
 - Phase 55 Plan 03: Human verification checkpoint — all 5 Overview tab criteria confirmed passing (<1 min)
+- Phase 56 Plan 01: document.update mutation (extension-preserving rename, duplicate check, CASL) + Status filter removal from DocumentFilters (~8 min)
 
 *Updated after each plan completion*
 
@@ -47,6 +48,9 @@ Recent decisions relevant to v1.8:
 - Phase 55: Notes use hard delete (no soft delete); author name computed in JS from LEFT JOIN; 500-char limit at Zod layer only
 - Phase 55: Trash icon shown on all notes regardless of author — server enforces ownership on delete (simpler client, correct security boundary)
 - Phase 55: Overview tab section layout: no Card wrappers, no headings, no dividers — space-y-8 provides all separation
+- Phase 56-01: document.update file extension preserved from existing doc name (not user input) — user edits display name only
+- Phase 56-01: No audit log on document.update (consistent with Phase 55 notes router precedent)
+- Phase 56-01: status field removed from DocumentFilters; page.tsx cleanup deferred to Plan 02 as designed
 
 ### Pending Todos
 
@@ -55,9 +59,10 @@ None.
 ### Blockers/Concerns
 
 - Clerk webhook secret is still placeholder (`whsec_xxx`). Tenant auto-provisioning via webhooks won't work until configured with real secret from Clerk dashboard.
+- documents/page.tsx has one new TS error (status not in DocumentFilters) — intentional, fixed in Plan 02
 
 ## Session Continuity
 
 Last session: 2026-02-25
-Stopped at: Completed 55-03-PLAN.md — Human verification approved; Phase 55 fully complete
+Stopped at: Completed 56-01-PLAN.md — document.update mutation + Status filter removal done
 Resume file: None
