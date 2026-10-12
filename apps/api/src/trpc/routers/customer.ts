@@ -201,11 +201,11 @@ export const customerRouter = router({
           phone: input.phone || null,
           email: input.email || null,
           address: null, // Legacy column - no longer used
-          street1: input.address?.street1 || null,
-          street2: input.address?.street2 || null,
-          city: input.address?.city || null,
-          state: input.address?.state || null,
-          zip: input.address?.zipCode || null,
+          street1: input.street1 || null,
+          street2: input.street2 || null,
+          city: input.city || null,
+          state: input.state || null,
+          zip: input.zip || null,
           createdBy: userId,
         })
         .returning();
@@ -274,15 +274,11 @@ export const customerRouter = router({
       if (input.contactName !== undefined) updateValues.contactName = input.contactName;
       if (input.phone !== undefined) updateValues.phone = input.phone;
       if (input.email !== undefined) updateValues.email = input.email;
-      if (input.address !== undefined) {
-        // Map structured address to DB columns
-        updateValues.address = null; // Legacy column - no longer used
-        updateValues.street1 = input.address.street1 || null;
-        updateValues.street2 = input.address.street2 || null;
-        updateValues.city = input.address.city || null;
-        updateValues.state = input.address.state || null;
-        updateValues.zip = input.address.zipCode || null;
-      }
+      if (input.street1 !== undefined) updateValues.street1 = input.street1 || null;
+      if (input.street2 !== undefined) updateValues.street2 = input.street2 || null;
+      if (input.city !== undefined) updateValues.city = input.city || null;
+      if (input.state !== undefined) updateValues.state = input.state || null;
+      if (input.zip !== undefined) updateValues.zip = input.zip || null;
 
       // Regenerate slug if name changed
       if (input.companyName !== undefined || input.contactName !== undefined) {
