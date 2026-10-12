@@ -67,7 +67,6 @@ export async function generateBidFromEstimate(
         amount: Number(item.unitCost) * Number(item.quantity),
       })),
       scopeNotes: `Estimate breakdown:\nDirect Costs: ${estimate.directCosts}\nOverhead: ${estimate.overheadAmount}\nMarkup: ${estimate.markupAmount}\nTotal: ${estimate.totalCost}`,
-      createdBy: input.userId,
     }).returning();
 
     // 5. Update bid with current version
