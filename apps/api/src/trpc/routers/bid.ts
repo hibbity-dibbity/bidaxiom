@@ -44,6 +44,20 @@ async function loadProjectAbilities(ctx: {
  * Bid management router.
  * Handles bid submission, versioning, comparison, leveling, and award-to-commitment conversion.
  */
+/**
+ * Estimate-based bids have no RFQ (rfqId is null). RFQ-scoped procedures call
+ * this to get a non-null id, failing with a clear error instead of querying null.
+ */
+function requireRfqId(bid: { rfqId: string | null }): string {
+  if (!bid.rfqId) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Bid is not linked to an RFQ",
+    });
+  }
+  return bid.rfqId;
+}
+
 export const bidRouter = router({
   /**
    * Submit a new bid against an RFQ.
@@ -449,18 +463,20 @@ export const bidRouter = router({
         });
       }
 
-      // Fetch RFQ details
-      const [rfq] = await db
-        .select({
-          id: schema.rfqs.id,
-          rfqNumber: schema.rfqs.rfqNumber,
-          title: schema.rfqs.title,
-          status: schema.rfqs.status,
-          projectId: schema.rfqs.projectId,
-        })
-        .from(schema.rfqs)
-        .where(eq(schema.rfqs.id, bid.rfqId))
-        .limit(1);
+      // Fetch RFQ details (estimate-based bids have no RFQ, so rfq stays undefined)
+      const [rfq] = bid.rfqId
+        ? await db
+            .select({
+              id: schema.rfqs.id,
+              rfqNumber: schema.rfqs.rfqNumber,
+              title: schema.rfqs.title,
+              status: schema.rfqs.status,
+              projectId: schema.rfqs.projectId,
+            })
+            .from(schema.rfqs)
+            .where(eq(schema.rfqs.id, bid.rfqId))
+            .limit(1)
+        : [];
 
       // Load abilities
       const abilities = await loadProjectAbilities({
@@ -812,7 +828,7 @@ export const bidRouter = router({
       const [rfq] = await db
         .select()
         .from(schema.rfqs)
-        .where(eq(schema.rfqs.id, bid.rfqId))
+        .where(eq(schema.rfqs.id, requireRfqId(bid)))
         .limit(1);
 
       if (!rfq) {
@@ -898,7 +914,7 @@ export const bidRouter = router({
       const [rfq] = await db
         .select()
         .from(schema.rfqs)
-        .where(eq(schema.rfqs.id, bid.rfqId))
+        .where(eq(schema.rfqs.id, requireRfqId(bid)))
         .limit(1);
 
       if (!rfq) {
@@ -962,7 +978,7 @@ export const bidRouter = router({
           status: "awarded",
           updatedAt: new Date(),
         })
-        .where(eq(schema.rfqs.id, bid.rfqId));
+        .where(eq(schema.rfqs.id, requireRfqId(bid)));
 
       // Convert to commitment if requested
       if (input.convertToCommitment) {
@@ -1018,7 +1034,7 @@ export const bidRouter = router({
         })
         .where(
           and(
-            eq(schema.bids.rfqId, bid.rfqId),
+            eq(schema.bids.rfqId, requireRfqId(bid)),
             sql`${schema.bids.id} != ${input.bidId}`,
             sql`${schema.bids.status} NOT IN ('withdrawn', 'rejected', 'awarded')`
           )
@@ -1092,11 +1108,14 @@ export const bidRouter = router({
         .limit(1);
 
       // Get all amendments for the RFQ
-      const amendments = await db
-        .select()
-        .from(schema.rfqAmendments)
-        .where(eq(schema.rfqAmendments.rfqId, bid.rfqId))
-        .orderBy(desc(schema.rfqAmendments.amendmentNumber));
+      // Estimate-based bids have no RFQ, so they have no amendments
+      const amendments = bid.rfqId
+        ? await db
+            .select()
+            .from(schema.rfqAmendments)
+            .where(eq(schema.rfqAmendments.rfqId, bid.rfqId))
+            .orderBy(desc(schema.rfqAmendments.amendmentNumber))
+        : [];
 
       // Check if there are unacknowledged amendments
       let unacknowledgedAmendments = amendments;
