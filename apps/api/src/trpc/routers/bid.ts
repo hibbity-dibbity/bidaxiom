@@ -227,6 +227,14 @@ export const bidRouter = router({
         });
       }
 
+      // Estimate-based bids have no RFQ, so there is no RFQ status to validate against
+      if (!bid.rfqId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Bid is not linked to an RFQ",
+        });
+      }
+
       // Fetch RFQ to validate status
       const [rfq] = await db
         .select()
