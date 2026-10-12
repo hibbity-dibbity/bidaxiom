@@ -1,4 +1,4 @@
-import type { TenantContext } from "../tenant/context.js";
+import type { RequestTenantContext } from "../tenant/context.js";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
@@ -10,7 +10,7 @@ import { TRPCError } from "@trpc/server";
  * at time of bid generation for historical accuracy.
  */
 export async function generateBidFromEstimate(
-  ctx: TenantContext,
+  ctx: RequestTenantContext,
   input: { estimateId: string; bidName: string; userId: string }
 ) {
   const { db, schema } = ctx.tenant;
