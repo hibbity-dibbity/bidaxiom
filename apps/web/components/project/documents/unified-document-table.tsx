@@ -19,7 +19,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/shared/status-badge";
+import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
@@ -219,7 +220,7 @@ export function UnifiedDocumentTable({
                   if (e.key === "Enter") saveEdit(row.original);
                   if (e.key === "Escape") cancelEdit();
                 }}
-                className="h-7 text-sm"
+                className="h-9 text-sm"
                 autoFocus
               />
               {editNameError && (
@@ -264,7 +265,7 @@ export function UnifiedDocumentTable({
               value={editCategory}
               onValueChange={(val) => setEditCategory(val)}
             >
-              <SelectTrigger className="h-7 text-sm w-36">
+              <SelectTrigger className="h-9 text-sm w-36">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -276,9 +277,9 @@ export function UnifiedDocumentTable({
               </SelectContent>
             </Select>
           ) : (
-            <Badge variant="secondary">
+            <StatusBadge variant="draft">
               {TYPE_LABELS[row.original.documentType] ?? row.original.documentType}
-            </Badge>
+            </StatusBadge>
           ),
       },
       // Created by column
@@ -406,9 +407,10 @@ export function UnifiedDocumentTable({
   }
 
   return (
-    <div className="rounded-md border">
+    <Card>
+      <div className="relative w-full overflow-auto max-h-[70vh]">
       <Table>
-        <TableHeader>
+        <TableHeader className="sticky top-0 z-20 bg-background">
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
@@ -425,7 +427,7 @@ export function UnifiedDocumentTable({
           {table.getRowModel().rows.map((row) => (
             <TableRow key={row.id} className="hover:bg-muted/50">
               {row.getVisibleCells().map((cell) => (
-                <TableCell key={cell.id} className="py-2 text-sm">
+                <TableCell key={cell.id}>
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </TableCell>
               ))}
@@ -433,6 +435,7 @@ export function UnifiedDocumentTable({
           ))}
         </TableBody>
       </Table>
-    </div>
+      </div>
+    </Card>
   );
 }

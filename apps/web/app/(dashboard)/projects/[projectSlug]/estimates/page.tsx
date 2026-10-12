@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -17,8 +18,9 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
+import { PageHeader } from "@/components/shared/page-header";
 import { useDebounce } from "@/hooks/use-debounce";
-import { Download, FileText, Plus, Search, SearchX } from "lucide-react";
+import { ChevronRight, Download, FileText, Plus, Search, SearchX } from "lucide-react";
 import { formatCurrency } from "@construction/shared";
 import { format } from "date-fns";
 
@@ -28,6 +30,7 @@ export default function EstimatesPage({
   params: { projectSlug: string };
 }) {
   const { projectSlug } = params;
+  const router = useRouter();
   const [searchInput, setSearchInput] = useState("");
   const debouncedSearch = useDebounce(searchInput, 300);
 
@@ -86,26 +89,29 @@ export default function EstimatesPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Proposals</h1>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={exportCsv}
-            disabled={displayedEstimates.length === 0}
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Export CSV
-          </Button>
-          <Button asChild>
-            <Link href={`/projects/${projectSlug}/estimates/new`}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Proposal
-            </Link>
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Proposals"
+        description="Pricing proposals for this project"
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportCsv}
+              disabled={displayedEstimates.length === 0}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Export CSV
+            </Button>
+            <Button asChild>
+              <Link href={`/projects/${projectSlug}/estimates/new`}>
+                <Plus className="mr-2 h-4 w-4" />
+                New Proposal
+              </Link>
+            </Button>
+          </>
+        }
+      />
 
       {/* Search bar — only show when there are estimates to search */}
       {estimates && estimates.length > 0 && (
@@ -122,8 +128,9 @@ export default function EstimatesPage({
 
       {displayedEstimates.length > 0 ? (
         <Card>
+          <div className="relative w-full overflow-auto max-h-[70vh]">
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 z-20 bg-background">
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Status</TableHead>
@@ -134,7 +141,13 @@ export default function EstimatesPage({
             </TableHeader>
             <TableBody>
               {displayedEstimates.map((estimate) => (
-                <TableRow key={estimate.id}>
+                <TableRow
+                  key={estimate.id}
+                  className="cursor-pointer"
+                  onClick={() =>
+                    router.push(`/projects/${projectSlug}/estimates/${estimate.slug}`)
+                  }
+                >
                   <TableCell className="font-medium">{estimate.name}</TableCell>
                   <TableCell>
                     <StatusBadge
@@ -155,17 +168,14 @@ export default function EstimatesPage({
                     {formatCurrency(parseFloat(estimate.totalCost || "0"))}
                   </TableCell>
                   <TableCell>{format(new Date(estimate.createdAt), "MMM d, yyyy")}</TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link href={`/projects/${projectSlug}/estimates/${estimate.slug}`}>
-                        View
-                      </Link>
-                    </Button>
+                  <TableCell className="w-[48px]">
+                    <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" />
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
+          </div>
         </Card>
       ) : (
         <EmptyState

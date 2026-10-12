@@ -12,8 +12,10 @@ import {
 import { trpc } from "@/lib/trpc";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { PageHeader } from "@/components/shared/page-header";
 import { CurrencyDisplay } from "@/components/shared/currency-display";
 import { EmptyState } from "@/components/shared/empty-state";
 import { FilterChips, type FilterChip } from "@/components/shared/filter-chips";
@@ -268,6 +270,27 @@ export function ChangeOrderList({ projectId, projectSlug }: ChangeOrderListProps
 
   return (
     <div className="space-y-4">
+      <PageHeader
+        title="Change Orders"
+        description="Scope changes and amendments to the original contract"
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportCsv}
+              disabled={table.getRowModel().rows.length === 0}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Export CSV
+            </Button>
+            <Button onClick={handleNavigateToNew}>
+              <Plus className="mr-2 h-4 w-4" />
+              New Change Order
+            </Button>
+          </>
+        }
+      />
       <div className="space-y-2">
         {/* Search bar */}
         <div className="relative">
@@ -309,20 +332,6 @@ export function ChangeOrderList({ projectId, projectSlug }: ChangeOrderListProps
               </Select>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={exportCsv}
-              disabled={table.getRowModel().rows.length === 0}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Export CSV
-            </Button>
-            <Button onClick={handleNavigateToNew}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Change Order
-            </Button>
-          </div>
         </div>
         {/* Filter chips */}
         <FilterChips chips={activeChips} onClearAll={clearAllFilters} />
@@ -348,7 +357,8 @@ export function ChangeOrderList({ projectId, projectSlug }: ChangeOrderListProps
           }
         />
       ) : (
-        <div className="border rounded-md relative w-full overflow-auto max-h-[70vh]">
+        <Card>
+        <div className="relative w-full overflow-auto max-h-[70vh]">
           <Table>
             <TableHeader className="sticky top-0 z-20 bg-background">
               {table.getHeaderGroups().map((headerGroup) => (
@@ -479,6 +489,7 @@ export function ChangeOrderList({ projectId, projectSlug }: ChangeOrderListProps
             </TableFooter>
           </Table>
         </div>
+        </Card>
       )}
 
       <Dialog

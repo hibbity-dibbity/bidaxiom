@@ -31,10 +31,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, ChevronsUpDown, ChevronUp, ChevronDown, Download, HardHat, SearchX } from "lucide-react";
+import { ChevronRight, Plus, ChevronsUpDown, ChevronUp, ChevronDown, Download, HardHat, SearchX } from "lucide-react";
 import { SIMPLE_TRADES } from "@construction/shared";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
+import { PageHeader } from "@/components/shared/page-header";
 import { FilterChips, type FilterChip } from "@/components/shared/filter-chips";
 import type { SubcontractorStatus } from "@construction/shared";
 
@@ -183,30 +184,27 @@ export default function SubcontractorsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Subcontractor Directory</h1>
-          <p className="text-muted-foreground">
-            Manage your subcontractor relationships and bid history
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={exportCsv}
-            disabled={table.getRowModel().rows.length === 0}
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Export CSV
-          </Button>
-          <Button onClick={() => router.push("/subcontractors/new")}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Subcontractor
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Subcontractor Directory"
+        description="Manage your subcontractor relationships and bid history"
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportCsv}
+              disabled={table.getRowModel().rows.length === 0}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Export CSV
+            </Button>
+            <Button onClick={() => router.push("/subcontractors/new")}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Subcontractor
+            </Button>
+          </>
+        }
+      />
 
       {/* Filters */}
       <Card>
@@ -300,6 +298,7 @@ export default function SubcontractorsPage() {
                         </TableHead>
                       );
                     })}
+                  <TableHead className="w-[48px]" />
                   </TableRow>
                 ))}
               </TableHeader>
@@ -345,6 +344,9 @@ export default function SubcontractorsPage() {
                       <StatusBadge variant={subStatusToVariant(row.original.status)}>
                         {getStatusLabel(row.original.status)}
                       </StatusBadge>
+                    </TableCell>
+                    <TableCell className="w-[48px]">
+                      <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" />
                     </TableCell>
                   </TableRow>
                 ))}

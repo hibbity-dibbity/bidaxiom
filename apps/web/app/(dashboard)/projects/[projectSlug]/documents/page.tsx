@@ -12,6 +12,7 @@ import { BulkActionBar } from "@/components/project/documents/bulk-action-bar";
 import type { DocumentFilters as DocumentFiltersType } from "@/components/project/documents/document-filters";
 import { DocumentUploader } from "@/components/project/document-uploader";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/shared/page-header";
 import { Upload } from "lucide-react";
 
 const KNOWN_EXTENSIONS = ["pdf", "docx", "doc", "xlsx", "xls", "png", "jpg", "jpeg"];
@@ -130,18 +131,21 @@ export default function ProjectDocumentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Documents</h1>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => setShowUploader((prev) => !prev)}
-          disabled={!projectId}
-        >
-          <Upload className="mr-2 h-4 w-4" />
-          {showUploader ? "Cancel" : "Upload"}
-        </Button>
-      </div>
+      <PageHeader
+        title="Documents"
+        description="Drawings, specs, RFIs, submittals, and other project files"
+        actions={
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowUploader((prev) => !prev)}
+            disabled={!projectId}
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            {showUploader ? "Cancel" : "Upload"}
+          </Button>
+        }
+      />
       <DocumentFilters
         filters={currentFilters}
         onChange={handleFilterChange}

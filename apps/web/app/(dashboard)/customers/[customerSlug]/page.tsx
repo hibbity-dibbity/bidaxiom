@@ -182,7 +182,7 @@ export default function CustomerDetailPage({
             ) : (
               <User className="h-8 w-8 text-muted-foreground" />
             )}
-            <h1 className="text-3xl font-bold tracking-tight">{displayName}</h1>
+            <h1 className="text-2xl font-bold tracking-tight">{displayName}</h1>
           </div>
           {customer.companyName && (
             <p className="text-muted-foreground">Contact: {customer.contactName}</p>

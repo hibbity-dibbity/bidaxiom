@@ -2,9 +2,10 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -24,9 +25,10 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { RfqStatusBadge } from "@/components/bidding/rfq-status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
+import { PageHeader } from "@/components/shared/page-header";
 import { FilterChips, type FilterChip } from "@/components/shared/filter-chips";
 import { useDebounce } from "@/hooks/use-debounce";
-import { Download, Plus, Search, SearchX, FileQuestion } from "lucide-react";
+import { ChevronRight, Download, Plus, Search, SearchX, FileQuestion } from "lucide-react";
 import type { RfqStatus } from "@construction/shared";
 
 const CSI_DIVISION_MAP: Record<number, string> = {
@@ -58,6 +60,7 @@ export default function RfqsPage({
   params: { projectSlug: string };
 }) {
   const { projectSlug } = params;
+  const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<RfqStatus | "all">("all");
   const [searchInput, setSearchInput] = useState("");
   const debouncedSearch = useDebounce(searchInput, 300);
@@ -125,7 +128,7 @@ export default function RfqsPage({
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-6 space-y-6">
+      <div className="space-y-6">
         <Skeleton className="h-12 w-64" />
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-96 w-full" />
@@ -138,30 +141,30 @@ export default function RfqsPage({
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Requests for Quotation</h1>
-          <p className="text-muted-foreground mt-1">{project.name}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={exportCsv}
-            disabled={filteredRfqs.length === 0}
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Export CSV
-          </Button>
-          <Button asChild>
-            <Link href={`/projects/${projectSlug}/rfqs/new`}>
-              <Plus className="h-4 w-4 mr-2" />
-              New RFQ
-            </Link>
-          </Button>
-        </div>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Requests for Quotation"
+        description={project.name}
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportCsv}
+              disabled={filteredRfqs.length === 0}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Export CSV
+            </Button>
+            <Button asChild>
+              <Link href={`/projects/${projectSlug}/rfqs/new`}>
+                <Plus className="mr-2 h-4 w-4" />
+                New RFQ
+              </Link>
+            </Button>
+          </>
+        }
+      />
 
       <div className="space-y-2">
         {/* Search bar */}
@@ -199,29 +202,28 @@ export default function RfqsPage({
 
       {filteredRfqs.length > 0 ? (
         <Card>
-          <CardContent className="p-0">
+          <div className="relative w-full overflow-auto max-h-[70vh]">
             <Table>
-              <TableHeader>
+              <TableHeader className="sticky top-0 z-20 bg-background">
                 <TableRow>
-                  <TableHead>RFQ #</TableHead>
+                  <TableHead className="sticky left-0 z-30 bg-background border-r">RFQ #</TableHead>
                   <TableHead>Title</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Trades</TableHead>
                   <TableHead>Due Date</TableHead>
                   <TableHead>Bids</TableHead>
                   <TableHead>Created</TableHead>
+                  <TableHead className="w-[48px]" />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredRfqs.map((rfq) => (
                   <TableRow
                     key={rfq.id}
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() =>
-                      (window.location.href = `/projects/${projectSlug}/rfqs/${rfq.id}`)
-                    }
+                    className="cursor-pointer"
+                    onClick={() => router.push(`/projects/${projectSlug}/rfqs/${rfq.id}`)}
                   >
-                    <TableCell className="font-mono font-medium">
+                    <TableCell className="sticky left-0 z-10 bg-background border-r font-mono font-medium">
                       {rfq.rfqNumber}
                     </TableCell>
                     <TableCell className="font-medium">{rfq.title}</TableCell>
@@ -254,11 +256,14 @@ export default function RfqsPage({
                     <TableCell className="text-muted-foreground">
                       {new Date(rfq.createdAt).toLocaleDateString()}
                     </TableCell>
+                    <TableCell className="w-[48px]">
+                      <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-          </CardContent>
+          </div>
         </Card>
       ) : (
         <EmptyState
