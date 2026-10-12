@@ -1107,7 +1107,7 @@ export const estimatesRouter = router({
         });
       }
 
-      return await generateBidFromEstimate(ctx, {
+      return await generateBidFromEstimate({ tenant: ctx.tenant }, {
         ...input,
         userId: ctx.userId,
       });
