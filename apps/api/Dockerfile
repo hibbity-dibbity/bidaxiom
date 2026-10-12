@@ -6,14 +6,15 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends chromium fonts-liberation ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
-ENV NODE_ENV=production \
-    PUPPETEER_SKIP_DOWNLOAD=true \
+ENV PUPPETEER_SKIP_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 WORKDIR /app
 COPY . .
-# Keep devDependencies: the API imports the TypeScript source of @construction/shared and runs via tsx.
+# Install devDependencies too: the API imports the TypeScript source of @construction/shared and runs via tsx.
+# NODE_ENV is set only after install, because npm ci skips devDependencies when NODE_ENV=production.
 RUN npm ci
+ENV NODE_ENV=production
 
 WORKDIR /app/apps/api
 EXPOSE 10000
