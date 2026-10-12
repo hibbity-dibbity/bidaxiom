@@ -44,7 +44,7 @@ import {
 } from "@/components/ui/form";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { AddressInput } from "@/components/ui/address-input";
-import { Plus, Edit, Trash2, Building2, User, Mail, Phone, MapPin, ChevronsUpDown, ChevronUp, ChevronDown, Search, SearchX } from "lucide-react";
+import { Plus, ChevronRight, Building2, User, Mail, Phone, MapPin, ChevronsUpDown, ChevronUp, ChevronDown, Search, SearchX } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/shared/empty-state";
 import { createCustomerSchema } from "@construction/shared";
@@ -110,16 +110,6 @@ export default function CustomersPage() {
     },
   });
 
-  const deleteMutation = trpc.customer.delete.useMutation({
-    onSuccess: () => {
-      utils.customer.list.invalidate();
-      toast.success("Customer deleted successfully");
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to delete customer");
-    },
-  });
-
   const handleAdd = () => {
     form.reset({
       companyName: "",
@@ -154,12 +144,6 @@ export default function CustomersPage() {
       },
     });
     setEditDialogOpen(true);
-  };
-
-  const handleDelete = (customer: Customer) => {
-    if (confirm(`Are you sure you want to delete ${customer.companyName || customer.contactName}?`)) {
-      deleteMutation.mutate({ id: customer.id });
-    }
   };
 
   const handleSubmitAdd = (data: CustomerFormData) => {
@@ -376,22 +360,7 @@ export default function CustomersPage() {
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(row.original)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(row.original)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" />
                     </TableCell>
                   </TableRow>
                 ))}

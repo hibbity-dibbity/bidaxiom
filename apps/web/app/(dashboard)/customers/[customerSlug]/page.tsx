@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/form";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { AddressInput } from "@/components/ui/address-input";
-import { ChevronRight, Building2, User, Mail, Phone, MapPin, Briefcase, Edit } from "lucide-react";
+import { ChevronRight, Building2, User, Mail, Phone, MapPin, Briefcase, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { createCustomerSchema } from "@construction/shared";
 import type { ProjectStatus } from "@construction/shared";
@@ -84,6 +84,24 @@ export default function CustomerDetailPage({
       toast.error(error.message || "Failed to update customer");
     },
   });
+
+  const deleteMutation = trpc.customer.delete.useMutation({
+    onSuccess: () => {
+      utils.customer.list.invalidate();
+      toast.success("Customer deleted successfully");
+      router.push("/customers");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to delete customer");
+    },
+  });
+
+  const handleDelete = () => {
+    if (!customer) return;
+    if (confirm(`Are you sure you want to delete ${customer.companyName || customer.contactName}?`)) {
+      deleteMutation.mutate({ id: customer.id });
+    }
+  };
 
   const handleEdit = () => {
     if (!customer) return;
@@ -192,6 +210,10 @@ export default function CustomerDetailPage({
           <Button variant="outline" onClick={handleEdit}>
             <Edit className="mr-2 h-4 w-4" />
             Edit
+          </Button>
+          <Button variant="destructive" onClick={handleDelete} disabled={deleteMutation.isPending}>
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete
           </Button>
           <Button variant="outline" asChild>
             <Link href="/customers">Back to Customers</Link>
