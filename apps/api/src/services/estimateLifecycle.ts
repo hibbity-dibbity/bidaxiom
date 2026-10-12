@@ -1,4 +1,10 @@
-import type { EstimateStatus, BidStatus } from "@construction/shared";
+import type { EstimateStatus } from "@construction/shared";
+
+/**
+ * Estimate-linked bid statuses (bids table workflow: draft → submitted → won/lost).
+ * Local to this module: the shared BidStatus describes RFQ bid review, not this flow.
+ */
+type BidStatus = "draft" | "submitted" | "won" | "lost" | "withdrawn";
 
 /**
  * Valid status transitions for estimates
