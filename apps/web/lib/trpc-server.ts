@@ -6,7 +6,10 @@
 import { createTRPCProxyClient, httpLink } from "@trpc/client";
 import type { AppRouter } from "../../../api/src/trpc/router";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+// Server-side code may need a different address than the browser (e.g. the Docker
+// network name). Falls back to the public URL when API_INTERNAL_URL isn't set.
+const API_URL =
+  process.env.API_INTERNAL_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 export function createServerTRPCClient(token?: string) {
   const headers = token

@@ -27,6 +27,9 @@ services:
       API_PORT: "3001"
       DATABASE_URL: postgresql://construction:construction_dev@postgres:5432/construction_mgmt
       REDIS_URL: redis://redis:6379
+      # The BullMQ workers (reports, QuickBooks, calendar) read host/port, not REDIS_URL.
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
       S3_ENDPOINT: http://minio:9000
       S3_REGION: us-east-1
       S3_ACCESS_KEY_ID: minioadmin
@@ -58,3 +61,5 @@ services:
       PORT: "3000"
       SESSION_SECRET: local-dev-session-secret-change-me-01234
       NEXT_PUBLIC_API_URL: http://localhost:3001
+      # Server-side calls from inside the web container reach the API by its service name.
+      API_INTERNAL_URL: http://api:3001
