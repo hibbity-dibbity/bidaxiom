@@ -185,7 +185,7 @@ export const estimateTemplatesRouter = router({
         // Personal templates require company to allow it
         const [companyProfile] = await db
           .select()
-          .from(schema.companyProfile)
+          .from(schema.companyProfiles)
           .orderBy(sql`valid_from DESC`)
           .limit(1);
 
@@ -454,7 +454,7 @@ export const estimateTemplatesRouter = router({
         // Personal templates require company to allow it
         const [companyProfile] = await db
           .select()
-          .from(schema.companyProfile)
+          .from(schema.companyProfiles)
           .orderBy(sql`valid_from DESC`)
           .limit(1);
 

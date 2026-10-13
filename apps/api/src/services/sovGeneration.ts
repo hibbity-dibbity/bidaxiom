@@ -132,7 +132,7 @@ export function groupByPaymentSchedule(lineItems: any[]): Map<string, any[]> {
 export async function generateSOVFromEstimate(
   estimateId: string,
   groupingMethod: "csi" | "phase" | "payment_schedule",
-  db: NodePgDatabase,
+  db: NodePgDatabase<any>,
   tenantSchema: TenantSchema
 ): Promise<SOVLineItem[]> {
   // 1. Fetch estimate

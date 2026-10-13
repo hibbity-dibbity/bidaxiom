@@ -1037,7 +1037,10 @@ export const estimatesRouter = router({
   convertToProject: protectedProcedure
     .input(z.object({ estimateId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      return await convertEstimateToProject(ctx, {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "Not signed in" });
+      }
+      return await convertEstimateToProject({ tenant: ctx.tenant }, {
         estimateId: input.estimateId,
         userId: ctx.userId,
       });
