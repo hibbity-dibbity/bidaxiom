@@ -1,0 +1,696 @@
+"use client";
+
+import * as React from "react";
+import { ChevronRight, Loader2, Check, X } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { StatusBadge } from "@/components/shared/status-badge";
+import { cn } from "@/lib/utils";
+import {
+  PAYMENT_TERMS,
+  computeProposal,
+  computeSchedule,
+  milestonesTotal100,
+  type CostLineInput,
+} from "@construction/shared";
+import { NumField } from "./num-field";
+import {
+  COST_TYPES,
+  MAX_MARGIN,
+  VISIBILITY_LABEL,
+  VISIBILITY_NEXT,
+  VISIBILITY_TONE,
+  type BuilderGlobal,
+  type BuilderLine,
+  type BuilderMilestone,
+  type BuilderSettings,
+  type Visibility,
+} from "./builder-types";
+
+const COLS =
+  "grid-cols-[300px_112px_168px_72px_60px_104px_112px_84px_116px_116px_124px_148px_36px]";
+
+const cellInput =
+  "h-7 w-full rounded border border-transparent bg-transparent px-1.5 text-sm text-foreground hover:border-border focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-60";
+const fieldInput =
+  "h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-60";
+const smallField =
+  "h-8 w-full rounded-md border border-input bg-background px-2 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-60";
+const labelText = "text-xs font-semibold uppercase tracking-wider text-muted-foreground";
+
+const money = (cents: number) =>
+  (cents / 100).toLocaleString("en-US", { style: "currency", currency: "USD" });
+const clampMargin = (n: number) => Math.min(Math.max(n, 0), MAX_MARGIN);
+const newId = () => crypto.randomUUID();
+
+type SaveState = { kind: "idle" } | { kind: "saving" } | { kind: "saved" } | { kind: "error"; message: string };
+
+interface Props {
+  projectSlug: string;
+  estimateSlug: string;
+}
+
+export function ProposalBuilder({ estimateSlug }: Props) {
+  const { data: estimate, isLoading: estimateLoading } = trpc.estimates.getBySlug.useQuery({
+    slug: estimateSlug,
+  });
+  const estimateId = estimate?.id ?? "";
+  const { data, isLoading: proposalLoading } = trpc.proposal.get.useQuery(
+    { estimateId },
+    { enabled: !!estimateId, refetchOnWindowFocus: false, refetchOnReconnect: false, staleTime: Infinity }
+  );
+  const { data: vendorList } = trpc.subcontractor.list.useQuery({});
+
+  const [lines, setLines] = React.useState<BuilderLine[]>([]);
+  const [globals, setGlobals] = React.useState<BuilderGlobal[]>([]);
+  const [milestones, setMilestones] = React.useState<BuilderMilestone[]>([]);
+  const [settings, setSettings] = React.useState<BuilderSettings>({
+    name: "",
+    salesTaxPercent: 0,
+    paymentTerms: "Net 30",
+    validDays: 30,
+  });
+  const [blanket, setBlanket] = React.useState(25);
+  const [collapsed, setCollapsed] = React.useState<Record<string, boolean>>({});
+  const [hydrated, setHydrated] = React.useState(false);
+  const [dirty, setDirty] = React.useState(false);
+  const [saveState, setSaveState] = React.useState<SaveState>({ kind: "idle" });
+
+  const locked = data?.estimate.isLocked ?? false;
+
+  // Load server data into local editing state once
+  React.useEffect(() => {
+    if (!data || hydrated) return;
+    setLines(
+      data.lines.map((l) => ({
+        id: l.id,
+        parentId: l.parentId,
+        type: l.type,
+        name: l.name,
+        costCodeId: l.costCodeId,
+        quantity: l.quantity,
+        unit: l.unit,
+        unitCost: l.unitCost,
+        marginPercent: l.marginPercent,
+        visibility: l.visibility as Visibility,
+        isOptional: l.isOptional,
+        vendorId: l.vendorId,
+      }))
+    );
+    setGlobals(data.globals);
+    setMilestones(data.milestones);
+    setSettings({
+      name: data.estimate.name,
+      salesTaxPercent: data.estimate.salesTaxPercent,
+      paymentTerms: data.estimate.paymentTerms,
+      validDays: data.estimate.validDays,
+    });
+    const firstChild = data.lines.find((l) => l.parentId);
+    if (firstChild) setBlanket(firstChild.marginPercent);
+    setHydrated(true);
+  }, [data, hydrated]);
+
+  // ---- calculation (shared module, runs locally for instant totals) ----
+  const result = React.useMemo(() => {
+    const input: CostLineInput[] = lines.map((l) => ({
+      id: l.id,
+      parentId: l.parentId,
+      type: l.type,
+      quantity: l.quantity,
+      unitCost: l.unitCost,
+      marginPercent: clampMargin(l.marginPercent),
+      isOptional: l.isOptional,
+    }));
+    return computeProposal({
+      lines: input,
+      globals: globals.map((g) => ({ id: g.id, amount: g.amount })),
+      taxRatePercent: settings.salesTaxPercent,
+    });
+  }, [lines, globals, settings.salesTaxPercent]);
+
+  const schedule = React.useMemo(
+    () => computeSchedule(result.totals.total, milestones),
+    [result.totals.total, milestones]
+  );
+  const schedOk = milestonesTotal100(milestones);
+  const schedDiff = 100 - milestones.reduce((a, m) => a + m.percent, 0);
+
+  // ---- autosave ----
+  const saveContent = trpc.proposal.saveContent.useMutation();
+  const saveSettings = trpc.proposal.updateSettings.useMutation();
+  const latest = React.useRef({ lines, globals, milestones, settings });
+  latest.current = { lines, globals, milestones, settings };
+
+  const mark = React.useCallback(() => {
+    setDirty(true);
+    setSaveState({ kind: "idle" });
+  }, []);
+
+  React.useEffect(() => {
+    if (!dirty || !hydrated || locked) return;
+    const timer = setTimeout(async () => {
+      const cur = latest.current;
+      const problem = validate(cur.lines, cur.globals, cur.milestones, cur.settings);
+      if (problem) {
+        setSaveState({ kind: "error", message: problem });
+        return;
+      }
+      setSaveState({ kind: "saving" });
+      try {
+        await saveSettings.mutateAsync({
+          estimateId,
+          name: cur.settings.name,
+          salesTaxPercent: cur.settings.salesTaxPercent,
+          paymentTerms: cur.settings.paymentTerms as (typeof PAYMENT_TERMS)[number],
+          validDays: cur.settings.validDays,
+        });
+        await saveContent.mutateAsync({
+          estimateId,
+          lines: cur.lines.map((l) => ({
+            id: l.id,
+            parentId: l.parentId,
+            type: l.type,
+            name: l.name,
+            costCodeId: l.costCodeId,
+            quantity: l.quantity,
+            unit: l.unit,
+            unitCost: l.unitCost,
+            marginPercent: clampMargin(l.marginPercent),
+            visibility: l.visibility,
+            isOptional: l.isOptional,
+            vendorId: l.vendorId,
+          })),
+          globals: cur.globals,
+          milestones: cur.milestones,
+        });
+        if (latest.current === cur) setDirty(false);
+        setSaveState({ kind: "saved" });
+      } catch (err) {
+        setSaveState({ kind: "error", message: err instanceof Error ? err.message : "Could not save" });
+      }
+    }, 800);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lines, globals, milestones, settings, dirty, hydrated, locked, estimateId]);
+
+  React.useEffect(() => {
+    if (!dirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [dirty]);
+
+  // ---- edit helpers ----
+  const patchLine = (id: string, patch: Partial<BuilderLine>) => {
+    setLines((ls) => ls.map((l) => (l.id === id ? { ...l, ...patch } : l)));
+    mark();
+  };
+  const setParentMargin = (parentId: string, margin: number) => {
+    const m = clampMargin(margin);
+    setLines((ls) => ls.map((l) => (l.parentId === parentId || l.id === parentId ? { ...l, marginPercent: m } : l)));
+    mark();
+  };
+  const cycleChild = (id: string) => {
+    setLines((ls) => ls.map((l) => (l.id === id ? { ...l, visibility: VISIBILITY_NEXT[l.visibility] } : l)));
+    mark();
+  };
+  const cycleAll = (parentId: string) => {
+    setLines((ls) => {
+      const kids = ls.filter((l) => l.parentId === parentId);
+      if (kids.length === 0) return ls;
+      const same = kids.every((k) => k.visibility === kids[0].visibility);
+      const next: Visibility = same ? VISIBILITY_NEXT[kids[0].visibility] : "name_only";
+      return ls.map((l) => (l.parentId === parentId ? { ...l, visibility: next } : l));
+    });
+    mark();
+  };
+  const blank = (over: Partial<BuilderLine>): BuilderLine => ({
+    id: newId(),
+    parentId: null,
+    type: "labor",
+    name: "",
+    costCodeId: null,
+    quantity: 1,
+    unit: "ea",
+    unitCost: 0,
+    marginPercent: blanket,
+    visibility: "hidden",
+    isOptional: false,
+    vendorId: null,
+    ...over,
+  });
+  const addParent = () => {
+    setLines((ls) => [...ls, blank({ type: "other", name: "New parent line", quantity: 0, visibility: "price" })]);
+    mark();
+  };
+  const addChild = (parentId: string) => {
+    setLines((ls) => {
+      const lastIdx = ls.reduce((acc, l, i) => (l.id === parentId || l.parentId === parentId ? i : acc), -1);
+      const copy = [...ls];
+      copy.splice(lastIdx + 1, 0, blank({ parentId, name: "New line" }));
+      return copy;
+    });
+    mark();
+  };
+  const addOption = () => {
+    setLines((ls) => [...ls, blank({ isOptional: true, name: "New optional item", unit: "ls", visibility: "price" })]);
+    mark();
+  };
+  const removeLine = (id: string) => {
+    setLines((ls) => ls.filter((l) => l.id !== id && l.parentId !== id));
+    mark();
+  };
+  const applyBlanket = () => {
+    const m = clampMargin(blanket);
+    setLines((ls) => ls.map((l) => (l.parentId || l.isOptional ? { ...l, marginPercent: m } : l)));
+    mark();
+  };
+
+  // ---- derived rows ----
+  const parents = lines.filter((l) => !l.parentId && !l.isOptional);
+  const options = lines.filter((l) => l.isOptional);
+  const childrenOf = (id: string) => lines.filter((l) => l.parentId === id);
+  const parentResult = (id: string) => result.parents.find((p) => p.id === id);
+  const vendors = vendorList ?? [];
+
+  if (estimateLoading || proposalLoading || !hydrated) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-10 w-96" />
+        <Skeleton className="h-96 w-full" />
+      </div>
+    );
+  }
+
+  const marginAmt = result.totals.basePrice - result.totals.baseCost;
+  const marginPct = result.totals.basePrice > 0 ? (marginAmt / result.totals.basePrice) * 100 : 0;
+  const optionsTotal = result.options.reduce((a, o) => a + o.price + o.tax, 0);
+
+  const VendorSelect = ({ line }: { line: BuilderLine }) => (
+    <select
+      className={cellInput}
+      aria-label="Vendor"
+      disabled={locked}
+      value={line.vendorId ?? ""}
+      onChange={(e) => patchLine(line.id, { vendorId: e.target.value || null })}
+    >
+      <option value="">Unassigned</option>
+      {vendors.filter((v) => v.status === "active").map((v) => (
+        <option key={v.id} value={v.id}>
+          {v.companyName}
+        </option>
+      ))}
+    </select>
+  );
+
+  const TypeSelect = ({ line }: { line: BuilderLine }) => (
+    <select
+      className={cellInput}
+      aria-label="Cost type"
+      disabled={locked}
+      value={line.type}
+      onChange={(e) => patchLine(line.id, { type: e.target.value as BuilderLine["type"] })}
+    >
+      {COST_TYPES.map((t) => (
+        <option key={t.value} value={t.value}>
+          {t.label}
+        </option>
+      ))}
+    </select>
+  );
+
+  const Cells = ({ line, showShare }: { line: BuilderLine; showShare?: boolean }) => {
+    const r = result.lines[line.id];
+    return (
+      <>
+        <div className="px-1">{TypeSelect({ line })}</div>
+        <div className="px-1">{VendorSelect({ line })}</div>
+        <div className="px-1">
+          <NumField className={cn(cellInput, "text-right")} aria-label="Quantity" min={0} disabled={locked}
+            value={line.quantity} onChange={(v) => patchLine(line.id, { quantity: Math.max(v, 0) })} />
+        </div>
+        <div className="px-1">
+          <input className={cellInput} aria-label="Unit" disabled={locked} value={line.unit}
+            onChange={(e) => patchLine(line.id, { unit: e.target.value })} />
+        </div>
+        <div className="px-1">
+          <NumField className={cn(cellInput, "text-right")} aria-label="Unit cost" min={0} step="0.01" disabled={locked}
+            value={line.unitCost} onChange={(v) => patchLine(line.id, { unitCost: Math.max(v, 0) })} />
+        </div>
+        <div className="px-2 text-right tabular-nums">{money(r?.cost ?? 0)}</div>
+        <div className="px-1">
+          <NumField className={cn(cellInput, "text-right")} aria-label="Line margin percent" min={0} max={MAX_MARGIN} step="0.5"
+            disabled={locked} value={line.marginPercent}
+            onChange={(v) => patchLine(line.id, { marginPercent: clampMargin(v) })} />
+        </div>
+        <div className="px-2 text-right tabular-nums">{money(r?.price ?? 0)}</div>
+      </>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      {locked && (
+        <div className="rounded-md border bg-muted px-4 py-3 text-sm">
+          <strong>Accepted and locked.</strong> Scope changes go through change orders.
+        </div>
+      )}
+
+      {/* Title row */}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex min-w-0 flex-1 basis-[480px] flex-col gap-2">
+          <input
+            aria-label="Proposal name"
+            disabled={locked}
+            value={settings.name}
+            onChange={(e) => { setSettings((s) => ({ ...s, name: e.target.value })); mark(); }}
+            className="-ml-1.5 h-10 max-w-3xl rounded border border-transparent bg-transparent px-1.5 text-2xl font-bold tracking-tight hover:border-border focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
+          />
+          <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+            <label className="flex items-center gap-2">
+              Valid for
+              <NumField className={cn(fieldInput, "w-16 text-right")} aria-label="Valid for days" min={1} disabled={locked}
+                value={settings.validDays} onChange={(v) => { setSettings((s) => ({ ...s, validDays: Math.max(1, Math.round(v)) })); mark(); }} />
+              days
+            </label>
+            <StatusBadge variant="draft">{data?.estimate.status === "draft" ? "Draft" : data?.estimate.status ?? ""}</StatusBadge>
+          </div>
+        </div>
+        <SaveIndicator state={saveState} dirty={dirty} />
+      </div>
+
+      <div className="flex flex-wrap items-start gap-6">
+        {/* ---- Cost table ---- */}
+        <div className="flex min-w-0 flex-[999_1_640px] flex-col gap-3">
+          <div className="relative max-h-[70vh] overflow-auto rounded-md border bg-background">
+            <div className="min-w-[1570px]">
+              <div className={cn("sticky top-0 z-[3] grid h-9 items-center border-b bg-muted text-[11px] font-semibold uppercase tracking-wider text-muted-foreground", COLS)}>
+                <div className="sticky left-0 z-[4] flex h-full items-center border-r bg-muted px-4">Item</div>
+                <div className="px-2">Type</div>
+                <div className="px-2">Vendor</div>
+                <div className="px-2 text-right">Qty</div>
+                <div className="px-2">Unit</div>
+                <div className="px-2 text-right">Unit cost</div>
+                <div className="px-2 text-right">Cost</div>
+                <div className="px-2 text-right">Margin %</div>
+                <div className="px-2 text-right">Price</div>
+                <div className="px-2 text-right">Global share</div>
+                <div className="px-2 text-right">Proposal price</div>
+                <div className="px-2">On proposal</div>
+                <div />
+              </div>
+
+              {parents.map((p) => {
+                const kids = childrenOf(p.id);
+                const pr = parentResult(p.id);
+                const open = !collapsed[p.id];
+                const totalCost = result.totals.baseCost;
+                const share = totalCost > 0 && pr ? pr.cost / totalCost : 0;
+                const margins = kids.map((k) => k.marginPercent);
+                const uniform = margins.length > 0 && margins.every((m) => m === margins[0]);
+                const blended = pr && pr.price > 0 ? (1 - pr.cost / pr.price) * 100 : 0;
+                const marginShown = uniform ? margins[0] : Math.round(blended * 10) / 10;
+                const vis = kids.map((k) => k.visibility);
+                const sameVis = vis.length > 0 && vis.every((v) => v === vis[0]);
+                return (
+                  <React.Fragment key={p.id}>
+                    <div className={cn("grid min-h-10 items-center border-b bg-muted text-sm font-semibold", COLS)}>
+                      <div className="sticky left-0 z-[2] flex h-full min-h-10 items-center gap-1.5 border-r bg-muted px-2">
+                        <button type="button" aria-label="Collapse or expand group"
+                          className="inline-flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-background hover:text-foreground"
+                          onClick={() => setCollapsed((c) => ({ ...c, [p.id]: !c[p.id] }))}>
+                          <ChevronRight className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-90")} />
+                        </button>
+                        <input className={cn(cellInput, "font-semibold")} aria-label="Parent line name" disabled={locked}
+                          value={p.name} onChange={(e) => patchLine(p.id, { name: e.target.value })} />
+                        <span className="whitespace-nowrap rounded bg-background px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+                          {(share * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                      <div /><div /><div /><div /><div />
+                      <div className="px-2 text-right tabular-nums">{money(pr?.cost ?? 0)}</div>
+                      <div className="px-1">
+                        <NumField className={cn(cellInput, "text-right")} aria-label="Group margin percent" min={0} max={MAX_MARGIN} step="0.5"
+                          disabled={locked || kids.length === 0} value={marginShown} onChange={(v) => setParentMargin(p.id, v)} />
+                        {!uniform && kids.length > 0 && (
+                          <div className="text-right text-[11px] font-medium text-muted-foreground">blended</div>
+                        )}
+                      </div>
+                      <div className="px-2 text-right tabular-nums">{money(pr?.price ?? 0)}</div>
+                      <div className="px-2 text-right font-medium tabular-nums text-muted-foreground">+{money(pr?.globalShare ?? 0)}</div>
+                      <div className="px-2 text-right tabular-nums">{money(pr?.proposalPrice ?? 0)}</div>
+                      <div className="px-2">
+                        {kids.length > 0 && (
+                          <button type="button" disabled={locked}
+                            className={cn("whitespace-nowrap rounded bg-background px-2.5 py-1 text-xs font-semibold hover:bg-border/60", sameVis ? VISIBILITY_TONE[vis[0]] : "text-muted-foreground")}
+                            onClick={() => cycleAll(p.id)}>
+                            {sameVis ? `All: ${VISIBILITY_LABEL[vis[0]]}` : "Mixed"}
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex justify-center">
+                        <RemoveButton label="Remove parent line and its children" disabled={locked} onClick={() => removeLine(p.id)} />
+                      </div>
+                    </div>
+
+                    {open && kids.map((c) => (
+                      <div key={c.id} className={cn("grid min-h-9 items-center border-b text-sm", COLS)}>
+                        <div className="sticky left-0 z-[2] flex h-full min-h-9 items-center border-r bg-background pl-10 pr-2">
+                          <input className={cellInput} aria-label="Line item name" disabled={locked} value={c.name}
+                            onChange={(e) => patchLine(c.id, { name: e.target.value })} />
+                        </div>
+                        {Cells({ line: c })}
+                        <div /><div />
+                        <div className="px-2">
+                          <button type="button" disabled={locked}
+                            className={cn("whitespace-nowrap rounded bg-muted px-2.5 py-1 text-xs font-semibold hover:bg-border/60", VISIBILITY_TONE[c.visibility])}
+                            onClick={() => cycleChild(c.id)}>
+                            {VISIBILITY_LABEL[c.visibility]}
+                          </button>
+                        </div>
+                        <div className="flex justify-center">
+                          <RemoveButton label="Remove line" disabled={locked} onClick={() => removeLine(c.id)} />
+                        </div>
+                      </div>
+                    ))}
+
+                    {open && !locked && (
+                      <div className="flex border-b">
+                        <div className="sticky left-0 z-[2] w-[300px] bg-background py-0.5 pl-10 pr-2">
+                          <button type="button" className="text-[13px] font-medium underline underline-offset-4 hover:text-primary"
+                            onClick={() => addChild(p.id)}>
+                            + Add child line
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+
+              {options.length > 0 && (
+                <div className={cn("grid min-h-11 grid-cols-[300px_1fr] items-center border-y bg-secondary/50")}>
+                  <div className="sticky left-0 z-[2] flex h-full min-h-11 items-center border-r bg-secondary px-4 text-sm font-semibold">Optional items</div>
+                  <div className="px-2 text-[13px] text-muted-foreground">
+                    Not in the proposal total. You choose which ones the customer accepted when you mark the proposal accepted.
+                  </div>
+                </div>
+              )}
+              {options.map((o) => {
+                const or = result.options.find((x) => x.id === o.id);
+                return (
+                  <div key={o.id} className={cn("grid min-h-9 items-center border-b text-sm", COLS)}>
+                    <div className="sticky left-0 z-[2] flex h-full min-h-9 items-center border-r bg-background pl-4 pr-2">
+                      <input className={cellInput} aria-label="Option name" disabled={locked} value={o.name}
+                        onChange={(e) => patchLine(o.id, { name: e.target.value })} />
+                    </div>
+                    {Cells({ line: o })}
+                    <div />
+                    <div className="px-2 text-right font-semibold tabular-nums">{money(or?.price ?? 0)}</div>
+                    <div className="px-2"><StatusBadge variant="draft">Optional</StatusBadge></div>
+                    <div className="flex justify-center">
+                      <RemoveButton label="Remove option" disabled={locked} onClick={() => removeLine(o.id)} />
+                    </div>
+                  </div>
+                );
+              })}
+
+              {!locked && (
+                <div className="sticky left-0 flex w-fit gap-2 px-4 py-2.5">
+                  <Button type="button" variant="outline" onClick={addParent}>+ Add parent line</Button>
+                  <Button type="button" variant="outline" onClick={addOption}>+ Add optional item</Button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <p className="max-w-3xl text-xs leading-relaxed text-muted-foreground">
+            <strong className="text-foreground">On proposal:</strong> Price shown lists the child with its price marked as included in the parent, so it is not added again. Name only lists the child without a price. Hidden keeps the line for costing and removes it from the customer&apos;s copy. Margin set on a parent applies to every child; a later edit to a child overrides it. Vendor is optional and only pre-sorts the draft orders; you can change it on the order. Type Other is for inclusion and exclusion wording or notes: it has no cost code and creates no order.
+          </p>
+        </div>
+
+        {/* ---- Right rail ---- */}
+        <div className="sticky top-3 flex min-w-[300px] max-w-[380px] flex-[1_1_340px] flex-col gap-3 self-start max-h-[calc(100vh-24px)]">
+          <div className="flex min-h-0 flex-col gap-3 overflow-y-auto">
+            <section className="flex flex-col gap-3 rounded-md border bg-background p-4">
+              <div className={labelText}>Adjustments</div>
+              <div className="flex items-end gap-2">
+                <label className="flex flex-1 flex-col gap-1 text-sm text-muted-foreground">
+                  Margin on all lines (%)
+                  <NumField className={cn(fieldInput, "text-right")} aria-label="Margin on all lines" min={0} max={MAX_MARGIN} step="0.5"
+                    disabled={locked} value={blanket} onChange={(v) => setBlanket(clampMargin(v))} />
+                </label>
+                <Button type="button" variant="outline" disabled={locked} onClick={applyBlanket}>Apply to all</Button>
+              </div>
+              <label className="flex flex-col gap-1 text-sm text-muted-foreground">
+                Sales tax on material lines (%)
+                <NumField className={cn(fieldInput, "text-right")} aria-label="Sales tax percent" min={0} max={100} step="0.05"
+                  disabled={locked} value={settings.salesTaxPercent}
+                  onChange={(v) => { setSettings((s) => ({ ...s, salesTaxPercent: Math.min(Math.max(v, 0), 100) })); mark(); }} />
+              </label>
+              <label className="flex flex-col gap-1 text-sm text-muted-foreground">
+                Payment terms
+                <select className={fieldInput} disabled={locked} value={settings.paymentTerms}
+                  onChange={(e) => { setSettings((s) => ({ ...s, paymentTerms: e.target.value })); mark(); }}>
+                  {PAYMENT_TERMS.map((t) => (<option key={t} value={t}>{t}</option>))}
+                </select>
+              </label>
+            </section>
+
+            <section className="flex flex-col gap-3 rounded-md border bg-background p-4">
+              <div className={labelText}>Global costs</div>
+              <p className="text-[13px] leading-relaxed text-muted-foreground">
+                Split across parent lines by each line&apos;s share of project cost, then added to that line&apos;s price on the proposal.
+              </p>
+              {globals.map((g) => (
+                <div key={g.id} className="grid grid-cols-[1fr_96px_28px] items-center gap-1.5">
+                  <input className={smallField} aria-label="Global cost name" disabled={locked} value={g.name}
+                    onChange={(e) => { setGlobals((gs) => gs.map((x) => (x.id === g.id ? { ...x, name: e.target.value } : x))); mark(); }} />
+                  <NumField className={cn(smallField, "text-right")} aria-label="Global cost amount" min={0} step="0.01" disabled={locked}
+                    value={g.amount} onChange={(v) => { setGlobals((gs) => gs.map((x) => (x.id === g.id ? { ...x, amount: Math.max(v, 0) } : x))); mark(); }} />
+                  <RemoveButton label="Remove global cost" disabled={locked}
+                    onClick={() => { setGlobals((gs) => gs.filter((x) => x.id !== g.id)); mark(); }} />
+                </div>
+              ))}
+              <div className="flex items-center justify-between">
+                <Button type="button" size="sm" variant="outline" disabled={locked}
+                  onClick={() => { setGlobals((gs) => [...gs, { id: newId(), name: "New global cost", amount: 0 }]); mark(); }}>
+                  + Global cost
+                </Button>
+                <span className="text-sm font-semibold tabular-nums">{money(result.totals.globalTotal)}</span>
+              </div>
+            </section>
+
+            <section className="flex flex-col gap-3 rounded-md border bg-background p-4">
+              <div className="flex items-center justify-between">
+                <div className={labelText}>Invoicing schedule</div>
+                <div className="flex overflow-hidden rounded-md border text-xs font-medium">
+                  <span className="bg-muted px-2.5 py-1.5 font-semibold">By total</span>
+                  <span className="px-2.5 py-1.5 text-muted-foreground">By line</span>
+                </div>
+              </div>
+              {milestones.map((m, i) => (
+                <div key={m.id} className="grid grid-cols-[1fr_60px_92px_28px] items-center gap-1.5">
+                  <input className={smallField} aria-label="Milestone name" disabled={locked} value={m.name}
+                    onChange={(e) => { setMilestones((ms) => ms.map((x) => (x.id === m.id ? { ...x, name: e.target.value } : x))); mark(); }} />
+                  <NumField className={cn(smallField, "text-right")} aria-label="Percent of total" min={0} max={100} step="1" disabled={locked}
+                    value={m.percent} onChange={(v) => { setMilestones((ms) => ms.map((x) => (x.id === m.id ? { ...x, percent: Math.min(Math.max(v, 0), 100) } : x))); mark(); }} />
+                  <div className="text-right text-sm tabular-nums">{money(schedule[i]?.amount ?? 0)}</div>
+                  <RemoveButton label="Remove milestone" disabled={locked}
+                    onClick={() => { setMilestones((ms) => ms.filter((x) => x.id !== m.id)); mark(); }} />
+                </div>
+              ))}
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" size="sm" variant="outline" disabled={locked}
+                  onClick={() => { setMilestones((ms) => [...ms, { id: newId(), name: "New milestone", percent: 0 }]); mark(); }}>
+                  + Milestone
+                </Button>
+                <Button type="button" size="sm" variant="outline" disabled={locked || milestones.length === 0}
+                  onClick={() => {
+                    setMilestones((ms) => {
+                      if (ms.length === 0) return ms;
+                      const others = ms.slice(0, -1).reduce((a, m) => a + m.percent, 0);
+                      const last = Math.min(Math.max(Math.round((100 - others) * 100) / 100, 0), 100);
+                      return ms.map((m, i) => (i === ms.length - 1 ? { ...m, percent: last } : m));
+                    });
+                    mark();
+                  }}>
+                  Balance last
+                </Button>
+              </div>
+              <div className={cn("rounded-md bg-muted px-2.5 py-2 text-[13px] font-semibold", schedOk ? "text-financial-positive" : "text-financial-pending")}>
+                {schedOk
+                  ? "Schedule totals 100%"
+                  : schedDiff > 0
+                  ? `${schedDiff.toFixed(1)}% unscheduled. Must total 100%.`
+                  : `${Math.abs(schedDiff).toFixed(1)}% over. Must total 100%.`}
+              </div>
+            </section>
+          </div>
+
+          <section className="flex flex-col gap-1.5 rounded-md border-2 border-primary bg-background p-4">
+            <Row label="Cost" value={money(result.totals.baseCost)} />
+            <Row label={`Margin (${marginPct.toFixed(1)}%)`} value={money(marginAmt)} />
+            <Row label="Global costs" value={money(result.totals.globalTotal)} />
+            <Row label="Sales tax" value={money(result.totals.tax)} />
+            <div className="flex items-baseline justify-between border-t pt-2.5">
+              <span className="text-sm font-semibold">Proposal total</span>
+              <span className="text-2xl font-bold tracking-tight tabular-nums">{money(result.totals.total)}</span>
+            </div>
+            <div className="flex justify-between text-[13px] text-muted-foreground">
+              <span>Optional items, not included</span>
+              <span className="tabular-nums">{money(optionsTotal)}</span>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between text-sm text-muted-foreground">
+      <span>{label}</span>
+      <span className="tabular-nums">{value}</span>
+    </div>
+  );
+}
+
+function RemoveButton({ label, onClick, disabled }: { label: string; onClick: () => void; disabled?: boolean }) {
+  return (
+    <button type="button" aria-label={label} disabled={disabled} onClick={onClick}
+      className="inline-flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40">
+      <X className="h-3.5 w-3.5" />
+    </button>
+  );
+}
+
+function SaveIndicator({ state, dirty }: { state: SaveState; dirty: boolean }) {
+  if (state.kind === "saving")
+    return (<span className="flex items-center gap-1.5 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Saving…</span>);
+  if (state.kind === "error")
+    return (<span className="max-w-sm text-sm text-financial-negative">Not saved: {state.message}</span>);
+  if (state.kind === "saved" && !dirty)
+    return (<span className="flex items-center gap-1.5 text-sm text-financial-positive"><Check className="h-4 w-4" />Saved</span>);
+  if (dirty) return <span className="text-sm text-muted-foreground">Unsaved changes…</span>;
+  return null;
+}
+
+/** Client-side checks that mirror the API so we can say what is wrong instead of failing silently. */
+function validate(
+  lines: BuilderLine[],
+  globals: BuilderGlobal[],
+  milestones: BuilderMilestone[],
+  settings: BuilderSettings
+): string | null {
+  if (!settings.name.trim()) return "Give the proposal a name.";
+  if (lines.some((l) => !l.name.trim())) return "Every line needs a name.";
+  if (lines.some((l) => !l.unit.trim())) return "Every line needs a unit.";
+  if (globals.some((g) => !g.name.trim())) return "Every global cost needs a name.";
+  if (milestones.some((m) => !m.name.trim())) return "Every milestone needs a name.";
+  return null;
+}
