@@ -313,3 +313,14 @@ export {
   type AcceptanceResult,
   type ScheduleRow,
 } from "./utils/proposalCalc";
+
+export {
+  buildCustomerView,
+  type CustomerView,
+  type CustomerGroup,
+  type CustomerLine,
+  type CustomerScheduleRow,
+  type CustomerViewLineInput,
+  type CustomerViewMilestoneInput,
+  type LineVisibility,
+} from "./utils/proposalCustomerView";

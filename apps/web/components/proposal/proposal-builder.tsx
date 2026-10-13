@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { ChevronRight, Loader2, Check, X, StickyNote } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -52,7 +53,7 @@ interface Props {
   estimateSlug: string;
 }
 
-export function ProposalBuilder({ estimateSlug }: Props) {
+export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
   const { data: estimate, isLoading: estimateLoading } = trpc.estimates.getBySlug.useQuery({
     slug: estimateSlug,
   });
@@ -437,10 +438,21 @@ export function ProposalBuilder({ estimateSlug }: Props) {
                 value={settings.validDays} onChange={(v) => { setSettings((s) => ({ ...s, validDays: Math.max(1, Math.round(v)) })); mark(); }} />
               days
             </label>
-            <StatusBadge variant="draft">{data?.estimate.status === "draft" ? "Draft" : data?.estimate.status ?? ""}</StatusBadge>
+            <StatusBadge variant={data?.estimate.status === "draft" ? "draft" : "pending"}>
+              {STATUS_LABEL[data?.estimate.status ?? "draft"] ?? data?.estimate.status ?? ""}
+            </StatusBadge>
           </div>
         </div>
-        <SaveIndicator state={saveState} dirty={dirty} />
+        <div className="flex items-center gap-3">
+          <SaveIndicator state={saveState} dirty={dirty} />
+          {dirty || saveState.kind === "saving" ? (
+            <Button type="button" variant="outline" disabled title="Waiting for your changes to save">Customer view</Button>
+          ) : (
+            <Button asChild variant="outline">
+              <Link href={`/projects/${projectSlug}/estimates/${estimateSlug}/preview`}>Customer view</Link>
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-wrap items-start gap-6">
@@ -727,6 +739,13 @@ function upgradeLegacy(lines: BuilderLine[]): BuilderLine[] {
   }
   return out;
 }
+
+const STATUS_LABEL: Record<string, string> = {
+  draft: "Draft",
+  submitted: "Sent",
+  accepted: "Accepted",
+  under_contract: "Under contract",
+};
 
 function Row({ label, value }: { label: string; value: string }) {
   return (

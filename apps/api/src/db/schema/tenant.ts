@@ -1142,6 +1142,7 @@ export function createTenantSchema(schemaName: string) {
     salesTaxPercent: numeric("sales_tax_percent", { precision: 5, scale: 2 }).notNull().default("0"),
     paymentTerms: text("payment_terms").notNull().default("Net 30"),
     validDays: integer("valid_days").notNull().default(30),
+    termsVersionId: uuid("terms_version_id"), // master terms version pinned when the proposal is sent
     slug: text("slug").unique(), // URL-safe slug for routing
     createdBy: text("created_by").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -1183,6 +1184,25 @@ export function createTenantSchema(schemaName: string) {
     estimateId: uuid("estimate_id").notNull().references(() => estimates.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     amount: numeric("amount", { precision: 15, scale: 2 }).notNull().default("0"),
+    sortOrder: integer("sort_order").notNull().default(0),
+  });
+
+  /**
+   * Master terms and conditions. Every save of the settings screen creates a new immutable
+   * version; a proposal pins the version that was current when it was sent.
+   */
+  const termsVersions = schema.table("terms_versions", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    version: integer("version").notNull().unique(),
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  const termsSections = schema.table("terms_sections", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    versionId: uuid("version_id").notNull().references(() => termsVersions.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    body: text("body").notNull().default(""),
     sortOrder: integer("sort_order").notNull().default(0),
   });
 
@@ -1384,6 +1404,8 @@ export function createTenantSchema(schemaName: string) {
     proposalCostLines,
     proposalGlobalCosts,
     invoiceMilestones,
+    termsVersions,
+    termsSections,
     costCodeTemplates,
     templateLineItems,
     laborRateTemplates,

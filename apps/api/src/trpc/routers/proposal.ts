@@ -9,12 +9,14 @@ import {
   applyAcceptance,
   computeSchedule,
   milestonesTotal100,
+  buildCustomerView,
   type CostLineInput,
 } from "@construction/shared";
 import { createAuditLog } from "../../audit/logger.js";
 import { defineAbilitiesFor } from "../../auth/abilities.js";
 import { eq, asc } from "drizzle-orm";
 import { ForbiddenError } from "@casl/ability";
+import { ensureCurrentTerms, readTermsVersion } from "./terms.js";
 
 const costLineTypeEnum = z.enum(["labor", "material", "subcontractor", "equipment", "other"]);
 const visibilityEnum = z.enum(["price", "name_only", "hidden"]);
@@ -65,6 +67,66 @@ const saveContentSchema = z.object({
 const LOCKED_STATUSES = ["accepted", "under_contract"];
 
 /** Structural rules the database cannot express: two levels, optional items stand alone. */
+type Tenant = NonNullable<
+  Awaited<ReturnType<typeof import("../../tenant/context.js").buildTenantContext>>
+>;
+
+/** Load a proposal's rows and run the shared calculation. Used by customer view and send. */
+async function loadComputed(tenant: Tenant, estimateId: string) {
+  const { db, schema } = tenant;
+  const [estimate] = await db.select().from(schema.estimates).where(eq(schema.estimates.id, estimateId)).limit(1);
+  if (!estimate) throw new TRPCError({ code: "NOT_FOUND", message: "Proposal not found" });
+  const lineRows = await db
+    .select()
+    .from(schema.proposalCostLines)
+    .where(eq(schema.proposalCostLines.estimateId, estimateId))
+    .orderBy(asc(schema.proposalCostLines.sortOrder));
+  const globalRows = await db
+    .select()
+    .from(schema.proposalGlobalCosts)
+    .where(eq(schema.proposalGlobalCosts.estimateId, estimateId))
+    .orderBy(asc(schema.proposalGlobalCosts.sortOrder));
+  const milestoneRows = await db
+    .select()
+    .from(schema.invoiceMilestones)
+    .where(eq(schema.invoiceMilestones.estimateId, estimateId))
+    .orderBy(asc(schema.invoiceMilestones.sortOrder));
+  const lines = lineRows.map((l) => ({
+    id: l.id,
+    parentId: l.parentId,
+    name: l.name,
+    type: l.type as CostLineInput["type"],
+    quantity: Number(l.quantity),
+    unitCost: Number(l.unitCost),
+    marginPercent: Number(l.marginPercent),
+    contingencyPercent: Number(l.contingencyPercent),
+    visibility: l.visibility as "price" | "name_only" | "hidden",
+    isOptional: l.isOptional,
+  }));
+  const milestones = milestoneRows.map((m) => ({ id: m.id, name: m.name, percent: Number(m.percent) }));
+  const result = computeProposal({
+    lines,
+    globals: globalRows.map((g) => ({ id: g.id, amount: Number(g.amount) })),
+    taxRatePercent: Number(estimate.salesTaxPercent),
+  });
+  return { estimate, lines, milestones, result };
+}
+
+/** Why a proposal cannot be sent yet, or null when it can. */
+function sendBlocker(c: Awaited<ReturnType<typeof loadComputed>>): string | null {
+  if (LOCKED_STATUSES.includes(c.estimate.status)) return "This proposal is already accepted.";
+  const baseParents = c.lines.filter((l) => !l.parentId && !l.isOptional);
+  if (baseParents.length === 0 || c.result.totals.total <= 0) return "Add at least one priced line before sending.";
+  if (c.lines.some((l) => !l.name.trim())) return "Every line needs a name.";
+  if (c.milestones.length === 0) return "Add an invoicing schedule.";
+  if (c.milestones.some((m) => !m.name.trim())) return "Every milestone needs a name.";
+  if (!milestonesTotal100(c.milestones)) {
+    const total = c.milestones.reduce((a, m) => a + m.percent, 0);
+    return `The invoicing schedule totals ${Math.round(total * 100) / 100}%. It must total 100% before sending.`;
+  }
+  return null;
+}
+
 export function validateLineStructure(lines: Array<z.infer<typeof costLineInputSchema>>): string | null {
   const byId = new Map(lines.map((l) => [l.id, l]));
   if (byId.size !== lines.length) return "Duplicate line ids";
@@ -352,4 +414,106 @@ export const proposalRouter = router({
 
     return { ok: true as const };
   }),
+
+  /**
+   * What the customer receives: built from an allow-list, so hidden lines, cost, margin,
+   * contingency, vendors and notes are never included. Terms are the pinned version once sent,
+   * otherwise the current master terms.
+   */
+  customerView: protectedProcedure
+    .input(z.object({ estimateId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+      }
+      const { db, schema } = ctx.tenant;
+      const abilities = await loadAbilities({ tenant: ctx.tenant, userId: ctx.userId, orgRole: ctx.orgRole });
+      ForbiddenError.from(abilities).throwUnlessCan("read", "Estimate");
+
+      const c = await loadComputed(ctx.tenant, input.estimateId);
+      const view = buildCustomerView({ lines: c.lines, result: c.result, milestones: c.milestones });
+
+      const [project] = await db
+        .select({
+          name: schema.projects.name,
+          jobNumber: schema.projects.jobNumber,
+          customerId: schema.projects.customerId,
+          street1: schema.projects.street1,
+          street2: schema.projects.street2,
+          city: schema.projects.city,
+          state: schema.projects.state,
+          zip: schema.projects.zip,
+        })
+        .from(schema.projects)
+        .where(eq(schema.projects.id, c.estimate.projectId))
+        .limit(1);
+      const [customer] = project
+        ? await db
+            .select({ companyName: schema.customers.companyName, contactName: schema.customers.contactName })
+            .from(schema.customers)
+            .where(eq(schema.customers.id, project.customerId))
+            .limit(1)
+        : [];
+
+      const pinned = c.estimate.termsVersionId ? await readTermsVersion(ctx.tenant, c.estimate.termsVersionId) : null;
+      const terms = pinned ?? (await ensureCurrentTerms(ctx.tenant, ctx.userId));
+
+      const addressParts = project
+        ? [project.street1, project.street2, [project.city, project.state].filter(Boolean).join(", "), project.zip].filter(Boolean)
+        : [];
+      return {
+        title: c.estimate.name,
+        status: c.estimate.status,
+        sentAt: c.estimate.submittedAt,
+        validDays: c.estimate.validDays,
+        paymentTerms: c.estimate.paymentTerms,
+        proposalNumber: project?.jobNumber ?? null,
+        companyName: ctx.tenant.companyName,
+        customerName: customer ? (customer.companyName || customer.contactName) : null,
+        projectName: project?.name ?? null,
+        projectAddress: addressParts.length > 0 ? addressParts.join(", ") : null,
+        salesTaxPercent: Number(c.estimate.salesTaxPercent),
+        view,
+        terms: { version: terms.version, sections: terms.sections, pinned: Boolean(pinned) },
+        blocker: sendBlocker(c),
+      };
+    }),
+
+  /**
+   * Record the proposal as sent to the customer (delivery by email is not built yet).
+   * Requires a 100% invoicing schedule, and pins the master terms version that is current now.
+   */
+  send: protectedProcedure
+    .input(z.object({ estimateId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+      }
+      const { db, schema } = ctx.tenant;
+      const abilities = await loadAbilities({ tenant: ctx.tenant, userId: ctx.userId, orgRole: ctx.orgRole });
+      ForbiddenError.from(abilities).throwUnlessCan("update", "Estimate");
+
+      const c = await loadComputed(ctx.tenant, input.estimateId);
+      const blocker = sendBlocker(c);
+      if (blocker) throw new TRPCError({ code: "BAD_REQUEST", message: blocker });
+
+      const terms = await ensureCurrentTerms(ctx.tenant, ctx.userId);
+      const sentAt = new Date();
+      await db
+        .update(schema.estimates)
+        .set({ status: "submitted", submittedAt: sentAt, termsVersionId: terms.id, updatedAt: sentAt })
+        .where(eq(schema.estimates.id, input.estimateId));
+
+      await createAuditLog(db, schema, {
+        entityType: "Estimate",
+        entityId: input.estimateId,
+        action: AuditAction.UPDATE,
+        actorId: ctx.userId,
+        changes: {
+          before: { status: c.estimate.status, termsVersionId: c.estimate.termsVersionId },
+          after: { status: "submitted", termsVersion: terms.version, total: c.result.totals.total },
+        },
+      });
+      return { sentAt, termsVersion: terms.version };
+    }),
 });

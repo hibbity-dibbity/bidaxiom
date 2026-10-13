@@ -109,6 +109,8 @@ export async function buildTenantContext(
       proposalCostLines: tenantDb.proposalCostLines,
       proposalGlobalCosts: tenantDb.proposalGlobalCosts,
       invoiceMilestones: tenantDb.invoiceMilestones,
+      termsVersions: tenantDb.termsVersions,
+      termsSections: tenantDb.termsSections,
       costCodeTemplates: tenantDb.costCodeTemplates,
       templateLineItems: tenantDb.templateLineItems,
       laborRateTemplates: tenantDb.laborRateTemplates,
