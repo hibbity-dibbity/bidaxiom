@@ -1,5 +1,6 @@
 "use client";
 
+import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { trpc } from "@/lib/trpc";
@@ -33,7 +34,13 @@ import { useRouter } from "next/navigation";
 // The API takes a flat address; the form edits a nested `address` object.
 const subcontractorFormSchema = createSubcontractorSchema
   .omit({ street1: true, street2: true, city: true, state: true, zip: true })
-  .extend({ address: addressSchema.optional() });
+  .extend({
+    address: addressSchema.optional(),
+    // The form holds plain strings (yyyy-mm-dd or empty); they are converted on submit.
+    taxIdLast4: z.string().regex(/^(\d{4})?$/, "Enter the last 4 digits, or leave blank").optional(),
+    w9ReceivedAt: z.string().optional(),
+    insuranceExpiresAt: z.string().optional(),
+  });
 
 // <input type="date"> works in yyyy-mm-dd; the API takes ISO date-times.
 const toDateInput = (v?: string | Date | null) => (v ? new Date(v).toISOString().slice(0, 10) : "");
@@ -177,8 +184,8 @@ export function SubcontractorForm({ mode, defaultValues, onSuccess }: Subcontrac
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="subcontractor">Subcontractor (work orders)</SelectItem>
-                    <SelectItem value="supplier">Supplier (purchase orders)</SelectItem>
+                    <SelectItem value="subcontractor">Subcontractor</SelectItem>
+                    <SelectItem value="supplier">Supplier</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
