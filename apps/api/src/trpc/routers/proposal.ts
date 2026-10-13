@@ -10,11 +10,13 @@ import {
   computeSchedule,
   milestonesTotal100,
   buildCustomerView,
+  generateDraftOrders,
+  linesMissingCostCode,
   type CostLineInput,
 } from "@construction/shared";
 import { createAuditLog } from "../../audit/logger.js";
 import { defineAbilitiesFor } from "../../auth/abilities.js";
-import { eq, asc, desc, and, isNull } from "drizzle-orm";
+import { eq, asc, desc, and, isNull, inArray } from "drizzle-orm";
 import { generateSlug } from "../../utils/slug.js";
 import { ForbiddenError } from "@casl/ability";
 import { ensureCurrentTerms, readTermsVersion } from "./terms.js";
@@ -104,6 +106,8 @@ async function loadComputed(tenant: Tenant, estimateId: string) {
     parentId: l.parentId,
     name: l.name,
     type: l.type as CostLineInput["type"],
+    costCodeId: l.costCodeId,
+    vendorId: l.vendorId,
     quantity: Number(l.quantity),
     unitCost: Number(l.unitCost),
     marginPercent: Number(l.marginPercent),
@@ -822,5 +826,121 @@ export const proposalRouter = router({
         profit,
         optionsTotal: c.result.options.reduce((a, o) => a + o.price + o.tax, 0),
       };
+    }),
+
+  /**
+   * Mark a sent proposal accepted. The customer's chosen options are recorded, the contract
+   * value and invoicing amounts follow from them, the proposal locks, it becomes the project's
+   * active proposal, and draft purchase orders and work orders are generated from its cost lines.
+   */
+  accept: protectedProcedure
+    .input(z.object({ estimateId: z.string().uuid(), acceptedOptionIds: z.array(z.string().uuid()).max(500) }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+      }
+      const { db, schema } = ctx.tenant;
+      const userId = ctx.userId;
+      const abilities = await loadAbilities({ tenant: ctx.tenant, userId, orgRole: ctx.orgRole });
+      ForbiddenError.from(abilities).throwUnlessCan("update", "Estimate");
+
+      const c = await loadComputed(ctx.tenant, input.estimateId);
+      if (c.estimate.status === "draft") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Send the proposal to the customer before marking it accepted." });
+      }
+      if (c.estimate.status !== "submitted") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "This proposal is already accepted." });
+      }
+      const optionIds = c.lines.filter((l) => l.isOptional && !l.parentId).map((l) => l.id);
+      const accepted = [...new Set(input.acceptedOptionIds)];
+      if (accepted.some((id) => !optionIds.includes(id))) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "One of the selected options is not an option on this proposal." });
+      }
+
+      const sourceLines = c.lines.map((l) => ({
+        id: l.id,
+        parentId: l.parentId,
+        name: l.name,
+        type: l.type,
+        costCodeId: l.costCodeId,
+        vendorId: l.vendorId,
+        isOptional: l.isOptional,
+      }));
+      const missing = linesMissingCostCode(sourceLines, c.result, accepted);
+      if (missing.length > 0) {
+        const shown = missing.slice(0, 5).join(", ");
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Pick a cost code for: ${shown}${missing.length > 5 ? ` and ${missing.length - 5} more` : ""}. Lines of type Other do not need one.`,
+        });
+      }
+
+      const acceptance = applyAcceptance(c.result, accepted);
+      const drafts = generateDraftOrders(sourceLines, c.result, accepted);
+      const projectId = c.estimate.projectId;
+      const now = new Date();
+
+      const createdOrders = await db.transaction(async (tx) => {
+        for (const id of optionIds) {
+          await tx
+            .update(schema.proposalCostLines)
+            .set({ optionAccepted: accepted.includes(id) })
+            .where(eq(schema.proposalCostLines.id, id));
+        }
+        await tx
+          .update(schema.estimates)
+          .set({ status: "accepted", acceptedAt: now, updatedAt: now })
+          .where(eq(schema.estimates.id, input.estimateId));
+        await tx.update(schema.estimates).set({ isActive: false }).where(eq(schema.estimates.projectId, projectId));
+        await tx.update(schema.estimates).set({ isActive: true }).where(eq(schema.estimates.id, input.estimateId));
+
+        const existing = await tx
+          .select({ kind: schema.orders.kind })
+          .from(schema.orders)
+          .where(eq(schema.orders.projectId, projectId));
+        const counters = {
+          purchase: existing.filter((o) => o.kind === "purchase").length,
+          work: existing.filter((o) => o.kind === "work").length,
+        };
+        const out: Array<{ id: string; number: string; kind: string; vendorId: string | null; lines: number; total: number }> = [];
+        for (const d of drafts) {
+          counters[d.kind] += 1;
+          const number = `${d.kind === "purchase" ? "PO" : "WO"}-${String(counters[d.kind]).padStart(3, "0")}`;
+          const [order] = await tx
+            .insert(schema.orders)
+            .values({ projectId, estimateId: input.estimateId, kind: d.kind, number, vendorId: d.vendorId, status: "draft", createdBy: userId })
+            .returning({ id: schema.orders.id });
+          await tx.insert(schema.orderLines).values(
+            d.lines.map((l, i) => ({
+              orderId: order.id,
+              sourceLineId: l.sourceLineId,
+              description: l.description,
+              costCodeId: l.costCodeId,
+              budgetCost: String(l.budgetCost / 100),
+              projectedCost: String(l.budgetCost / 100),
+              sortOrder: i,
+            }))
+          );
+          out.push({ id: order.id, number, kind: d.kind, vendorId: d.vendorId, lines: d.lines.length, total: d.total });
+        }
+        return out;
+      });
+
+      await createAuditLog(db, schema, {
+        entityType: "Estimate",
+        entityId: input.estimateId,
+        action: AuditAction.UPDATE,
+        actorId: userId,
+        changes: {
+          before: { status: "submitted" },
+          after: {
+            status: "accepted",
+            acceptedOptions: accepted.length,
+            contractValue: acceptance.contractValue,
+            draftOrders: createdOrders.length,
+          },
+        },
+      });
+      return { contractValue: acceptance.contractValue, costBudget: acceptance.costBudget, orders: createdOrders };
     }),
 });

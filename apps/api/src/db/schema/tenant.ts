@@ -1211,6 +1211,41 @@ export function createTenantSchema(schemaName: string) {
   });
 
   /**
+   * Purchase orders and work orders generated when a proposal is accepted. One table with a
+   * kind ("purchase" or "work"); detail fields for each kind are added with the order screens.
+   * vendorId is null while the order is an unassigned draft.
+   */
+  const orders = schema.table("orders", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+    estimateId: uuid("estimate_id").notNull().references(() => estimates.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(), // purchase, work
+    number: text("number").notNull(), // PO-001, WO-001 (per project)
+    vendorId: uuid("vendor_id"), // subcontractor_directory.id
+    status: text("status").notNull().default("draft"), // draft, issued, partially_paid, paid, closed
+    revision: integer("revision").notNull().default(1),
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * Lines on an order. budgetCost is the proposal cost at acceptance and never changes;
+   * projectedCost starts equal to it and is editable on draft orders.
+   */
+  const orderLines = schema.table("order_lines", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orderId: uuid("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
+    sourceLineId: uuid("source_line_id"), // proposal_cost_lines.id it came from
+    description: text("description").notNull(),
+    costCodeId: integer("cost_code_id"),
+    budgetCost: numeric("budget_cost", { precision: 15, scale: 2 }).notNull().default("0"),
+    projectedCost: numeric("projected_cost", { precision: 15, scale: 2 }).notNull().default("0"),
+    exclusions: text("exclusions"), // work orders only
+    sortOrder: integer("sort_order").notNull().default(0),
+  });
+
+  /**
    * Invoicing schedule: percentage milestones that must total 100.
    */
   const invoiceMilestones = schema.table("invoice_milestones", {
@@ -1410,6 +1445,8 @@ export function createTenantSchema(schemaName: string) {
     invoiceMilestones,
     termsVersions,
     termsSections,
+    orders,
+    orderLines,
     costCodeTemplates,
     templateLineItems,
     laborRateTemplates,

@@ -32,6 +32,7 @@ import { estimatesRouter } from "./routers/estimates.js";
 import { estimateTemplatesRouter } from "./routers/estimateTemplates.js";
 import { proposalRouter } from "./routers/proposal.js";
 import { termsRouter } from "./routers/terms.js";
+import { orderRouter } from "./routers/order.js";
 import { templateRouter } from "./routers/template.js";
 import { notesRouter } from "./routers/notes.js";
 
@@ -76,6 +77,7 @@ export const appRouter = router({
   estimateTemplates: estimateTemplatesRouter,
   proposal: proposalRouter,
   terms: termsRouter,
+  order: orderRouter,
   template: templateRouter,
   notes: notesRouter,
 });

@@ -15,9 +15,12 @@ import {
   computeProposal,
   computeSchedule,
   milestonesTotal100,
+  CSI_DIVISIONS,
   type CostLineInput,
 } from "@construction/shared";
 import { NumField } from "./num-field";
+import { AcceptDialog } from "./accept-dialog";
+import { DraftOrdersPanel } from "./draft-orders-panel";
 import {
   COST_TYPES,
   MAX_MARGIN,
@@ -32,7 +35,7 @@ import {
 } from "./builder-types";
 
 const COLS =
-  "grid-cols-[300px_112px_168px_72px_60px_104px_76px_112px_84px_116px_108px_116px_124px_148px_36px_36px]";
+  "grid-cols-[300px_112px_150px_168px_72px_60px_104px_76px_112px_84px_116px_108px_116px_124px_148px_36px_36px]";
 
 const cellInput =
   "h-7 w-full rounded border border-transparent bg-transparent px-1.5 text-sm text-foreground hover:border-border focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-60";
@@ -104,6 +107,7 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
     },
     onError: (e) => toast.error("Could not change the active proposal", { description: e.message }),
   });
+  const [acceptOpen, setAcceptOpen] = React.useState(false);
   const status = data?.estimate.status ?? "draft";
   const latestRevision = data?.estimate.latestRevision ?? null;
   const isActive = data?.estimate.isActive ?? false;
@@ -393,6 +397,23 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
     </select>
   );
 
+  const CostCodeSelect = ({ line }: { line: BuilderLine }) => (
+    <select
+      className={cn(cellInput, line.type !== "other" && line.costCodeId === null && !locked && "text-muted-foreground")}
+      aria-label="Cost code"
+      disabled={locked || line.type === "other"}
+      value={line.costCodeId ?? ""}
+      onChange={(e) => patchLine(line.id, { costCodeId: e.target.value === "" ? null : Number(e.target.value) })}
+    >
+      <option value="">{line.type === "other" ? "Not needed" : "Select…"}</option>
+      {CSI_DIVISIONS.filter((d) => d.division > 0).map((d) => (
+        <option key={d.division} value={d.division}>
+          {String(d.division).padStart(2, "0")} {d.name}
+        </option>
+      ))}
+    </select>
+  );
+
   const TypeSelect = ({ line }: { line: BuilderLine }) => (
     <select
       className={cellInput}
@@ -414,6 +435,7 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
     return (
       <>
         <div className="px-1">{TypeSelect({ line })}</div>
+        <div className="px-1">{CostCodeSelect({ line })}</div>
         <div className="px-1">{VendorSelect({ line })}</div>
         <div className="px-1">
           <NumField className={cn(cellInput, "text-right")} aria-label="Quantity" min={0} disabled={locked}
@@ -454,19 +476,27 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
               : "To change it, create a new revision. This one stays as the record of what was sent."}
           </div>
           {latestRevision ? (
-            <Button asChild variant="outline">
-              <Link href={`/projects/${projectSlug}/estimates/${latestRevision.slug}`}>Open Rev {latestRevision.revision}</Link>
-            </Button>
+            <div className="flex gap-2">
+              <Button asChild variant="outline">
+                <Link href={`/projects/${projectSlug}/estimates/${latestRevision.slug}`}>Open Rev {latestRevision.revision}</Link>
+              </Button>
+              <Button type="button" onClick={() => setAcceptOpen(true)}>Mark accepted</Button>
+            </div>
           ) : (
-            <Button type="button" disabled={createNext.isPending} onClick={() => createNext.mutate({ projectId: data!.estimate.projectId, copyFromId: estimateId })}>
-              {createNext.isPending ? "Creating…" : "Create new revision"}
-            </Button>
+            <div className="flex gap-2">
+              <Button type="button" disabled={createNext.isPending} variant="outline" onClick={() => createNext.mutate({ projectId: data!.estimate.projectId, copyFromId: estimateId })}>
+                {createNext.isPending ? "Creating…" : "Create new revision"}
+              </Button>
+              <Button type="button" onClick={() => setAcceptOpen(true)}>Mark accepted</Button>
+            </div>
           )}
         </div>
       )}
       {locked && status !== "submitted" && (
         <div className="rounded-md border bg-muted px-4 py-3 text-sm">
-          <strong>Accepted and locked.</strong> Scope changes go through change orders.
+          <strong>Accepted and locked.</strong>{" "}
+          {data?.estimate.acceptedAt ? `Accepted ${new Date(data.estimate.acceptedAt).toLocaleDateString()}. ` : ""}
+          Contract value {money(data?.acceptance.contractValue ?? 0)}. Scope changes go through change orders.
         </div>
       )}
 
@@ -509,10 +539,11 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
         {/* ---- Cost table ---- */}
         <div className="flex min-w-0 flex-[999_1_640px] flex-col gap-3">
           <div className="relative max-h-[70vh] overflow-auto rounded-md border bg-background">
-            <div className="min-w-[1790px]">
+            <div className="min-w-[1940px]">
               <div className={cn("sticky top-0 z-[3] grid h-9 items-center border-b bg-muted text-[11px] font-semibold uppercase tracking-wider text-muted-foreground", COLS)}>
                 <div className="sticky left-0 z-[4] flex h-full items-center border-r bg-muted px-4">Item</div>
                 <div className="px-2">Type</div>
+                <div className="px-2" title="CSI division. Needed on every ordered line before the proposal can be accepted.">Cost code</div>
                 <div className="px-2">Vendor</div>
                 <div className="px-2 text-right">Qty</div>
                 <div className="px-2">Unit</div>
@@ -568,7 +599,7 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
                           </span>
                         )}
                       </div>
-                      <div /><div /><div /><div /><div /><div />
+                      <div /><div /><div /><div /><div /><div /><div />
                       <div className="px-2 text-right tabular-nums">{money(pr?.cost ?? 0)}</div>
                       <div className="px-1">
                         <NumField className={cn(cellInput, "text-right")} aria-label="Group margin percent" min={0} max={MAX_MARGIN} step="0.5"
@@ -768,6 +799,24 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
 
         </div>
       </div>
+
+      {(status === "accepted" || status === "under_contract") && <DraftOrdersPanel estimateId={estimateId} />}
+
+      {data && (
+        <AcceptDialog
+          open={acceptOpen}
+          onOpenChange={setAcceptOpen}
+          estimateId={estimateId}
+          lines={data.lines}
+          computed={data.computed}
+          milestones={data.milestones}
+          onAccepted={() => {
+            utils.proposal.get.invalidate({ estimateId });
+            utils.order.listForEstimate.invalidate({ estimateId });
+            utils.estimates.list.invalidate();
+          }}
+        />
+      )}
     </div>
   );
 }

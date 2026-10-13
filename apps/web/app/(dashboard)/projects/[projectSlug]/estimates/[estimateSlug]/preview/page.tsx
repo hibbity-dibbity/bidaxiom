@@ -82,7 +82,7 @@ export default function ProposalPreviewPage({
 
   const { view } = data;
   const customer = data.customerName ?? "the customer";
-  const sent = data.status === "submitted";
+  const sent = data.status !== "draft";
   const dateLabel = new Date(data.sentAt ?? Date.now()).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
 
   return (
@@ -93,7 +93,7 @@ export default function ProposalPreviewPage({
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-3xl font-bold tracking-tight">Customer view</h1>
-            {sent && <StatusBadge variant="pending">Sent {new Date(data.sentAt!).toLocaleDateString()}</StatusBadge>}
+            {sent && data.sentAt && <StatusBadge variant={data.status === "submitted" ? "pending" : "approved"}>{data.status === "submitted" ? "Sent" : "Accepted"} {new Date(data.sentAt).toLocaleDateString()}</StatusBadge>}
           </div>
           <p className="text-muted-foreground">
             What {customer} receives. Hidden lines and cost details are not shown.
@@ -113,6 +113,13 @@ export default function ProposalPreviewPage({
       {data.blocker && !sent && (
         <div className="rounded-md border border-financial-pending/40 bg-muted px-4 py-3 text-sm print:hidden">
           <strong>Not ready to send.</strong> {data.blocker}
+        </div>
+      )}
+
+      {data.companyContact.length === 0 && (
+        <div className="rounded-md border bg-muted px-4 py-3 text-sm print:hidden">
+          Your phone, website and address are not set, so they are not printed under your company name.{" "}
+          <Link href="/settings/company" className="font-medium underline underline-offset-4">Add them in Settings, Company</Link>.
         </div>
       )}
 

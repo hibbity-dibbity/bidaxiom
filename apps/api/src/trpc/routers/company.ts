@@ -155,23 +155,26 @@ export const companyRouter = router({
       }
       const { db, schema } = ctx.tenant;
       const clean = (v: string | null) => (v && v.length > 0 ? v : null);
+      const values = {
+        phone: clean(input.phone),
+        website: clean(input.website),
+        street1: clean(input.street1),
+        street2: clean(input.street2),
+        city: clean(input.city),
+        state: clean(input.state)?.toUpperCase() ?? null,
+        zip: clean(input.zip),
+      };
       const updated = await db
         .update(schema.companyProfiles)
-        .set({
-          phone: clean(input.phone),
-          website: clean(input.website),
-          street1: clean(input.street1),
-          street2: clean(input.street2),
-          city: clean(input.city),
-          state: clean(input.state)?.toUpperCase() ?? null,
-          zip: clean(input.zip),
-        })
+        .set(values)
         .where(isNull(schema.companyProfiles.validTo))
         .returning({ id: schema.companyProfiles.id });
       if (updated.length === 0) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Save the company configuration above first, then add contact info.",
+        // The company configuration has never been saved: start a profile so the contact info is kept.
+        await db.insert(schema.companyProfiles).values({
+          ...values,
+          companyType: "gc_only",
+          createdBy: ctx.userId ?? "system",
         });
       }
       return { ok: true as const };

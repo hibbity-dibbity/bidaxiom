@@ -324,3 +324,13 @@ export {
   type CustomerViewMilestoneInput,
   type LineVisibility,
 } from "./utils/proposalCustomerView";
+
+export {
+  generateDraftOrders,
+  linesMissingCostCode,
+  orderKindForType,
+  type DraftOrder,
+  type DraftOrderLine,
+  type OrderKind,
+  type OrderSourceLine,
+} from "./utils/proposalOrders";
