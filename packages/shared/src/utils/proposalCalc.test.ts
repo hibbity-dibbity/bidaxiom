@@ -146,3 +146,22 @@ test("contingency pads cost, flows into price, and profit = price - cost", () =>
   assert.equal(r.lines.c.contingency, 10000);
   assert.equal(r.totals.baseContingency, 10000);
 });
+
+test("an optional item can hold several lines (labor + material) and stays out of base totals", () => {
+  const lines: CostLineInput[] = [
+    { id: "base", parentId: null, type: "other", quantity: 0, unitCost: 0, marginPercent: 0 },
+    { id: "b1", parentId: "base", type: "labor", quantity: 1, unitCost: 1000, marginPercent: 0 },
+    { id: "opt", parentId: null, type: "other", quantity: 0, unitCost: 0, marginPercent: 0, isOptional: true },
+    { id: "o1", parentId: "opt", type: "labor", quantity: 1, unitCost: 400, marginPercent: 20 },
+    { id: "o2", parentId: "opt", type: "material", quantity: 1, unitCost: 800, marginPercent: 20 },
+  ];
+  const r = computeProposal({ lines, globals: [], taxRatePercent: 10 });
+  assert.equal(r.totals.baseCost, 100000);
+  assert.equal(r.totals.total, 100000);
+  assert.equal(r.options.length, 1);
+  assert.equal(r.options[0].cost, 120000);
+  assert.equal(r.options[0].price, 150000);
+  assert.equal(r.options[0].tax, 10000); // 10% of the 1000.00 material price only
+  const a = applyAcceptance(r, ["opt"]);
+  assert.equal(a.contractValue, 100000 + 150000 + 10000);
+});

@@ -85,7 +85,7 @@ export function ProposalBuilder({ estimateSlug }: Props) {
   React.useEffect(() => {
     if (!data || hydrated) return;
     setLines(
-      data.lines.map((l) => ({
+      upgradeLegacy(data.lines.map((l) => ({
         id: l.id,
         parentId: l.parentId,
         type: l.type,
@@ -100,7 +100,7 @@ export function ProposalBuilder({ estimateSlug }: Props) {
         visibility: l.visibility as Visibility,
         isOptional: l.isOptional,
         vendorId: l.vendorId,
-      }))
+      })))
     );
     setGlobals(data.globals);
     setMilestones(data.milestones);
@@ -252,7 +252,8 @@ export function ProposalBuilder({ estimateSlug }: Props) {
     ...over,
   });
   const addParent = () => {
-    setLines((ls) => [...ls, blank({ type: "other", name: "New parent line", quantity: 0, visibility: "price" })]);
+    const parent = blank({ type: "other", name: "New parent line", quantity: 0, visibility: "price" });
+    setLines((ls) => [...ls, parent, blank({ parentId: parent.id, name: "New line" })]);
     mark();
   };
   const addChild = (parentId: string) => {
@@ -265,7 +266,8 @@ export function ProposalBuilder({ estimateSlug }: Props) {
     mark();
   };
   const addOption = () => {
-    setLines((ls) => [...ls, blank({ isOptional: true, name: "New optional item", unit: "ls", visibility: "price" })]);
+    const option = blank({ isOptional: true, type: "other", name: "New optional item", quantity: 0, unit: "ls", visibility: "price" });
+    setLines((ls) => [...ls, option, blank({ parentId: option.id, name: "New line" })]);
     mark();
   };
   const removeLine = (id: string) => {
@@ -282,7 +284,12 @@ export function ProposalBuilder({ estimateSlug }: Props) {
   const parents = lines.filter((l) => !l.parentId && !l.isOptional);
   const options = lines.filter((l) => l.isOptional);
   const childrenOf = (id: string) => lines.filter((l) => l.parentId === id);
-  const parentResult = (id: string) => result.parents.find((p) => p.id === id);
+  const parentResult = (id: string) => {
+    const base = result.parents.find((p) => p.id === id);
+    if (base) return base;
+    const o = result.options.find((x) => x.id === id);
+    return o ? { ...o, globalShare: 0, proposalPrice: o.price } : undefined;
+  };
   const vendors = vendorList ?? [];
 
   if (estimateLoading || proposalLoading || !hydrated) {
@@ -459,9 +466,10 @@ export function ProposalBuilder({ estimateSlug }: Props) {
                 <div /><div />
               </div>
 
-              {parents.map((p) => {
+              {[...parents, ...options].map((p) => {
                 const kids = childrenOf(p.id);
                 const pr = parentResult(p.id);
+                const isOpt = p.isOptional;
                 const open = !collapsed[p.id];
                 const totalCost = result.totals.baseCost;
                 const share = totalCost > 0 && pr ? pr.cost / totalCost : 0;
@@ -473,6 +481,14 @@ export function ProposalBuilder({ estimateSlug }: Props) {
                 const sameVis = vis.length > 0 && vis.every((v) => v === vis[0]);
                 return (
                   <React.Fragment key={p.id}>
+                    {isOpt && options[0]?.id === p.id && (
+                      <div className="grid min-h-11 grid-cols-[300px_1fr] items-center border-y bg-secondary/50">
+                        <div className="sticky left-0 z-[2] flex h-full min-h-11 items-center border-r bg-secondary px-4 text-sm font-semibold">Optional items</div>
+                        <div className="px-2 text-[13px] text-muted-foreground">
+                          Not in the proposal total. You choose which ones the customer accepted when you mark the proposal accepted.
+                        </div>
+                      </div>
+                    )}
                     <div className={cn("grid min-h-10 items-center border-b bg-muted text-sm font-semibold", COLS)}>
                       <div className="sticky left-0 z-[2] flex h-full min-h-10 items-center gap-1.5 border-r bg-muted px-2">
                         <button type="button" aria-label="Collapse or expand group"
@@ -480,11 +496,15 @@ export function ProposalBuilder({ estimateSlug }: Props) {
                           onClick={() => setCollapsed((c) => ({ ...c, [p.id]: !c[p.id] }))}>
                           <ChevronRight className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-90")} />
                         </button>
-                        <input className={cn(cellInput, "font-semibold")} aria-label="Parent line name" disabled={locked}
+                        <input className={cn(cellInput, "font-semibold")} aria-label={isOpt ? "Optional item name" : "Parent line name"} disabled={locked}
                           value={p.name} onChange={(e) => patchLine(p.id, { name: e.target.value })} />
-                        <span className="whitespace-nowrap rounded bg-background px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
-                          {(share * 100).toFixed(1)}%
-                        </span>
+                        {isOpt ? (
+                          <StatusBadge variant="draft">Optional</StatusBadge>
+                        ) : (
+                          <span className="whitespace-nowrap rounded bg-background px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+                            {(share * 100).toFixed(1)}%
+                          </span>
+                        )}
                       </div>
                       <div /><div /><div /><div /><div /><div />
                       <div className="px-2 text-right tabular-nums">{money(pr?.cost ?? 0)}</div>
@@ -497,7 +517,7 @@ export function ProposalBuilder({ estimateSlug }: Props) {
                       </div>
                       <div className="px-2 text-right tabular-nums">{money(pr?.price ?? 0)}</div>
                       <div className="px-2 text-right tabular-nums text-financial-positive">{money(pr?.profit ?? 0)}</div>
-                      <div className="px-2 text-right font-medium tabular-nums text-muted-foreground">+{money(pr?.globalShare ?? 0)}</div>
+                      <div className="px-2 text-right font-medium tabular-nums text-muted-foreground">{isOpt ? "" : `+${money(pr?.globalShare ?? 0)}`}</div>
                       <div className="px-2 text-right tabular-nums">{money(pr?.proposalPrice ?? 0)}</div>
                       <div className="px-2">
                         {kids.length > 0 && (
@@ -510,7 +530,7 @@ export function ProposalBuilder({ estimateSlug }: Props) {
                       </div>
                       <div className="flex justify-center">{NotesButton(p)}</div>
                       <div className="flex justify-center">
-                        <RemoveButton label="Remove parent line and its children" disabled={locked} onClick={() => removeLine(p.id)} />
+                        <RemoveButton label={isOpt ? "Remove optional item and its lines" : "Remove parent line and its children"} disabled={locked} onClick={() => removeLine(p.id)} />
                       </div>
                     </div>
 
@@ -555,37 +575,6 @@ export function ProposalBuilder({ estimateSlug }: Props) {
                 );
               })}
 
-              {options.length > 0 && (
-                <div className={cn("grid min-h-11 grid-cols-[300px_1fr] items-center border-y bg-secondary/50")}>
-                  <div className="sticky left-0 z-[2] flex h-full min-h-11 items-center border-r bg-secondary px-4 text-sm font-semibold">Optional items</div>
-                  <div className="px-2 text-[13px] text-muted-foreground">
-                    Not in the proposal total. You choose which ones the customer accepted when you mark the proposal accepted.
-                  </div>
-                </div>
-              )}
-              {options.map((o) => {
-                const or = result.options.find((x) => x.id === o.id);
-                return (
-                  <React.Fragment key={o.id}>
-                  <div className={cn("grid min-h-9 items-center border-b text-sm", COLS)}>
-                    <div className="sticky left-0 z-[2] flex h-full min-h-9 items-center border-r bg-background pl-4 pr-2">
-                      <input className={cellInput} aria-label="Option name" disabled={locked} value={o.name}
-                        onChange={(e) => patchLine(o.id, { name: e.target.value })} />
-                    </div>
-                    {Cells({ line: o })}
-                    <div />
-                    <div className="px-2 text-right font-semibold tabular-nums">{money(or?.price ?? 0)}</div>
-                    <div className="px-2"><StatusBadge variant="draft">Optional</StatusBadge></div>
-                    <div className="flex justify-center">{NotesButton(o)}</div>
-                    <div className="flex justify-center">
-                      <RemoveButton label="Remove option" disabled={locked} onClick={() => removeLine(o.id)} />
-                    </div>
-                  </div>
-                  {NotesRow(o)}
-                  </React.Fragment>
-                );
-              })}
-
               {!locked && (
                 <div className="sticky left-0 flex w-fit gap-2 px-4 py-2.5">
                   <Button type="button" variant="outline" onClick={addParent}>+ Add parent line</Button>
@@ -601,8 +590,24 @@ export function ProposalBuilder({ estimateSlug }: Props) {
         </div>
 
         {/* ---- Right rail ---- */}
-        <div className="sticky top-3 flex min-w-[300px] max-w-[380px] flex-[1_1_340px] flex-col gap-3 self-start max-h-[calc(100vh-7rem)]">
-          <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
+        <div className="flex min-w-[300px] max-w-[380px] flex-[1_1_340px] flex-col gap-3 self-start">
+
+          <section className="flex shrink-0 flex-col gap-1.5 rounded-md border-2 border-primary bg-background p-4 shadow-sm">
+            <Row label="Cost" value={money(result.totals.baseCost)} />
+            <Row label="Contingency (inside cost)" value={money(result.totals.baseContingency)} />
+            <Row label={`Profit (${marginPct.toFixed(1)}% margin)`} value={money(marginAmt)} />
+            <Row label="Global costs" value={money(result.totals.globalTotal)} />
+            <Row label="Sales tax" value={money(result.totals.tax)} />
+            <div className="flex items-baseline justify-between border-t pt-2.5">
+              <span className="text-sm font-semibold">Proposal total</span>
+              <span className="text-2xl font-bold tracking-tight tabular-nums">{money(result.totals.total)}</span>
+            </div>
+            <div className="flex justify-between text-[13px] text-muted-foreground">
+              <span>Optional items, not included</span>
+              <span className="tabular-nums">{money(optionsTotal)}</span>
+            </div>
+          </section>
+          <div className="flex flex-col gap-3">
             <section className="flex flex-col gap-3 rounded-md border bg-background p-4">
               <div className={labelText}>Adjustments</div>
               <div className="flex items-end gap-2">
@@ -699,25 +704,28 @@ export function ProposalBuilder({ estimateSlug }: Props) {
             </section>
           </div>
 
-          <section className="flex shrink-0 flex-col gap-1.5 rounded-md border-2 border-primary bg-background p-4 shadow-sm">
-            <Row label="Cost" value={money(result.totals.baseCost)} />
-            <Row label="Contingency (inside cost)" value={money(result.totals.baseContingency)} />
-            <Row label={`Profit (${marginPct.toFixed(1)}% margin)`} value={money(marginAmt)} />
-            <Row label="Global costs" value={money(result.totals.globalTotal)} />
-            <Row label="Sales tax" value={money(result.totals.tax)} />
-            <div className="flex items-baseline justify-between border-t pt-2.5">
-              <span className="text-sm font-semibold">Proposal total</span>
-              <span className="text-2xl font-bold tracking-tight tabular-nums">{money(result.totals.total)}</span>
-            </div>
-            <div className="flex justify-between text-[13px] text-muted-foreground">
-              <span>Optional items, not included</span>
-              <span className="tabular-nums">{money(optionsTotal)}</span>
-            </div>
-          </section>
         </div>
       </div>
     </div>
   );
+}
+
+/**
+ * Lines saved before groups held their own children: a top-level line with no children and a
+ * cost becomes an empty group with that line as its single child.
+ */
+function upgradeLegacy(lines: BuilderLine[]): BuilderLine[] {
+  const hasKids = new Set(lines.filter((l) => l.parentId).map((l) => l.parentId as string));
+  const out: BuilderLine[] = [];
+  for (const l of lines) {
+    if (!l.parentId && !hasKids.has(l.id) && l.quantity * l.unitCost > 0) {
+      out.push({ ...l, type: "other", quantity: 0, unitCost: 0, contingencyPercent: 0, notes: l.notes });
+      out.push({ ...l, id: crypto.randomUUID(), parentId: l.id, isOptional: false, notes: "" });
+    } else {
+      out.push(l);
+    }
+  }
+  return out;
 }
 
 function Row({ label, value }: { label: string; value: string }) {

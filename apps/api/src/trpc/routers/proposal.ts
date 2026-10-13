@@ -74,7 +74,7 @@ export function validateLineStructure(lines: Array<z.infer<typeof costLineInputS
       const parent = byId.get(l.parentId);
       if (!parent) return `Line "${l.name}" points at a parent that is not in this proposal`;
       if (parent.parentId) return `Line "${l.name}" is nested more than two levels deep`;
-      if (parent.isOptional || l.isOptional) return "Optional items cannot have or be children";
+      if (l.isOptional) return "Lines inside an optional item are not themselves optional";
       hasChildren.add(l.parentId);
     }
   }
