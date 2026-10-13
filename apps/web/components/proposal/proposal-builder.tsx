@@ -602,8 +602,8 @@ export function ProposalBuilder({ estimateSlug }: Props) {
         </div>
 
         {/* ---- Right rail ---- */}
-        <div className="sticky top-3 flex min-w-[300px] max-w-[380px] flex-[1_1_340px] flex-col gap-3 self-start max-h-[calc(100vh-24px)]">
-          <div className="flex min-h-0 flex-col gap-3 overflow-y-auto">
+        <div className="sticky top-3 flex min-w-[300px] max-w-[380px] flex-[1_1_340px] flex-col gap-3 self-start max-h-[calc(100vh-7rem)]">
+          <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
             <section className="flex flex-col gap-3 rounded-md border bg-background p-4">
               <div className={labelText}>Adjustments</div>
               <div className="flex items-end gap-2">
@@ -700,7 +700,7 @@ export function ProposalBuilder({ estimateSlug }: Props) {
             </section>
           </div>
 
-          <section className="flex flex-col gap-1.5 rounded-md border-2 border-primary bg-background p-4">
+          <section className="flex shrink-0 flex-col gap-1.5 rounded-md border-2 border-primary bg-background p-4 shadow-sm">
             <Row label="Cost" value={money(result.totals.baseCost)} />
             <Row label={`Profit (${marginPct.toFixed(1)}% margin)`} value={money(marginAmt)} />
             <Row label="Global costs" value={money(result.totals.globalTotal)} />
