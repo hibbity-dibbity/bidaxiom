@@ -290,3 +290,26 @@ export * from "./constants/index";
 export { formatCurrency } from "./utils/currency";
 
 export * from "./types/templates";
+
+export {
+  computeProposal,
+  applyAcceptance,
+  computeSchedule,
+  milestonesTotal100,
+  priceFromCostCents,
+  lineCostCents,
+  spreadByWeight,
+  centsToDollars,
+  type CostLineType,
+  type CostLineInput,
+  type GlobalCostInput,
+  type MilestoneInput,
+  type ProposalInput,
+  type ProposalResult,
+  type ProposalTotals,
+  type ParentResult,
+  type OptionResult,
+  type LineResult,
+  type AcceptanceResult,
+  type ScheduleRow,
+} from "./utils/proposalCalc";

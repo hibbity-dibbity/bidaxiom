@@ -1138,10 +1138,61 @@ export function createTenantSchema(schemaName: string) {
     submittedAt: timestamp("submitted_at", { withTimezone: true }),
     acceptedAt: timestamp("accepted_at", { withTimezone: true }),
     linkedBidId: uuid("linked_bid_id"),
+    // Proposal builder fields (phase 2). A proposal is an estimate.
+    salesTaxPercent: numeric("sales_tax_percent", { precision: 5, scale: 2 }).notNull().default("0"),
+    paymentTerms: text("payment_terms").notNull().default("Net 30"),
+    validDays: integer("valid_days").notNull().default(30),
     slug: text("slug").unique(), // URL-safe slug for routing
     createdBy: text("created_by").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * Proposal cost lines (replaces estimate_line_items for the proposal builder).
+   * Two levels only: parentId is null for parents and standalone optional items,
+   * and points at a parent for children. A parent with children is priced from them.
+   */
+  const proposalCostLines = schema.table("proposal_cost_lines", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    estimateId: uuid("estimate_id").notNull().references(() => estimates.id, { onDelete: "cascade" }),
+    parentId: uuid("parent_id"), // self-reference enforced by the router (kept FK-free so replace-all saves are simple)
+    type: text("type").notNull(), // labor, material, subcontractor, equipment, other
+    name: text("name").notNull(),
+    costCodeId: integer("cost_code_id"), // required at acceptance, except for type "other"
+    quantity: numeric("quantity", { precision: 15, scale: 4 }).notNull().default("1"),
+    unit: text("unit").notNull().default("ea"),
+    unitCost: numeric("unit_cost", { precision: 15, scale: 4 }).notNull().default("0"),
+    marginPercent: numeric("margin_percent", { precision: 5, scale: 2 }).notNull().default("0"),
+    visibility: text("visibility").notNull().default("price"), // price, name_only, hidden (children only)
+    isOptional: boolean("is_optional").notNull().default(false),
+    optionAccepted: boolean("option_accepted"), // null = undecided; set when the proposal is accepted
+    vendorId: uuid("vendor_id"), // subcontractor_directory.id (suppliers and subs)
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * Global costs (overhead, fuel, etc.): face value, spread across base parent lines.
+   */
+  const proposalGlobalCosts = schema.table("proposal_global_costs", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    estimateId: uuid("estimate_id").notNull().references(() => estimates.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    amount: numeric("amount", { precision: 15, scale: 2 }).notNull().default("0"),
+    sortOrder: integer("sort_order").notNull().default(0),
+  });
+
+  /**
+   * Invoicing schedule: percentage milestones that must total 100.
+   */
+  const invoiceMilestones = schema.table("invoice_milestones", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    estimateId: uuid("estimate_id").notNull().references(() => estimates.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    percent: numeric("percent", { precision: 5, scale: 2 }).notNull(),
+    sortOrder: integer("sort_order").notNull().default(0),
   });
 
   /**
@@ -1328,6 +1379,9 @@ export function createTenantSchema(schemaName: string) {
     calendarSyncState,
     estimates,
     estimateLineItems,
+    proposalCostLines,
+    proposalGlobalCosts,
+    invoiceMilestones,
     costCodeTemplates,
     templateLineItems,
     laborRateTemplates,
