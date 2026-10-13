@@ -747,6 +747,16 @@ export function createTenantSchema(schemaName: string) {
     tradeOther: text("trade_other"),
     notes: text("notes"),
     status: text("status").notNull().default("active"), // active, inactive, blacklisted
+    // Subs & Vendors directory fields (phase 1 of the proposal builder)
+    kind: text("kind").notNull().default("subcontractor"), // subcontractor, supplier
+    category: text("category"), // supplier category, e.g. "Building materials"
+    paymentTerms: text("payment_terms"), // e.g. "Net 30"
+    creditLimit: numeric("credit_limit", { precision: 15, scale: 2 }),
+    taxIdLast4: text("tax_id_last4"), // only the last 4 digits are stored; the full ID lives on the W-9
+    w9OnFile: boolean("w9_on_file").notNull().default(false),
+    w9ReceivedAt: timestamp("w9_received_at", { withTimezone: true }),
+    insuranceExpiresAt: timestamp("insurance_expires_at", { withTimezone: true }),
+    is1099: boolean("is_1099").notNull().default(false),
     slug: text("slug").unique(), // URL-safe slug for routing
     createdBy: text("created_by").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

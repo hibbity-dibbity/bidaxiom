@@ -17,10 +17,27 @@ import {
 import { PhoneInput } from "@/components/ui/phone-input";
 import { AddressInput } from "@/components/ui/address-input";
 import { toast } from "sonner";
-import { createSubcontractorSchema } from "@construction/shared";
+import { createSubcontractorSchema, addressSchema, PAYMENT_TERMS } from "@construction/shared";
 import type { UpdateSubcontractor, TradeValue } from "@construction/shared";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { TradeCombobox } from "@/components/bidding/trade-combobox";
 import { useRouter } from "next/navigation";
+
+// The API takes a flat address; the form edits a nested `address` object.
+const subcontractorFormSchema = createSubcontractorSchema
+  .omit({ street1: true, street2: true, city: true, state: true, zip: true })
+  .extend({ address: addressSchema.optional() });
+
+// <input type="date"> works in yyyy-mm-dd; the API takes ISO date-times.
+const toDateInput = (v?: string | Date | null) => (v ? new Date(v).toISOString().slice(0, 10) : "");
+const fromDateInput = (v?: string) => (v ? new Date(`${v}T12:00:00`).toISOString() : undefined);
 
 interface SubcontractorFormProps {
   mode: "create" | "edit";
@@ -40,7 +57,7 @@ export function SubcontractorForm({ mode, defaultValues, onSuccess }: Subcontrac
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const form = useForm<any>({
-    resolver: zodResolver(createSubcontractorSchema),
+    resolver: zodResolver(subcontractorFormSchema),
     defaultValues: {
       companyName: defaultValues?.companyName || "",
       contactName: defaultValues?.contactName || "",
@@ -57,13 +74,26 @@ export function SubcontractorForm({ mode, defaultValues, onSuccess }: Subcontrac
       trade: (defaultValues as any)?.trade || [],
       tradeOther: (defaultValues as any)?.tradeOther || "",
       notes: defaultValues?.notes || "",
+      kind: (defaultValues as any)?.kind || "subcontractor",
+      category: (defaultValues as any)?.category || "",
+      paymentTerms: (defaultValues as any)?.paymentTerms || "",
+      creditLimit:
+        (defaultValues as any)?.creditLimit != null && (defaultValues as any)?.creditLimit !== ""
+          ? Number((defaultValues as any).creditLimit)
+          : undefined,
+      taxIdLast4: (defaultValues as any)?.taxIdLast4 || "",
+      w9OnFile: (defaultValues as any)?.w9OnFile ?? false,
+      w9ReceivedAt: toDateInput((defaultValues as any)?.w9ReceivedAt),
+      insuranceExpiresAt: toDateInput((defaultValues as any)?.insuranceExpiresAt),
+      is1099: (defaultValues as any)?.is1099 ?? false,
     },
   });
+  const kind = form.watch("kind") as "subcontractor" | "supplier";
 
   const createMutation = trpc.subcontractor.create.useMutation({
     onSuccess: () => {
       utils.subcontractor.list.invalidate();
-      toast.success("Subcontractor created successfully");
+      toast.success("Created successfully");
       if (onSuccess) {
         onSuccess();
       } else {
@@ -79,7 +109,7 @@ export function SubcontractorForm({ mode, defaultValues, onSuccess }: Subcontrac
     onSuccess: (updated) => {
       utils.subcontractor.list.invalidate();
       utils.subcontractor.getById.invalidate();
-      toast.success("Subcontractor updated successfully");
+      toast.success("Updated successfully");
       if (onSuccess) {
         onSuccess(updated as { slug: string; id: string });
       }
@@ -106,10 +136,22 @@ export function SubcontractorForm({ mode, defaultValues, onSuccess }: Subcontrac
       trade: data.trade ?? [],
       tradeOther: data.tradeOther || undefined,
       notes: data.notes,
+      kind: data.kind,
+      category: data.kind === "supplier" ? data.category || null : null,
+      paymentTerms: data.paymentTerms || null,
+      creditLimit: typeof data.creditLimit === "number" && !Number.isNaN(data.creditLimit) ? data.creditLimit : null,
+      taxIdLast4: data.taxIdLast4 || null,
+      w9OnFile: !!data.w9OnFile,
+      w9ReceivedAt: fromDateInput(data.w9ReceivedAt) ?? null,
+      insuranceExpiresAt: data.kind === "subcontractor" ? fromDateInput(data.insuranceExpiresAt) ?? null : null,
+      is1099: !!data.is1099,
     };
 
     if (mode === "create") {
-      createMutation.mutate(payload);
+      const clean = Object.fromEntries(
+        Object.entries(payload).filter(([, v]) => v !== null)
+      ) as typeof payload;
+      createMutation.mutate(clean as any);
     } else if (defaultValues?.id) {
       updateMutation.mutate({
         id: defaultValues.id,
@@ -122,6 +164,28 @@ export function SubcontractorForm({ mode, defaultValues, onSuccess }: Subcontrac
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="space-y-4">
+          <FormField
+            control={form.control}
+            name="kind"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Type *</FormLabel>
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="subcontractor">Subcontractor (work orders)</SelectItem>
+                    <SelectItem value="supplier">Supplier (purchase orders)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
           <FormField
             control={form.control}
             name="companyName"
@@ -185,6 +249,23 @@ export function SubcontractorForm({ mode, defaultValues, onSuccess }: Subcontrac
             <AddressInput form={form} prefix="address" />
           </div>
 
+          {kind === "supplier" && (
+            <FormField
+              control={form.control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Category</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., Building materials, Metals, Electrical supply" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+
+          {kind === "subcontractor" && (
           <div className="space-y-2">
             <h4 className="text-sm font-medium">Trades</h4>
             <TradeCombobox
@@ -216,6 +297,131 @@ export function SubcontractorForm({ mode, defaultValues, onSuccess }: Subcontrac
               />
             )}
           </div>
+          )}
+
+          <div className="space-y-4 rounded-md border p-4">
+            <h4 className="text-sm font-medium">Terms and credit</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="paymentTerms"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Payment terms</FormLabel>
+                    <Select value={field.value || undefined} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select terms" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {PAYMENT_TERMS.map((t) => (
+                          <SelectItem key={t} value={t}>
+                            {t}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="creditLimit"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Credit limit ($)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={field.value ?? ""}
+                        onChange={(e) =>
+                          field.onChange(e.target.value === "" ? undefined : Number(e.target.value))
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-4 rounded-md border p-4">
+            <h4 className="text-sm font-medium">Compliance</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="taxIdLast4"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tax ID (last 4 digits)</FormLabel>
+                    <FormControl>
+                      <Input inputMode="numeric" maxLength={4} placeholder="1234" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {kind === "subcontractor" && (
+                <FormField
+                  control={form.control}
+                  name="insuranceExpiresAt"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Insurance certificate expires</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="w9OnFile"
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-2 space-y-0">
+                    <FormControl>
+                      <Checkbox checked={!!field.value} onCheckedChange={(v) => field.onChange(v === true)} />
+                    </FormControl>
+                    <FormLabel className="font-normal">W-9 on file</FormLabel>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="w9ReceivedAt"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>W-9 received</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <FormField
+              control={form.control}
+              name="is1099"
+              render={({ field }) => (
+                <FormItem className="flex items-center gap-2 space-y-0">
+                  <FormControl>
+                    <Checkbox checked={!!field.value} onCheckedChange={(v) => field.onChange(v === true)} />
+                  </FormControl>
+                  <FormLabel className="font-normal">1099 reporting applies</FormLabel>
+                </FormItem>
+              )}
+            />
+          </div>
 
           <FormField
             control={form.control}
@@ -225,7 +431,7 @@ export function SubcontractorForm({ mode, defaultValues, onSuccess }: Subcontrac
                 <FormLabel>Notes</FormLabel>
                 <FormControl>
                   <Textarea
-                    placeholder="Internal notes about this subcontractor..."
+                    placeholder="Internal notes..."
                     rows={4}
                     {...field}
                   />
@@ -251,7 +457,7 @@ export function SubcontractorForm({ mode, defaultValues, onSuccess }: Subcontrac
             {createMutation.isPending || updateMutation.isPending
               ? "Saving..."
               : mode === "create"
-              ? "Create Subcontractor"
+              ? "Create"
               : "Save Changes"}
           </Button>
         </div>

@@ -19,7 +19,7 @@ const mainNav = [
   { href: "/", label: "Dashboard", icon: Home },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/customers", label: "Customers", icon: Users },
-  { href: "/subcontractors", label: "Subcontractors", icon: HardHat },
+  { href: "/subcontractors", label: "Subs & Vendors", icon: HardHat },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

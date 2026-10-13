@@ -6,6 +6,7 @@ import {
   createSubcontractorSchema,
   updateSubcontractorSchema,
   subcontractorStatusEnum,
+  vendorKindEnum,
   AuditAction,
 } from "@construction/shared";
 import { createAuditLog } from "../../audit/logger.js";
@@ -59,6 +60,15 @@ export const subcontractorRouter = router({
           trade: input.trade ?? [],
           tradeOther: input.tradeOther ?? null,
           notes: input.notes ?? null,
+          kind: input.kind,
+          category: input.category || null,
+          paymentTerms: input.paymentTerms || null,
+          creditLimit: input.creditLimit != null ? String(input.creditLimit) : null,
+          taxIdLast4: input.taxIdLast4 || null,
+          w9OnFile: input.w9OnFile ?? false,
+          w9ReceivedAt: input.w9ReceivedAt ? new Date(input.w9ReceivedAt) : null,
+          insuranceExpiresAt: input.insuranceExpiresAt ? new Date(input.insuranceExpiresAt) : null,
+          is1099: input.is1099 ?? false,
           status: "active",
           createdBy: ctx.userId,
         })
@@ -94,6 +104,7 @@ export const subcontractorRouter = router({
     .input(
       z.object({
         status: subcontractorStatusEnum.optional(),
+        kind: vendorKindEnum.optional(),
         trade: z.string().optional(),
         search: z.string().optional(),
       })
@@ -122,10 +133,17 @@ export const subcontractorRouter = router({
         conditions.push(eq(schema.subcontractorDirectory.status, input.status));
       }
 
-      // Trade filter: check if trade JSONB array contains the string trade value
+      if (input.kind) {
+        conditions.push(eq(schema.subcontractorDirectory.kind, input.kind));
+      }
+
+      // Trade / category filter: subcontractors match on the trade array, suppliers on category
       if (input.trade !== undefined) {
         conditions.push(
-          sql`${schema.subcontractorDirectory.trade}::jsonb @> ${JSON.stringify([input.trade])}::jsonb`
+          or(
+            sql`${schema.subcontractorDirectory.trade}::jsonb @> ${JSON.stringify([input.trade])}::jsonb`,
+            eq(schema.subcontractorDirectory.category, input.trade)
+          )
         );
       }
 
@@ -399,6 +417,22 @@ export const subcontractorRouter = router({
       if (input.status !== undefined) {
         updateValues.status = input.status;
       }
+
+      if (input.kind !== undefined) updateValues.kind = input.kind;
+      if (input.category !== undefined) updateValues.category = input.category || null;
+      if (input.paymentTerms !== undefined) updateValues.paymentTerms = input.paymentTerms || null;
+      if (input.creditLimit !== undefined) {
+        updateValues.creditLimit = input.creditLimit === null ? null : String(input.creditLimit);
+      }
+      if (input.taxIdLast4 !== undefined) updateValues.taxIdLast4 = input.taxIdLast4 || null;
+      if (input.w9OnFile !== undefined) updateValues.w9OnFile = input.w9OnFile;
+      if (input.w9ReceivedAt !== undefined) {
+        updateValues.w9ReceivedAt = input.w9ReceivedAt ? new Date(input.w9ReceivedAt) : null;
+      }
+      if (input.insuranceExpiresAt !== undefined) {
+        updateValues.insuranceExpiresAt = input.insuranceExpiresAt ? new Date(input.insuranceExpiresAt) : null;
+      }
+      if (input.is1099 !== undefined) updateValues.is1099 = input.is1099;
 
       // Regenerate slug if company name changed
       if (input.companyName !== undefined) {

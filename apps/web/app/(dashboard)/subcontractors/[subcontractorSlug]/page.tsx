@@ -1,5 +1,7 @@
 "use client";
 
+import type React from "react";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc";
@@ -121,6 +123,38 @@ export default function SubcontractorDetailPage({ params }: { params: { subcontr
     return statusLabels[status] || status;
   };
 
+  const sub = subcontractor as typeof subcontractor & {
+    kind: string;
+    category: string | null;
+    paymentTerms: string | null;
+    creditLimit: string | null;
+    taxIdLast4: string | null;
+    w9OnFile: boolean;
+    w9ReceivedAt: string | null;
+    insuranceExpiresAt: string | null;
+    is1099: boolean;
+  };
+  const isSupplier = sub.kind === "supplier";
+  const fmtDate = (v: string | null) => (v ? new Date(v).toLocaleDateString() : null);
+  const daysToInsuranceExpiry = sub.insuranceExpiresAt
+    ? Math.ceil((new Date(sub.insuranceExpiresAt).getTime() - Date.now()) / 86_400_000)
+    : null;
+  const insuranceText = isSupplier
+    ? { text: "Not required for suppliers", tone: "text-muted-foreground" }
+    : daysToInsuranceExpiry === null
+    ? { text: "Missing", tone: "text-financial-negative" }
+    : daysToInsuranceExpiry < 0
+    ? { text: `Expired ${fmtDate(sub.insuranceExpiresAt)}`, tone: "text-financial-negative" }
+    : daysToInsuranceExpiry <= 30
+    ? { text: `Expires ${fmtDate(sub.insuranceExpiresAt)} (${daysToInsuranceExpiry} days)`, tone: "text-financial-pending" }
+    : { text: `Valid through ${fmtDate(sub.insuranceExpiresAt)}`, tone: "text-financial-positive" };
+  const kv = (label: string, value: React.ReactNode, tone?: string) => (
+    <div className="flex justify-between gap-4 border-b py-2 text-sm last:border-b-0">
+      <span className="text-muted-foreground">{label}</span>
+      <span className={`text-right font-medium ${tone ?? ""}`}>{value}</span>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -136,12 +170,13 @@ export default function SubcontractorDetailPage({ params }: { params: { subcontr
           <div>
             <div className="flex items-center gap-3 mb-2">
               <h1 className="text-3xl font-bold tracking-tight">{subcontractor.companyName}</h1>
+              <StatusBadge variant="draft">{isSupplier ? "Supplier" : "Subcontractor"}</StatusBadge>
               <StatusBadge variant={subStatusToVariant(subcontractor.status)}>
                 {getStatusLabel(subcontractor.status)}
               </StatusBadge>
             </div>
             <p className="text-muted-foreground">
-              Subcontractor details and bid history
+              {isSupplier ? sub.category || "Supplier details" : "Subcontractor details and bid history"}
             </p>
           </div>
           <div className="flex gap-2">
@@ -235,6 +270,7 @@ export default function SubcontractorDetailPage({ params }: { params: { subcontr
             )}
           </div>
 
+          {!isSupplier && (
           <div className="pt-4 border-t">
             <p className="text-sm font-medium mb-3">Trade Specialties</p>
             <div className="flex flex-wrap gap-2">
@@ -256,6 +292,7 @@ export default function SubcontractorDetailPage({ params }: { params: { subcontr
               })()}
             </div>
           </div>
+          )}
 
           {subcontractor.notes && (
             <div className="pt-4 border-t">
@@ -268,7 +305,44 @@ export default function SubcontractorDetailPage({ params }: { params: { subcontr
         </CardContent>
       </Card>
 
+      {/* Terms and compliance */}
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Terms and Credit</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {kv("Payment terms", sub.paymentTerms ?? "—")}
+            {kv(
+              "Credit limit",
+              sub.creditLimit != null
+                ? Number(sub.creditLimit).toLocaleString("en-US", { style: "currency", currency: "USD" })
+                : "—"
+            )}
+            {kv("Open balance", "$0.00")}
+            {kv("Tax ID", sub.taxIdLast4 ? `•••••${sub.taxIdLast4}` : "—")}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Compliance</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {kv(
+              "W-9",
+              sub.w9OnFile
+                ? `On file${sub.w9ReceivedAt ? `, received ${fmtDate(sub.w9ReceivedAt)}` : ""}`
+                : "Not on file",
+              sub.w9OnFile ? "text-financial-positive" : "text-financial-pending"
+            )}
+            {kv("Certificate of insurance", insuranceText.text, insuranceText.tone)}
+            {kv("1099 reporting", sub.is1099 ? "Applies" : "Not applicable")}
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Bid History Section */}
+      {!isSupplier && (
       <Card>
         <CardHeader>
           <CardTitle>Bid History</CardTitle>
@@ -278,14 +352,17 @@ export default function SubcontractorDetailPage({ params }: { params: { subcontr
           <BidHistoryTable bidHistory={subcontractor.bidHistory} />
         </CardContent>
       </Card>
+      )}
+
+      {/* Order history arrives with purchase and work orders (later phase) */}
 
       {/* Edit Dialog */}
       <Dialog open={isEditing} onOpenChange={setIsEditing}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Subcontractor</DialogTitle>
+            <DialogTitle>Edit Sub or Vendor</DialogTitle>
             <DialogDescription>
-              Update subcontractor information
+              Update details, terms and compliance
             </DialogDescription>
           </DialogHeader>
           <SubcontractorForm
@@ -305,7 +382,16 @@ export default function SubcontractorDetailPage({ params }: { params: { subcontr
               trade: (subcontractor as any).trade ?? [],
               tradeOther: (subcontractor as any).tradeOther ?? "",
               notes: subcontractor.notes,
-            }}
+              kind: sub.kind,
+              category: sub.category,
+              paymentTerms: sub.paymentTerms,
+              creditLimit: sub.creditLimit,
+              taxIdLast4: sub.taxIdLast4,
+              w9OnFile: sub.w9OnFile,
+              w9ReceivedAt: sub.w9ReceivedAt,
+              insuranceExpiresAt: sub.insuranceExpiresAt,
+              is1099: sub.is1099,
+            } as any}
             onSuccess={(updated) => {
               setIsEditing(false);
               // If slug regenerated due to name change, navigate to new URL

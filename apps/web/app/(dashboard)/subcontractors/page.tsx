@@ -37,7 +37,7 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { FilterChips, type FilterChip } from "@/components/shared/filter-chips";
-import type { SubcontractorStatus } from "@construction/shared";
+import type { SubcontractorStatus, VendorKind } from "@construction/shared";
 
 // Stable row model factories — must be module-level to avoid
 // TanStack Table's useLayoutEffect triggering an infinite re-render loop
@@ -50,12 +50,14 @@ export default function SubcontractorsPage() {
   const [search, setSearch] = useState("");
   const [tradeFilter, setTradeFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<SubcontractorStatus | "all">("all");
+  const [kindFilter, setKindFilter] = useState<VendorKind | "all">("all");
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
   const { data, isLoading } = trpc.subcontractor.list.useQuery({
     search: search || undefined,
     trade: tradeFilter ?? undefined,
     status: statusFilter === "all" ? undefined : statusFilter,
+    kind: kindFilter === "all" ? undefined : kindFilter,
   });
 
   const subcontractors = React.useMemo(() => data ?? [], [data]);
@@ -68,6 +70,8 @@ export default function SubcontractorsPage() {
       default: return "draft" as const;
     }
   };
+
+  const kindLabel = (kind: string) => (kind === "supplier" ? "Supplier" : "Subcontractor");
 
   const getStatusLabel = (status: string): string => {
     const statusLabels: Record<string, string> = {
@@ -90,6 +94,11 @@ export default function SubcontractorsPage() {
       enableSorting: true,
     },
     {
+      accessorKey: "kind",
+      header: "Type",
+      enableSorting: true,
+    },
+    {
       id: "email",
       accessorKey: "contactEmail",
       header: "Email",
@@ -103,7 +112,7 @@ export default function SubcontractorsPage() {
     },
     {
       id: "trades",
-      header: "Trades",
+      header: "Trade / Category",
       enableSorting: false,
     },
     {
@@ -126,7 +135,7 @@ export default function SubcontractorsPage() {
   const exportCsv = () => {
     const rows = table.getRowModel().rows;
     const today = new Date().toISOString().split("T")[0];
-    const filename = `subcontractors-${today}.csv`;
+    const filename = `subs-and-vendors-${today}.csv`;
 
     const escape = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
 
@@ -138,14 +147,15 @@ export default function SubcontractorsPage() {
         .join(" | ");
     };
 
-    const header = ["Company", "Contact", "Email", "Trade", "Status"].map(escape).join(",");
+    const header = ["Company", "Type", "Contact", "Email", "Trade / Category", "Status"].map(escape).join(",");
     const csvRows = rows.map((row) => {
       const s = row.original;
       return [
         s.companyName ?? "",
+        kindLabel(s.kind),
         s.contactName ?? "",
         s.contactEmail ?? "",
-        formatTrades(s),
+        s.kind === "supplier" ? s.category ?? "" : formatTrades(s),
         getStatusLabel(s.status),
       ].map(escape).join(",");
     });
@@ -162,6 +172,12 @@ export default function SubcontractorsPage() {
 
   // Derive filter chips from active secondary filter values
   const activeChips: FilterChip[] = [
+    ...(kindFilter !== "all"
+      ? [{
+          label: `Type: ${kindLabel(kindFilter)}`,
+          onRemove: () => setKindFilter("all"),
+        }]
+      : []),
     ...(statusFilter !== "all"
       ? [{
           label: `Status: ${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}`,
@@ -179,14 +195,15 @@ export default function SubcontractorsPage() {
   const clearAllFilters = () => {
     setSearch("");
     setStatusFilter("all");
+    setKindFilter("all");
     setTradeFilter(null);
   };
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Subcontractor Directory"
-        description="Manage your subcontractor relationships and bid history"
+        title="Subs & Vendors"
+        description="Subcontractors and suppliers you work with, their terms and compliance"
         actions={
           <>
             <Button
@@ -200,7 +217,7 @@ export default function SubcontractorsPage() {
             </Button>
             <Button onClick={() => router.push("/subcontractors/new")}>
               <Plus className="mr-2 h-4 w-4" />
-              Add Subcontractor
+              Add Sub or Vendor
             </Button>
           </>
         }
@@ -222,10 +239,10 @@ export default function SubcontractorsPage() {
               onValueChange={(value) => setTradeFilter(value === "all" ? null : value)}
             >
               <SelectTrigger className="md:w-[200px]">
-                <SelectValue placeholder="Filter by trade" />
+                <SelectValue placeholder="Filter by trade or category" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Trades</SelectItem>
+                <SelectItem value="all">All Trades and Categories</SelectItem>
                 {SIMPLE_TRADES.map((trade) => (
                   <SelectItem key={trade} value={trade}>
                     {trade}
@@ -234,6 +251,17 @@ export default function SubcontractorsPage() {
               </SelectContent>
             </Select>
           </div>
+
+          <Tabs
+            value={kindFilter}
+            onValueChange={(value) => setKindFilter(value as VendorKind | "all")}
+          >
+            <TabsList>
+              <TabsTrigger value="all">All types</TabsTrigger>
+              <TabsTrigger value="subcontractor">Subcontractors</TabsTrigger>
+              <TabsTrigger value="supplier">Suppliers</TabsTrigger>
+            </TabsList>
+          </Tabs>
 
           <Tabs
             value={statusFilter}
@@ -312,6 +340,9 @@ export default function SubcontractorsPage() {
                     <TableCell className="font-medium sticky left-0 z-10 bg-background border-r">
                       {row.original.companyName}
                     </TableCell>
+                    <TableCell>
+                      <StatusBadge variant="draft">{kindLabel(row.original.kind)}</StatusBadge>
+                    </TableCell>
                     <TableCell>{row.original.contactName || "-"}</TableCell>
                     <TableCell className="text-muted-foreground">
                       {row.original.contactEmail || "-"}
@@ -321,6 +352,11 @@ export default function SubcontractorsPage() {
                     </TableCell>
                     <TableCell>
                       {(() => {
+                        if (row.original.kind === "supplier") {
+                          return row.original.category
+                            ? <StatusBadge variant="draft">{row.original.category}</StatusBadge>
+                            : <span className="text-muted-foreground">—</span>;
+                        }
                         const tradeArr = (row.original as any).trade as string[] ?? [];
                         if (tradeArr.length === 0) {
                           return <span className="text-muted-foreground">—</span>;
@@ -356,20 +392,20 @@ export default function SubcontractorsPage() {
         </Card>
       ) : (
         <EmptyState
-          icon={search || tradeFilter !== null || statusFilter !== "all" ? SearchX : HardHat}
+          icon={search || tradeFilter !== null || statusFilter !== "all" || kindFilter !== "all" ? SearchX : HardHat}
           heading={
-            search || tradeFilter !== null || statusFilter !== "all"
-              ? "No subcontractors match your filters"
-              : "No subcontractors yet"
+            search || tradeFilter !== null || statusFilter !== "all" || kindFilter !== "all"
+              ? "No subs or vendors match your filters"
+              : "No subs or vendors yet"
           }
           description={
-            search || tradeFilter !== null || statusFilter !== "all"
+            search || tradeFilter !== null || statusFilter !== "all" || kindFilter !== "all"
               ? "Try adjusting your search or filter criteria."
-              : "Add your first subcontractor to start building your directory."
+              : "Add your first subcontractor or supplier to start building your directory."
           }
           action={
-            !(search || tradeFilter !== null || statusFilter !== "all")
-              ? { label: "Add Subcontractor", href: "/subcontractors/new" }
+            !(search || tradeFilter !== null || statusFilter !== "all" || kindFilter !== "all")
+              ? { label: "Add Sub or Vendor", href: "/subcontractors/new" }
               : undefined
           }
         />

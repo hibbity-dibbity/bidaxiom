@@ -58,4 +58,7 @@ export {
   rfqStatusEnum,
   bidStatusEnum,
   subcontractorStatusEnum,
+  vendorKindEnum,
+  PAYMENT_TERMS,
+  type VendorKind,
 } from "../types/bidding";

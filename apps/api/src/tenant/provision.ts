@@ -1028,7 +1028,16 @@ export async function provisionTenantSchema(
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
           updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
           trade JSONB NOT NULL DEFAULT '[]'::jsonb,
-          trade_other TEXT
+          trade_other TEXT,
+          kind TEXT NOT NULL DEFAULT 'subcontractor',
+          category TEXT,
+          payment_terms TEXT,
+          credit_limit NUMERIC(15,2),
+          tax_id_last4 TEXT,
+          w9_on_file BOOLEAN NOT NULL DEFAULT FALSE,
+          w9_received_at TIMESTAMPTZ,
+          insurance_expires_at TIMESTAMPTZ,
+          is_1099 BOOLEAN NOT NULL DEFAULT FALSE
         )
       `);
 

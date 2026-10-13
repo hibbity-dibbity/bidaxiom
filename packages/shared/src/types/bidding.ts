@@ -27,6 +27,28 @@ export const subcontractorStatusEnum = z.enum(["active", "inactive", "blackliste
 export type SubcontractorStatus = z.infer<typeof subcontractorStatusEnum>;
 
 /**
+ * Directory entry kind: a subcontractor (work orders) or a supplier (purchase orders)
+ */
+export const vendorKindEnum = z.enum(["subcontractor", "supplier"]);
+export type VendorKind = z.infer<typeof vendorKindEnum>;
+
+/** Payment terms offered in the directory */
+export const PAYMENT_TERMS = ["Due on receipt", "Net 15", "Net 30", "Net 45", "Net 60"] as const;
+
+/** Terms, credit and compliance fields shared by create and update */
+const vendorExtraFields = {
+  kind: vendorKindEnum,
+  category: z.string().max(200),
+  paymentTerms: z.string().max(100),
+  creditLimit: z.number().min(0).max(1_000_000_000),
+  taxIdLast4: z.string().regex(/^\d{4}$/, "Enter the last 4 digits"),
+  w9OnFile: z.boolean(),
+  w9ReceivedAt: z.string().datetime(),
+  insuranceExpiresAt: z.string().datetime(),
+  is1099: z.boolean(),
+};
+
+/**
  * Leveling category enum
  */
 export const levelingCategoryEnum = z.enum(["scope_gap", "scope_extra", "clarification", "risk"]);
@@ -153,6 +175,15 @@ export const createSubcontractorSchema = z.object({
   trade: z.array(tradeValueEnum).default([]),
   tradeOther: z.string().max(200).optional(),
   notes: z.string().optional(),
+  kind: vendorExtraFields.kind.default("subcontractor"),
+  category: vendorExtraFields.category.optional(),
+  paymentTerms: vendorExtraFields.paymentTerms.optional(),
+  creditLimit: vendorExtraFields.creditLimit.optional(),
+  taxIdLast4: vendorExtraFields.taxIdLast4.optional(),
+  w9OnFile: vendorExtraFields.w9OnFile.optional(),
+  w9ReceivedAt: vendorExtraFields.w9ReceivedAt.optional(),
+  insuranceExpiresAt: vendorExtraFields.insuranceExpiresAt.optional(),
+  is1099: vendorExtraFields.is1099.optional(),
 });
 
 export type CreateSubcontractor = z.infer<typeof createSubcontractorSchema>;
@@ -176,6 +207,15 @@ export const updateSubcontractorSchema = z.object({
   tradeOther: z.string().max(200).nullable().optional(),
   notes: z.string().nullable().optional(),
   status: subcontractorStatusEnum.optional(),
+  kind: vendorExtraFields.kind.optional(),
+  category: vendorExtraFields.category.nullable().optional(),
+  paymentTerms: vendorExtraFields.paymentTerms.nullable().optional(),
+  creditLimit: vendorExtraFields.creditLimit.nullable().optional(),
+  taxIdLast4: vendorExtraFields.taxIdLast4.nullable().optional(),
+  w9OnFile: vendorExtraFields.w9OnFile.optional(),
+  w9ReceivedAt: vendorExtraFields.w9ReceivedAt.nullable().optional(),
+  insuranceExpiresAt: vendorExtraFields.insuranceExpiresAt.nullable().optional(),
+  is1099: vendorExtraFields.is1099.optional(),
 });
 
 export type UpdateSubcontractor = z.infer<typeof updateSubcontractorSchema>;

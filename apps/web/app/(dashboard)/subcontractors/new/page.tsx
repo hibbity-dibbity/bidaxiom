@@ -17,18 +17,18 @@ export default function NewSubcontractorPage() {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to directory
         </Link>
-        <h1 className="text-3xl font-bold tracking-tight">Add Subcontractor</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Add Sub or Vendor</h1>
         <p className="text-muted-foreground">
-          Add a new subcontractor to your company directory
+          Add a subcontractor (work orders) or supplier (purchase orders) to your directory
         </p>
       </div>
 
       {/* Form Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Subcontractor Information</CardTitle>
+          <CardTitle>Details</CardTitle>
           <CardDescription>
-            Enter the subcontractor's details and select their trade specialties
+            Enter contact details, terms and compliance information
           </CardDescription>
         </CardHeader>
         <CardContent>
