@@ -74,8 +74,8 @@ export function LienWaiverTracker({ paymentAppId, projectId }: LienWaiverTracker
                   </Badge>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <Badge variant="outline" className={waiverTypeColors[waiver.type] || ""}>
-                    {waiver.type.replace("_", " ")}
+                  <Badge variant="outline" className={waiverTypeColors[waiver.waiverType] || ""}>
+                    {waiver.waiverType.replace("_", " ")}
                   </Badge>
                   <span className="text-muted-foreground">
                     Through {new Date(waiver.throughDate).toLocaleDateString()}

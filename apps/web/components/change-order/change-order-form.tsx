@@ -239,7 +239,7 @@ export function ChangeOrderForm({ projectId, projectSlug }: ChangeOrderFormProps
                 placeholder="Enter change order title"
               />
               {errors.title && (
-                <p className="text-sm text-destructive">{errors.title.message}</p>
+                <p className="text-sm text-destructive">{String(errors.title.message)}</p>
               )}
             </div>
 

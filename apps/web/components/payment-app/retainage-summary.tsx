@@ -42,7 +42,7 @@ export function RetainageSummary({ projectId }: RetainageSummaryProps) {
     return null;
   }
 
-  const { summary, records } = retainage;
+  const { totals: summary, records } = retainage;
 
   return (
     <Card>

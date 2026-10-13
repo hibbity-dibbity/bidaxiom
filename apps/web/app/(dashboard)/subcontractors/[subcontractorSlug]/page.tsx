@@ -74,6 +74,7 @@ export default function SubcontractorDetailPage({ params }: { params: { subcontr
   };
 
   const handleDelete = () => {
+    if (!subcontractor) return;
     deleteMutation.mutate({ id: subcontractor.id });
   };
 
@@ -293,8 +294,8 @@ export default function SubcontractorDetailPage({ params }: { params: { subcontr
               id: subcontractor.id,
               companyName: subcontractor.companyName,
               contactName: subcontractor.contactName,
-              contactEmail: subcontractor.contactEmail,
-              contactPhone: subcontractor.contactPhone,
+              contactEmail: subcontractor.contactEmail ?? undefined,
+              contactPhone: subcontractor.contactPhone ?? undefined,
               street1: subcontractor.street1,
               street2: subcontractor.street2,
               city: subcontractor.city,

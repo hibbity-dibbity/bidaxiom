@@ -27,7 +27,6 @@ import { SearchableSelect } from "@/components/ui/searchable-select";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { toast } from "sonner";
 import { UserPlus, Mail, X, Building2 } from "lucide-react";
-import type { InvitationStatus } from "@construction/shared";
 
 interface InvitationManagerProps {
   rfqId: string;
@@ -35,7 +34,7 @@ interface InvitationManagerProps {
   rfqTrades: number[];
   invitations: Array<{
     id: string;
-    status: InvitationStatus;
+    status: string;
     subcontractorId?: string | null;
     externalEmail?: string | null;
     externalCompanyName?: string | null;
@@ -46,7 +45,7 @@ interface InvitationManagerProps {
   }>;
 }
 
-const invitationStatusToVariant = (status: InvitationStatus) => {
+const invitationStatusToVariant = (status: string) => {
   switch (status) {
     case "pending": return "draft" as const;
     case "viewed": return "pending" as const;

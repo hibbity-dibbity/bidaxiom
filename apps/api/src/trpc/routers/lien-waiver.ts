@@ -521,6 +521,8 @@ export const lienWaiverRouter = router({
         .select({
           id: schema.lienWaivers.id,
           partyName: schema.lienWaivers.partyName,
+          partyType: schema.lienWaivers.partyType,
+          throughDate: schema.lienWaivers.throughDate,
           waiverType: schema.lienWaivers.waiverType,
           amountWaived: schema.lienWaivers.amountWaived,
           status: schema.lienWaivers.status,
@@ -544,6 +546,8 @@ export const lienWaiverRouter = router({
         waivers: waivers.map((w) => ({
           id: w.id,
           partyName: w.partyName,
+          partyType: w.partyType,
+          throughDate: w.throughDate,
           waiverType: w.waiverType,
           amountWaived: Number(w.amountWaived),
           status: w.status,

@@ -52,7 +52,7 @@ export default function CompanySettingsPage() {
   });
 
   const form = useForm<CompanyConfig>({
-    resolver: zodResolver(companyConfigSchema),
+    resolver: zodResolver(companyConfigSchema) as any,
     defaultValues: {
       companyType: "gc_only",
       tradesConfig: {
