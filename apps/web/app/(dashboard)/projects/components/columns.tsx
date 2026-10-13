@@ -5,7 +5,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import type { LifecyclePhase } from "@construction/shared";
 import { LIFECYCLE_PHASE_LABELS } from "@construction/shared";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { DeleteProjectButton } from "./delete-project-button";
+import { ChevronRight } from "lucide-react";
 
 // Type for project data from API
 interface Project {
@@ -34,10 +34,7 @@ const phaseToVariant = (phase: LifecyclePhase) => {
   }
 };
 
-export function createColumns(
-  isAdmin: boolean,
-  onDelete: (projectId: string) => void
-): ColumnDef<Project>[] {
+export function createColumns(): ColumnDef<Project>[] {
   const cols: ColumnDef<Project>[] = [
     {
       accessorKey: "jobNumber",
@@ -63,6 +60,7 @@ export function createColumns(
           <Link
             href={`/projects/${project.slug}`}
             className="font-semibold text-sm hover:underline"
+            onClick={(e) => e.stopPropagation()}
           >
             {project.name}
           </Link>
@@ -114,21 +112,15 @@ export function createColumns(
     },
   ];
 
-  if (isAdmin) {
-    cols.push({
-      id: "delete",
-      header: "",
-      size: 60,
-      cell: ({ row }) => (
-        <DeleteProjectButton
-          projectId={row.original.id}
-          projectName={row.original.name}
-          onDeleted={() => onDelete(row.original.id)}
-          variant="table-row"
-        />
-      ),
-    });
-  }
+  // Trailing chevron: the whole row opens the project (delete lives on the project page)
+  cols.push({
+    id: "open",
+    header: "",
+    size: 40,
+    enableHiding: false,
+    enableSorting: false,
+    cell: () => <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" />,
+  });
 
   return cols;
 }

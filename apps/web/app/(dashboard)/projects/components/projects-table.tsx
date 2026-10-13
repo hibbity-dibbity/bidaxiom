@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
 import {
   useReactTable,
   getCoreRowModel,
@@ -19,6 +20,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card } from "@/components/ui/card";
 import { ChevronDown, ChevronUp, ChevronsUpDown, Download, FolderOpen, SearchX } from "lucide-react";
 import { createColumns } from "./columns";
 import { cn } from "@/lib/utils";
@@ -43,8 +45,6 @@ interface ProjectsTableProps {
   page: number;
   onPageChange: (page: number) => void;
   pageSize: number;
-  isAdmin: boolean;
-  onDelete: (projectId: string) => void;
   /** True when any filter or search is active — selects EmptyState variant */
   isFiltered: boolean;
 }
@@ -56,21 +56,16 @@ export function ProjectsTable({
   page,
   onPageChange,
   pageSize,
-  isAdmin,
-  onDelete,
   isFiltered,
 }: ProjectsTableProps) {
+  const router = useRouter();
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const { columnVisibility, onColumnVisibilityChange } = useColumnVisibility("projects-list");
 
   // Wrap data in useMemo to prevent infinite re-renders
   const memoizedData = React.useMemo(() => data, [data]);
 
-  // Build columns based on admin status
-  const columns = React.useMemo(
-    () => createColumns(isAdmin, onDelete),
-    [isAdmin, onDelete]
-  );
+  const columns = React.useMemo(() => createColumns(), []);
 
   const table = useReactTable<Project>({
     data: memoizedData,
@@ -86,8 +81,7 @@ export function ProjectsTable({
     enableSortingRemoval: false,
   });
 
-  // Skeleton columns for loading state (non-admin baseline)
-  const skeletonColumns = React.useMemo(() => createColumns(false, () => {}), []);
+  const skeletonColumns = columns;
 
   // Calculate pagination info
   const offset = (page - 1) * pageSize;
@@ -125,7 +119,7 @@ export function ProjectsTable({
 
   if (isLoading) {
     return (
-      <div className="rounded-md border">
+      <Card>
         <Table>
           <TableHeader>
             <TableRow>
@@ -140,7 +134,7 @@ export function ProjectsTable({
             {Array.from({ length: 5 }).map((_, i) => (
               <TableRow key={i}>
                 {skeletonColumns.map((_, colIndex) => (
-                  <TableCell key={colIndex} className="py-2">
+                  <TableCell key={colIndex}>
                     <Skeleton className="h-5 w-full" />
                   </TableCell>
                 ))}
@@ -148,7 +142,7 @@ export function ProjectsTable({
             ))}
           </TableBody>
         </Table>
-      </div>
+      </Card>
     );
   }
 
@@ -181,7 +175,8 @@ export function ProjectsTable({
         </Button>
         <ColumnPicker table={table} />
       </div>
-      <div className="rounded-md border relative w-full overflow-auto max-h-[70vh]">
+      <Card>
+        <div className="relative w-full overflow-auto max-h-[70vh]">
         <Table>
           <TableHeader className="sticky top-0 z-20 bg-background">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -237,13 +232,13 @@ export function ProjectsTable({
             {table.getRowModel().rows.map((row) => (
               <TableRow
                 key={row.id}
-                className="hover:bg-muted/50 group"
+                className="cursor-pointer hover:bg-muted/50"
+                onClick={() => router.push(`/projects/${row.original.slug}`)}
               >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell
                     key={cell.id}
                     className={cn(
-                      "py-2 text-sm",
                       cell.column.id === "jobNumber" && "sticky left-0 z-10 bg-background border-r"
                     )}
                   >
@@ -254,7 +249,8 @@ export function ProjectsTable({
             ))}
           </TableBody>
         </Table>
-      </div>
+        </div>
+      </Card>
 
       {/* Pagination */}
       <div className="flex items-center justify-between px-2">
