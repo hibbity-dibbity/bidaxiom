@@ -46,7 +46,7 @@ export function DraftOrdersPanel({ estimateId }: { estimateId: string }) {
                   <ul className="divide-y text-sm">
                     {o.lines.map((l) => (
                       <li key={l.id} className="flex justify-between gap-3 px-3 py-1.5">
-                        <span>{l.description}</span>
+                        <span>{l.description}{l.category ? <span className="ml-2 text-xs text-muted-foreground">{l.category}</span> : null}</span>
                         <span className="tabular-nums text-muted-foreground">{dollars(l.budgetCost)}</span>
                       </li>
                     ))}

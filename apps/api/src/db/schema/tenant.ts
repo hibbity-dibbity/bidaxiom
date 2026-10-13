@@ -1220,7 +1220,7 @@ export function createTenantSchema(schemaName: string) {
     projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
     estimateId: uuid("estimate_id").notNull().references(() => estimates.id, { onDelete: "cascade" }),
     kind: text("kind").notNull(), // purchase, work
-    number: text("number").notNull(), // PO-001, WO-001 (per project)
+    number: text("number").notNull(), // PO<job number>-01, WO<job number>-01
     vendorId: uuid("vendor_id"), // subcontractor_directory.id
     status: text("status").notNull().default("draft"), // draft, issued, partially_paid, paid, closed
     revision: integer("revision").notNull().default(1),
@@ -1238,7 +1238,8 @@ export function createTenantSchema(schemaName: string) {
     orderId: uuid("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
     sourceLineId: uuid("source_line_id"), // proposal_cost_lines.id it came from
     description: text("description").notNull(),
-    costCodeId: integer("cost_code_id"),
+    costCodeId: integer("cost_code_id"), // unused; kept for old rows
+    category: text("category"), // COGS: Materials & Supplies / Equipment Rental / Subcontract Labor
     budgetCost: numeric("budget_cost", { precision: 15, scale: 2 }).notNull().default("0"),
     projectedCost: numeric("projected_cost", { precision: 15, scale: 2 }).notNull().default("0"),
     exclusions: text("exclusions"), // work orders only

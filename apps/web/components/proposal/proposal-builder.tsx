@@ -15,7 +15,6 @@ import {
   computeProposal,
   computeSchedule,
   milestonesTotal100,
-  CSI_DIVISIONS,
   type CostLineInput,
 } from "@construction/shared";
 import { NumField } from "./num-field";
@@ -35,7 +34,7 @@ import {
 } from "./builder-types";
 
 const COLS =
-  "grid-cols-[300px_112px_150px_168px_72px_60px_104px_76px_112px_84px_116px_108px_116px_124px_148px_36px_36px]";
+  "grid-cols-[300px_112px_168px_72px_60px_104px_76px_112px_84px_116px_108px_116px_124px_148px_36px_36px]";
 
 const cellInput =
   "h-7 w-full rounded border border-transparent bg-transparent px-1.5 text-sm text-foreground hover:border-border focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-60";
@@ -121,7 +120,6 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
         parentId: l.parentId,
         type: l.type,
         name: l.name,
-        costCodeId: l.costCodeId,
         quantity: l.quantity,
         unit: l.unit,
         unitCost: l.unitCost,
@@ -212,7 +210,6 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
             parentId: l.parentId,
             type: l.type,
             name: l.name,
-            costCodeId: l.costCodeId,
             quantity: l.quantity,
             unit: l.unit,
             unitCost: l.unitCost,
@@ -274,7 +271,6 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
     parentId: null,
     type: "labor",
     name: "",
-    costCodeId: null,
     quantity: 1,
     unit: "ea",
     unitCost: 0,
@@ -397,23 +393,6 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
     </select>
   );
 
-  const CostCodeSelect = ({ line }: { line: BuilderLine }) => (
-    <select
-      className={cn(cellInput, line.type !== "other" && line.costCodeId === null && !locked && "text-muted-foreground")}
-      aria-label="Cost code"
-      disabled={locked || line.type === "other"}
-      value={line.costCodeId ?? ""}
-      onChange={(e) => patchLine(line.id, { costCodeId: e.target.value === "" ? null : Number(e.target.value) })}
-    >
-      <option value="">{line.type === "other" ? "Not needed" : "Select…"}</option>
-      {CSI_DIVISIONS.filter((d) => d.division > 0).map((d) => (
-        <option key={d.division} value={d.division}>
-          {String(d.division).padStart(2, "0")} {d.name}
-        </option>
-      ))}
-    </select>
-  );
-
   const TypeSelect = ({ line }: { line: BuilderLine }) => (
     <select
       className={cellInput}
@@ -435,7 +414,6 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
     return (
       <>
         <div className="px-1">{TypeSelect({ line })}</div>
-        <div className="px-1">{CostCodeSelect({ line })}</div>
         <div className="px-1">{VendorSelect({ line })}</div>
         <div className="px-1">
           <NumField className={cn(cellInput, "text-right")} aria-label="Quantity" min={0} disabled={locked}
@@ -539,11 +517,10 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
         {/* ---- Cost table ---- */}
         <div className="flex min-w-0 flex-[999_1_640px] flex-col gap-3">
           <div className="relative max-h-[70vh] overflow-auto rounded-md border bg-background">
-            <div className="min-w-[1940px]">
+            <div className="min-w-[1790px]">
               <div className={cn("sticky top-0 z-[3] grid h-9 items-center border-b bg-muted text-[11px] font-semibold uppercase tracking-wider text-muted-foreground", COLS)}>
                 <div className="sticky left-0 z-[4] flex h-full items-center border-r bg-muted px-4">Item</div>
                 <div className="px-2">Type</div>
-                <div className="px-2" title="CSI division. Needed on every ordered line before the proposal can be accepted.">Cost code</div>
                 <div className="px-2">Vendor</div>
                 <div className="px-2 text-right">Qty</div>
                 <div className="px-2">Unit</div>

@@ -11,7 +11,7 @@ import {
   milestonesTotal100,
   buildCustomerView,
   generateDraftOrders,
-  linesMissingCostCode,
+  formatDocNumber,
   type CostLineInput,
 } from "@construction/shared";
 import { createAuditLog } from "../../audit/logger.js";
@@ -704,6 +704,12 @@ export const proposalRouter = router({
         .from(schema.estimates)
         .where(eq(schema.estimates.projectId, input.projectId))
         .orderBy(desc(schema.estimates.revision));
+      if (existing.some((e) => e.status === "accepted" || e.status === "under_contract")) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "This project has an accepted proposal. Changes now go through a change order, not a new revision.",
+        });
+      }
       const next = (existing[0]?.revision ?? 0) + 1;
       const name = `Rev ${next}`;
       const copyFromId = input.copyFromId ?? existing[0]?.id ?? null;
@@ -866,18 +872,11 @@ export const proposalRouter = router({
         vendorId: l.vendorId,
         isOptional: l.isOptional,
       }));
-      const missing = linesMissingCostCode(sourceLines, c.result, accepted);
-      if (missing.length > 0) {
-        const shown = missing.slice(0, 5).join(", ");
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: `Pick a cost code for: ${shown}${missing.length > 5 ? ` and ${missing.length - 5} more` : ""}. Lines of type Other do not need one.`,
-        });
-      }
-
       const acceptance = applyAcceptance(c.result, accepted);
       const drafts = generateDraftOrders(sourceLines, c.result, accepted);
       const projectId = c.estimate.projectId;
+      const [proj] = await db.select({ jobNumber: schema.projects.jobNumber }).from(schema.projects).where(eq(schema.projects.id, projectId));
+      const projectNumber = proj?.jobNumber ?? null;
       const now = new Date();
 
       const createdOrders = await db.transaction(async (tx) => {
@@ -905,7 +904,7 @@ export const proposalRouter = router({
         const out: Array<{ id: string; number: string; kind: string; vendorId: string | null; lines: number; total: number }> = [];
         for (const d of drafts) {
           counters[d.kind] += 1;
-          const number = `${d.kind === "purchase" ? "PO" : "WO"}-${String(counters[d.kind]).padStart(3, "0")}`;
+          const number = formatDocNumber(d.kind === "purchase" ? "PO" : "WO", projectNumber, counters[d.kind]);
           const [order] = await tx
             .insert(schema.orders)
             .values({ projectId, estimateId: input.estimateId, kind: d.kind, number, vendorId: d.vendorId, status: "draft", createdBy: userId })
@@ -915,7 +914,7 @@ export const proposalRouter = router({
               orderId: order.id,
               sourceLineId: l.sourceLineId,
               description: l.description,
-              costCodeId: l.costCodeId,
+              category: l.category,
               budgetCost: String(l.budgetCost / 100),
               projectedCost: String(l.budgetCost / 100),
               sortOrder: i,

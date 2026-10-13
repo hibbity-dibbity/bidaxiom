@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { computeProposal, applyAcceptance, type CostLineInput } from "./proposalCalc";
-import { generateDraftOrders, linesMissingCostCode, type OrderSourceLine } from "./proposalOrders";
+import { generateDraftOrders, costCategoryForType, formatDocNumber, type OrderSourceLine } from "./proposalOrders";
 
 const calc: CostLineInput[] = [
   { id: "p", parentId: null, type: "other", quantity: 0, unitCost: 0, marginPercent: 0 },
@@ -16,8 +16,8 @@ const calc: CostLineInput[] = [
   { id: "x", parentId: null, type: "other", quantity: 0, unitCost: 0, marginPercent: 0, isOptional: true },
   { id: "x1", parentId: "x", type: "material", quantity: 1, unitCost: 999, marginPercent: 25 },
 ];
-const src = (id: string, parentId: string | null, name: string, type: any, vendorId: string | null, costCodeId: number | null, isOptional = false): OrderSourceLine =>
-  ({ id, parentId, name, type, vendorId, costCodeId, isOptional });
+const src = (id: string, parentId: string | null, name: string, type: any, vendorId: string | null, _unused: number | null, isOptional = false): OrderSourceLine =>
+  ({ id, parentId, name, type, vendorId, isOptional });
 const lines: OrderSourceLine[] = [
   src("p", null, "Electrical", "other", null, null),
   src("l1", "p", "Rough-in labor", "labor", null, 26),
@@ -48,8 +48,12 @@ test("draft orders group by kind and vendor, include accepted options only, unas
   assert.ok(!orders.some((o) => o.lines.some((l) => l.sourceLineId === "x1" || l.sourceLineId === "n1")));
 });
 
-test("lines missing a cost code are reported, other-type lines are exempt", () => {
-  const result = computeProposal({ lines: calc, globals: [], taxRatePercent: 0 });
-  assert.deepEqual(linesMissingCostCode(lines, result, []), []);
-  assert.deepEqual(linesMissingCostCode(lines, result, ["o"]), ["Install"]);
+test("cost categories follow line type and numbers use the project number", () => {
+  assert.equal(costCategoryForType("labor"), "COGS: Subcontract Labor");
+  assert.equal(costCategoryForType("subcontractor"), "COGS: Subcontract Labor");
+  assert.equal(costCategoryForType("equipment"), "COGS: Equipment Rental");
+  assert.equal(costCategoryForType("material"), "COGS: Materials & Supplies");
+  assert.equal(costCategoryForType("other"), null);
+  assert.equal(formatDocNumber("PO", "24-101", 1), "PO24-101-01");
+  assert.equal(formatDocNumber("INV", "24-101", 12), "INV24-101-12");
 });

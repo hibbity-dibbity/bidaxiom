@@ -7,7 +7,6 @@ export interface BuilderLine {
   parentId: string | null;
   type: CostLineType;
   name: string;
-  costCodeId: number | null;
   quantity: number;
   unit: string;
   unitCost: number;
@@ -42,8 +41,8 @@ export const COST_TYPES: Array<{ value: CostLineType; label: string; creates: st
   { value: "labor", label: "Labor", creates: "Labor, creates a work order line" },
   { value: "material", label: "Material", creates: "Material, creates a purchase order line" },
   { value: "subcontractor", label: "Subcontractor", creates: "Subcontractor, creates a work order line" },
-  { value: "equipment", label: "Equipment", creates: "Equipment" },
-  { value: "other", label: "Other", creates: "Other, no cost code and no order created" },
+  { value: "equipment", label: "Equipment", creates: "Equipment, creates a purchase order line" },
+  { value: "other", label: "Other", creates: "Other, no order created" },
 ];
 
 export const VISIBILITY_NEXT: Record<Visibility, Visibility> = {

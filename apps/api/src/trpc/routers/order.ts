@@ -61,6 +61,7 @@ export const orderRouter = router({
           lines: ol.map((l) => ({
             id: l.id,
             description: l.description,
+            category: l.category,
             budgetCost: Number(l.budgetCost),
             projectedCost: Number(l.projectedCost),
           })),

@@ -327,7 +327,8 @@ export {
 
 export {
   generateDraftOrders,
-  linesMissingCostCode,
+  costCategoryForType,
+  formatDocNumber,
   orderKindForType,
   type DraftOrder,
   type DraftOrderLine,

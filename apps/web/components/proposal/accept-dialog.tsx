@@ -16,7 +16,6 @@ import {
   applyAcceptance,
   computeSchedule,
   generateDraftOrders,
-  linesMissingCostCode,
   type ProposalResult,
 } from "@construction/shared";
 
@@ -28,7 +27,6 @@ interface AcceptLine {
   parentId: string | null;
   name: string;
   type: "labor" | "material" | "subcontractor" | "equipment" | "other";
-  costCodeId: number | null;
   vendorId: string | null;
   isOptional: boolean;
 }
@@ -62,7 +60,6 @@ export function AcceptDialog({ open, onOpenChange, estimateId, lines, computed, 
   const nameOf = new Map(lines.map((l) => [l.id, l.name]));
   const acceptance = applyAcceptance(computed, chosen);
   const schedule = computeSchedule(acceptance.contractValue, milestones);
-  const missing = linesMissingCostCode(lines, computed, chosen);
   const draftCount = generateDraftOrders(lines, computed, chosen).length;
 
   const toggle = (id: string) =>
@@ -121,18 +118,12 @@ export function AcceptDialog({ open, onOpenChange, estimateId, lines, computed, 
           <div className="text-muted-foreground">{draftCount} draft orders will be created.</div>
         </div>
 
-        {missing.length > 0 && (
-          <div className="rounded-md border border-financial-pending/40 px-3 py-2 text-sm">
-            <strong>Cost codes needed.</strong> Pick a cost code in the builder for: {missing.slice(0, 6).join(", ")}
-            {missing.length > 6 ? ` and ${missing.length - 6} more` : ""}. Lines of type Other do not need one.
-          </div>
-        )}
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button
             type="button"
-            disabled={missing.length > 0 || accept.isPending}
+            disabled={accept.isPending}
             onClick={() => accept.mutate({ estimateId, acceptedOptionIds: chosen })}
           >
             {accept.isPending ? "Accepting…" : "Mark accepted"}

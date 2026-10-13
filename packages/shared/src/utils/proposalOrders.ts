@@ -18,7 +18,6 @@ export interface OrderSourceLine {
   parentId: string | null;
   name: string;
   type: CostLineType;
-  costCodeId: number | null;
   vendorId: string | null;
   isOptional: boolean;
 }
@@ -26,7 +25,8 @@ export interface OrderSourceLine {
 export interface DraftOrderLine {
   sourceLineId: string;
   description: string;
-  costCodeId: number | null;
+  /** cost category, e.g. "COGS: Materials & Supplies" */
+  category: string;
   /** cents */
   budgetCost: number;
 }
@@ -46,6 +46,19 @@ export function orderKindForType(type: CostLineType): OrderKind | null {
   return null;
 }
 
+/** Cost category an ordered line posts to. Fixed by line type; there are no cost codes. */
+export function costCategoryForType(type: CostLineType): string | null {
+  if (type === "material") return "COGS: Materials & Supplies";
+  if (type === "equipment") return "COGS: Equipment Rental";
+  if (type === "labor" || type === "subcontractor") return "COGS: Subcontract Labor";
+  return null;
+}
+
+/** PO/WO/INV number: prefix + project number + two-digit sequence, e.g. PO2024-001-01. */
+export function formatDocNumber(prefix: "PO" | "WO" | "INV", projectNumber: string | null, seq: number): string {
+  return `${prefix}${projectNumber ?? ""}-${String(seq).padStart(2, "0")}`;
+}
+
 /** Lines that get priced and ordered: leaves of base parents and of accepted options. */
 function includedLeaves(lines: OrderSourceLine[], acceptedOptionIds: string[]): OrderSourceLine[] {
   const byId = new Map(lines.map((l) => [l.id, l]));
@@ -56,17 +69,6 @@ function includedLeaves(lines: OrderSourceLine[], acceptedOptionIds: string[]): 
     if (hasKids.has(l.id)) return false; // a parent with children is just a header
     return top.isOptional ? acceptedOptionIds.includes(top.id) : true;
   });
-}
-
-/** Names of ordered lines that still need a cost code (type "other" never needs one). */
-export function linesMissingCostCode(
-  lines: OrderSourceLine[],
-  result: ProposalResult,
-  acceptedOptionIds: string[]
-): string[] {
-  return includedLeaves(lines, acceptedOptionIds)
-    .filter((l) => orderKindForType(l.type) && (result.lines[l.id]?.cost ?? 0) > 0 && l.costCodeId === null)
-    .map((l) => l.name || "(unnamed line)");
 }
 
 export function generateDraftOrders(
@@ -90,7 +92,7 @@ export function generateDraftOrders(
     g.lines.push({
       sourceLineId: l.id,
       description: parentName ? `${parentName}: ${l.name}` : l.name,
-      costCodeId: l.costCodeId,
+      category: costCategoryForType(l.type) ?? "",
       budgetCost: cost,
     });
     g.total += cost;

@@ -59,6 +59,7 @@ export default function EstimatesPage({
     },
     onError: (e) => toast.error("Could not change the active proposal", { description: e.message }),
   });
+  const hasAccepted = !!estimates?.some((e) => e.status === "accepted" || e.status === "under_contract");
   const startNew = () => {
     if (projectId) createNext.mutate({ projectId });
   };
@@ -123,6 +124,9 @@ export default function EstimatesPage({
               <Download className="mr-2 h-4 w-4" />
               Export CSV
             </Button>
+            {hasAccepted ? (
+              <span className="text-sm text-muted-foreground">Accepted. Changes now go through change orders.</span>
+            ) : (
             <Button onClick={startNew} disabled={!projectId || createNext.isPending}>
               <Plus className="mr-2 h-4 w-4" />
               {createNext.isPending
@@ -131,6 +135,7 @@ export default function EstimatesPage({
                 ? "New Revision"
                 : "New Proposal"}
             </Button>
+            )}
           </>
         }
       />
