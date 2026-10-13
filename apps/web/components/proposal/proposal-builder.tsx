@@ -777,7 +777,7 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
         </div>
       </div>
 
-      {(status === "accepted" || status === "under_contract") && <DraftOrdersPanel estimateId={estimateId} />}
+      {(status === "accepted" || status === "under_contract") && <DraftOrdersPanel estimateId={estimateId} projectSlug={projectSlug} estimateSlug={estimateSlug} />}
 
       {data && (
         <AcceptDialog

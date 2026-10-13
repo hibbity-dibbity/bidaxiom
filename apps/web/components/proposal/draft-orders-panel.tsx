@@ -2,12 +2,14 @@
 
 import * as React from "react";
 import { trpc } from "@/lib/trpc";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/status-badge";
 
 const dollars = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD" });
 
 /** Read-only summary of the orders created when the proposal was accepted. */
-export function DraftOrdersPanel({ estimateId }: { estimateId: string }) {
+export function DraftOrdersPanel({ estimateId, projectSlug, estimateSlug }: { estimateId: string; projectSlug: string; estimateSlug: string }) {
   const { data, isLoading } = trpc.order.listForEstimate.useQuery({ estimateId });
   if (isLoading || !data || data.length === 0) return null;
 
@@ -18,11 +20,16 @@ export function DraftOrdersPanel({ estimateId }: { estimateId: string }) {
 
   return (
     <section className="space-y-4">
-      <div>
-        <h2 className="text-lg font-semibold">Orders created from this proposal</h2>
-        <p className="text-sm text-muted-foreground">
-          Drafts, grouped by vendor. Budget is the proposal cost and does not change. Reviewing and issuing orders comes next.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold">Orders created from this proposal</h2>
+          <p className="text-sm text-muted-foreground">
+            Grouped by vendor. Budget is the proposal cost and does not change.
+          </p>
+        </div>
+        <Button asChild>
+          <Link href={`/projects/${projectSlug}/estimates/${estimateSlug}/orders`}>Review and issue orders</Link>
+        </Button>
       </div>
       {groups.map((g) => {
         const orders = data.filter((o) => o.kind === g.kind);
@@ -35,11 +42,11 @@ export function DraftOrdersPanel({ estimateId }: { estimateId: string }) {
                 <div key={o.id} className="rounded-md border bg-background">
                   <div className="flex items-center justify-between gap-2 border-b bg-muted px-3 py-2 text-sm">
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold">{o.number}</span>
+                      <Link href={`/projects/${projectSlug}/orders/${o.id}`} className="font-semibold hover:underline">{o.number}</Link>
                       <span className={o.vendorName ? "" : "text-financial-pending"}>{o.vendorName ?? "Unassigned"}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <StatusBadge variant="draft">Draft</StatusBadge>
+                      <StatusBadge variant={o.status === "draft" ? "draft" : "approved"}>{o.status === "draft" ? "Draft" : "Issued"}</StatusBadge>
                       <span className="font-semibold tabular-nums">{dollars(o.budgetTotal)}</span>
                     </div>
                   </div>

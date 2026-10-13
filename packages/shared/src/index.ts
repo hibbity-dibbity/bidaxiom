@@ -335,3 +335,16 @@ export {
   type OrderKind,
   type OrderSourceLine,
 } from "./utils/proposalOrders";
+
+export {
+  canRevise,
+  insuranceMessage,
+  insuranceStatus,
+  isEditable,
+  issueBlockers,
+  moveBlockers,
+  nextOrderNumber,
+  revisionLabel,
+  type InsuranceStatus,
+  type OrderStatus,
+} from "./utils/orderRules";

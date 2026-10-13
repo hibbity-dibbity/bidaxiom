@@ -1223,10 +1223,33 @@ export function createTenantSchema(schemaName: string) {
     number: text("number").notNull(), // PO<job number>-01, WO<job number>-01
     vendorId: uuid("vendor_id"), // subcontractor_directory.id
     status: text("status").notNull().default("draft"), // draft, issued, partially_paid, paid, closed
-    revision: integer("revision").notNull().default(1),
+    revision: integer("revision").notNull().default(0), // Rev 0 = first issue; each revision after issue adds 1
+    issuedAt: timestamp("issued_at", { withTimezone: true }),
+    // Dates are plain YYYY-MM-DD text so time zones never shift them.
+    orderDate: text("order_date"), // PO
+    deliveryDate: text("delivery_date"), // PO
+    shipTo: text("ship_to"), // PO
+    shipping: text("shipping"), // PO: delivered, will_call
+    startDate: text("start_date"), // WO
+    finishDate: text("finish_date"), // WO
+    paymentTerms: text("payment_terms"),
+    insuranceRequired: boolean("insurance_required").notNull().default(true), // WO
+    lienWaiverRequired: boolean("lien_waiver_required").notNull().default(false), // WO
+    notes: text("notes"), // PO order notes / WO scope notes and assumptions
     createdBy: text("created_by").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /** Snapshot of an order each time it is issued, so earlier revisions stay on record. */
+  const orderRevisions = schema.table("order_revisions", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orderId: uuid("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
+    revision: integer("revision").notNull(),
+    snapshot: jsonb("snapshot").notNull().$type<Record<string, unknown>>(),
+    reason: text("reason"),
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   });
 
   /**
@@ -1448,6 +1471,7 @@ export function createTenantSchema(schemaName: string) {
     termsSections,
     orders,
     orderLines,
+    orderRevisions,
     costCodeTemplates,
     templateLineItems,
     laborRateTemplates,

@@ -1,31 +1,161 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { asc, eq, inArray } from "drizzle-orm";
+import { asc, desc, eq, inArray } from "drizzle-orm";
 import { ForbiddenError } from "@casl/ability";
 import { router } from "../trpc.js";
 import { protectedProcedure } from "../procedures.js";
 import { defineAbilitiesFor } from "../../auth/abilities.js";
+import { createAuditLog } from "../../audit/logger.js";
+import {
+  AuditAction,
+  insuranceStatus,
+  insuranceMessage,
+  isEditable,
+  canRevise,
+  issueBlockers,
+  moveBlockers,
+  nextOrderNumber,
+} from "@construction/shared";
 
 /**
- * Purchase and work orders. For now this only reads the draft orders created when a proposal is
- * accepted; reviewing, issuing and revising them comes with the order screens.
+ * Purchase and work orders: review the drafts created at acceptance, issue them, and revise issued
+ * orders. Money is stored as numeric dollars and returned as numbers (dollars).
+ *
+ * Rules (see packages/shared orderRules):
+ * - Only drafts are edited. Issued orders lock.
+ * - Issue needs a vendor and at least one line, and records a snapshot.
+ * - Revising an issued order reopens it as a draft with revision + 1; earlier snapshots are kept.
+ * - Lines move between drafts of the same kind; a moved line can start a new order (split).
+ * - Budget never changes. Projected is editable. Insurance problems only warn.
  */
+
+type Ctx = {
+  tenant: NonNullable<Awaited<ReturnType<typeof import("../../tenant/context.js").buildTenantContext>>>;
+  userId: string;
+  orgRole: string | null;
+};
+
+function need(ctx: { tenant?: Ctx["tenant"] | null; userId?: string | null; orgRole?: string | null }): Ctx {
+  if (!ctx.tenant || !ctx.userId) {
+    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+  }
+  return { tenant: ctx.tenant, userId: ctx.userId, orgRole: ctx.orgRole ?? null };
+}
+
+async function can(c: Ctx, action: "read" | "update") {
+  const memberships = await c.tenant.db
+    .select({
+      projectId: c.tenant.schema.projectTeamMembers.projectId,
+      role: c.tenant.schema.projectTeamMembers.role,
+    })
+    .from(c.tenant.schema.projectTeamMembers)
+    .where(eq(c.tenant.schema.projectTeamMembers.userId, c.userId));
+  const abilities = defineAbilitiesFor(c.orgRole ?? "org:member", c.userId, memberships);
+  ForbiddenError.from(abilities).throwUnlessCan(action, "Estimate");
+}
+
+const dateText = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .nullable();
+
+async function loadOrder(c: Ctx, orderId: string) {
+  const { db, schema } = c.tenant;
+  const [order] = await db.select().from(schema.orders).where(eq(schema.orders.id, orderId));
+  if (!order) throw new TRPCError({ code: "NOT_FOUND", message: "Order not found." });
+  return order;
+}
+
+function mustBeDraft(status: string) {
+  if (!isEditable(status)) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "This order is issued and locked. Revise it to make changes." });
+  }
+}
+
+async function vendorInfo(c: Ctx, vendorIds: string[]) {
+  const { db, schema } = c.tenant;
+  if (vendorIds.length === 0) return new Map<string, { name: string; kind: string; insuranceExpiresAt: Date | null; paymentTerms: string | null; w9OnFile: boolean }>();
+  const rows = await db
+    .select({
+      id: schema.subcontractorDirectory.id,
+      name: schema.subcontractorDirectory.companyName,
+      kind: schema.subcontractorDirectory.kind,
+      insuranceExpiresAt: schema.subcontractorDirectory.insuranceExpiresAt,
+      paymentTerms: schema.subcontractorDirectory.paymentTerms,
+      w9OnFile: schema.subcontractorDirectory.w9OnFile,
+    })
+    .from(schema.subcontractorDirectory)
+    .where(inArray(schema.subcontractorDirectory.id, vendorIds));
+  return new Map(rows.map((r) => [r.id, r]));
+}
+
+function insuranceFor(kind: string, expiresAt: Date | null | undefined, hasVendor: boolean) {
+  if (kind !== "work" || !hasVendor) return { status: null as null, message: null as string | null };
+  const status = insuranceStatus(expiresAt ?? null);
+  return { status, message: insuranceMessage(status) };
+}
+
+async function orderSnapshot(c: Ctx, orderId: string) {
+  const { db, schema } = c.tenant;
+  const order = await loadOrder(c, orderId);
+  const lines = await db.select().from(schema.orderLines).where(eq(schema.orderLines.orderId, orderId)).orderBy(asc(schema.orderLines.sortOrder));
+  const vendors = await vendorInfo(c, order.vendorId ? [order.vendorId] : []);
+  return {
+    number: order.number,
+    kind: order.kind,
+    revision: order.revision,
+    vendorId: order.vendorId,
+    vendorName: order.vendorId ? (vendors.get(order.vendorId)?.name ?? null) : null,
+    orderDate: order.orderDate,
+    deliveryDate: order.deliveryDate,
+    shipTo: order.shipTo,
+    shipping: order.shipping,
+    startDate: order.startDate,
+    finishDate: order.finishDate,
+    paymentTerms: order.paymentTerms,
+    insuranceRequired: order.insuranceRequired,
+    lienWaiverRequired: order.lienWaiverRequired,
+    notes: order.notes,
+    lines: lines.map((l) => ({
+      id: l.id,
+      sourceLineId: l.sourceLineId,
+      description: l.description,
+      category: l.category,
+      budgetCost: Number(l.budgetCost),
+      projectedCost: Number(l.projectedCost),
+      exclusions: l.exclusions,
+    })),
+    budgetTotal: lines.reduce((a, l) => a + Number(l.budgetCost), 0),
+    projectedTotal: lines.reduce((a, l) => a + Number(l.projectedCost), 0),
+  };
+}
+
+function mapLine(l: {
+  id: string;
+  description: string;
+  category: string | null;
+  budgetCost: string;
+  projectedCost: string;
+  exclusions: string | null;
+}) {
+  return {
+    id: l.id,
+    description: l.description,
+    category: l.category,
+    budgetCost: Number(l.budgetCost),
+    projectedCost: Number(l.projectedCost),
+    exclusions: l.exclusions,
+  };
+}
+
 export const orderRouter = router({
   /** Orders generated from one proposal, with vendor names, lines and totals (dollars). */
   listForEstimate: protectedProcedure
     .input(z.object({ estimateId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      if (!ctx.tenant || !ctx.userId) {
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
-      }
-      const { db, schema } = ctx.tenant;
-      const memberships = await db
-        .select({ projectId: schema.projectTeamMembers.projectId, role: schema.projectTeamMembers.role })
-        .from(schema.projectTeamMembers)
-        .where(eq(schema.projectTeamMembers.userId, ctx.userId));
-      const abilities = defineAbilitiesFor(ctx.orgRole ?? "org:member", ctx.userId, memberships);
-      ForbiddenError.from(abilities).throwUnlessCan("read", "Estimate");
-
+      const c = need(ctx);
+      await can(c, "read");
+      const { db, schema } = c.tenant;
       const orders = await db
         .select()
         .from(schema.orders)
@@ -38,34 +168,349 @@ export const orderRouter = router({
         .from(schema.orderLines)
         .where(inArray(schema.orderLines.orderId, orders.map((o) => o.id)))
         .orderBy(asc(schema.orderLines.sortOrder));
-      const vendorIds = [...new Set(orders.map((o) => o.vendorId).filter((v): v is string => !!v))];
-      const vendors =
-        vendorIds.length > 0
-          ? await db
-              .select({ id: schema.subcontractorDirectory.id, name: schema.subcontractorDirectory.companyName })
-              .from(schema.subcontractorDirectory)
-              .where(inArray(schema.subcontractorDirectory.id, vendorIds))
-          : [];
-      const vendorName = new Map(vendors.map((v) => [v.id, v.name]));
+      const vendors = await vendorInfo(c, [...new Set(orders.map((o) => o.vendorId).filter((v): v is string => !!v))]);
 
       return orders.map((o) => {
-        const ol = lines.filter((l) => l.orderId === o.id);
+        const ol = lines.filter((l) => l.orderId === o.id).map(mapLine);
+        const v = o.vendorId ? vendors.get(o.vendorId) : undefined;
         return {
           id: o.id,
           kind: o.kind as "purchase" | "work",
           number: o.number,
           status: o.status,
+          revision: o.revision,
           vendorId: o.vendorId,
-          vendorName: o.vendorId ? (vendorName.get(o.vendorId) ?? "Unknown vendor") : null,
-          budgetTotal: ol.reduce((a, l) => a + Number(l.budgetCost), 0),
-          lines: ol.map((l) => ({
-            id: l.id,
-            description: l.description,
-            category: l.category,
-            budgetCost: Number(l.budgetCost),
-            projectedCost: Number(l.projectedCost),
-          })),
+          vendorName: o.vendorId ? (v?.name ?? "Unknown vendor") : null,
+          insurance: insuranceFor(o.kind, v?.insuranceExpiresAt, !!o.vendorId),
+          budgetTotal: ol.reduce((a, l) => a + l.budgetCost, 0),
+          projectedTotal: ol.reduce((a, l) => a + l.projectedCost, 0),
+          lines: ol,
         };
       });
     }),
+
+  /** One order with its details, vendor, lines and revision history. */
+  get: protectedProcedure.input(z.object({ orderId: z.string().uuid() })).query(async ({ ctx, input }) => {
+    const c = need(ctx);
+    await can(c, "read");
+    const { db, schema } = c.tenant;
+    const order = await loadOrder(c, input.orderId);
+    const lines = await db
+      .select()
+      .from(schema.orderLines)
+      .where(eq(schema.orderLines.orderId, order.id))
+      .orderBy(asc(schema.orderLines.sortOrder));
+    const vendors = await vendorInfo(c, order.vendorId ? [order.vendorId] : []);
+    const v = order.vendorId ? vendors.get(order.vendorId) : undefined;
+    const [proj] = await db
+      .select({ name: schema.projects.name, jobNumber: schema.projects.jobNumber })
+      .from(schema.projects)
+      .where(eq(schema.projects.id, order.projectId));
+    const [est] = await db
+      .select({ slug: schema.estimates.slug, name: schema.estimates.name })
+      .from(schema.estimates)
+      .where(eq(schema.estimates.id, order.estimateId));
+    const revisions = await db
+      .select({
+        id: schema.orderRevisions.id,
+        revision: schema.orderRevisions.revision,
+        reason: schema.orderRevisions.reason,
+        createdAt: schema.orderRevisions.createdAt,
+        snapshot: schema.orderRevisions.snapshot,
+      })
+      .from(schema.orderRevisions)
+      .where(eq(schema.orderRevisions.orderId, order.id))
+      .orderBy(desc(schema.orderRevisions.revision));
+    const mapped = lines.map(mapLine);
+    return {
+      order: {
+        id: order.id,
+        projectId: order.projectId,
+        estimateId: order.estimateId,
+        kind: order.kind as "purchase" | "work",
+        number: order.number,
+        status: order.status,
+        revision: order.revision,
+        issuedAt: order.issuedAt,
+        vendorId: order.vendorId,
+        orderDate: order.orderDate,
+        deliveryDate: order.deliveryDate,
+        shipTo: order.shipTo,
+        shipping: order.shipping,
+        startDate: order.startDate,
+        finishDate: order.finishDate,
+        paymentTerms: order.paymentTerms,
+        insuranceRequired: order.insuranceRequired,
+        lienWaiverRequired: order.lienWaiverRequired,
+        notes: order.notes,
+      },
+      project: proj ?? null,
+      estimate: est ?? null,
+      vendor: v ? { id: order.vendorId as string, name: v.name, paymentTerms: v.paymentTerms, w9OnFile: v.w9OnFile } : null,
+      insurance: insuranceFor(order.kind, v?.insuranceExpiresAt, !!order.vendorId),
+      lines: mapped,
+      budgetTotal: mapped.reduce((a, l) => a + l.budgetCost, 0),
+      projectedTotal: mapped.reduce((a, l) => a + l.projectedCost, 0),
+      blockers: issueBlockers({ status: order.status, vendorId: order.vendorId, lineCount: lines.length }),
+      canEdit: isEditable(order.status),
+      canRevise: canRevise(order.status),
+      revisions: revisions.map((r) => ({ id: r.id, revision: r.revision, reason: r.reason, createdAt: r.createdAt })),
+    };
+  }),
+
+  /** Active vendors for the vendor picker, with insurance status for work orders. */
+  vendorOptions: protectedProcedure.query(async ({ ctx }) => {
+    const c = need(ctx);
+    await can(c, "read");
+    const { db, schema } = c.tenant;
+    const rows = await db
+      .select({
+        id: schema.subcontractorDirectory.id,
+        name: schema.subcontractorDirectory.companyName,
+        kind: schema.subcontractorDirectory.kind,
+        status: schema.subcontractorDirectory.status,
+        insuranceExpiresAt: schema.subcontractorDirectory.insuranceExpiresAt,
+      })
+      .from(schema.subcontractorDirectory)
+      .orderBy(asc(schema.subcontractorDirectory.companyName));
+    return rows
+      .filter((r) => r.status === "active")
+      .map((r) => ({
+        id: r.id,
+        name: r.name,
+        kind: r.kind as "subcontractor" | "supplier",
+        insurance: insuranceStatus(r.insuranceExpiresAt),
+      }));
+  }),
+
+  /** Change the vendor and details of a draft order. Omitted fields are left alone. */
+  update: protectedProcedure
+    .input(
+      z.object({
+        orderId: z.string().uuid(),
+        vendorId: z.string().uuid().nullable().optional(),
+        orderDate: dateText.optional(),
+        deliveryDate: dateText.optional(),
+        shipTo: z.string().max(500).nullable().optional(),
+        shipping: z.enum(["delivered", "will_call"]).nullable().optional(),
+        startDate: dateText.optional(),
+        finishDate: dateText.optional(),
+        paymentTerms: z.string().max(100).nullable().optional(),
+        insuranceRequired: z.boolean().optional(),
+        lienWaiverRequired: z.boolean().optional(),
+        notes: z.string().max(10000).nullable().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const c = need(ctx);
+      await can(c, "update");
+      const { db, schema } = c.tenant;
+      const order = await loadOrder(c, input.orderId);
+      mustBeDraft(order.status);
+      const { orderId, ...rest } = input;
+      if (rest.vendorId) {
+        const vendors = await vendorInfo(c, [rest.vendorId]);
+        if (!vendors.has(rest.vendorId)) throw new TRPCError({ code: "BAD_REQUEST", message: "That vendor was not found." });
+      }
+      const values: Record<string, unknown> = { updatedAt: new Date() };
+      for (const [k, val] of Object.entries(rest)) if (val !== undefined) values[k] = val;
+      await db.update(schema.orders).set(values).where(eq(schema.orders.id, orderId));
+      return { id: orderId };
+    }),
+
+  /** Edit one line of a draft order. Budget is never editable. Exclusions are for work orders. */
+  updateLine: protectedProcedure
+    .input(
+      z.object({
+        lineId: z.string().uuid(),
+        projectedCost: z.number().min(0).max(1e9).optional(),
+        exclusions: z.string().max(5000).nullable().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const c = need(ctx);
+      await can(c, "update");
+      const { db, schema } = c.tenant;
+      const [line] = await db.select().from(schema.orderLines).where(eq(schema.orderLines.id, input.lineId));
+      if (!line) throw new TRPCError({ code: "NOT_FOUND", message: "Line not found." });
+      const order = await loadOrder(c, line.orderId);
+      mustBeDraft(order.status);
+      const values: Record<string, unknown> = {};
+      if (input.projectedCost !== undefined) values.projectedCost = String(Math.round(input.projectedCost * 100) / 100);
+      if (input.exclusions !== undefined) {
+        if (order.kind !== "work") throw new TRPCError({ code: "BAD_REQUEST", message: "Exclusions are only for work orders." });
+        values.exclusions = input.exclusions;
+      }
+      if (Object.keys(values).length === 0) return { id: line.id };
+      await db.update(schema.orderLines).set(values).where(eq(schema.orderLines.id, line.id));
+      await db.update(schema.orders).set({ updatedAt: new Date() }).where(eq(schema.orders.id, order.id));
+      return { id: line.id };
+    }),
+
+  /**
+   * Move lines to another draft order of the same kind, or to a new order when toOrderId is
+   * omitted (split). The source keeps at least one line when splitting; the new order starts with
+   * no vendor and no revision history. Budget stays on each line.
+   */
+  moveLines: protectedProcedure
+    .input(
+      z.object({
+        lineIds: z.array(z.string().uuid()).min(1),
+        toOrderId: z.string().uuid().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const c = need(ctx);
+      await can(c, "update");
+      const { db, schema } = c.tenant;
+      const lines = await db.select().from(schema.orderLines).where(inArray(schema.orderLines.id, input.lineIds));
+      if (lines.length !== new Set(input.lineIds).size) throw new TRPCError({ code: "NOT_FOUND", message: "Line not found." });
+      const fromId = lines[0].orderId;
+      if (lines.some((l) => l.orderId !== fromId)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Pick lines from one order." });
+      }
+      const from = await loadOrder(c, fromId);
+      const to = input.toOrderId ? await loadOrder(c, input.toOrderId) : null;
+      if (to && to.id === from.id) throw new TRPCError({ code: "BAD_REQUEST", message: "Pick a different order." });
+      const problems = moveBlockers(from, to);
+      if (problems.length > 0) throw new TRPCError({ code: "BAD_REQUEST", message: problems[0] });
+
+      const remaining = await db.select({ id: schema.orderLines.id }).from(schema.orderLines).where(eq(schema.orderLines.orderId, from.id));
+      if (!to && remaining.length === lines.length) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Leave at least one line on this order, or change its vendor instead." });
+      }
+
+      return db.transaction(async (tx) => {
+        let target = to;
+        if (!target) {
+          const [proj] = await tx.select({ jobNumber: schema.projects.jobNumber }).from(schema.projects).where(eq(schema.projects.id, from.projectId));
+          const used = await tx.select({ number: schema.orders.number }).from(schema.orders).where(eq(schema.orders.projectId, from.projectId));
+          const number = nextOrderNumber(used.map((u) => u.number), from.kind === "purchase" ? "PO" : "WO", proj?.jobNumber ?? null);
+          [target] = await tx
+            .insert(schema.orders)
+            .values({
+              projectId: from.projectId,
+              estimateId: from.estimateId,
+              kind: from.kind,
+              number,
+              vendorId: null,
+              status: "draft",
+              paymentTerms: from.paymentTerms,
+              insuranceRequired: from.insuranceRequired,
+              lienWaiverRequired: from.lienWaiverRequired,
+              createdBy: c.userId,
+            })
+            .returning();
+        }
+        const existing = await tx.select({ id: schema.orderLines.id }).from(schema.orderLines).where(eq(schema.orderLines.orderId, target.id));
+        let sort = existing.length;
+        for (const l of [...lines].sort((a, b) => a.sortOrder - b.sortOrder)) {
+          await tx.update(schema.orderLines).set({ orderId: target.id, sortOrder: sort++ }).where(eq(schema.orderLines.id, l.id));
+        }
+        const now = new Date();
+        await tx.update(schema.orders).set({ updatedAt: now }).where(inArray(schema.orders.id, [from.id, target.id]));
+        return { orderId: target.id, number: target.number };
+      }).then(async (r) => {
+        await createAuditLog(db, schema, {
+          entityType: "Order",
+          entityId: from.id,
+          action: AuditAction.UPDATE,
+          actorId: c.userId,
+          changes: { before: { orderId: from.id }, after: { movedLineIds: input.lineIds, toOrderId: r.orderId, toNumber: r.number } },
+        });
+        return r;
+      });
+    }),
+
+  /** Merge a draft order into another draft of the same kind. The merged order is deleted. */
+  merge: protectedProcedure
+    .input(z.object({ fromOrderId: z.string().uuid(), intoOrderId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const c = need(ctx);
+      await can(c, "update");
+      const { db, schema } = c.tenant;
+      const from = await loadOrder(c, input.fromOrderId);
+      const into = await loadOrder(c, input.intoOrderId);
+      if (from.id === into.id) throw new TRPCError({ code: "BAD_REQUEST", message: "Pick a different order." });
+      const problems = moveBlockers(from, into);
+      if (problems.length > 0) throw new TRPCError({ code: "BAD_REQUEST", message: problems[0] });
+      const history = await db.select({ id: schema.orderRevisions.id }).from(schema.orderRevisions).where(eq(schema.orderRevisions.orderId, from.id)).limit(1);
+      if (history.length > 0) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "This order was issued before, so its history is kept. Move its lines instead." });
+      }
+      await db.transaction(async (tx) => {
+        const existing = await tx.select({ id: schema.orderLines.id }).from(schema.orderLines).where(eq(schema.orderLines.orderId, into.id));
+        const moving = await tx.select().from(schema.orderLines).where(eq(schema.orderLines.orderId, from.id)).orderBy(asc(schema.orderLines.sortOrder));
+        let sort = existing.length;
+        for (const l of moving) {
+          await tx.update(schema.orderLines).set({ orderId: into.id, sortOrder: sort++ }).where(eq(schema.orderLines.id, l.id));
+        }
+        await tx.delete(schema.orders).where(eq(schema.orders.id, from.id));
+        await tx.update(schema.orders).set({ updatedAt: new Date() }).where(eq(schema.orders.id, into.id));
+      });
+      await createAuditLog(db, schema, {
+        entityType: "Order",
+        entityId: into.id,
+        action: AuditAction.UPDATE,
+        actorId: c.userId,
+        changes: { before: { merged: from.number }, after: { into: into.number } },
+      });
+      return { orderId: into.id };
+    }),
+
+  /** Issue a draft order: needs a vendor and lines. Records a snapshot and locks the order. */
+  issue: protectedProcedure
+    .input(z.object({ orderId: z.string().uuid(), reason: z.string().max(1000).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const c = need(ctx);
+      await can(c, "update");
+      const { db, schema } = c.tenant;
+      const order = await loadOrder(c, input.orderId);
+      const lineRows = await db.select({ id: schema.orderLines.id }).from(schema.orderLines).where(eq(schema.orderLines.orderId, order.id));
+      const count = lineRows.length;
+      const blockers = issueBlockers({ status: order.status, vendorId: order.vendorId, lineCount: count });
+      if (blockers.length > 0) throw new TRPCError({ code: "BAD_REQUEST", message: blockers.join(" ") });
+
+      const snapshot = await orderSnapshot(c, order.id);
+      const now = new Date();
+      await db.transaction(async (tx) => {
+        await tx.insert(schema.orderRevisions).values({
+          orderId: order.id,
+          revision: order.revision,
+          snapshot,
+          reason: input.reason ?? (order.revision === 0 ? "Issued" : null),
+          createdBy: c.userId,
+        });
+        await tx.update(schema.orders).set({ status: "issued", issuedAt: now, updatedAt: now }).where(eq(schema.orders.id, order.id));
+      });
+      await createAuditLog(db, schema, {
+        entityType: "Order",
+        entityId: order.id,
+        action: AuditAction.UPDATE,
+        actorId: c.userId,
+        changes: { before: { status: "draft" }, after: { status: "issued", revision: order.revision } },
+      });
+      return { id: order.id, revision: order.revision };
+    }),
+
+  /** Reopen an issued order as a draft with the next revision. Earlier snapshots stay on record. */
+  revise: protectedProcedure.input(z.object({ orderId: z.string().uuid() })).mutation(async ({ ctx, input }) => {
+    const c = need(ctx);
+    await can(c, "update");
+    const { db, schema } = c.tenant;
+    const order = await loadOrder(c, input.orderId);
+    if (!canRevise(order.status)) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "Only an issued order can be revised." });
+    }
+    const next = order.revision + 1;
+    await db.update(schema.orders).set({ status: "draft", revision: next, updatedAt: new Date() }).where(eq(schema.orders.id, order.id));
+    await createAuditLog(db, schema, {
+      entityType: "Order",
+      entityId: order.id,
+      action: AuditAction.UPDATE,
+      actorId: c.userId,
+      changes: { before: { status: "issued", revision: order.revision }, after: { status: "draft", revision: next } },
+    });
+    return { id: order.id, revision: next };
+  }),
 });
