@@ -74,6 +74,7 @@ export function ProposalBuilder({ estimateSlug }: Props) {
   });
   const [blanket, setBlanket] = React.useState(25);
   const [collapsed, setCollapsed] = React.useState<Record<string, boolean>>({});
+  const [notesOpen, setNotesOpen] = React.useState<Record<string, boolean>>({});
   const [hydrated, setHydrated] = React.useState(false);
   const [dirty, setDirty] = React.useState(false);
   const [saveState, setSaveState] = React.useState<SaveState>({ kind: "idle" });
@@ -296,8 +297,6 @@ export function ProposalBuilder({ estimateSlug }: Props) {
   const marginAmt = result.totals.basePrice - result.totals.baseCost;
   const marginPct = result.totals.basePrice > 0 ? (marginAmt / result.totals.basePrice) * 100 : 0;
   const optionsTotal = result.options.reduce((a, o) => a + o.price + o.tax, 0);
-
-  const [notesOpen, setNotesOpen] = React.useState<Record<string, boolean>>({});
 
   const NotesButton = (line: BuilderLine) => {
     const has = line.notes.trim().length > 0;
