@@ -10,7 +10,6 @@ import {
   type SortingState,
 } from "@tanstack/react-table";
 import { trpc } from "@/lib/trpc";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -46,7 +45,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ChevronsUpDown, ChevronUp, ChevronDown, Plus, FilePlus, Search, SearchX, Download, Check, X } from "lucide-react";
+import { ChevronsUpDown, ChevronUp, ChevronDown, Plus, ChevronRight, FilePlus, Search, SearchX, Download, Check, X } from "lucide-react";
 import type { ChangeOrderStatus, ChangeOrderType } from "@construction/shared";
 
 interface ChangeOrderListProps {
@@ -63,10 +62,13 @@ const statusVariantMap: Record<ChangeOrderStatus, "draft" | "pending" | "approve
   void: "cancelled",
 };
 
-const typeColors: Record<ChangeOrderType, string> = {
-  owner: "bg-blue-500",
-  internal: "bg-purple-500",
-  subcontractor: "bg-orange-500",
+const statusLabels: Record<ChangeOrderStatus, string> = {
+  draft: "Draft",
+  pco_submitted: "PCO Submitted",
+  pending_approval: "Pending Approval",
+  approved: "Approved",
+  rejected: "Rejected",
+  void: "Void",
 };
 
 const typeLabels: Record<ChangeOrderType, string> = {
@@ -413,14 +415,15 @@ export function ChangeOrderList({ projectId, projectSlug }: ChangeOrderListProps
                   </TableCell>
                   {/* Type */}
                   <TableCell>
-                    <Badge className={typeColors[row.original.type as ChangeOrderType]}>
-                      {typeLabels[row.original.type as ChangeOrderType]}
-                    </Badge>
+                    <span className="text-sm text-muted-foreground">
+                      {typeLabels[row.original.type as ChangeOrderType] ?? row.original.type}
+                    </span>
                   </TableCell>
                   {/* Status */}
                   <TableCell>
                     <StatusBadge variant={statusVariantMap[row.original.status as ChangeOrderStatus]}>
-                      {row.original.status.replace(/_/g, " ")}
+                      {statusLabels[row.original.status as ChangeOrderStatus] ??
+                        row.original.status.replace(/_/g, " ")}
                     </StatusBadge>
                   </TableCell>
                   {/* Amount */}
@@ -433,6 +436,7 @@ export function ChangeOrderList({ projectId, projectSlug }: ChangeOrderListProps
                   </TableCell>
                   {/* Actions */}
                   <TableCell onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center justify-end gap-1">
                     {(() => {
                       const co = row.original as any;
                       const isPending = co.status === "pco_submitted" || co.status === "pending_approval";
@@ -470,6 +474,12 @@ export function ChangeOrderList({ projectId, projectSlug }: ChangeOrderListProps
                         </div>
                       );
                     })()}
+                    <ChevronRight
+                      className="h-4 w-4 text-muted-foreground cursor-pointer"
+                      aria-hidden="true"
+                      onClick={() => handleNavigateToDetail(row.original.id)}
+                    />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
