@@ -4,6 +4,7 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AgingReportTable } from "@/components/payment-app/aging-report-table";
+import { PageHeader } from "@/components/shared/page-header";
 
 export default function InvoicesPage({
   params,
@@ -23,12 +24,10 @@ export default function InvoicesPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Invoice Tracking</h1>
-        <p className="text-muted-foreground mt-1">
-          Accounts receivable and payable aging reports
-        </p>
-      </div>
+      <PageHeader
+        title="Invoices"
+        description="Accounts receivable and payable aging for this project"
+      />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList>
@@ -37,11 +36,11 @@ export default function InvoicesPage({
         </TabsList>
 
         <TabsContent value="ar">
-          <AgingReportTable type="ar" />
+          <AgingReportTable type="ar" projectId={projectId} />
         </TabsContent>
 
         <TabsContent value="ap">
-          <AgingReportTable type="ap" />
+          <AgingReportTable type="ap" projectId={projectId} />
         </TabsContent>
       </Tabs>
     </div>
