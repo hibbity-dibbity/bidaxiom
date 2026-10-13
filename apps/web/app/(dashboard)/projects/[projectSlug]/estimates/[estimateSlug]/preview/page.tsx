@@ -102,13 +102,15 @@ export default function ProposalPreviewPage({
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="outline"><Link href={builderHref}>Back to builder</Link></Button>
           <Button type="button" variant="outline" onClick={() => window.print()}>Download PDF</Button>
-          <Button type="button" disabled={!!data.blocker || send.isPending} onClick={() => setConfirmOpen(true)}>
-            {sent ? "Send again" : "Send to customer"}
-          </Button>
+          {!sent && (
+            <Button type="button" disabled={!!data.blocker || send.isPending} onClick={() => setConfirmOpen(true)}>
+              Send to customer
+            </Button>
+          )}
         </div>
       </div>
 
-      {data.blocker && (
+      {data.blocker && !sent && (
         <div className="rounded-md border border-financial-pending/40 bg-muted px-4 py-3 text-sm print:hidden">
           <strong>Not ready to send.</strong> {data.blocker}
         </div>
@@ -132,6 +134,7 @@ export default function ProposalPreviewPage({
               {data.proposalNumber && <><br />{data.proposalNumber}</>}
               <br />
               {dateLabel} · valid {data.validDays} days
+              {data.revision > 1 && <><br />Revision {data.revision}</>}
             </div>
           </div>
 
@@ -235,16 +238,16 @@ export default function ProposalPreviewPage({
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{sent ? "Send this proposal again?" : "Mark this proposal as sent?"}</AlertDialogTitle>
+            <AlertDialogTitle>Mark this proposal as sent?</AlertDialogTitle>
             <AlertDialogDescription>
-              The proposal is recorded as sent and keeps the {data.terms.pinned ? "latest master terms" : `current master terms (version ${data.terms.version})`}.
-              Later changes to your terms will not change it. Email delivery is not set up yet, so use Download PDF to send it to {customer}.
+              The proposal is recorded as sent and locked, and keeps the current master terms (version {data.terms.version}).
+              Later changes to your terms will not change it. To change it after sending, create a revision. Email delivery is not set up yet, so use Download PDF to send it to {customer}.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={(e) => { e.preventDefault(); send.mutate({ estimateId }); }}>
-              {send.isPending ? "Sending…" : sent ? "Send again" : "Mark as sent"}
+              {send.isPending ? "Sending…" : "Mark as sent"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

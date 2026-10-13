@@ -56,7 +56,7 @@ export default function EstimatesPage({
 
     const escape = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
 
-    const header = ["Name", "Status", "Total Cost", "Created Date"].map(escape).join(",");
+    const header = ["Name", "Status", "Proposal Total", "Created Date"].map(escape).join(",");
     const csvRows = displayedEstimates.map((e) => [
       e.name,
       e.status.charAt(0).toUpperCase() + e.status.slice(1),
@@ -134,7 +134,7 @@ export default function EstimatesPage({
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Total Cost</TableHead>
+                <TableHead className="text-right">Proposal Total</TableHead>
                 <TableHead>Created Date</TableHead>
                 <TableHead className="w-[100px]"></TableHead>
               </TableRow>
@@ -148,7 +148,12 @@ export default function EstimatesPage({
                     router.push(`/projects/${projectSlug}/estimates/${estimate.slug}`)
                   }
                 >
-                  <TableCell className="font-medium">{estimate.name}</TableCell>
+                  <TableCell className="font-medium">
+                    {estimate.name}
+                    {estimate.revision > 1 && (
+                      <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">Rev {estimate.revision}</span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <StatusBadge
                       variant={
@@ -161,7 +166,7 @@ export default function EstimatesPage({
                           : "rejected"
                       }
                     >
-                      {estimate.status.charAt(0).toUpperCase() + estimate.status.slice(1)}
+                      {estimate.status === "submitted" ? "Sent" : estimate.status.charAt(0).toUpperCase() + estimate.status.slice(1)}
                     </StatusBadge>
                   </TableCell>
                   <TableCell className="text-right">

@@ -1143,6 +1143,8 @@ export function createTenantSchema(schemaName: string) {
     paymentTerms: text("payment_terms").notNull().default("Net 30"),
     validDays: integer("valid_days").notNull().default(30),
     termsVersionId: uuid("terms_version_id"), // master terms version pinned when the proposal is sent
+    revision: integer("revision").notNull().default(1), // 1 for the original, 2+ for revisions of a sent proposal
+    revisionOfId: uuid("revision_of_id"), // the proposal this one revises
     slug: text("slug").unique(), // URL-safe slug for routing
     createdBy: text("created_by").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

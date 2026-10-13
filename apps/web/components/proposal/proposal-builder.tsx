@@ -2,6 +2,8 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { ChevronRight, Loader2, Check, X, StickyNote } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -81,6 +83,16 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
   const [saveState, setSaveState] = React.useState<SaveState>({ kind: "idle" });
 
   const locked = data?.estimate.isLocked ?? false;
+  const router = useRouter();
+  const createRevision = trpc.proposal.createRevision.useMutation({
+    onSuccess: (r) => {
+      toast.success(`Revision ${r.revision} created`);
+      router.push(`/projects/${projectSlug}/estimates/${r.slug}`);
+    },
+    onError: (e) => toast.error("Could not create a revision", { description: e.message }),
+  });
+  const status = data?.estimate.status ?? "draft";
+  const newerRevision = data?.estimate.newerRevision ?? null;
 
   // Load server data into local editing state once
   React.useEffect(() => {
@@ -148,7 +160,10 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
   const latest = React.useRef({ lines, globals, milestones, settings });
   latest.current = { lines, globals, milestones, settings };
 
+  // Counts edits so a finished save only clears "unsaved" if nothing changed while it ran.
+  const editVersion = React.useRef(0);
   const mark = React.useCallback(() => {
+    editVersion.current += 1;
     setDirty(true);
     setSaveState({ kind: "idle" });
   }, []);
@@ -157,6 +172,7 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
     if (!dirty || !hydrated || locked) return;
     const timer = setTimeout(async () => {
       const cur = latest.current;
+      const savingVersion = editVersion.current;
       const problem = validate(cur.lines, cur.globals, cur.milestones, cur.settings);
       if (problem) {
         setSaveState({ kind: "error", message: problem });
@@ -192,7 +208,7 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
           globals: cur.globals,
           milestones: cur.milestones,
         });
-        if (latest.current === cur) setDirty(false);
+        if (editVersion.current === savingVersion) setDirty(false);
         setSaveState({ kind: "saved" });
       } catch (err) {
         setSaveState({ kind: "error", message: err instanceof Error ? err.message : "Could not save" });
@@ -415,7 +431,26 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
 
   return (
     <div className="space-y-6">
-      {locked && (
+      {locked && status === "submitted" && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border bg-muted px-4 py-3 text-sm">
+          <div>
+            <strong>Sent to the customer and locked.</strong>{" "}
+            {newerRevision
+              ? `This was replaced by revision ${newerRevision.revision}.`
+              : "To change it, create a revision. This proposal stays as the record of what was sent."}
+          </div>
+          {newerRevision ? (
+            <Button asChild variant="outline">
+              <Link href={`/projects/${projectSlug}/estimates/${newerRevision.slug}`}>Open revision {newerRevision.revision}</Link>
+            </Button>
+          ) : (
+            <Button type="button" disabled={createRevision.isPending} onClick={() => createRevision.mutate({ estimateId })}>
+              {createRevision.isPending ? "Creating…" : "Create revision"}
+            </Button>
+          )}
+        </div>
+      )}
+      {locked && status !== "submitted" && (
         <div className="rounded-md border bg-muted px-4 py-3 text-sm">
           <strong>Accepted and locked.</strong> Scope changes go through change orders.
         </div>
@@ -441,6 +476,7 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
             <StatusBadge variant={data?.estimate.status === "draft" ? "draft" : "pending"}>
               {STATUS_LABEL[data?.estimate.status ?? "draft"] ?? data?.estimate.status ?? ""}
             </StatusBadge>
+            {(data?.estimate.revision ?? 1) > 1 && <StatusBadge variant="draft">Revision {data?.estimate.revision}</StatusBadge>}
           </div>
         </div>
         <div className="flex items-center gap-3">

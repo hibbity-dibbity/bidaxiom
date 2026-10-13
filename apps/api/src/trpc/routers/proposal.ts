@@ -15,6 +15,7 @@ import {
 import { createAuditLog } from "../../audit/logger.js";
 import { defineAbilitiesFor } from "../../auth/abilities.js";
 import { eq, asc } from "drizzle-orm";
+import { generateSlug } from "../../utils/slug.js";
 import { ForbiddenError } from "@casl/ability";
 import { ensureCurrentTerms, readTermsVersion } from "./terms.js";
 
@@ -64,7 +65,14 @@ const saveContentSchema = z.object({
     .max(50),
 });
 
-const LOCKED_STATUSES = ["accepted", "under_contract"];
+/** Sent, accepted and under-contract proposals cannot be edited. Changes after sending go through a revision. */
+const LOCKED_STATUSES = ["submitted", "accepted", "under_contract"];
+
+function lockedMessage(status: string): string {
+  return status === "submitted"
+    ? "This proposal has been sent to the customer and is locked. Create a revision to make changes."
+    : "This proposal is accepted and locked. Use a change order for scope changes.";
+}
 
 /** Structural rules the database cannot express: two levels, optional items stand alone. */
 type Tenant = NonNullable<
@@ -112,8 +120,110 @@ async function loadComputed(tenant: Tenant, estimateId: string) {
   return { estimate, lines, milestones, result };
 }
 
+/** Make a unique estimate slug: base, then base-2, base-3... */
+async function uniqueSlug(tenant: Tenant, base: string): Promise<string> {
+  const { db, schema } = tenant;
+  for (let n = 1; n < 200; n++) {
+    const candidate = n === 1 ? base : `${base}-${n}`;
+    const [hit] = await db
+      .select({ id: schema.estimates.id })
+      .from(schema.estimates)
+      .where(eq(schema.estimates.slug, candidate))
+      .limit(1);
+    if (!hit) return candidate;
+  }
+  throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Could not create a unique link for the copy" });
+}
+
+/**
+ * Copy a proposal's settings, lines, global costs and invoicing schedule into a new draft.
+ * Used for "copy a previous proposal" and for revisions. Terms are not copied: the copy pins
+ * the terms version current at the time it is sent.
+ */
+async function cloneProposal(
+  tenant: Tenant,
+  userId: string,
+  sourceId: string,
+  opts: { name: string; slugSuffix?: string; revision: number; revisionOfId: string | null }
+) {
+  const { db, schema } = tenant;
+  const [src] = await db.select().from(schema.estimates).where(eq(schema.estimates.id, sourceId)).limit(1);
+  if (!src) throw new TRPCError({ code: "NOT_FOUND", message: "Proposal not found" });
+  const [project] = await db
+    .select({ jobNumber: schema.projects.jobNumber })
+    .from(schema.projects)
+    .where(eq(schema.projects.id, src.projectId))
+    .limit(1);
+  const lineRows = await db.select().from(schema.proposalCostLines).where(eq(schema.proposalCostLines.estimateId, sourceId)).orderBy(asc(schema.proposalCostLines.sortOrder));
+  const globalRows = await db.select().from(schema.proposalGlobalCosts).where(eq(schema.proposalGlobalCosts.estimateId, sourceId)).orderBy(asc(schema.proposalGlobalCosts.sortOrder));
+  const milestoneRows = await db.select().from(schema.invoiceMilestones).where(eq(schema.invoiceMilestones.estimateId, sourceId)).orderBy(asc(schema.invoiceMilestones.sortOrder));
+
+  const identifier = project?.jobNumber ? `est-${project.jobNumber}` : `est-${src.projectId.slice(0, 8)}`;
+  const base = generateSlug(identifier, opts.name) + (opts.slugSuffix ?? "");
+  const slug = await uniqueSlug(tenant, base);
+
+  return db.transaction(async (tx) => {
+    const [created] = await tx
+      .insert(schema.estimates)
+      .values({
+        projectId: src.projectId,
+        name: opts.name,
+        description: src.description,
+        status: "draft",
+        projectType: src.projectType,
+        currentVersion: 1,
+        salesTaxPercent: src.salesTaxPercent,
+        paymentTerms: src.paymentTerms,
+        validDays: src.validDays,
+        totalCost: src.totalCost,
+        revision: opts.revision,
+        revisionOfId: opts.revisionOfId,
+        slug,
+        createdBy: userId,
+      })
+      .returning({ id: schema.estimates.id, slug: schema.estimates.slug });
+
+    const idMap = new Map(lineRows.map((l) => [l.id, crypto.randomUUID()]));
+    if (lineRows.length > 0) {
+      await tx.insert(schema.proposalCostLines).values(
+        lineRows.map((l) => ({
+          id: idMap.get(l.id)!,
+          estimateId: created.id,
+          parentId: l.parentId ? (idMap.get(l.parentId) ?? null) : null,
+          type: l.type,
+          name: l.name,
+          costCodeId: l.costCodeId,
+          quantity: l.quantity,
+          unit: l.unit,
+          unitCost: l.unitCost,
+          marginPercent: l.marginPercent,
+          contingencyPercent: l.contingencyPercent,
+          notes: l.notes,
+          visibility: l.visibility,
+          isOptional: l.isOptional,
+          optionAccepted: null,
+          vendorId: l.vendorId,
+          sortOrder: l.sortOrder,
+        }))
+      );
+    }
+    if (globalRows.length > 0) {
+      await tx.insert(schema.proposalGlobalCosts).values(
+        globalRows.map((g) => ({ estimateId: created.id, name: g.name, amount: g.amount, sortOrder: g.sortOrder }))
+      );
+    }
+    if (milestoneRows.length > 0) {
+      await tx.insert(schema.invoiceMilestones).values(
+        milestoneRows.map((m) => ({ estimateId: created.id, name: m.name, percent: m.percent, sortOrder: m.sortOrder }))
+      );
+    }
+    return { id: created.id, slug: created.slug as string, source: src };
+  });
+}
+
 /** Why a proposal cannot be sent yet, or null when it can. */
 function sendBlocker(c: Awaited<ReturnType<typeof loadComputed>>): string | null {
+  if (c.estimate.status === "submitted") return "This proposal has already been sent. Create a revision to change and resend it.";
   if (LOCKED_STATUSES.includes(c.estimate.status)) return "This proposal is already accepted.";
   const baseParents = c.lines.filter((l) => !l.parentId && !l.isOptional);
   if (baseParents.length === 0 || c.result.totals.total <= 0) return "Add at least one priced line before sending.";
@@ -203,6 +313,13 @@ export const proposalRouter = router({
         .where(eq(schema.invoiceMilestones.estimateId, input.estimateId))
         .orderBy(asc(schema.invoiceMilestones.sortOrder));
 
+      const [newer] = await db
+        .select({ slug: schema.estimates.slug, revision: schema.estimates.revision })
+        .from(schema.estimates)
+        .where(eq(schema.estimates.revisionOfId, estimate.id))
+        .limit(1);
+      const newerRevision = newer ? { slug: newer.slug, revision: newer.revision } : null;
+
       const lines = lineRows.map((l) => ({
         id: l.id,
         parentId: l.parentId,
@@ -246,6 +363,9 @@ export const proposalRouter = router({
           paymentTerms: estimate.paymentTerms,
           validDays: estimate.validDays,
           acceptedAt: estimate.acceptedAt,
+          sentAt: estimate.submittedAt,
+          revision: estimate.revision,
+          newerRevision,
           isLocked: LOCKED_STATUSES.includes(estimate.status),
         },
         lines,
@@ -285,10 +405,7 @@ export const proposalRouter = router({
         .limit(1);
       if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "Proposal not found" });
       if (LOCKED_STATUSES.includes(existing.status)) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "This proposal is accepted and locked. Use a change order for scope changes.",
-        });
+        throw new TRPCError({ code: "BAD_REQUEST", message: lockedMessage(existing.status) });
       }
 
       const values: Record<string, unknown> = { updatedAt: new Date() };
@@ -334,14 +451,26 @@ export const proposalRouter = router({
       .limit(1);
     if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "Proposal not found" });
     if (LOCKED_STATUSES.includes(existing.status)) {
-      throw new TRPCError({
-        code: "BAD_REQUEST",
-        message: "This proposal is accepted and locked. Use a change order for scope changes.",
-      });
+      throw new TRPCError({ code: "BAD_REQUEST", message: lockedMessage(existing.status) });
     }
 
     const structureError = validateLineStructure(input.lines);
     if (structureError) throw new TRPCError({ code: "BAD_REQUEST", message: structureError });
+
+    const proposalTotal = computeProposal({
+      lines: input.lines.map((l) => ({
+        id: l.id,
+        parentId: l.parentId,
+        type: l.type,
+        quantity: l.quantity,
+        unitCost: l.unitCost,
+        marginPercent: l.marginPercent,
+        contingencyPercent: l.contingencyPercent,
+        isOptional: l.isOptional,
+      })),
+      globals: input.globals.map((g) => ({ id: g.id, amount: g.amount })),
+      taxRatePercent: Number(existing.salesTaxPercent),
+    }).totals.total;
 
     await db.transaction(async (tx) => {
       await tx.delete(schema.proposalCostLines).where(eq(schema.proposalCostLines.estimateId, input.estimateId));
@@ -394,7 +523,7 @@ export const proposalRouter = router({
       }
       await tx
         .update(schema.estimates)
-        .set({ updatedAt: new Date() })
+        .set({ updatedAt: new Date(), totalCost: String(proposalTotal / 100) })
         .where(eq(schema.estimates.id, input.estimateId));
     });
 
@@ -465,6 +594,7 @@ export const proposalRouter = router({
         title: c.estimate.name,
         status: c.estimate.status,
         sentAt: c.estimate.submittedAt,
+        revision: c.estimate.revision,
         validDays: c.estimate.validDays,
         paymentTerms: c.estimate.paymentTerms,
         proposalNumber: project?.jobNumber ?? null,
@@ -515,5 +645,84 @@ export const proposalRouter = router({
         },
       });
       return { sentAt, termsVersion: terms.version };
+    }),
+
+  /**
+   * Copy any proposal in a project into a new draft in the same project, without making a template.
+   */
+  duplicate: protectedProcedure
+    .input(z.object({ estimateId: z.string().uuid(), name: z.string().trim().min(1).max(200) }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+      }
+      const { db, schema } = ctx.tenant;
+      const abilities = await loadAbilities({ tenant: ctx.tenant, userId: ctx.userId, orgRole: ctx.orgRole });
+      ForbiddenError.from(abilities).throwUnlessCan("create", "Estimate");
+
+      const copy = await cloneProposal(ctx.tenant, ctx.userId, input.estimateId, {
+        name: input.name,
+        revision: 1,
+        revisionOfId: null,
+      });
+      await createAuditLog(db, schema, {
+        entityType: "Estimate",
+        entityId: copy.id,
+        action: AuditAction.CREATE,
+        actorId: ctx.userId,
+        changes: { after: { copiedFrom: input.estimateId, name: input.name } },
+      });
+      return { id: copy.id, slug: copy.slug };
+    }),
+
+  /**
+   * Revise a sent proposal: copies it into a new editable draft (Rev 2, 3, ...). The sent
+   * proposal stays unchanged as the record of what the customer received.
+   */
+  createRevision: protectedProcedure
+    .input(z.object({ estimateId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+      }
+      const { db, schema } = ctx.tenant;
+      const abilities = await loadAbilities({ tenant: ctx.tenant, userId: ctx.userId, orgRole: ctx.orgRole });
+      ForbiddenError.from(abilities).throwUnlessCan("update", "Estimate");
+
+      const [src] = await db.select().from(schema.estimates).where(eq(schema.estimates.id, input.estimateId)).limit(1);
+      if (!src) throw new TRPCError({ code: "NOT_FOUND", message: "Proposal not found" });
+      if (src.status !== "submitted") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            src.status === "draft"
+              ? "This proposal has not been sent, so you can edit it directly."
+              : "Accepted proposals change through change orders, not revisions.",
+        });
+      }
+      const [existingRevision] = await db
+        .select({ slug: schema.estimates.slug })
+        .from(schema.estimates)
+        .where(eq(schema.estimates.revisionOfId, src.id))
+        .limit(1);
+      if (existingRevision) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "A newer revision of this proposal already exists." });
+      }
+
+      const next = src.revision + 1;
+      const copy = await cloneProposal(ctx.tenant, ctx.userId, src.id, {
+        name: src.name,
+        slugSuffix: `-rev${next}`,
+        revision: next,
+        revisionOfId: src.id,
+      });
+      await createAuditLog(db, schema, {
+        entityType: "Estimate",
+        entityId: copy.id,
+        action: AuditAction.CREATE,
+        actorId: ctx.userId,
+        changes: { after: { revisionOf: src.id, revision: next } },
+      });
+      return { id: copy.id, slug: copy.slug, revision: next };
     }),
 });
