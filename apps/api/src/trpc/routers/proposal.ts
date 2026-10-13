@@ -685,7 +685,7 @@ export const proposalRouter = router({
     }),
 
   /**
-   * Create the next revision of a project's proposal ("Rev 2", "Rev 3", ...). It copies the
+   * Create the next revision of a project's proposal ("Rev 1", "Rev 2", ...; the first proposal is Rev 0). It copies the
    * given proposal (default: the latest one) and becomes the active proposal. With no existing
    * proposal it creates an empty Rev 1.
    */
@@ -710,7 +710,7 @@ export const proposalRouter = router({
           message: "This project has an accepted proposal. Changes now go through a change order, not a new revision.",
         });
       }
-      const next = (existing[0]?.revision ?? 0) + 1;
+      const next = existing.length === 0 ? 0 : existing[0].revision + 1; // the first proposal is Rev 0
       const name = `Rev ${next}`;
       const copyFromId = input.copyFromId ?? existing[0]?.id ?? null;
       if (copyFromId && !existing.some((e) => e.id === copyFromId)) {

@@ -129,9 +129,9 @@ export default function ProposalPreviewPage({
             <div className="flex flex-col gap-1">
               <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Proposal</div>
               <div className="text-[28px] font-bold leading-tight tracking-tight">
-                {[data.projectNumber, data.projectName].filter(Boolean).join(" - ") || data.title}
+                {[data.projectNumber, data.projectName].filter(Boolean).join(" - ") || "Proposal"}
               </div>
-              <div className="text-sm text-muted-foreground">{data.title}</div>
+              {data.revision > 0 && <div className="text-sm text-muted-foreground">Rev {data.revision}</div>}
               <div className="text-sm text-muted-foreground">Prepared for {data.customerName ?? "[Customer]"}</div>
               {data.projectAddress && <div className="text-sm text-muted-foreground">{data.projectAddress}</div>}
             </div>
