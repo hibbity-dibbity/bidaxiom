@@ -143,4 +143,6 @@ test("contingency pads cost, flows into price, and profit = price - cost", () =>
   assert.equal(r.lines.c.profit, 27500);
   assert.equal(r.lines.p.profit, 27500);
   assert.equal(r.totals.baseCost, 110000);
+  assert.equal(r.lines.c.contingency, 10000);
+  assert.equal(r.totals.baseContingency, 10000);
 });

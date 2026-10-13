@@ -453,7 +453,7 @@ export function ProposalBuilder({ estimateSlug }: Props) {
                 <div className="px-2 text-right" title="Includes contingency">Cost</div>
                 <div className="px-2 text-right">Margin %</div>
                 <div className="px-2 text-right">Price</div>
-                <div className="px-2 text-right" title="Price minus cost">Profit</div>
+                <div className="px-2 text-right" title="Price minus cost (cost includes contingency). Unspent contingency becomes extra profit at project end.">Profit</div>
                 <div className="px-2 text-right">Global share</div>
                 <div className="px-2 text-right">Proposal price</div>
                 <div className="px-2">On proposal</div>
@@ -702,6 +702,7 @@ export function ProposalBuilder({ estimateSlug }: Props) {
 
           <section className="flex shrink-0 flex-col gap-1.5 rounded-md border-2 border-primary bg-background p-4 shadow-sm">
             <Row label="Cost" value={money(result.totals.baseCost)} />
+            <Row label="Contingency (inside cost)" value={money(result.totals.baseContingency)} />
             <Row label={`Profit (${marginPct.toFixed(1)}% margin)`} value={money(marginAmt)} />
             <Row label="Global costs" value={money(result.totals.globalTotal)} />
             <Row label="Sales tax" value={money(result.totals.tax)} />

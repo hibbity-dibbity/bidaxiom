@@ -52,8 +52,10 @@ export interface LineResult {
   cost: number;
   /** cents, before global-cost shares and tax */
   price: number;
-  /** price - cost, cents (contingency counts as cost) */
+  /** price - cost, cents (contingency counts as cost, so unspent contingency is not in this) */
   profit: number;
+  /** portion of `cost` that is contingency padding, cents */
+  contingency: number;
 }
 
 export interface ParentResult extends LineResult {
@@ -70,6 +72,8 @@ export interface OptionResult extends LineResult {
 
 export interface ProposalTotals {
   baseCost: number;
+  /** contingency included in baseCost; unspent at project end is bonus profit */
+  baseContingency: number;
   basePrice: number;
   globalTotal: number;
   tax: number;
@@ -87,6 +91,8 @@ export interface ProposalResult {
 export interface AcceptanceResult {
   contractValue: number;
   costBudget: number;
+  /** contingency inside costBudget (base plus accepted options) */
+  contingencyBudget: number;
   optionsPrice: number;
   optionsTax: number;
   optionsCost: number;
@@ -155,8 +161,9 @@ export function computeProposal(input: ProposalInput): ProposalResult {
   const lineResults: Record<string, LineResult> = {};
   const priceOne = (l: CostLineInput): LineResult => {
     const cost = lineCostCents(l.quantity, l.unitCost, l.contingencyPercent);
+    const contingency = cost - lineCostCents(l.quantity, l.unitCost, 0);
     const price = priceFromCostCents(cost, l.marginPercent);
-    return { id: l.id, cost, price, profit: price - cost };
+    return { id: l.id, cost, price, profit: price - cost, contingency };
   };
 
   for (const l of lines) {
@@ -168,7 +175,8 @@ export function computeProposal(input: ProposalInput): ProposalResult {
     if (kids) {
       const cost = kids.reduce((a, k) => a + lineResults[k.id].cost, 0);
       const price = kids.reduce((a, k) => a + lineResults[k.id].price, 0);
-      lineResults[l.id] = { id: l.id, cost, price, profit: price - cost };
+      const contingency = kids.reduce((a, k) => a + lineResults[k.id].contingency, 0);
+      lineResults[l.id] = { id: l.id, cost, price, profit: price - cost, contingency };
     }
   }
 
@@ -199,6 +207,7 @@ export function computeProposal(input: ProposalInput): ProposalResult {
   }));
 
   const baseCost = parents.reduce((a, p) => a + p.cost, 0);
+  const baseContingency = parents.reduce((a, p) => a + p.contingency, 0);
   const basePrice = parents.reduce((a, p) => a + p.price, 0);
   const taxableBase = baseParents.reduce((a, p) => a + taxableOf(p), 0);
   const tax = Math.round(taxableBase * taxRate);
@@ -207,7 +216,7 @@ export function computeProposal(input: ProposalInput): ProposalResult {
     lines: lineResults,
     parents,
     options,
-    totals: { baseCost, basePrice, globalTotal, tax, total: basePrice + globalTotal + tax },
+    totals: { baseCost, baseContingency, basePrice, globalTotal, tax, total: basePrice + globalTotal + tax },
   };
 }
 
@@ -217,9 +226,11 @@ export function applyAcceptance(result: ProposalResult, acceptedOptionIds: strin
   const optionsPrice = accepted.reduce((a, o) => a + o.price, 0);
   const optionsTax = accepted.reduce((a, o) => a + o.tax, 0);
   const optionsCost = accepted.reduce((a, o) => a + o.cost, 0);
+  const optionsContingency = accepted.reduce((a, o) => a + o.contingency, 0);
   return {
     contractValue: result.totals.total + optionsPrice + optionsTax,
     costBudget: result.totals.baseCost + optionsCost,
+    contingencyBudget: result.totals.baseContingency + optionsContingency,
     optionsPrice,
     optionsTax,
     optionsCost,
