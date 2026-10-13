@@ -15,7 +15,7 @@ import { AmendmentTimeline } from "@/components/bidding/amendment-timeline";
 import { BidCard } from "@/components/bidding/bid-card";
 import { toast } from "sonner";
 import { ChevronLeft, Send, Ban, CheckCircle, X, BarChart3, FileDown } from "lucide-react";
-import type { RfqStatus } from "@construction/shared";
+import type { RfqStatus, BidStatus } from "@construction/shared";
 
 const CSI_DIVISION_MAP: Record<number, string> = {
   0: "00 - Procurement",
@@ -300,7 +300,7 @@ export default function RfqDetailPage({
             <CardContent>
               <InvitationManager
                 rfqId={rfqId}
-                projectId={projectId!}
+                projectId={project.id}
                 rfqTrades={rfq.trades as number[]}
                 invitations={rfq.invitations || []}
               />
@@ -322,11 +322,11 @@ export default function RfqDetailPage({
                       bid={{
                         id: bid.id,
                         bidderCompanyName: bid.bidderCompanyName,
-                        totalAmount: bid.totalAmount,
-                        versionCount: bid.versionCount,
-                        status: bid.status,
+                        totalAmount: Number(bid.currentVersionTotalAmount ?? 0),
+                        versionCount: bid.versionCount ?? 1,
+                        status: bid.status as BidStatus,
                         submittedAt: bid.submittedAt,
-                        hasUnacknowledgedAmendments: bid.hasUnacknowledgedAmendments || false,
+                        hasUnacknowledgedAmendments: false,
                       }}
                     />
                   ))}

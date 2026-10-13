@@ -20,7 +20,7 @@ export default function ChangeOrdersPage({
 
   return (
     <div className="space-y-6">
-      <ChangeOrderList projectId={projectId} projectSlug={project.slug} />
+      <ChangeOrderList projectId={project.id} projectSlug={projectSlug} />
     </div>
   );
 }

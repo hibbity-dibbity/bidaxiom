@@ -1,5 +1,6 @@
 "use client";
 
+import type { LifecyclePhase } from "@construction/shared";
 import React from "react";
 import { Input } from "@/components/ui/input";
 import {
@@ -30,7 +31,7 @@ interface User {
 export type FilterState = {
   search: string | null;
   customer: string | null;
-  lifecyclePhase: string | null;  // nuqs returns string, not the specific enum
+  lifecyclePhase: LifecyclePhase | null;
   assignedUser: string | null;
   startDateFrom: string | null;
   startDateTo: string | null;

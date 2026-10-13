@@ -41,7 +41,7 @@ export function ProjectTabs({ projectSlug, projectMode, lifecyclePhase, headerSt
     if ("gcOnly" in s && s.gcOnly && projectMode !== "gc_advanced") return false;
     // Phase gate: hide features not available in current lifecycle phase
     if ("phaseGated" in s && s.phaseGated) {
-      return isFeatureAvailableInPhase(s.phaseGated, lifecyclePhase as LifecyclePhase);
+      return isFeatureAvailableInPhase(s.phaseGated as string, lifecyclePhase as LifecyclePhase);
     }
     return true;
   });

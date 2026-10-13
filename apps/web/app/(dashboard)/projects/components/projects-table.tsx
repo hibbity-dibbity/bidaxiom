@@ -32,7 +32,7 @@ interface Project {
   id: string;
   jobNumber: string | null;
   name: string;
-  slug: string;
+  slug: string | null;
   customerName: string | null;
   lifecyclePhase: string | null;
   startDate: string | null;
@@ -233,7 +233,7 @@ export function ProjectsTable({
               <TableRow
                 key={row.id}
                 className="cursor-pointer hover:bg-muted/50"
-                onClick={() => router.push(`/projects/${row.original.slug}`)}
+                onClick={() => router.push(`/projects/${row.original.slug ?? row.original.id}`)}
               >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell

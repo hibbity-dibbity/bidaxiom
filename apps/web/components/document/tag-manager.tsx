@@ -30,7 +30,7 @@ export function TagManager({ documentId, projectId }: TagManagerProps) {
       // Optimistically update to the new value
       if (previousTags) {
         utils.document.getTags.setData({ documentId }, [
-          { tag: newTag.tag.toLowerCase(), createdBy: "", createdAt: new Date() },
+          { tag: newTag.tag.toLowerCase(), createdBy: "", createdAt: new Date().toISOString() },
           ...previousTags,
         ]);
       }
@@ -121,7 +121,7 @@ export function TagManager({ documentId, projectId }: TagManagerProps) {
             <button
               onClick={() => handleRemoveTag(tagData.tag)}
               className="hover:bg-destructive/10 rounded p-0.5 transition-colors"
-              disabled={removeTagMutation.isLoading}
+              disabled={removeTagMutation.isPending}
             >
               <X className="h-3 w-3" />
             </button>
@@ -144,14 +144,14 @@ export function TagManager({ documentId, projectId }: TagManagerProps) {
             }
           }}
           className="h-6 text-sm w-24"
-          disabled={addTagMutation.isLoading}
+          disabled={addTagMutation.isPending}
         />
         <Button
           type="button"
           size="sm"
           variant="ghost"
           onClick={handleAddTag}
-          disabled={!tagInput.trim() || addTagMutation.isLoading}
+          disabled={!tagInput.trim() || addTagMutation.isPending}
           className="h-6 w-6 p-0"
         >
           <Plus className="h-3 w-3" />

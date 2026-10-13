@@ -50,9 +50,11 @@ export type Customer = {
   city: string | null;
   state: string | null;
   zip: string | null;
+  slug: string | null;
   createdBy: string;
-  createdAt: Date;
-  updatedAt: Date;
+  // Dates arrive as ISO strings over tRPC (JSON).
+  createdAt: Date | string;
+  updatedAt: Date | string;
 };
 
 /**

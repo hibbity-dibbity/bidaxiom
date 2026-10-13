@@ -402,6 +402,7 @@ export const bidRouter = router({
           createdAt: schema.bids.createdAt,
           updatedAt: schema.bids.updatedAt,
           currentVersionTotalAmount: schema.bidVersions.totalAmount,
+          versionCount: sql<number>`(select count(*)::int from ${schema.bidVersions} bv where bv.bid_id = ${schema.bids.id})`,
         })
         .from(schema.bids)
         .leftJoin(

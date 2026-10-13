@@ -79,7 +79,7 @@ export function CreateWorkflowDialog({
   const { data: documents } = trpc.document.list.useQuery({ projectId });
 
   // Fetch users for approval step assignment
-  const { data: users } = trpc.user.list.useQuery();
+  const { data: users } = trpc.user.list.useQuery({});
 
   const createWorkflowMutation = trpc.workflow.create.useMutation({
     onSuccess: (workflow) => {
@@ -383,7 +383,7 @@ export function CreateWorkflowDialog({
                             <SelectValue placeholder="Select user" />
                           </SelectTrigger>
                           <SelectContent>
-                            {users?.map((user: any) => (
+                            {users?.items.map((user: any) => (
                               <SelectItem key={user.clerkUserId} value={user.clerkUserId}>
                                 {user.firstName} {user.lastName} ({user.email})
                               </SelectItem>
@@ -444,9 +444,9 @@ export function CreateWorkflowDialog({
               <Button
                 type="button"
                 onClick={handleCreate}
-                disabled={createWorkflowMutation.isLoading}
+                disabled={createWorkflowMutation.isPending}
               >
-                {createWorkflowMutation.isLoading ? "Creating..." : "Create Workflow"}
+                {createWorkflowMutation.isPending ? "Creating..." : "Create Workflow"}
               </Button>
             )}
           </div>

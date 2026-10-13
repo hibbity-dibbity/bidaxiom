@@ -1,5 +1,6 @@
 "use client";
 
+import type { LifecyclePhase } from "@construction/shared";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,7 @@ export default function ProjectsPage() {
   const [filters, setFilters] = useQueryStates({
     search: parseAsString,
     customer: parseAsString,
-    lifecyclePhase: parseAsStringEnum(['opportunity', 'estimating', 'submitted', 'awarded', 'active', 'substantial_completion', 'closed', 'warranty', 'archived']),
+    lifecyclePhase: parseAsStringEnum<LifecyclePhase>(['opportunity', 'estimating', 'submitted', 'awarded', 'active', 'substantial_completion', 'closed', 'warranty', 'archived']),
     assignedUser: parseAsString,
     startDateFrom: parseAsString,
     startDateTo: parseAsString,

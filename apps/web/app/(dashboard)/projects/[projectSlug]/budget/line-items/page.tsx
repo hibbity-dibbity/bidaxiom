@@ -39,7 +39,7 @@ export default function BudgetLineItemsPage({
         </p>
       </div>
 
-      <BudgetLineItemTable projectId={projectId} />
+      <BudgetLineItemTable projectId={project.id} />
     </div>
   );
 }

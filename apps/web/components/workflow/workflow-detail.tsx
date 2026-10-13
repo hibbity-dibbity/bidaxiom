@@ -164,7 +164,7 @@ export function WorkflowDetail({ workflowId, projectId, projectSlug }: WorkflowD
               <span>
                 Priority:{" "}
                 <Badge variant={priorityColors[workflow.priority as keyof typeof priorityColors] as any}>
-                  {workflow.priority.charAt(0).toUpperCase() + workflow.priority.slice(1)}
+                  {(workflow.priority ?? "normal").charAt(0).toUpperCase() + (workflow.priority ?? "normal").slice(1)}
                 </Badge>
               </span>
               {workflow.dueDate && (
@@ -181,8 +181,8 @@ export function WorkflowDetail({ workflowId, projectId, projectSlug }: WorkflowD
                   <Edit className="mr-2 h-4 w-4" />
                   Edit
                 </Button>
-                <Button size="sm" onClick={handleSubmitWorkflow} disabled={submitWorkflowMutation.isLoading}>
-                  {submitWorkflowMutation.isLoading ? "Submitting..." : "Submit"}
+                <Button size="sm" onClick={handleSubmitWorkflow} disabled={submitWorkflowMutation.isPending}>
+                  {submitWorkflowMutation.isPending ? "Submitting..." : "Submit"}
                 </Button>
               </>
             )}
@@ -286,7 +286,7 @@ export function WorkflowDetail({ workflowId, projectId, projectSlug }: WorkflowD
           <Card className="p-6">
             <h3 className="font-semibold mb-4">Approval Steps</h3>
             <div className="space-y-4">
-              {workflow.approvals?.map((approval: any, index: number) => {
+              {workflow.approvalSteps?.map((approval: any, index: number) => {
                 const isPending = approval.status === "pending";
                 const isApproved = approval.status === "approved";
                 const isRejected = approval.status === "rejected";
@@ -314,7 +314,7 @@ export function WorkflowDetail({ workflowId, projectId, projectSlug }: WorkflowD
                           <Clock className="h-4 w-4" />
                         )}
                       </div>
-                      {index < (workflow.approvals?.length || 0) - 1 && (
+                      {index < (workflow.approvalSteps?.length || 0) - 1 && (
                         <div className="w-0.5 h-12 bg-border my-1" />
                       )}
                     </div>
@@ -326,7 +326,7 @@ export function WorkflowDetail({ workflowId, projectId, projectSlug }: WorkflowD
                           <div className="flex items-center gap-2 mb-1">
                             <span className="font-medium">Step {approval.stepNumber}</span>
                             <Badge variant="outline">{approval.requirementType.replace(/_/g, " ")}</Badge>
-                            <Badge variant={isPending ? "default" : isApproved ? "success" : "destructive"}>
+                            <Badge variant={isPending ? "default" : isApproved ? "secondary" : "destructive"}>
                               {approval.status}
                             </Badge>
                           </div>
@@ -454,14 +454,14 @@ export function WorkflowDetail({ workflowId, projectId, projectSlug }: WorkflowD
               </Button>
               <Button
                 onClick={handleSubmitReview}
-                disabled={reviewApprovalMutation.isLoading}
+                disabled={reviewApprovalMutation.isPending}
                 className={
                   approvalAction === "reject"
                     ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     : ""
                 }
               >
-                {reviewApprovalMutation.isLoading
+                {reviewApprovalMutation.isPending
                   ? "Submitting..."
                   : approvalAction === "approve"
                   ? "Approve"

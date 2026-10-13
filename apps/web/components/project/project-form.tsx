@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createProjectSchema, previewJobNumber, createCustomerSchema, validateJobNumberFormat } from "@construction/shared";
+import { customerFormSchema, toCustomerPayload } from "@/lib/customer-form";
+import { createProjectSchema, previewJobNumber, validateJobNumberFormat } from "@construction/shared";
 import { z } from "zod";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -63,7 +64,7 @@ export function ProjectForm() {
 
   // Separate form instance for customer dialog
   const customerForm = useForm({
-    resolver: zodResolver(createCustomerSchema),
+    resolver: zodResolver(customerFormSchema),
     defaultValues: {
       companyName: "",
       contactName: "",
@@ -465,7 +466,7 @@ export function ProjectForm() {
             </DialogDescription>
           </DialogHeader>
           <Form {...customerForm}>
-            <form onSubmit={customerForm.handleSubmit((data) => createCustomerMutation.mutate(data))} className="space-y-4 py-4">
+            <form onSubmit={customerForm.handleSubmit((data) => createCustomerMutation.mutate(toCustomerPayload(data)))} className="space-y-4 py-4">
               <FormField
                 control={customerForm.control}
                 name="companyName"

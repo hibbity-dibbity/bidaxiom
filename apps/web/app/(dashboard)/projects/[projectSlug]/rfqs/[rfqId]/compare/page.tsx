@@ -51,7 +51,7 @@ export default function BidComparisonPage({
         <p className="text-muted-foreground mt-1">{rfq.title}</p>
       </div>
 
-      <BidComparisonTable rfqId={rfqId} projectId={projectId!} projectSlug={project.slug} />
+      <BidComparisonTable rfqId={rfqId} projectId={project.id} projectSlug={projectSlug} />
     </div>
   );
 }

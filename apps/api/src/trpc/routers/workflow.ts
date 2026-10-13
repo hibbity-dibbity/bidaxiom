@@ -787,12 +787,36 @@ export const workflowRouter = router({
         return false;
       });
 
+      // Resolve display names for creator and submitter
+      const profileIds = [workflow.createdBy, workflow.submittedBy].filter(
+        (id): id is string => !!id
+      );
+      const profiles = profileIds.length
+        ? await db
+            .select({
+              clerkUserId: schema.userProfiles.clerkUserId,
+              firstName: schema.userProfiles.firstName,
+              lastName: schema.userProfiles.lastName,
+              email: schema.userProfiles.email,
+            })
+            .from(schema.userProfiles)
+            .where(inArray(schema.userProfiles.clerkUserId, profileIds))
+        : [];
+      const toProfile = (id: string | null) => {
+        const p = profiles.find((x) => x.clerkUserId === id);
+        if (!p) return null;
+        const fullName = [p.firstName, p.lastName].filter(Boolean).join(" ") || p.email;
+        return { fullName };
+      };
+
       return {
         ...workflow,
         document,
         responseDocument,
         approvalSteps,
         canCurrentUserApprove,
+        createdByProfile: toProfile(workflow.createdBy),
+        submittedByProfile: toProfile(workflow.submittedBy),
       };
     }),
 

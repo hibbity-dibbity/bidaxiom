@@ -21,7 +21,7 @@ export default function ChangeOrderDetailPage({
     <ChangeOrderDetail
       changeOrderId={changeOrderId}
       projectId={project.id}
-      projectSlug={project.slug}
+      projectSlug={projectSlug}
       customerEmail={project?.customer?.email}
     />
   );

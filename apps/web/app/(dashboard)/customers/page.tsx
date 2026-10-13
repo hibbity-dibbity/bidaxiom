@@ -47,11 +47,10 @@ import { AddressInput } from "@/components/ui/address-input";
 import { Plus, ChevronRight, Building2, User, Mail, Phone, MapPin, ChevronsUpDown, ChevronUp, ChevronDown, Search, SearchX } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/shared/empty-state";
-import { createCustomerSchema } from "@construction/shared";
+import { customerFormSchema, toCustomerPayload, type CustomerFormData } from "@/lib/customer-form";
 import type { Customer } from "@construction/shared";
 import type { z } from "zod";
 
-type CustomerFormData = z.infer<typeof createCustomerSchema>;
 
 export default function CustomersPage() {
   const router = useRouter();
@@ -62,7 +61,7 @@ export default function CustomersPage() {
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
   const form = useForm<CustomerFormData>({
-    resolver: zodResolver(createCustomerSchema),
+    resolver: zodResolver(customerFormSchema),
     defaultValues: {
       companyName: "",
       contactName: "",
@@ -149,16 +148,7 @@ export default function CustomersPage() {
   const handleSubmitAdd = (data: CustomerFormData) => {
     // Map form data to API schema (flatten address)
     const payload = {
-      companyName: data.companyName,
-      contactName: data.contactName,
-      phone: data.phone,
-      email: data.email,
-      address: data.address,
-      street1: data.address?.street1,
-      street2: data.address?.street2,
-      city: data.address?.city,
-      state: data.address?.state,
-      zip: data.address?.zipCode,
+      ...toCustomerPayload(data),
     };
     createMutation.mutate(payload);
   };
@@ -168,16 +158,7 @@ export default function CustomersPage() {
 
     const payload = {
       id: selectedCustomer.id,
-      companyName: data.companyName,
-      contactName: data.contactName,
-      phone: data.phone,
-      email: data.email,
-      address: data.address,
-      street1: data.address?.street1,
-      street2: data.address?.street2,
-      city: data.address?.city,
-      state: data.address?.state,
-      zip: data.address?.zipCode,
+      ...toCustomerPayload(data),
     };
     updateMutation.mutate(payload);
   };

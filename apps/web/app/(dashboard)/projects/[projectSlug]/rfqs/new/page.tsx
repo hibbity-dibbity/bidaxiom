@@ -45,7 +45,7 @@ export default function NewRfqPage({
           <CardTitle>RFQ Details</CardTitle>
         </CardHeader>
         <CardContent>
-          <RfqForm projectId={projectId} projectSlug={project.slug} />
+          <RfqForm projectId={project.id} projectSlug={projectSlug} />
         </CardContent>
       </Card>
     </div>

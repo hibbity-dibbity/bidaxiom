@@ -31,7 +31,7 @@ import { PhoneInput } from "@/components/ui/phone-input";
 import { AddressInput } from "@/components/ui/address-input";
 import { ChevronRight, Building2, User, Mail, Phone, MapPin, Briefcase, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { createCustomerSchema } from "@construction/shared";
+import { customerFormSchema, toCustomerPayload, type CustomerFormData } from "@/lib/customer-form";
 import type { ProjectStatus } from "@construction/shared";
 import type { z } from "zod";
 
@@ -45,7 +45,6 @@ const projectStatusToVariant = (status: ProjectStatus) => {
   }
 };
 
-type CustomerFormData = z.infer<typeof createCustomerSchema>;
 
 export default function CustomerDetailPage({
   params,
@@ -60,7 +59,7 @@ export default function CustomerDetailPage({
   const utils = trpc.useUtils();
 
   const form = useForm<CustomerFormData>({
-    resolver: zodResolver(createCustomerSchema),
+    resolver: zodResolver(customerFormSchema),
     defaultValues: {
       companyName: "",
       contactName: "",
@@ -125,16 +124,7 @@ export default function CustomerDetailPage({
     if (!customer) return;
     updateMutation.mutate({
       id: customer.id,
-      companyName: data.companyName,
-      contactName: data.contactName,
-      phone: data.phone,
-      email: data.email,
-      address: data.address,
-      street1: data.address?.street1,
-      street2: data.address?.street2,
-      city: data.address?.city,
-      state: data.address?.state,
-      zip: data.address?.zipCode,
+      ...toCustomerPayload(data),
     });
   };
 

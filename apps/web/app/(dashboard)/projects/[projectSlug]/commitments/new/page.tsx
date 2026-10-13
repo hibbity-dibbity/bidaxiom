@@ -46,7 +46,7 @@ export default function NewCommitmentPage({
         </p>
       </div>
 
-      <CommitmentForm projectId={projectId} onSuccess={handleSuccess} />
+      <CommitmentForm projectId={project.id} onSuccess={handleSuccess} />
     </div>
   );
 }

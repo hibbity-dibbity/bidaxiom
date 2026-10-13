@@ -4,7 +4,7 @@
  */
 
 import { createTRPCProxyClient, httpLink } from "@trpc/client";
-import type { AppRouter } from "../../../api/src/trpc/router";
+import type { AppRouter } from "../../api/src/trpc/router";
 
 // Server-side code may need a different address than the browser (e.g. the Docker
 // network name). Falls back to the public URL when API_INTERNAL_URL isn't set.
