@@ -1,7 +1,8 @@
 /**
  * Proposal calculation rules (single source of truth for API and builder UI).
  *
- * - Margin is a percent of PRICE: price = cost / (1 - margin).
+ * - Cost includes contingency: cost = qty x unit cost x (1 + contingency%).
+ * - Margin is a percent of PRICE: price = cost / (1 - margin). Profit = price - cost.
  * - Cost lines are two levels: a parent's cost and price are the sum of its children.
  *   A parent with no children prices its own quantity x unit cost.
  * - Optional items are top-level lines flagged `isOptional`. They never enter base totals
@@ -23,6 +24,8 @@ export interface CostLineInput {
   unitCost: number;
   /** 0 up to (but not including) 100 */
   marginPercent: number;
+  /** Padding added to the line's cost (waste, forgotten items), percent of cost. Defaults to 0. */
+  contingencyPercent?: number;
   isOptional?: boolean;
 }
 
@@ -45,10 +48,12 @@ export interface ProposalInput {
 
 export interface LineResult {
   id: string;
-  /** cents */
+  /** cents, including contingency */
   cost: number;
   /** cents, before global-cost shares and tax */
   price: number;
+  /** price - cost, cents (contingency counts as cost) */
+  profit: number;
 }
 
 export interface ParentResult extends LineResult {
@@ -100,8 +105,9 @@ const toCents = (dollars: number): number => Math.round((Number(dollars) || 0) *
 export const centsToDollars = (cents: number): number => cents / 100;
 
 /** Cost in cents for one line (quantity x unit cost). */
-export function lineCostCents(quantity: number, unitCost: number): number {
-  return Math.round((Number(quantity) || 0) * (Number(unitCost) || 0) * 100);
+export function lineCostCents(quantity: number, unitCost: number, contingencyPercent = 0): number {
+  const base = (Number(quantity) || 0) * (Number(unitCost) || 0) * 100;
+  return Math.round(base * (1 + (Number(contingencyPercent) || 0) / 100));
 }
 
 /** price = cost / (1 - margin). Margin must be below 100%. */
@@ -148,9 +154,9 @@ export function computeProposal(input: ProposalInput): ProposalResult {
 
   const lineResults: Record<string, LineResult> = {};
   const priceOne = (l: CostLineInput): LineResult => {
-    const cost = lineCostCents(l.quantity, l.unitCost);
+    const cost = lineCostCents(l.quantity, l.unitCost, l.contingencyPercent);
     const price = priceFromCostCents(cost, l.marginPercent);
-    return { id: l.id, cost, price };
+    return { id: l.id, cost, price, profit: price - cost };
   };
 
   for (const l of lines) {
@@ -160,11 +166,9 @@ export function computeProposal(input: ProposalInput): ProposalResult {
   for (const l of lines) {
     const kids = childrenByParent.get(l.id);
     if (kids) {
-      lineResults[l.id] = {
-        id: l.id,
-        cost: kids.reduce((a, k) => a + lineResults[k.id].cost, 0),
-        price: kids.reduce((a, k) => a + lineResults[k.id].price, 0),
-      };
+      const cost = kids.reduce((a, k) => a + lineResults[k.id].cost, 0);
+      const price = kids.reduce((a, k) => a + lineResults[k.id].price, 0);
+      lineResults[l.id] = { id: l.id, cost, price, profit: price - cost };
     }
   }
 

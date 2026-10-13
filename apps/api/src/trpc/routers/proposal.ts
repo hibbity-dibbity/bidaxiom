@@ -30,6 +30,10 @@ const costLineInputSchema = z.object({
   unitCost: z.number().min(0).max(1e9),
   /** percent of price, 0 up to but not including 100 */
   marginPercent: z.number().min(0).lt(100),
+  /** padding on cost, percent of cost */
+  contingencyPercent: z.number().min(0).max(1000).default(0),
+  /** internal notes, never shown to customers */
+  notes: z.string().max(5000).nullable().optional(),
   visibility: visibilityEnum.default("price"),
   isOptional: z.boolean().default(false),
   vendorId: z.string().uuid().nullable().optional(),
@@ -147,6 +151,8 @@ export const proposalRouter = router({
         unit: l.unit,
         unitCost: Number(l.unitCost),
         marginPercent: Number(l.marginPercent),
+        contingencyPercent: Number(l.contingencyPercent),
+        notes: l.notes,
         visibility: l.visibility,
         isOptional: l.isOptional,
         optionAccepted: l.optionAccepted,
@@ -293,6 +299,8 @@ export const proposalRouter = router({
             unit: l.unit,
             unitCost: String(l.unitCost),
             marginPercent: String(l.marginPercent),
+            contingencyPercent: String(l.contingencyPercent),
+            notes: l.notes?.trim() ? l.notes : null,
             visibility: l.visibility,
             isOptional: l.isOptional,
             vendorId: l.vendorId ?? null,

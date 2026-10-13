@@ -1164,6 +1164,8 @@ export function createTenantSchema(schemaName: string) {
     unit: text("unit").notNull().default("ea"),
     unitCost: numeric("unit_cost", { precision: 15, scale: 4 }).notNull().default("0"),
     marginPercent: numeric("margin_percent", { precision: 5, scale: 2 }).notNull().default("0"),
+    contingencyPercent: numeric("contingency_percent", { precision: 6, scale: 2 }).notNull().default("0"),
+    notes: text("notes"),
     visibility: text("visibility").notNull().default("price"), // price, name_only, hidden (children only)
     isOptional: boolean("is_optional").notNull().default(false),
     optionAccepted: boolean("option_accepted"), // null = undecided; set when the proposal is accepted

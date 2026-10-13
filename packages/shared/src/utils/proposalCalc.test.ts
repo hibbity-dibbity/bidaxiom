@@ -130,3 +130,17 @@ test("milestones must total 100 and the last absorbs rounding", () => {
   ]);
   assert.equal(thirds.reduce((a, r) => a + r.amount, 0), 10000);
 });
+
+test("contingency pads cost, flows into price, and profit = price - cost", () => {
+  const lines: CostLineInput[] = [
+    { id: "p", parentId: null, type: "material", quantity: 1, unitCost: 0, marginPercent: 0 },
+    { id: "c", parentId: "p", type: "material", quantity: 10, unitCost: 100, marginPercent: 20, contingencyPercent: 10 },
+  ];
+  const r = computeProposal({ lines, globals: [], taxRatePercent: 0 });
+  // 1000.00 + 10% = 1100.00 cost; price = 1100 / 0.8 = 1375.00
+  assert.equal(r.lines.c.cost, 110000);
+  assert.equal(r.lines.c.price, 137500);
+  assert.equal(r.lines.c.profit, 27500);
+  assert.equal(r.lines.p.profit, 27500);
+  assert.equal(r.totals.baseCost, 110000);
+});

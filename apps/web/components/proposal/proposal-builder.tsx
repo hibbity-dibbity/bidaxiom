@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChevronRight, Loader2, Check, X } from "lucide-react";
+import { ChevronRight, Loader2, Check, X, StickyNote } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -29,7 +29,7 @@ import {
 } from "./builder-types";
 
 const COLS =
-  "grid-cols-[300px_112px_168px_72px_60px_104px_112px_84px_116px_116px_124px_148px_36px]";
+  "grid-cols-[300px_112px_168px_72px_60px_104px_76px_112px_84px_116px_108px_116px_124px_148px_36px_36px]";
 
 const cellInput =
   "h-7 w-full rounded border border-transparent bg-transparent px-1.5 text-sm text-foreground hover:border-border focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-60";
@@ -41,6 +41,7 @@ const labelText = "text-xs font-semibold uppercase tracking-wider text-muted-for
 
 const money = (cents: number) =>
   (cents / 100).toLocaleString("en-US", { style: "currency", currency: "USD" });
+const clampCont = (n: number) => Math.min(Math.max(n, 0), 1000);
 const clampMargin = (n: number) => Math.min(Math.max(n, 0), MAX_MARGIN);
 const newId = () => crypto.randomUUID();
 
@@ -93,6 +94,8 @@ export function ProposalBuilder({ estimateSlug }: Props) {
         unit: l.unit,
         unitCost: l.unitCost,
         marginPercent: l.marginPercent,
+        contingencyPercent: l.contingencyPercent,
+        notes: l.notes ?? "",
         visibility: l.visibility as Visibility,
         isOptional: l.isOptional,
         vendorId: l.vendorId,
@@ -120,6 +123,7 @@ export function ProposalBuilder({ estimateSlug }: Props) {
       quantity: l.quantity,
       unitCost: l.unitCost,
       marginPercent: clampMargin(l.marginPercent),
+      contingencyPercent: clampCont(l.contingencyPercent),
       isOptional: l.isOptional,
     }));
     return computeProposal({
@@ -177,6 +181,8 @@ export function ProposalBuilder({ estimateSlug }: Props) {
             unit: l.unit,
             unitCost: l.unitCost,
             marginPercent: clampMargin(l.marginPercent),
+            contingencyPercent: clampCont(l.contingencyPercent),
+            notes: l.notes.trim() ? l.notes : null,
             visibility: l.visibility,
             isOptional: l.isOptional,
             vendorId: l.vendorId,
@@ -237,6 +243,8 @@ export function ProposalBuilder({ estimateSlug }: Props) {
     unit: "ea",
     unitCost: 0,
     marginPercent: blanket,
+    contingencyPercent: 0,
+    notes: "",
     visibility: "hidden",
     isOptional: false,
     vendorId: null,
@@ -289,6 +297,48 @@ export function ProposalBuilder({ estimateSlug }: Props) {
   const marginPct = result.totals.basePrice > 0 ? (marginAmt / result.totals.basePrice) * 100 : 0;
   const optionsTotal = result.options.reduce((a, o) => a + o.price + o.tax, 0);
 
+  const [notesOpen, setNotesOpen] = React.useState<Record<string, boolean>>({});
+
+  const NotesButton = (line: BuilderLine) => {
+    const has = line.notes.trim().length > 0;
+    return (
+      <button
+        type="button"
+        aria-label={has ? "Edit internal notes" : "Add internal notes"}
+        title={has ? "Internal notes (never shown to customer)" : "Add internal notes"}
+        className={cn(
+          "inline-flex h-7 w-7 items-center justify-center rounded hover:bg-muted",
+          has ? "text-primary" : "text-muted-foreground"
+        )}
+        onClick={() => setNotesOpen((o) => ({ ...o, [line.id]: !o[line.id] }))}
+      >
+        <StickyNote className="h-4 w-4" />
+      </button>
+    );
+  };
+
+  const NotesRow = (line: BuilderLine) => {
+    if (!notesOpen[line.id]) return null;
+    return (
+      <div className="flex border-b bg-muted/40">
+        <div className="sticky left-0 z-[2] w-[min(720px,90vw)] px-4 py-2 pl-10">
+          <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Internal notes · never shown to the customer
+          </label>
+          <textarea
+            rows={2}
+            maxLength={5000}
+            disabled={locked}
+            aria-label="Internal notes"
+            className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-60"
+            value={line.notes}
+            onChange={(e) => patchLine(line.id, { notes: e.target.value })}
+          />
+        </div>
+      </div>
+    );
+  };
+
   const VendorSelect = ({ line }: { line: BuilderLine }) => (
     <select
       className={cellInput}
@@ -340,6 +390,10 @@ export function ProposalBuilder({ estimateSlug }: Props) {
           <NumField className={cn(cellInput, "text-right")} aria-label="Unit cost" min={0} step="0.01" disabled={locked}
             value={line.unitCost} onChange={(v) => patchLine(line.id, { unitCost: Math.max(v, 0) })} />
         </div>
+        <div className="px-1">
+          <NumField className={cn(cellInput, "text-right")} aria-label="Contingency percent" min={0} max={1000} step="0.5" disabled={locked}
+            value={line.contingencyPercent} onChange={(v) => patchLine(line.id, { contingencyPercent: clampCont(v) })} />
+        </div>
         <div className="px-2 text-right tabular-nums">{money(r?.cost ?? 0)}</div>
         <div className="px-1">
           <NumField className={cn(cellInput, "text-right")} aria-label="Line margin percent" min={0} max={MAX_MARGIN} step="0.5"
@@ -347,6 +401,7 @@ export function ProposalBuilder({ estimateSlug }: Props) {
             onChange={(v) => patchLine(line.id, { marginPercent: clampMargin(v) })} />
         </div>
         <div className="px-2 text-right tabular-nums">{money(r?.price ?? 0)}</div>
+        <div className="px-2 text-right tabular-nums text-financial-positive">{money(r?.profit ?? 0)}</div>
       </>
     );
   };
@@ -386,7 +441,7 @@ export function ProposalBuilder({ estimateSlug }: Props) {
         {/* ---- Cost table ---- */}
         <div className="flex min-w-0 flex-[999_1_640px] flex-col gap-3">
           <div className="relative max-h-[70vh] overflow-auto rounded-md border bg-background">
-            <div className="min-w-[1570px]">
+            <div className="min-w-[1790px]">
               <div className={cn("sticky top-0 z-[3] grid h-9 items-center border-b bg-muted text-[11px] font-semibold uppercase tracking-wider text-muted-foreground", COLS)}>
                 <div className="sticky left-0 z-[4] flex h-full items-center border-r bg-muted px-4">Item</div>
                 <div className="px-2">Type</div>
@@ -394,13 +449,15 @@ export function ProposalBuilder({ estimateSlug }: Props) {
                 <div className="px-2 text-right">Qty</div>
                 <div className="px-2">Unit</div>
                 <div className="px-2 text-right">Unit cost</div>
-                <div className="px-2 text-right">Cost</div>
+                <div className="px-2 text-right" title="Percent added to cost for waste or unforeseen expenses">Cont. %</div>
+                <div className="px-2 text-right" title="Includes contingency">Cost</div>
                 <div className="px-2 text-right">Margin %</div>
                 <div className="px-2 text-right">Price</div>
+                <div className="px-2 text-right" title="Price minus cost">Profit</div>
                 <div className="px-2 text-right">Global share</div>
                 <div className="px-2 text-right">Proposal price</div>
                 <div className="px-2">On proposal</div>
-                <div />
+                <div /><div />
               </div>
 
               {parents.map((p) => {
@@ -430,7 +487,7 @@ export function ProposalBuilder({ estimateSlug }: Props) {
                           {(share * 100).toFixed(1)}%
                         </span>
                       </div>
-                      <div /><div /><div /><div /><div />
+                      <div /><div /><div /><div /><div /><div />
                       <div className="px-2 text-right tabular-nums">{money(pr?.cost ?? 0)}</div>
                       <div className="px-1">
                         <NumField className={cn(cellInput, "text-right")} aria-label="Group margin percent" min={0} max={MAX_MARGIN} step="0.5"
@@ -440,6 +497,7 @@ export function ProposalBuilder({ estimateSlug }: Props) {
                         )}
                       </div>
                       <div className="px-2 text-right tabular-nums">{money(pr?.price ?? 0)}</div>
+                      <div className="px-2 text-right tabular-nums text-financial-positive">{money(pr?.profit ?? 0)}</div>
                       <div className="px-2 text-right font-medium tabular-nums text-muted-foreground">+{money(pr?.globalShare ?? 0)}</div>
                       <div className="px-2 text-right tabular-nums">{money(pr?.proposalPrice ?? 0)}</div>
                       <div className="px-2">
@@ -451,13 +509,17 @@ export function ProposalBuilder({ estimateSlug }: Props) {
                           </button>
                         )}
                       </div>
+                      <div className="flex justify-center">{NotesButton(p)}</div>
                       <div className="flex justify-center">
                         <RemoveButton label="Remove parent line and its children" disabled={locked} onClick={() => removeLine(p.id)} />
                       </div>
                     </div>
 
+                    {NotesRow(p)}
+
                     {open && kids.map((c) => (
-                      <div key={c.id} className={cn("grid min-h-9 items-center border-b text-sm", COLS)}>
+                      <React.Fragment key={c.id}>
+                      <div className={cn("grid min-h-9 items-center border-b text-sm", COLS)}>
                         <div className="sticky left-0 z-[2] flex h-full min-h-9 items-center border-r bg-background pl-10 pr-2">
                           <input className={cellInput} aria-label="Line item name" disabled={locked} value={c.name}
                             onChange={(e) => patchLine(c.id, { name: e.target.value })} />
@@ -471,10 +533,13 @@ export function ProposalBuilder({ estimateSlug }: Props) {
                             {VISIBILITY_LABEL[c.visibility]}
                           </button>
                         </div>
+                        <div className="flex justify-center">{NotesButton(c)}</div>
                         <div className="flex justify-center">
                           <RemoveButton label="Remove line" disabled={locked} onClick={() => removeLine(c.id)} />
                         </div>
                       </div>
+                      {NotesRow(c)}
+                    </React.Fragment>
                     ))}
 
                     {open && !locked && (
@@ -502,7 +567,8 @@ export function ProposalBuilder({ estimateSlug }: Props) {
               {options.map((o) => {
                 const or = result.options.find((x) => x.id === o.id);
                 return (
-                  <div key={o.id} className={cn("grid min-h-9 items-center border-b text-sm", COLS)}>
+                  <React.Fragment key={o.id}>
+                  <div className={cn("grid min-h-9 items-center border-b text-sm", COLS)}>
                     <div className="sticky left-0 z-[2] flex h-full min-h-9 items-center border-r bg-background pl-4 pr-2">
                       <input className={cellInput} aria-label="Option name" disabled={locked} value={o.name}
                         onChange={(e) => patchLine(o.id, { name: e.target.value })} />
@@ -511,10 +577,13 @@ export function ProposalBuilder({ estimateSlug }: Props) {
                     <div />
                     <div className="px-2 text-right font-semibold tabular-nums">{money(or?.price ?? 0)}</div>
                     <div className="px-2"><StatusBadge variant="draft">Optional</StatusBadge></div>
+                    <div className="flex justify-center">{NotesButton(o)}</div>
                     <div className="flex justify-center">
                       <RemoveButton label="Remove option" disabled={locked} onClick={() => removeLine(o.id)} />
                     </div>
                   </div>
+                  {NotesRow(o)}
+                  </React.Fragment>
                 );
               })}
 
@@ -633,7 +702,7 @@ export function ProposalBuilder({ estimateSlug }: Props) {
 
           <section className="flex flex-col gap-1.5 rounded-md border-2 border-primary bg-background p-4">
             <Row label="Cost" value={money(result.totals.baseCost)} />
-            <Row label={`Margin (${marginPct.toFixed(1)}%)`} value={money(marginAmt)} />
+            <Row label={`Profit (${marginPct.toFixed(1)}% margin)`} value={money(marginAmt)} />
             <Row label="Global costs" value={money(result.totals.globalTotal)} />
             <Row label="Sales tax" value={money(result.totals.tax)} />
             <div className="flex items-baseline justify-between border-t pt-2.5">

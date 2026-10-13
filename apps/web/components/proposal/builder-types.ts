@@ -12,6 +12,8 @@ export interface BuilderLine {
   unit: string;
   unitCost: number;
   marginPercent: number;
+  contingencyPercent: number;
+  notes: string;
   visibility: Visibility;
   isOptional: boolean;
   vendorId: string | null;
@@ -63,3 +65,5 @@ export const VISIBILITY_TONE: Record<Visibility, string> = {
 };
 
 export const MAX_MARGIN = 95;
+
+export const MAX_CONTINGENCY = 1000;
