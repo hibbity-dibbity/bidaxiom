@@ -60,9 +60,12 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
     slug: estimateSlug,
   });
   const estimateId = estimate?.id ?? "";
-  const { data, isLoading: proposalLoading } = trpc.proposal.get.useQuery(
+  // Always load fresh from the server when the builder opens (a cached copy from before the
+  // last save would otherwise load an empty or outdated proposal). Edits live in local state,
+  // so background refetches must never overwrite them: hydration happens once.
+  const { data, isLoading: proposalLoading, isFetchedAfterMount } = trpc.proposal.get.useQuery(
     { estimateId },
-    { enabled: !!estimateId, refetchOnWindowFocus: false, refetchOnReconnect: false, staleTime: Infinity }
+    { enabled: !!estimateId, refetchOnMount: "always", refetchOnWindowFocus: false, refetchOnReconnect: false, staleTime: 0 }
   );
   const { data: vendorList } = trpc.subcontractor.list.useQuery({});
 
@@ -84,19 +87,30 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
 
   const locked = data?.estimate.isLocked ?? false;
   const router = useRouter();
-  const createRevision = trpc.proposal.createRevision.useMutation({
+  const utils = trpc.useUtils();
+  const createNext = trpc.proposal.createNext.useMutation({
     onSuccess: (r) => {
-      toast.success(`Revision ${r.revision} created`);
+      toast.success(`Rev ${r.revision} created`);
+      utils.estimates.list.invalidate();
       router.push(`/projects/${projectSlug}/estimates/${r.slug}`);
     },
     onError: (e) => toast.error("Could not create a revision", { description: e.message }),
   });
+  const setActive = trpc.proposal.setActive.useMutation({
+    onSuccess: () => {
+      toast.success("Active proposal changed");
+      utils.proposal.get.invalidate({ estimateId });
+      utils.estimates.list.invalidate();
+    },
+    onError: (e) => toast.error("Could not change the active proposal", { description: e.message }),
+  });
   const status = data?.estimate.status ?? "draft";
-  const newerRevision = data?.estimate.newerRevision ?? null;
+  const latestRevision = data?.estimate.latestRevision ?? null;
+  const isActive = data?.estimate.isActive ?? false;
 
   // Load server data into local editing state once
   React.useEffect(() => {
-    if (!data || hydrated) return;
+    if (!data || hydrated || !isFetchedAfterMount) return;
     setLines(
       upgradeLegacy(data.lines.map((l) => ({
         id: l.id,
@@ -126,7 +140,7 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
     const firstChild = data.lines.find((l) => l.parentId);
     if (firstChild) setBlanket(firstChild.marginPercent);
     setHydrated(true);
-  }, [data, hydrated]);
+  }, [data, hydrated, isFetchedAfterMount]);
 
   // ---- calculation (shared module, runs locally for instant totals) ----
   const result = React.useMemo(() => {
@@ -435,17 +449,17 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border bg-muted px-4 py-3 text-sm">
           <div>
             <strong>Sent to the customer and locked.</strong>{" "}
-            {newerRevision
-              ? `This was replaced by revision ${newerRevision.revision}.`
-              : "To change it, create a revision. This proposal stays as the record of what was sent."}
+            {latestRevision
+              ? `A newer revision exists (Rev ${latestRevision.revision}).`
+              : "To change it, create a new revision. This one stays as the record of what was sent."}
           </div>
-          {newerRevision ? (
+          {latestRevision ? (
             <Button asChild variant="outline">
-              <Link href={`/projects/${projectSlug}/estimates/${newerRevision.slug}`}>Open revision {newerRevision.revision}</Link>
+              <Link href={`/projects/${projectSlug}/estimates/${latestRevision.slug}`}>Open Rev {latestRevision.revision}</Link>
             </Button>
           ) : (
-            <Button type="button" disabled={createRevision.isPending} onClick={() => createRevision.mutate({ estimateId })}>
-              {createRevision.isPending ? "Creating…" : "Create revision"}
+            <Button type="button" disabled={createNext.isPending} onClick={() => createNext.mutate({ projectId: data!.estimate.projectId, copyFromId: estimateId })}>
+              {createNext.isPending ? "Creating…" : "Create new revision"}
             </Button>
           )}
         </div>
@@ -459,13 +473,7 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
       {/* Title row */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex min-w-0 flex-1 basis-[480px] flex-col gap-2">
-          <input
-            aria-label="Proposal name"
-            disabled={locked}
-            value={settings.name}
-            onChange={(e) => { setSettings((s) => ({ ...s, name: e.target.value })); mark(); }}
-            className="-ml-1.5 h-10 max-w-3xl rounded border border-transparent bg-transparent px-1.5 text-2xl font-bold tracking-tight hover:border-border focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
-          />
+          <h1 className="text-2xl font-bold tracking-tight">{settings.name}</h1>
           <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
             <label className="flex items-center gap-2">
               Valid for
@@ -476,7 +484,13 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
             <StatusBadge variant={data?.estimate.status === "draft" ? "draft" : "pending"}>
               {STATUS_LABEL[data?.estimate.status ?? "draft"] ?? data?.estimate.status ?? ""}
             </StatusBadge>
-            {(data?.estimate.revision ?? 1) > 1 && <StatusBadge variant="draft">Revision {data?.estimate.revision}</StatusBadge>}
+            {isActive ? (
+              <StatusBadge variant="approved">Active proposal</StatusBadge>
+            ) : (
+              <Button type="button" size="sm" variant="outline" disabled={setActive.isPending} onClick={() => setActive.mutate({ estimateId })}>
+                Make active
+              </Button>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-3">

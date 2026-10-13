@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -42,6 +43,25 @@ export default function EstimatesPage({
     { projectId: projectId! },
     { enabled: !!projectId }
   );
+
+  const utils = trpc.useUtils();
+  const createNext = trpc.proposal.createNext.useMutation({
+    onSuccess: (r) => {
+      utils.estimates.list.invalidate();
+      router.push(`/projects/${projectSlug}/estimates/${r.slug}`);
+    },
+    onError: (e) => toast.error("Could not create the proposal", { description: e.message }),
+  });
+  const setActive = trpc.proposal.setActive.useMutation({
+    onSuccess: () => {
+      toast.success("Active proposal changed");
+      utils.estimates.list.invalidate();
+    },
+    onError: (e) => toast.error("Could not change the active proposal", { description: e.message }),
+  });
+  const startNew = () => {
+    if (projectId) createNext.mutate({ projectId });
+  };
 
   const displayedEstimates = useMemo(() => {
     if (!estimates) return [];
@@ -103,11 +123,13 @@ export default function EstimatesPage({
               <Download className="mr-2 h-4 w-4" />
               Export CSV
             </Button>
-            <Button asChild>
-              <Link href={`/projects/${projectSlug}/estimates/new`}>
-                <Plus className="mr-2 h-4 w-4" />
-                New Proposal
-              </Link>
+            <Button onClick={startNew} disabled={!projectId || createNext.isPending}>
+              <Plus className="mr-2 h-4 w-4" />
+              {createNext.isPending
+                ? "Creating..."
+                : estimates && estimates.length > 0
+                ? "New Revision"
+                : "New Proposal"}
             </Button>
           </>
         }
@@ -136,6 +158,7 @@ export default function EstimatesPage({
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Proposal Total</TableHead>
                 <TableHead>Created Date</TableHead>
+                <TableHead>Active</TableHead>
                 <TableHead className="w-[100px]"></TableHead>
               </TableRow>
             </TableHeader>
@@ -148,12 +171,7 @@ export default function EstimatesPage({
                     router.push(`/projects/${projectSlug}/estimates/${estimate.slug}`)
                   }
                 >
-                  <TableCell className="font-medium">
-                    {estimate.name}
-                    {estimate.revision > 1 && (
-                      <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">Rev {estimate.revision}</span>
-                    )}
-                  </TableCell>
+                  <TableCell className="font-medium">{estimate.name}</TableCell>
                   <TableCell>
                     <StatusBadge
                       variant={
@@ -173,6 +191,20 @@ export default function EstimatesPage({
                     {formatCurrency(parseFloat(estimate.totalCost || "0"))}
                   </TableCell>
                   <TableCell>{format(new Date(estimate.createdAt), "MMM d, yyyy")}</TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    {estimate.isActive ? (
+                      <StatusBadge variant="approved">Active</StatusBadge>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={setActive.isPending}
+                        onClick={() => setActive.mutate({ estimateId: estimate.id })}
+                      >
+                        Make active
+                      </Button>
+                    )}
+                  </TableCell>
                   <TableCell className="w-[48px]">
                     <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" />
                   </TableCell>
@@ -193,7 +225,7 @@ export default function EstimatesPage({
           }
           action={
             !debouncedSearch
-              ? { label: "New Proposal", href: `/projects/${projectSlug}/estimates/new` }
+              ? { label: "New Proposal", onClick: startNew }
               : undefined
           }
         />

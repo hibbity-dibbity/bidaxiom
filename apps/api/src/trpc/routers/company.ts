@@ -90,6 +90,13 @@ export const companyRouter = router({
       const { db, schema } = ctx.tenant;
       const userId = ctx.userId;
       const newProfile = await db.transaction(async (tx) => {
+        // Carry over everything this form does not manage (contact info, naming settings, ...)
+        const [previous] = await tx
+          .select()
+          .from(schema.companyProfiles)
+          .where(isNull(schema.companyProfiles.validTo))
+          .limit(1);
+
         // Close current version (set validTo = now)
         await tx
           .update(schema.companyProfiles)
@@ -100,6 +107,17 @@ export const companyRouter = router({
         const inserted = await tx
           .insert(schema.companyProfiles)
           .values({
+            phone: previous?.phone ?? null,
+            website: previous?.website ?? null,
+            license: previous?.license ?? null,
+            street1: previous?.street1 ?? null,
+            street2: previous?.street2 ?? null,
+            city: previous?.city ?? null,
+            state: previous?.state ?? null,
+            zip: previous?.zip ?? null,
+            allowPersonalTemplates: previous?.allowPersonalTemplates ?? null,
+            sovGroupingMethod: previous?.sovGroupingMethod ?? null,
+            documentNamingSettings: previous?.documentNamingSettings ?? null,
             companyType: input.companyType,
             tradesConfig: input.tradesConfig,
             jobNumberSettings: input.jobNumberSettings,
@@ -112,6 +130,51 @@ export const companyRouter = router({
       });
 
       return newProfile;
+    }),
+
+  /**
+   * Company contact info shown on proposals. Updated in place on the current profile
+   * (it is not part of the versioned trade and job-number configuration).
+   */
+  updateContact: authorizedProcedure
+    .use(requirePermission("manage", "CompanySettings"))
+    .input(
+      z.object({
+        phone: z.string().trim().max(40).nullable(),
+        website: z.string().trim().max(200).nullable(),
+        street1: z.string().trim().max(200).nullable(),
+        street2: z.string().trim().max(200).nullable(),
+        city: z.string().trim().max(100).nullable(),
+        state: z.string().trim().max(2).nullable(),
+        zip: z.string().trim().max(10).nullable(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+      }
+      const { db, schema } = ctx.tenant;
+      const clean = (v: string | null) => (v && v.length > 0 ? v : null);
+      const updated = await db
+        .update(schema.companyProfiles)
+        .set({
+          phone: clean(input.phone),
+          website: clean(input.website),
+          street1: clean(input.street1),
+          street2: clean(input.street2),
+          city: clean(input.city),
+          state: clean(input.state)?.toUpperCase() ?? null,
+          zip: clean(input.zip),
+        })
+        .where(isNull(schema.companyProfiles.validTo))
+        .returning({ id: schema.companyProfiles.id });
+      if (updated.length === 0) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Save the company configuration above first, then add contact info.",
+        });
+      }
+      return { ok: true as const };
     }),
 
   /**

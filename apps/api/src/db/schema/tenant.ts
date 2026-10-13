@@ -108,6 +108,7 @@ export function createTenantSchema(schemaName: string) {
     // logoStorageKey: text("logo_storage_key"), // Logo columns removed in quick-17 (static BidAxiom branding)
     // Company contact info for document generation
     phone: text("phone"),
+    website: text("website"),
     license: text("license"), // Contractor license number
     street1: text("street1"),
     street2: text("street2"),
@@ -1145,6 +1146,7 @@ export function createTenantSchema(schemaName: string) {
     termsVersionId: uuid("terms_version_id"), // master terms version pinned when the proposal is sent
     revision: integer("revision").notNull().default(1), // 1 for the original, 2+ for revisions of a sent proposal
     revisionOfId: uuid("revision_of_id"), // the proposal this one revises
+    isActive: boolean("is_active").notNull().default(false), // the one proposal per project that feeds the project numbers
     slug: text("slug").unique(), // URL-safe slug for routing
     createdBy: text("created_by").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

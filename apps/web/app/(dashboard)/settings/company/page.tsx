@@ -23,6 +23,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TradesCombobox } from "@/components/company/trades-combobox";
 import { CustomTradesList } from "@/components/company/custom-trades-list";
+import { CompanyContactCard } from "@/components/company/company-contact-card";
 import { toast } from "sonner";
 import { AlertCircle } from "lucide-react";
 
@@ -407,6 +408,8 @@ export default function CompanySettingsPage() {
           </div>
         )}
       </form>
+
+      <CompanyContactCard canManage={canManage} />
     </div>
   );
 }

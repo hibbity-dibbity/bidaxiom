@@ -121,20 +121,23 @@ export default function ProposalPreviewPage({
           <div className="flex flex-wrap items-start justify-between gap-6">
             <div className="flex flex-col gap-1">
               <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Proposal</div>
-              <div className="text-[28px] font-bold leading-tight tracking-tight">{data.title}</div>
+              <div className="text-[28px] font-bold leading-tight tracking-tight">
+                {[data.projectNumber, data.projectName].filter(Boolean).join(" - ") || data.title}
+              </div>
+              <div className="text-sm text-muted-foreground">{data.title}</div>
               <div className="text-sm text-muted-foreground">Prepared for {data.customerName ?? "[Customer]"}</div>
-              {(data.projectName || data.projectAddress) && (
-                <div className="text-sm text-muted-foreground">
-                  {[data.projectName, data.projectAddress].filter(Boolean).join(" · ")}
-                </div>
-              )}
+              {data.projectAddress && <div className="text-sm text-muted-foreground">{data.projectAddress}</div>}
             </div>
             <div className="text-right text-[13px] leading-relaxed text-muted-foreground">
-              {data.companyName}
-              {data.proposalNumber && <><br />{data.proposalNumber}</>}
+              <span className="font-semibold text-foreground">{data.companyName}</span>
+              {data.companyContact.map((line) => (
+                <React.Fragment key={line}>
+                  <br />
+                  {line}
+                </React.Fragment>
+              ))}
               <br />
               {dateLabel} · valid {data.validDays} days
-              {data.revision > 1 && <><br />Revision {data.revision}</>}
             </div>
           </div>
 
@@ -218,7 +221,7 @@ export default function ProposalPreviewPage({
 
           <section>
             <SectionHead left="Terms and conditions" right={`Master terms, version ${data.terms.version}`} />
-            <div className="flex flex-col gap-3.5 pt-3.5 text-[13px] leading-relaxed text-muted-foreground">
+            <div className="flex flex-col gap-2 pt-3 text-[10.5px] leading-snug text-muted-foreground">
               {data.terms.sections.map((s, i) => (
                 <div key={s.id}>
                   <strong className="text-foreground">{i + 1}. {s.title}</strong>

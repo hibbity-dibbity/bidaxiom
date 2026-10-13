@@ -14,7 +14,7 @@ import {
 } from "@construction/shared";
 import { createAuditLog } from "../../audit/logger.js";
 import { defineAbilitiesFor } from "../../auth/abilities.js";
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, desc, and, isNull } from "drizzle-orm";
 import { generateSlug } from "../../utils/slug.js";
 import { ForbiddenError } from "@casl/ability";
 import { ensureCurrentTerms, readTermsVersion } from "./terms.js";
@@ -110,6 +110,7 @@ async function loadComputed(tenant: Tenant, estimateId: string) {
     contingencyPercent: Number(l.contingencyPercent),
     visibility: l.visibility as "price" | "name_only" | "hidden",
     isOptional: l.isOptional,
+    optionAccepted: l.optionAccepted,
   }));
   const milestones = milestoneRows.map((m) => ({ id: m.id, name: m.name, percent: Number(m.percent) }));
   const result = computeProposal({
@@ -133,6 +134,15 @@ async function uniqueSlug(tenant: Tenant, base: string): Promise<string> {
     if (!hit) return candidate;
   }
   throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Could not create a unique link for the copy" });
+}
+
+/** Make one proposal the project's only active one. */
+async function activate(tenant: Tenant, projectId: string, estimateId: string) {
+  const { db, schema } = tenant;
+  await db.transaction(async (tx) => {
+    await tx.update(schema.estimates).set({ isActive: false }).where(eq(schema.estimates.projectId, projectId));
+    await tx.update(schema.estimates).set({ isActive: true }).where(eq(schema.estimates.id, estimateId));
+  });
 }
 
 /**
@@ -313,12 +323,13 @@ export const proposalRouter = router({
         .where(eq(schema.invoiceMilestones.estimateId, input.estimateId))
         .orderBy(asc(schema.invoiceMilestones.sortOrder));
 
-      const [newer] = await db
-        .select({ slug: schema.estimates.slug, revision: schema.estimates.revision })
+      const [latest] = await db
+        .select({ id: schema.estimates.id, slug: schema.estimates.slug, revision: schema.estimates.revision })
         .from(schema.estimates)
-        .where(eq(schema.estimates.revisionOfId, estimate.id))
+        .where(eq(schema.estimates.projectId, estimate.projectId))
+        .orderBy(desc(schema.estimates.revision))
         .limit(1);
-      const newerRevision = newer ? { slug: newer.slug, revision: newer.revision } : null;
+      const latestRevision = latest && latest.id !== estimate.id ? { slug: latest.slug, revision: latest.revision } : null;
 
       const lines = lineRows.map((l) => ({
         id: l.id,
@@ -365,7 +376,8 @@ export const proposalRouter = router({
           acceptedAt: estimate.acceptedAt,
           sentAt: estimate.submittedAt,
           revision: estimate.revision,
-          newerRevision,
+          latestRevision,
+          isActive: estimate.isActive,
           isLocked: LOCKED_STATUSES.includes(estimate.status),
         },
         lines,
@@ -584,6 +596,26 @@ export const proposalRouter = router({
             .limit(1)
         : [];
 
+      const [profile] = await db
+        .select({
+          phone: schema.companyProfiles.phone,
+          website: schema.companyProfiles.website,
+          street1: schema.companyProfiles.street1,
+          street2: schema.companyProfiles.street2,
+          city: schema.companyProfiles.city,
+          state: schema.companyProfiles.state,
+          zip: schema.companyProfiles.zip,
+        })
+        .from(schema.companyProfiles)
+        .where(isNull(schema.companyProfiles.validTo))
+        .limit(1);
+      const cityState = [profile?.city, [profile?.state, profile?.zip].filter(Boolean).join(" ")].filter(Boolean).join(", ");
+      const companyContact = [
+        profile?.phone,
+        profile?.website,
+        [[profile?.street1, profile?.street2].filter(Boolean).join(" "), cityState].filter(Boolean).join(", "),
+      ].filter((v): v is string => Boolean(v && v.trim()));
+
       const pinned = c.estimate.termsVersionId ? await readTermsVersion(ctx.tenant, c.estimate.termsVersionId) : null;
       const terms = pinned ?? (await ensureCurrentTerms(ctx.tenant, ctx.userId));
 
@@ -597,7 +629,8 @@ export const proposalRouter = router({
         revision: c.estimate.revision,
         validDays: c.estimate.validDays,
         paymentTerms: c.estimate.paymentTerms,
-        proposalNumber: project?.jobNumber ?? null,
+        projectNumber: project?.jobNumber ?? null,
+        companyContact,
         companyName: ctx.tenant.companyName,
         customerName: customer ? (customer.companyName || customer.contactName) : null,
         projectName: project?.name ?? null,
@@ -648,10 +681,12 @@ export const proposalRouter = router({
     }),
 
   /**
-   * Copy any proposal in a project into a new draft in the same project, without making a template.
+   * Create the next revision of a project's proposal ("Rev 2", "Rev 3", ...). It copies the
+   * given proposal (default: the latest one) and becomes the active proposal. With no existing
+   * proposal it creates an empty Rev 1.
    */
-  duplicate: protectedProcedure
-    .input(z.object({ estimateId: z.string().uuid(), name: z.string().trim().min(1).max(200) }))
+  createNext: protectedProcedure
+    .input(z.object({ projectId: z.string().uuid(), copyFromId: z.string().uuid().optional() }))
     .mutation(async ({ ctx, input }) => {
       if (!ctx.tenant || !ctx.userId) {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
@@ -660,26 +695,64 @@ export const proposalRouter = router({
       const abilities = await loadAbilities({ tenant: ctx.tenant, userId: ctx.userId, orgRole: ctx.orgRole });
       ForbiddenError.from(abilities).throwUnlessCan("create", "Estimate");
 
-      const copy = await cloneProposal(ctx.tenant, ctx.userId, input.estimateId, {
-        name: input.name,
-        revision: 1,
-        revisionOfId: null,
-      });
+      const existing = await db
+        .select({ id: schema.estimates.id, revision: schema.estimates.revision, status: schema.estimates.status })
+        .from(schema.estimates)
+        .where(eq(schema.estimates.projectId, input.projectId))
+        .orderBy(desc(schema.estimates.revision));
+      const next = (existing[0]?.revision ?? 0) + 1;
+      const name = `Rev ${next}`;
+      const copyFromId = input.copyFromId ?? existing[0]?.id ?? null;
+      if (copyFromId && !existing.some((e) => e.id === copyFromId)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "That proposal is not in this project." });
+      }
+
+      let created: { id: string; slug: string };
+      if (copyFromId) {
+        created = await cloneProposal(ctx.tenant, ctx.userId, copyFromId, {
+          name,
+          slugSuffix: "",
+          revision: next,
+          revisionOfId: copyFromId,
+        });
+      } else {
+        const [project] = await db
+          .select({ jobNumber: schema.projects.jobNumber })
+          .from(schema.projects)
+          .where(eq(schema.projects.id, input.projectId))
+          .limit(1);
+        if (!project) throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+        const identifier = project.jobNumber ? `est-${project.jobNumber}` : `est-${input.projectId.slice(0, 8)}`;
+        const slug = await uniqueSlug(ctx.tenant, generateSlug(identifier, name));
+        const [row] = await db
+          .insert(schema.estimates)
+          .values({
+            projectId: input.projectId,
+            name,
+            status: "draft",
+            projectType: "commercial",
+            currentVersion: 1,
+            revision: next,
+            slug,
+            createdBy: ctx.userId,
+          })
+          .returning({ id: schema.estimates.id, slug: schema.estimates.slug });
+        created = { id: row.id, slug: row.slug as string };
+      }
+
+      await activate(ctx.tenant, input.projectId, created.id);
       await createAuditLog(db, schema, {
         entityType: "Estimate",
-        entityId: copy.id,
+        entityId: created.id,
         action: AuditAction.CREATE,
         actorId: ctx.userId,
-        changes: { after: { copiedFrom: input.estimateId, name: input.name } },
+        changes: { after: { name, revision: next, copiedFrom: copyFromId } },
       });
-      return { id: copy.id, slug: copy.slug };
+      return { id: created.id, slug: created.slug, revision: next };
     }),
 
-  /**
-   * Revise a sent proposal: copies it into a new editable draft (Rev 2, 3, ...). The sent
-   * proposal stays unchanged as the record of what the customer received.
-   */
-  createRevision: protectedProcedure
+  /** Make a revision the project's active proposal (the one that feeds the project numbers). */
+  setActive: protectedProcedure
     .input(z.object({ estimateId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       if (!ctx.tenant || !ctx.userId) {
@@ -688,41 +761,66 @@ export const proposalRouter = router({
       const { db, schema } = ctx.tenant;
       const abilities = await loadAbilities({ tenant: ctx.tenant, userId: ctx.userId, orgRole: ctx.orgRole });
       ForbiddenError.from(abilities).throwUnlessCan("update", "Estimate");
-
-      const [src] = await db.select().from(schema.estimates).where(eq(schema.estimates.id, input.estimateId)).limit(1);
-      if (!src) throw new TRPCError({ code: "NOT_FOUND", message: "Proposal not found" });
-      if (src.status !== "submitted") {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message:
-            src.status === "draft"
-              ? "This proposal has not been sent, so you can edit it directly."
-              : "Accepted proposals change through change orders, not revisions.",
-        });
-      }
-      const [existingRevision] = await db
-        .select({ slug: schema.estimates.slug })
+      const [est] = await db
+        .select({ projectId: schema.estimates.projectId, status: schema.estimates.status })
         .from(schema.estimates)
-        .where(eq(schema.estimates.revisionOfId, src.id))
+        .where(eq(schema.estimates.id, input.estimateId))
         .limit(1);
-      if (existingRevision) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "A newer revision of this proposal already exists." });
-      }
-
-      const next = src.revision + 1;
-      const copy = await cloneProposal(ctx.tenant, ctx.userId, src.id, {
-        name: src.name,
-        slugSuffix: `-rev${next}`,
-        revision: next,
-        revisionOfId: src.id,
-      });
+      if (!est) throw new TRPCError({ code: "NOT_FOUND", message: "Proposal not found" });
+      await activate(ctx.tenant, est.projectId, input.estimateId);
       await createAuditLog(db, schema, {
         entityType: "Estimate",
-        entityId: copy.id,
-        action: AuditAction.CREATE,
+        entityId: input.estimateId,
+        action: AuditAction.UPDATE,
         actorId: ctx.userId,
-        changes: { after: { revisionOf: src.id, revision: next } },
+        changes: { after: { isActive: true } },
       });
-      return { id: copy.id, slug: copy.slug, revision: next };
+      return { ok: true as const };
+    }),
+
+  /**
+   * The project's active proposal with the numbers that feed the project header: contract value,
+   * cost, profit and contingency. Null when the project has no proposal yet.
+   */
+  activeForProject: protectedProcedure
+    .input(z.object({ projectId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+      }
+      const { db, schema } = ctx.tenant;
+      const abilities = await loadAbilities({ tenant: ctx.tenant, userId: ctx.userId, orgRole: ctx.orgRole });
+      ForbiddenError.from(abilities).throwUnlessCan("read", "Estimate");
+      const [active] = await db
+        .select({ id: schema.estimates.id, slug: schema.estimates.slug, revision: schema.estimates.revision })
+        .from(schema.estimates)
+        .where(and(eq(schema.estimates.projectId, input.projectId), eq(schema.estimates.isActive, true)))
+        .limit(1);
+      if (!active) return null;
+      const c = await loadComputed(ctx.tenant, active.id);
+      const accepted = c.estimate.acceptedAt != null;
+      const acceptedIds = c.lines.filter((l) => l.isOptional && l.optionAccepted === true).map((l) => l.id);
+      const acceptance = applyAcceptance(c.result, acceptedIds);
+      const contractValue = accepted ? acceptance.contractValue : c.result.totals.total;
+      const cost = accepted ? acceptance.costBudget : c.result.totals.baseCost;
+      const contingency = accepted ? acceptance.contingencyBudget : c.result.totals.baseContingency;
+      // Margin profit: price minus cost (contingency counts as cost, so unspent contingency is
+      // extra profit later). Accepted options add their own price minus cost.
+      const acceptedOptions = c.result.options.filter((o) => acceptedIds.includes(o.id));
+      const profit =
+        c.result.totals.basePrice - c.result.totals.baseCost +
+        (accepted ? acceptedOptions.reduce((a, o) => a + o.profit, 0) : 0);
+      return {
+        estimateId: active.id,
+        slug: active.slug,
+        revision: active.revision,
+        status: c.estimate.status,
+        accepted,
+        contractValue,
+        cost,
+        contingency,
+        profit,
+        optionsTotal: c.result.options.reduce((a, o) => a + o.price + o.tax, 0),
+      };
     }),
 });
