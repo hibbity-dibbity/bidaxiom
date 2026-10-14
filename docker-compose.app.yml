@@ -49,9 +49,6 @@ services:
       # Built into the browser bundle, so it must be the address your browser uses.
       args:
         NEXT_PUBLIC_API_URL: http://localhost:3001
-        # Local preview only: skip the type/lint gate so existing API type errors
-        # don't block the build. Remove before deploying anywhere.
-        SKIP_TYPECHECK: "1"
     restart: unless-stopped
     ports:
       - "3000:3000"
