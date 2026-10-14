@@ -1,4 +1,5 @@
 import pg from "pg";
+import { syncTenantSchema } from "./syncSchema.js";
 
 export interface TenantRecord {
   id: string;
@@ -1609,6 +1610,10 @@ export async function provisionTenantSchema(
         CREATE INDEX IF NOT EXISTS idx_sov_versions_sov
         ON "${schemaName}".sov_versions(sov_id)
       `);
+
+      // Bring the schema up to the current table definitions (tables and columns added since this DDL was written)
+      const synced = await syncTenantSchema(client, schemaName);
+      console.log(`Schema sync for ${schemaName}: ${synced.tables} tables, ${synced.columns} columns added`);
 
       // Register tenant in public schema
       const insertResult = await client.query(
