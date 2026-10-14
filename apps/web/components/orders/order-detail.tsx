@@ -202,7 +202,7 @@ export function OrderDetail({ projectSlug, orderId }: { projectSlug: string; ord
           </section>
 
           {issuedLike && (
-            <section className="space-y-2">
+            <section id="payments" className="space-y-2">
               <div className="flex items-baseline justify-between">
                 <h2 className="text-sm font-semibold">Payments</h2>
                 <span className="text-sm text-muted-foreground">
@@ -239,6 +239,15 @@ export function OrderDetail({ projectSlug, orderId }: { projectSlug: string; ord
                   <input aria-label="Payment date" type="date" className={fieldCls + " w-40"} value={pay.date} onChange={(e) => setPay((p) => ({ ...p, date: e.target.value }))} />
                   <input aria-label="Payment reference" placeholder="Check or ACH reference" className={fieldCls + " max-w-xs"} value={pay.reference} onChange={(e) => setPay((p) => ({ ...p, reference: e.target.value }))} />
                   <Button type="submit" size="sm" disabled={recordPayment.isPending}>Record payment</Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={recordPayment.isPending || outstanding <= 0}
+                    onClick={() => recordPayment.mutate({ orderId, amount: outstanding, paidAt: pay.date, reference: pay.reference.trim() || null })}
+                  >
+                    Mark paid in full ({dollars(outstanding)})
+                  </Button>
                 </form>
               )}
             </section>

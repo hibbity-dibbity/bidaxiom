@@ -27,6 +27,7 @@ export function OrderCard(props: {
   onMerge: (intoOrderId: string) => void;
   onIssue: () => void;
   onRevise: () => void;
+  onMarkPaid: () => void;
 }) {
   const { order: o, selected, setSelected } = props;
   const locked = o.status !== "draft";
@@ -142,6 +143,16 @@ export function OrderCard(props: {
           <Button asChild size="sm" variant="ghost">
             <Link href={`/projects/${props.projectSlug}/orders/${o.id}`}>Details</Link>
           </Button>
+          {locked && o.status !== "paid" && (
+            <>
+              <Button asChild size="sm" variant="outline">
+                <Link href={`/projects/${props.projectSlug}/orders/${o.id}#payments`}>Partial payment</Link>
+              </Button>
+              <Button type="button" size="sm" disabled={props.busy || (o.outstanding ?? 0) <= 0} onClick={props.onMarkPaid}>
+                Mark paid
+              </Button>
+            </>
+          )}
           {locked ? (
             <Button type="button" size="sm" variant="outline" disabled={props.busy} onClick={props.onRevise}>
               Revise

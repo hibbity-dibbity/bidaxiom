@@ -56,6 +56,18 @@ export function ProjectOrdersList({ projectSlug, kind }: { projectSlug: string; 
     },
     onError: fail("Could not merge"),
   });
+  const markPaid = trpc.order.recordPayment.useMutation({
+    onSuccess: () => {
+      toast.success("Marked paid");
+      refresh();
+      utils.order.listForProject.invalidate();
+    },
+    onError: fail("Could not record the payment"),
+  });
+  const todayStr = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  })();
   const issue = trpc.order.issue.useMutation({
     onSuccess: () => {
       toast.success("Order issued");
@@ -147,6 +159,10 @@ export function ProjectOrdersList({ projectSlug, kind }: { projectSlug: string; 
                 onMerge={(intoOrderId) => merge.mutate({ fromOrderId: o.id, intoOrderId })}
                 onIssue={() => issue.mutate({ orderId: o.id })}
                 onRevise={() => revise.mutate({ orderId: o.id })}
+                onMarkPaid={() => {
+                  if (window.confirm(`Mark ${o.number} paid in full (${dollars(o.outstanding ?? 0)}) as of today?`))
+                    markPaid.mutate({ orderId: o.id, amount: o.outstanding ?? 0, paidAt: todayStr, reference: null });
+                }}
               />
             ))}
           </div>
