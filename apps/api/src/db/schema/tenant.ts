@@ -1200,7 +1200,8 @@ export function createTenantSchema(schemaName: string) {
    */
   const termsVersions = schema.table("terms_versions", {
     id: uuid("id").primaryKey().defaultRandom(),
-    version: integer("version").notNull().unique(),
+    kind: text("kind").notNull().default("proposal"), // proposal (terms and conditions), change_order (extra work authorization)
+    version: integer("version").notNull(), // unique per kind
     createdBy: text("created_by").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   });

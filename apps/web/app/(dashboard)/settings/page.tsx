@@ -123,6 +123,19 @@ export default function SettingsPage() {
         </Link>
 
         <Link
+          href="/settings/change-order-terms"
+          className="bg-card p-6 hover:bg-muted/50 transition-colors"
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <ScrollText className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold">Change Order Authorization</h2>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            The extra work authorization wording printed on every change order you send
+          </p>
+        </Link>
+
+        <Link
           href="/settings/document-templates"
           className="bg-card p-6 hover:bg-muted/50 transition-colors"
         >

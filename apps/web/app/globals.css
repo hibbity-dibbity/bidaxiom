@@ -117,4 +117,12 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Native dropdown lists take the theme, so options are readable in dark mode. */
+  html { color-scheme: light; }
+  html.dark { color-scheme: dark; }
+  select option,
+  select optgroup {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
 }

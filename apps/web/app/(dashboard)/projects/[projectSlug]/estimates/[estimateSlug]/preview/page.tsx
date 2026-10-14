@@ -244,17 +244,28 @@ export default function ProposalPreviewPage({
             )}
           </section>
 
-          <section>
-            <SectionHead left="Terms and conditions" right={`Master terms, version ${data.terms.version}`} />
-            <div className="flex flex-col gap-2 pt-3 text-[10.5px] leading-snug text-muted-foreground">
-              {data.terms.sections.map((s, i) => (
-                <div key={s.id}>
-                  <strong className="text-foreground">{i + 1}. {s.title}</strong>
-                  {s.body && <div className="whitespace-pre-wrap">{s.body}</div>}
+          {data.kind === "change_order" ? (
+            <section className="flex flex-col gap-3">
+              {data.terms.sections.map((sec) => (
+                <div key={sec.id} className="flex flex-col gap-1.5">
+                  <SectionHead left={sec.title} right="" />
+                  {sec.body && <div className="whitespace-pre-wrap pt-1 text-[13px] leading-relaxed">{sec.body}</div>}
                 </div>
               ))}
-            </div>
-          </section>
+            </section>
+          ) : (
+            <section>
+              <SectionHead left="Terms and conditions" right={`Master terms, version ${data.terms.version}`} />
+              <div className="flex flex-col gap-2 pt-3 text-[10.5px] leading-snug text-muted-foreground">
+                {data.terms.sections.map((s, i) => (
+                  <div key={s.id}>
+                    <strong className="text-foreground">{i + 1}. {s.title}</strong>
+                    {s.body && <div className="whitespace-pre-wrap">{s.body}</div>}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           <div className="flex flex-wrap gap-12 pt-4">
             <div className="min-w-[240px] flex-1 border-t border-foreground pt-2 text-xs text-muted-foreground">Accepted by (signature and date)</div>
@@ -268,8 +279,8 @@ export default function ProposalPreviewPage({
           <AlertDialogHeader>
             <AlertDialogTitle>Mark this {noun} as sent?</AlertDialogTitle>
             <AlertDialogDescription>
-              The {noun} is recorded as sent and locked, and keeps the current master terms (version {data.terms.version}).
-              Later changes to your terms will not change it. To change it after sending, create a revision. Email delivery is not set up yet, so use Download PDF to send it to {customer}.
+              The {noun} is recorded as sent and locked, and keeps the current {isCO ? "authorization wording" : "master terms"} (version {data.terms.version}).
+              Later changes to your {isCO ? "wording" : "terms"} will not change it. To change it after sending, create a revision. Email delivery is not set up yet, so use Download PDF to send it to {customer}.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

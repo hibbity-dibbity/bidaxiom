@@ -143,7 +143,7 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
       })))
     );
     setGlobals(data.globals);
-    setMilestones(data.milestones);
+    setMilestones(withBalance(data.milestones));
     setSettings({
       name: data.estimate.name,
       salesTaxPercent: data.estimate.salesTaxPercent,
@@ -749,33 +749,43 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
                   <span className="px-2.5 py-1.5 text-muted-foreground">By line</span>
                 </div>
               </div>
-              {milestones.map((m, i) => (
-                <div key={m.id} className="grid grid-cols-[1fr_60px_92px_28px] items-center gap-1.5">
-                  <input className={smallField} aria-label="Milestone name" disabled={locked} value={m.name}
-                    onChange={(e) => { setMilestones((ms) => ms.map((x) => (x.id === m.id ? { ...x, name: e.target.value } : x))); mark(); }} />
-                  <NumField className={cn(smallField, "text-right")} aria-label="Percent of total" min={0} max={100} step="1" disabled={locked}
-                    value={m.percent} onChange={(v) => { setMilestones((ms) => ms.map((x) => (x.id === m.id ? { ...x, percent: Math.min(Math.max(v, 0), 100) } : x))); mark(); }} />
-                  <div className="text-right text-sm tabular-nums">{money(schedule[i]?.amount ?? 0)}</div>
-                  <RemoveButton label="Remove milestone" disabled={locked}
-                    onClick={() => { setMilestones((ms) => ms.filter((x) => x.id !== m.id)); mark(); }} />
-                </div>
-              ))}
+              {milestones.map((m, i) => {
+                // The last row is the balance: it always equals what the other rows leave over.
+                const isBalance = i === milestones.length - 1;
+                return (
+                  <div key={m.id} className="grid grid-cols-[1fr_60px_92px_28px] items-center gap-1.5">
+                    <input className={smallField} aria-label="Milestone name" disabled={locked} value={m.name}
+                      onChange={(e) => { setMilestones((ms) => ms.map((x) => (x.id === m.id ? { ...x, name: e.target.value } : x))); mark(); }} />
+                    {isBalance ? (
+                      <div className={cn(smallField, "flex items-center justify-end bg-muted tabular-nums")} title="The balance after the other milestones. It adjusts on its own." aria-label="Percent of total (balance)">
+                        {m.percent}
+                      </div>
+                    ) : (
+                      <NumField className={cn(smallField, "text-right")} aria-label="Percent of total" min={0} max={100} step="1" disabled={locked}
+                        value={m.percent} onChange={(v) => { setMilestones((ms) => withBalance(ms.map((x) => (x.id === m.id ? { ...x, percent: Math.min(Math.max(v, 0), 100) } : x)))); mark(); }} />
+                    )}
+                    <div className="text-right text-sm tabular-nums">{money(schedule[i]?.amount ?? 0)}</div>
+                    {isBalance ? (
+                      <span />
+                    ) : (
+                      <RemoveButton label="Remove milestone" disabled={locked}
+                        onClick={() => { setMilestones((ms) => withBalance(ms.filter((x) => x.id !== m.id))); mark(); }} />
+                    )}
+                  </div>
+                );
+              })}
               <div className="flex flex-wrap gap-2">
                 <Button type="button" size="sm" variant="outline" disabled={locked}
-                  onClick={() => { setMilestones((ms) => [...ms, { id: newId(), name: "New milestone", percent: 0 }]); mark(); }}>
-                  + Milestone
-                </Button>
-                <Button type="button" size="sm" variant="outline" disabled={locked || milestones.length === 0}
                   onClick={() => {
                     setMilestones((ms) => {
-                      if (ms.length === 0) return ms;
-                      const others = ms.slice(0, -1).reduce((a, m) => a + m.percent, 0);
-                      const last = Math.min(Math.max(Math.round((100 - others) * 100) / 100, 0), 100);
-                      return ms.map((m, i) => (i === ms.length - 1 ? { ...m, percent: last } : m));
+                      // New milestones go above the Substantial Completion balance row.
+                      const added = ms.length; // 1 existing row means this is the first extra milestone
+                      const name = added <= 1 ? "Material & Mobilization Deposit" : `Draw ${added}`;
+                      return withBalance([...ms.slice(0, -1), { id: newId(), name, percent: 0 }, ...ms.slice(-1)]);
                     });
                     mark();
                   }}>
-                  Balance last
+                  + Milestone
                 </Button>
               </div>
               <div className={cn("rounded-md bg-muted px-2.5 py-2 text-[13px] font-semibold", schedOk ? "text-financial-positive" : "text-financial-pending")}>
@@ -834,6 +844,17 @@ function upgradeLegacy(lines: BuilderLine[]): BuilderLine[] {
     }
   }
   return out;
+}
+
+/**
+ * The invoicing schedule always ends with Substantial Completion, which is the balance: 100 minus
+ * the other milestones. An empty schedule gets that row. Percents are kept to two decimals.
+ */
+function withBalance(ms: BuilderMilestone[]): BuilderMilestone[] {
+  if (ms.length === 0) return [{ id: crypto.randomUUID(), name: "Substantial Completion", percent: 100 }];
+  const others = ms.slice(0, -1).reduce((a, m) => a + Math.round((Number(m.percent) || 0) * 100), 0);
+  const balance = Math.max(10000 - others, 0) / 100;
+  return ms.map((m, i) => (i === ms.length - 1 ? { ...m, percent: balance } : m));
 }
 
 const STATUS_LABEL: Record<string, string> = {

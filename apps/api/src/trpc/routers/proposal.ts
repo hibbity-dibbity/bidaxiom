@@ -671,7 +671,7 @@ export const proposalRouter = router({
       ].filter((v): v is string => Boolean(v && v.trim()));
 
       const pinned = c.estimate.termsVersionId ? await readTermsVersion(ctx.tenant, c.estimate.termsVersionId) : null;
-      const terms = pinned ?? (await ensureCurrentTerms(ctx.tenant, ctx.userId));
+      const terms = pinned ?? (await ensureCurrentTerms(ctx.tenant, ctx.userId, c.estimate.kind === "change_order" ? "change_order" : "proposal"));
 
       const addressParts = project
         ? [project.street1, project.street2, [project.city, project.state].filter(Boolean).join(", "), project.zip].filter(Boolean)
@@ -728,7 +728,7 @@ export const proposalRouter = router({
       const blocker = sendBlocker(c);
       if (blocker) throw new TRPCError({ code: "BAD_REQUEST", message: blocker });
 
-      const terms = await ensureCurrentTerms(ctx.tenant, ctx.userId);
+      const terms = await ensureCurrentTerms(ctx.tenant, ctx.userId, c.estimate.kind === "change_order" ? "change_order" : "proposal");
       const sentAt = new Date();
       await db
         .update(schema.estimates)
@@ -811,6 +811,8 @@ export const proposalRouter = router({
             createdBy: ctx.userId,
           })
           .returning({ id: schema.estimates.id, slug: schema.estimates.slug });
+        // Every schedule starts with Substantial Completion, which takes whatever balance is left.
+        await db.insert(schema.invoiceMilestones).values({ estimateId: row.id, name: "Substantial Completion", percent: "100", sortOrder: 0 });
         created = { id: row.id, slug: row.slug as string };
       }
 
@@ -1171,7 +1173,7 @@ export const proposalRouter = router({
             createdBy: ctx.userId!,
           })
           .returning({ id: schema.estimates.id, slug: schema.estimates.slug });
-        await tx.insert(schema.invoiceMilestones).values({ estimateId: row.id, name: "Due on approval", percent: "100", sortOrder: 0 });
+        await tx.insert(schema.invoiceMilestones).values({ estimateId: row.id, name: "Substantial Completion", percent: "100", sortOrder: 0 });
         return row;
       });
       await createAuditLog(db, schema, {
