@@ -23,6 +23,18 @@ export default function InvoicesPage({ params }: { params: { projectSlug: string
     onError: (e) => toast.error("Could not create the invoices", { description: e.message }),
   });
 
+  const record = trpc.invoice.recordPayment.useMutation({
+    onSuccess: () => {
+      toast.success("Marked paid");
+      utils.invoice.list.invalidate();
+    },
+    onError: (e) => toast.error("Could not record the payment", { description: e.message }),
+  });
+  const todayStr = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  })();
+
   if (!project) return null;
   const rows = data?.rows ?? [];
 
@@ -75,6 +87,7 @@ export default function InvoicesPage({ params }: { params: { projectSlug: string
                   <th className="px-3 py-2">Due</th>
                   <th className="px-3 py-2 text-right">Received</th>
                   <th className="px-3 py-2 text-right">Outstanding</th>
+                  <th className="px-3 py-2"></th>
                 </tr>
               </thead>
               <tbody>
@@ -96,6 +109,30 @@ export default function InvoicesPage({ params }: { params: { projectSlug: string
                     <td className="px-3 py-2">{shortDate(r.dueOn)}</td>
                     <td className="px-3 py-2 text-right tabular-nums">{r.status === "draft" ? "—" : dollars(r.received)}</td>
                     <td className="px-3 py-2 text-right tabular-nums">{r.outstanding === null ? "—" : dollars(r.outstanding)}</td>
+                    <td className="whitespace-nowrap px-3 py-2 text-right">
+                      {r.status === "draft" ? (
+                        <Link href={`/projects/${projectSlug}/invoices/${r.id}`} className="text-xs text-muted-foreground hover:underline">
+                          Open to send
+                        </Link>
+                      ) : r.status === "paid" ? null : (
+                        <span className="flex justify-end gap-2">
+                          <Button asChild size="sm" variant="outline">
+                            <Link href={`/projects/${projectSlug}/invoices/${r.id}#payments`}>Partial payment</Link>
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            disabled={record.isPending}
+                            onClick={() => {
+                              if (window.confirm(`Mark ${r.number} paid in full (${dollars(r.outstanding ?? 0)}) as of today?`))
+                                record.mutate({ invoiceId: r.id, amount: r.outstanding ?? 0, receivedAt: todayStr, reference: null });
+                            }}
+                          >
+                            Mark paid
+                          </Button>
+                        </span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -56,6 +56,7 @@ export default function InvoicePage({ params }: { params: { projectSlug: string;
     },
     onError: fail("Could not record the payment"),
   });
+  const [sendingPaid, setSendingPaid] = React.useState(false);
   const remove = trpc.invoice.deletePayment.useMutation({ onSuccess: refresh, onError: fail("Could not delete the payment") });
 
   if (isLoading || !data) return <Skeleton className="h-96 w-full" />;
@@ -63,6 +64,18 @@ export default function InvoicePage({ params }: { params: { projectSlug: string;
   const draft = inv.status === "draft";
   const computedDue = dueDateFor(sentOn, inv.paymentTerms);
   const effectiveDue = dueTouched && dueOn ? dueOn : computedDue;
+  const sendAndPay = async () => {
+    setSendingPaid(true);
+    try {
+      await send.mutateAsync({ invoiceId, sentOn, dueOn: effectiveDue });
+      await record.mutateAsync({ invoiceId, amount: inv.amount, receivedAt: today(), reference: null });
+    } catch {
+      /* the mutation handlers already show the error */
+    } finally {
+      setSendingPaid(false);
+      refresh();
+    }
+  };
   const heading = [data.projectNumber, data.projectName].filter(Boolean).join(" - ") || "Invoice";
 
   return (
@@ -107,6 +120,14 @@ export default function InvoicePage({ params }: { params: { projectSlug: string;
             </label>
             <Button type="button" disabled={send.isPending || inv.amount <= 0} onClick={() => send.mutate({ invoiceId, sentOn, dueOn: effectiveDue })}>
               Send {inv.number}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={sendingPaid || send.isPending || inv.amount <= 0}
+              onClick={sendAndPay}
+            >
+              Send and mark paid in full
             </Button>
           </div>
           <label className="block space-y-1">
@@ -178,7 +199,7 @@ export default function InvoicePage({ params }: { params: { projectSlug: string;
       </div>
 
       {!draft && (
-        <section className="space-y-2 print:hidden">
+        <section id="payments" className="space-y-2 print:hidden">
           <div className="flex items-baseline justify-between">
             <h2 className="text-sm font-semibold">Payments received</h2>
             <span className="text-sm text-muted-foreground">
@@ -215,6 +236,15 @@ export default function InvoicePage({ params }: { params: { projectSlug: string;
               <input aria-label="Date received" type="date" className={field + " w-40"} value={pay.date} onChange={(e) => setPay((p) => ({ ...p, date: e.target.value }))} />
               <input aria-label="Payment reference" placeholder="Check or ACH reference" className={field + " max-w-xs"} value={pay.reference} onChange={(e) => setPay((p) => ({ ...p, reference: e.target.value }))} />
               <Button type="submit" size="sm" disabled={record.isPending}>Record payment</Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={record.isPending || (data.outstanding ?? 0) <= 0}
+                onClick={() => record.mutate({ invoiceId, amount: data.outstanding ?? 0, receivedAt: pay.date, reference: pay.reference.trim() || null })}
+              >
+                Mark paid in full ({dollars(data.outstanding ?? 0)})
+              </Button>
             </form>
           )}
         </section>
