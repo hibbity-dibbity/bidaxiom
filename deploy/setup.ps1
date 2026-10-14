@@ -13,7 +13,8 @@ param(
   [string]$Branch = "design-consistency-pass"
 )
 
-$ErrorActionPreference = "Stop"
+# Native tools (docker, git) write progress to stderr; check $LASTEXITCODE instead of letting that stop the script.
+$ErrorActionPreference = "Continue"
 $Root = "C:\BidAxiomDeploy"
 
 foreach ($tool in "git", "docker") {

@@ -7,7 +7,8 @@
 #>
 param([switch]$Force)
 
-$ErrorActionPreference = "Stop"
+# Native tools (docker, git) write progress to stderr; check $LASTEXITCODE instead of letting that stop the script.
+$ErrorActionPreference = "Continue"
 $Root = "C:\BidAxiomDeploy"
 $Repo = Join-Path $Root "repo"
 $Log = Join-Path $Root "update.log"
