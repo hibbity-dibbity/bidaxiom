@@ -1,5 +1,6 @@
 "use client";
 
+import { browserApiUrl } from "@/lib/api-url";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,7 +21,7 @@ import { toast } from "sonner";
 import { Loader2, Shield } from "lucide-react";
 import { ThemeToggle } from "@/components/settings/theme-toggle";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+const API_URL = browserApiUrl();
 
 const passwordSchema = z
   .object({

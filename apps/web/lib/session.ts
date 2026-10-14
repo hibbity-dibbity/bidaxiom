@@ -22,7 +22,8 @@ export const sessionOptions: SessionOptions = {
   password: process.env.SESSION_SECRET!,
   cookieName: "construction_session",
   cookieOptions: {
-    secure: process.env.NODE_ENV === "production",
+    // Browsers drop "secure" cookies on plain http (a phone on the local network). COOKIE_SECURE=false allows that.
+    secure: process.env.COOKIE_SECURE ? process.env.COOKIE_SECURE === "true" : process.env.NODE_ENV === "production",
     httpOnly: true,
     sameSite: "lax" as const, // "lax" allows OAuth redirects, "strict" blocks them
     maxAge: 7 * 24 * 60 * 60, // 7 days (matches refresh token TTL)

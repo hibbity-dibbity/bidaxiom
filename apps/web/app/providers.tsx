@@ -1,5 +1,6 @@
 "use client";
 
+import { browserApiUrl } from "@/lib/api-url";
 import { useState, useMemo } from "react";
 import { QueryClient, QueryClientProvider, QueryCache } from "@tanstack/react-query";
 import { httpBatchLink } from "@trpc/react-query";
@@ -46,7 +47,7 @@ function TrpcAndAbilityProvider({ children }: { children: React.ReactNode }) {
     trpc.createClient({
       links: [
         httpBatchLink({
-          url: `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001"}/trpc`,
+          url: `${browserApiUrl()}/trpc`,
           async headers() {
             // Fetch access token from session via API route
             try {

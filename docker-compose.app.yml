@@ -42,6 +42,8 @@ services:
       CORS_ORIGIN: http://localhost:3000
       # The PDF renderer opens the web app by its service name.
       WEB_INTERNAL_URL: http://web:3000
+      # Lets a phone or laptop on the same network use the app (see docs in deploy/README if present).
+      ALLOW_LAN_ORIGINS: "true"
       NEXT_PUBLIC_APP_URL: http://localhost:3000
 
   web:
@@ -62,3 +64,5 @@ services:
       NEXT_PUBLIC_API_URL: http://localhost:3001
       # Server-side calls from inside the web container reach the API by its service name.
       API_INTERNAL_URL: http://api:3001
+      # The local setup runs over plain http, so the session cookie cannot be "secure".
+      COOKIE_SECURE: "false"

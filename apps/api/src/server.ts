@@ -45,12 +45,22 @@ const fastify = Fastify({
 });
 
 // Register plugins
+// ALLOW_LAN_ORIGINS=true also accepts pages opened from a private network address (a phone on the
+// same Wi-Fi opening http://192.168.x.x:3000). Meant for the local Docker setup only.
+const lanOrigin = (origin: string) => {
+  try {
+    const h = new URL(origin).hostname;
+    return /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.)/.test(h) || h.endsWith(".local") || h === "localhost";
+  } catch {
+    return false;
+  }
+};
+const allowedOrigins = [
+  ...(process.env.CORS_ORIGIN ?? "http://localhost:3000").split(",").map((s) => s.trim()).filter(Boolean),
+  ...(process.env.WEB_INTERNAL_URL ? [new URL(process.env.WEB_INTERNAL_URL).origin] : []),
+];
 await fastify.register(cors, {
-  // The PDF renderer opens the web app by its internal address, so that origin is allowed too.
-  origin: [
-    ...(process.env.CORS_ORIGIN ?? "http://localhost:3000").split(",").map((s) => s.trim()).filter(Boolean),
-    ...(process.env.WEB_INTERNAL_URL ? [new URL(process.env.WEB_INTERNAL_URL).origin] : []),
-  ],
+  origin: (origin, cb) => cb(null, !origin || allowedOrigins.includes(origin) || (process.env.ALLOW_LAN_ORIGINS === "true" && lanOrigin(origin))),
   credentials: true,
 });
 

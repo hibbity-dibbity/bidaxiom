@@ -1,5 +1,6 @@
 "use client";
 
+import { browserApiUrl } from "@/lib/api-url";
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -14,7 +15,7 @@ import { toast } from "sonner";
 import { Loader2, Copy, CheckCircle2, AlertTriangle } from "lucide-react";
 import { getSafeRedirectUrl } from "@/lib/utils/safe-redirect";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+const API_URL = browserApiUrl();
 
 const verifySchema = z.object({
   token: z.string().length(6, "Code must be 6 digits"),
