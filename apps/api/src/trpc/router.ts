@@ -9,15 +9,8 @@ import { dashboardRouter } from "./routers/dashboard.js";
 import { userRouter } from "./routers/user.js";
 import { projectRouter } from "./routers/project.js";
 import { documentRouter } from "./routers/document.js";
-import { budgetRouter } from "./routers/budget.js";
-import { commitmentRouter } from "./routers/commitment.js";
-import { changeOrderRouter } from "./routers/change-order.js";
-import { sovRouter } from "./routers/sov.js";
-import { paymentAppRouter } from "./routers/payment-app.js";
 import { pdfRouter } from "./routers/pdf.js";
-import { lienWaiverRouter } from "./routers/lien-waiver.js";
 import { invoiceRouter } from "./routers/invoice.js";
-import { invoiceTrackingRouter } from "./routers/invoice-tracking.js";
 import { rfqRouter } from "./routers/rfq.js";
 import { subcontractorRouter } from "./routers/subcontractor.js";
 import { bidRouter } from "./routers/bid.js";
@@ -56,15 +49,8 @@ export const appRouter = router({
   organization: organizationRouter,
   project: projectRouter,
   document: documentRouter,
-  budget: budgetRouter,
-  commitment: commitmentRouter,
-  changeOrder: changeOrderRouter,
-  sov: sovRouter,
-  paymentApp: paymentAppRouter,
   pdf: pdfRouter,
-  lienWaiver: lienWaiverRouter,
   invoice: invoiceRouter,
-  invoiceTracking: invoiceTrackingRouter,
   rfq: rfqRouter,
   subcontractor: subcontractorRouter,
   bid: bidRouter,

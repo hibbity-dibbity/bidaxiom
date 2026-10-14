@@ -12,7 +12,6 @@ interface ProjectTabsProps {
   lifecyclePhase: string;
   headerStats?: {
     changeOrdersPendingCount: number;
-    paymentAppsPendingCount: number;
     documentsCount: number;
     invoicesCount: number;
   } | null;
@@ -52,11 +51,7 @@ export function ProjectTabs({ projectSlug, projectMode, lifecyclePhase, headerSt
   // Prefetch handlers for each section
   const prefetchOverview = () => {
     if (!projectId) return;
-    utils.budget.getProjectSummary.prefetch({ projectId });
     utils.proposal.listChangeOrders.prefetch({ projectId });
-    utils.paymentApp.getSummary.prefetch({ projectId });
-    utils.sov.list.prefetch({ projectId });
-    utils.paymentApp.getRetainage.prefetch({ projectId });
     utils.rfq.list.prefetch({ projectId });
   };
 
@@ -65,37 +60,14 @@ export function ProjectTabs({ projectSlug, projectMode, lifecyclePhase, headerSt
     utils.document.listUnified.prefetch({ projectId });
   };
 
-  const prefetchBudget = () => {
-    if (!projectId) return;
-    utils.budget.getProjectSummary.prefetch({ projectId });
-    utils.budget.getVarianceAlerts.prefetch({ projectId });
-    utils.budget.getForecast.prefetch({ projectId });
-  };
-
-  const prefetchCommitments = () => {
-    if (!projectId) return;
-    utils.commitment.list.prefetch({ projectId });
-  };
-
   const prefetchChangeOrders = () => {
     if (!projectId) return;
     utils.proposal.listChangeOrders.prefetch({ projectId });
   };
 
-  const prefetchSOV = () => {
-    if (!projectId) return;
-    utils.sov.list.prefetch({ projectId });
-  };
-
-  const prefetchPaymentApps = () => {
-    if (!projectId) return;
-    utils.paymentApp.list.prefetch({ projectId });
-  };
-
   const prefetchInvoices = () => {
     if (!projectId) return;
-    utils.invoiceTracking.getARAgingReport.prefetch({ projectId });
-    utils.invoiceTracking.getAPAgingReport.prefetch({ projectId });
+    utils.invoice.list.prefetch({ projectId });
   };
 
   const prefetchRFQs = () => {
@@ -112,11 +84,7 @@ export function ProjectTabs({ projectSlug, projectMode, lifecyclePhase, headerSt
   const sectionPrefetchMap: Record<string, () => void> = {
     "": prefetchOverview,
     "/documents": prefetchDocuments,
-    "/budget": prefetchBudget,
-    "/commitments": prefetchCommitments,
     "/change-orders": prefetchChangeOrders,
-    "/sov": prefetchSOV,
-    "/payment-apps": prefetchPaymentApps,
     "/invoices": prefetchInvoices,
     "/rfqs": prefetchRFQs,
     "/estimates": prefetchEstimates,
@@ -131,7 +99,6 @@ export function ProjectTabs({ projectSlug, projectMode, lifecyclePhase, headerSt
     if (!headerStats) return 0;
     switch (href) {
       case "/change-orders": return headerStats.changeOrdersPendingCount;
-      case "/payment-apps": return headerStats.paymentAppsPendingCount;
       case "/documents": return headerStats.documentsCount;
       case "/invoices": return headerStats.invoicesCount;
       default: return 0;

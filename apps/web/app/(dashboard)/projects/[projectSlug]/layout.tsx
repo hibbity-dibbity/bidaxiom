@@ -23,14 +23,6 @@ export default function ProjectLayout({ children, params }: ProjectLayoutProps) 
     slug: projectSlug,
   });
 
-  // Fetch budget summary (enabled only when project is loaded)
-  // NOTE: Keep this query — the Overview tab uses the cached result
-  const { data: budgetSummary } = trpc.budget.getProjectSummary.useQuery(
-    { projectId: project?.id ?? "" },
-    { enabled: !!project?.id }
-  );
-  void budgetSummary; // consumed by Overview tab via React Query cache
-
   // Fetch header stats for the financial stat bar (enabled only when project is loaded)
   const { data: headerStats } = trpc.project.getHeaderStats.useQuery(
     { projectId: project?.id ?? "" },
