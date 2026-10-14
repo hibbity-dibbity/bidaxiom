@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -23,6 +24,15 @@ export default function InvoicesPage({ params }: { params: { projectSlug: string
     onError: (e) => toast.error("Could not create the invoices", { description: e.message }),
   });
 
+  const [picked, setPicked] = React.useState<string[]>([]);
+  const merge = trpc.invoice.merge.useMutation({
+    onSuccess: (r) => {
+      toast.success(`Merged into ${r.number}`, { description: r.removed.length ? `${r.removed.join(", ")} folded into it.` : undefined });
+      setPicked([]);
+      utils.invoice.list.invalidate();
+    },
+    onError: (e) => toast.error("Could not merge", { description: e.message }),
+  });
   const record = trpc.invoice.recordPayment.useMutation({
     onSuccess: () => {
       toast.success("Marked paid");
@@ -75,10 +85,21 @@ export default function InvoicesPage({ params }: { params: { projectSlug: string
               </div>
             ))}
           </div>
+          {rows.some((r) => r.status === "draft") && (
+            <div className="flex flex-wrap items-center gap-3 text-sm">
+              <Button type="button" size="sm" variant="outline" disabled={picked.length < 2 || merge.isPending} onClick={() => merge.mutate({ invoiceIds: picked })}>
+                Merge selected{picked.length > 0 ? ` (${picked.length})` : ""}
+              </Button>
+              <span className="text-muted-foreground">
+                Tick two or more unsent invoices to combine them into one. The lowest invoice number is kept and each milestone is listed on it.
+              </span>
+            </div>
+          )}
           <div className="overflow-x-auto rounded-md border bg-background">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <th className="w-8 px-3 py-2"></th>
                   <th className="px-3 py-2">Invoice</th>
                   <th className="px-3 py-2">Milestone</th>
                   <th className="px-3 py-2 text-right">Amount</th>
@@ -93,13 +114,25 @@ export default function InvoicesPage({ params }: { params: { projectSlug: string
               <tbody>
                 {rows.map((r) => (
                   <tr key={r.id} className="border-b last:border-0">
+                    <td className="px-3 py-2">
+                      {r.status === "draft" && (
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4"
+                          aria-label={`Select ${r.number} to merge`}
+                          checked={picked.includes(r.id)}
+                          onChange={(e) => setPicked((p) => (e.target.checked ? [...p, r.id] : p.filter((x) => x !== r.id)))}
+                        />
+                      )}
+                    </td>
                     <td className="px-3 py-2 font-semibold">
                       <Link href={`/projects/${projectSlug}/invoices/${r.id}`} className="hover:underline">
                         {r.number}
                       </Link>
                     </td>
                     <td className="px-3 py-2">
-                      {r.milestoneName} <span className="text-muted-foreground">({r.percent}%)</span>
+                      {r.itemCount > 0 ? r.milestoneName : <>{r.milestoneName} <span className="text-muted-foreground">({r.percent}%)</span></>}
+                      {r.itemCount === 0 && r.isChangeOrder && <div className="text-xs text-muted-foreground">{r.source}</div>}
                     </td>
                     <td className="px-3 py-2 text-right tabular-nums">{dollars(r.amount)}</td>
                     <td className="px-3 py-2">

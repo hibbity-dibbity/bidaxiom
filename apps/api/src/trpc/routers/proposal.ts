@@ -141,6 +141,37 @@ async function uniqueSlug(tenant: Tenant, base: string): Promise<string> {
   throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Could not create a unique link for the copy" });
 }
 
+/** Accepted contract value in cents for one proposal or change order (base plus accepted options). */
+async function acceptedValueCents(tenant: Tenant, estimateId: string) {
+  const c = await loadComputed(tenant, estimateId);
+  const acceptedIds = c.lines.filter((l) => l.isOptional && l.optionAccepted === true).map((l) => l.id);
+  const a = applyAcceptance(c.result, acceptedIds);
+  const acceptedOptions = c.result.options.filter((o) => acceptedIds.includes(o.id));
+  return {
+    c,
+    contractValue: a.contractValue,
+    cost: a.costBudget,
+    contingency: a.contingencyBudget,
+    profit: c.result.totals.basePrice - c.result.totals.baseCost + acceptedOptions.reduce((x, o) => x + o.profit, 0),
+  };
+}
+
+/** Accepted change orders of a project, each with its accepted value. */
+async function acceptedChangeOrders(tenant: Tenant, projectId: string) {
+  const { db, schema } = tenant;
+  const rows = await db
+    .select()
+    .from(schema.estimates)
+    .where(and(eq(schema.estimates.projectId, projectId), eq(schema.estimates.kind, "change_order"), inArray(schema.estimates.status, ["accepted", "under_contract"])))
+    .orderBy(asc(schema.estimates.createdAt));
+  const out = [];
+  for (const r of rows) {
+    const v = await acceptedValueCents(tenant, r.id);
+    out.push({ row: r, ...v });
+  }
+  return out;
+}
+
 /** Make one proposal the project's only active one. */
 async function activate(tenant: Tenant, projectId: string, estimateId: string) {
   const { db, schema } = tenant;
@@ -159,7 +190,14 @@ async function cloneProposal(
   tenant: Tenant,
   userId: string,
   sourceId: string,
-  opts: { name: string; slugSuffix?: string; revision: number; revisionOfId: string | null }
+  opts: {
+    name: string;
+    slugSuffix?: string;
+    revision: number;
+    revisionOfId: string | null;
+    /** change orders: kind, number and the proposal they change carry over to the copy */
+    extra?: { kind: string; number: string | null; baseEstimateId: string | null };
+  }
 ) {
   const { db, schema } = tenant;
   const [src] = await db.select().from(schema.estimates).where(eq(schema.estimates.id, sourceId)).limit(1);
@@ -193,6 +231,9 @@ async function cloneProposal(
         totalCost: src.totalCost,
         revision: opts.revision,
         revisionOfId: opts.revisionOfId,
+        kind: opts.extra?.kind ?? "proposal",
+        number: opts.extra?.number ?? null,
+        baseEstimateId: opts.extra?.baseEstimateId ?? null,
         slug,
         createdBy: userId,
       })
@@ -331,7 +372,13 @@ export const proposalRouter = router({
       const [latest] = await db
         .select({ id: schema.estimates.id, slug: schema.estimates.slug, revision: schema.estimates.revision })
         .from(schema.estimates)
-        .where(eq(schema.estimates.projectId, estimate.projectId))
+        .where(
+          and(
+            eq(schema.estimates.projectId, estimate.projectId),
+            eq(schema.estimates.kind, estimate.kind),
+            estimate.kind === "change_order" && estimate.number ? eq(schema.estimates.number, estimate.number) : undefined
+          )
+        )
         .orderBy(desc(schema.estimates.revision))
         .limit(1);
       const latestRevision = latest && latest.id !== estimate.id ? { slug: latest.slug, revision: latest.revision } : null;
@@ -383,6 +430,8 @@ export const proposalRouter = router({
           revision: estimate.revision,
           latestRevision,
           isActive: estimate.isActive,
+          kind: estimate.kind,
+          number: estimate.number,
           isLocked: LOCKED_STATUSES.includes(estimate.status),
         },
         lines,
@@ -627,7 +676,21 @@ export const proposalRouter = router({
       const addressParts = project
         ? [project.street1, project.street2, [project.city, project.state].filter(Boolean).join(", "), project.zip].filter(Boolean)
         : [];
+      // A change order shows what the contract was, what this changes, and what it becomes.
+      let contract: { before: number; change: number; after: number } | null = null;
+      if (c.estimate.kind === "change_order") {
+        let before = 0;
+        if (c.estimate.baseEstimateId) before += (await acceptedValueCents(ctx.tenant, c.estimate.baseEstimateId)).contractValue;
+        for (const co of await acceptedChangeOrders(ctx.tenant, c.estimate.projectId)) {
+          if (co.row.id !== c.estimate.id) before += co.contractValue;
+        }
+        const change = c.estimate.acceptedAt ? (await acceptedValueCents(ctx.tenant, c.estimate.id)).contractValue : c.result.totals.total;
+        contract = { before, change, after: before + change };
+      }
       return {
+        kind: c.estimate.kind,
+        number: c.estimate.number,
+        contract,
         title: c.estimate.name,
         status: c.estimate.status,
         sentAt: c.estimate.submittedAt,
@@ -703,7 +766,7 @@ export const proposalRouter = router({
       const existing = await db
         .select({ id: schema.estimates.id, revision: schema.estimates.revision, status: schema.estimates.status })
         .from(schema.estimates)
-        .where(eq(schema.estimates.projectId, input.projectId))
+        .where(and(eq(schema.estimates.projectId, input.projectId), eq(schema.estimates.kind, "proposal")))
         .orderBy(desc(schema.estimates.revision));
       if (existing.some((e) => e.status === "accepted" || e.status === "under_contract")) {
         throw new TRPCError({
@@ -773,11 +836,12 @@ export const proposalRouter = router({
       const abilities = await loadAbilities({ tenant: ctx.tenant, userId: ctx.userId, orgRole: ctx.orgRole });
       ForbiddenError.from(abilities).throwUnlessCan("update", "Estimate");
       const [est] = await db
-        .select({ projectId: schema.estimates.projectId, status: schema.estimates.status })
+        .select({ projectId: schema.estimates.projectId, status: schema.estimates.status, kind: schema.estimates.kind })
         .from(schema.estimates)
         .where(eq(schema.estimates.id, input.estimateId))
         .limit(1);
       if (!est) throw new TRPCError({ code: "NOT_FOUND", message: "Proposal not found" });
+      if (est.kind !== "proposal") throw new TRPCError({ code: "BAD_REQUEST", message: "Only a proposal can be the active proposal." });
       await activate(ctx.tenant, est.projectId, input.estimateId);
       await createAuditLog(db, schema, {
         entityType: "Estimate",
@@ -821,16 +885,29 @@ export const proposalRouter = router({
       const profit =
         c.result.totals.basePrice - c.result.totals.baseCost +
         (accepted ? acceptedOptions.reduce((a, o) => a + o.profit, 0) : 0);
+      // Accepted change orders add to the contract value, cost and profit.
+      const cos = accepted ? await acceptedChangeOrders(ctx.tenant, c.estimate.projectId) : [];
+      const coValue = cos.reduce((a, x) => a + x.contractValue, 0);
       return {
         estimateId: active.id,
         slug: active.slug,
         revision: active.revision,
         status: c.estimate.status,
         accepted,
-        contractValue,
-        cost,
-        contingency,
-        profit,
+        baseContractValue: contractValue,
+        changeOrdersValue: coValue,
+        changeOrders: cos.map((x) => ({
+          id: x.row.id,
+          number: x.row.number,
+          name: x.row.name,
+          revision: x.row.revision,
+          contractValue: x.contractValue,
+          schedule: computeSchedule(x.contractValue, x.c.milestones).map((r) => ({ ...r, name: x.c.milestones.find((m) => m.id === r.id)?.name ?? "" })),
+        })),
+        contractValue: contractValue + coValue,
+        cost: cost + cos.reduce((a, x) => a + x.cost, 0),
+        contingency: contingency + cos.reduce((a, x) => a + x.contingency, 0),
+        profit: profit + cos.reduce((a, x) => a + x.profit, 0),
         optionsTotal: c.result.options.reduce((a, o) => a + o.price + o.tax, 0),
         /** cents; milestone amounts follow the contract value */
         schedule: computeSchedule(contractValue, c.milestones).map((r) => ({ ...r, name: c.milestones.find((m) => m.id === r.id)?.name ?? "" })),
@@ -896,6 +973,15 @@ export const proposalRouter = router({
       if (c.estimate.status !== "submitted") {
         throw new TRPCError({ code: "BAD_REQUEST", message: "This proposal is already accepted." });
       }
+      const isCO = c.estimate.kind === "change_order";
+      if (isCO) {
+        const [base] = c.estimate.baseEstimateId
+          ? await db.select({ status: schema.estimates.status }).from(schema.estimates).where(eq(schema.estimates.id, c.estimate.baseEstimateId))
+          : [];
+        if (!base || !["accepted", "under_contract"].includes(base.status)) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "The proposal this change order changes is not accepted." });
+        }
+      }
       const optionIds = c.lines.filter((l) => l.isOptional && !l.parentId).map((l) => l.id);
       const accepted = [...new Set(input.acceptedOptionIds)];
       if (accepted.some((id) => !optionIds.includes(id))) {
@@ -929,8 +1015,10 @@ export const proposalRouter = router({
           .update(schema.estimates)
           .set({ status: "accepted", acceptedAt: now, updatedAt: now })
           .where(eq(schema.estimates.id, input.estimateId));
-        await tx.update(schema.estimates).set({ isActive: false }).where(eq(schema.estimates.projectId, projectId));
-        await tx.update(schema.estimates).set({ isActive: true }).where(eq(schema.estimates.id, input.estimateId));
+        if (!isCO) {
+          await tx.update(schema.estimates).set({ isActive: false }).where(eq(schema.estimates.projectId, projectId));
+          await tx.update(schema.estimates).set({ isActive: true }).where(eq(schema.estimates.id, input.estimateId));
+        }
 
         const existing = await tx
           .select({ kind: schema.orders.kind })
@@ -989,5 +1077,175 @@ export const proposalRouter = router({
         },
       });
       return { contractValue: acceptance.contractValue, costBudget: acceptance.costBudget, orders: createdOrders };
+    }),
+  // ---- Change orders: built like proposals (estimates.kind = "change_order") ----
+
+  /** Change orders for a project with their status and amounts. */
+  listChangeOrders: protectedProcedure
+    .input(z.object({ projectId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+      }
+      const { db, schema } = ctx.tenant;
+      const abilities = await loadAbilities({ tenant: ctx.tenant, userId: ctx.userId, orgRole: ctx.orgRole });
+      ForbiddenError.from(abilities).throwUnlessCan("read", "Estimate");
+      const rows = await db
+        .select()
+        .from(schema.estimates)
+        .where(and(eq(schema.estimates.projectId, input.projectId), eq(schema.estimates.kind, "change_order")))
+        .orderBy(asc(schema.estimates.number), asc(schema.estimates.revision));
+      const [base] = await db
+        .select({ id: schema.estimates.id })
+        .from(schema.estimates)
+        .where(and(eq(schema.estimates.projectId, input.projectId), eq(schema.estimates.kind, "proposal"), inArray(schema.estimates.status, ["accepted", "under_contract"])))
+        .limit(1);
+      const list = [];
+      for (const r of rows) {
+        const c = await loadComputed(ctx.tenant, r.id);
+        const acceptedIds = c.lines.filter((l) => l.isOptional && l.optionAccepted === true).map((l) => l.id);
+        const total = r.acceptedAt ? applyAcceptance(c.result, acceptedIds).contractValue : c.result.totals.total;
+        const latest = rows.filter((x) => x.number === r.number).reduce((a, x) => Math.max(a, x.revision), 0);
+        list.push({
+          id: r.id,
+          slug: r.slug as string,
+          number: r.number,
+          name: r.name,
+          revision: r.revision,
+          status: r.status,
+          total,
+          sentAt: r.submittedAt,
+          acceptedAt: r.acceptedAt,
+          superseded: r.revision < latest && r.status !== "accepted",
+          createdAt: r.createdAt,
+        });
+      }
+      return { rows: list, canCreate: Boolean(base) };
+    }),
+
+  /** Start a new change order (Rev 0) against the project's accepted proposal. */
+  createChangeOrder: protectedProcedure
+    .input(z.object({ projectId: z.string().uuid(), name: z.string().min(1).max(200) }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+      }
+      const { db, schema } = ctx.tenant;
+      const abilities = await loadAbilities({ tenant: ctx.tenant, userId: ctx.userId, orgRole: ctx.orgRole });
+      ForbiddenError.from(abilities).throwUnlessCan("create", "Estimate");
+      const [base] = await db
+        .select()
+        .from(schema.estimates)
+        .where(and(eq(schema.estimates.projectId, input.projectId), eq(schema.estimates.kind, "proposal"), inArray(schema.estimates.status, ["accepted", "under_contract"])))
+        .limit(1);
+      if (!base) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "A change order changes an accepted proposal. Accept the proposal first." });
+      }
+      const [project] = await db.select({ jobNumber: schema.projects.jobNumber }).from(schema.projects).where(eq(schema.projects.id, input.projectId));
+      const existing = await db
+        .select({ number: schema.estimates.number })
+        .from(schema.estimates)
+        .where(and(eq(schema.estimates.projectId, input.projectId), eq(schema.estimates.kind, "change_order")));
+      const lastSeq = existing.reduce((a, r) => Math.max(a, Number(/-(\d+)$/.exec(r.number ?? "")?.[1] ?? 0)), 0);
+      const number = formatDocNumber("CO", project?.jobNumber ?? null, lastSeq + 1);
+      const identifier = project?.jobNumber ? `co-${project.jobNumber}` : `co-${input.projectId.slice(0, 8)}`;
+      const slug = await uniqueSlug(ctx.tenant, generateSlug(identifier, `${String(lastSeq + 1).padStart(2, "0")}`));
+      const created = await db.transaction(async (tx) => {
+        const [row] = await tx
+          .insert(schema.estimates)
+          .values({
+            projectId: input.projectId,
+            name: input.name.trim(),
+            status: "draft",
+            projectType: base.projectType,
+            currentVersion: 1,
+            salesTaxPercent: base.salesTaxPercent,
+            paymentTerms: base.paymentTerms,
+            validDays: base.validDays,
+            revision: 0,
+            kind: "change_order",
+            number,
+            baseEstimateId: base.id,
+            isActive: false,
+            slug,
+            createdBy: ctx.userId!,
+          })
+          .returning({ id: schema.estimates.id, slug: schema.estimates.slug });
+        await tx.insert(schema.invoiceMilestones).values({ estimateId: row.id, name: "Due on approval", percent: "100", sortOrder: 0 });
+        return row;
+      });
+      await createAuditLog(db, schema, {
+        entityType: "Estimate",
+        entityId: created.id,
+        action: AuditAction.CREATE,
+        actorId: ctx.userId,
+        changes: { after: { kind: "change_order", number, name: input.name } },
+      });
+      return { id: created.id, slug: created.slug as string, number };
+    }),
+
+  /** Copy a sent change order into a new draft revision. An accepted change order cannot be revised. */
+  reviseChangeOrder: protectedProcedure
+    .input(z.object({ estimateId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+      }
+      const { db, schema } = ctx.tenant;
+      const abilities = await loadAbilities({ tenant: ctx.tenant, userId: ctx.userId, orgRole: ctx.orgRole });
+      ForbiddenError.from(abilities).throwUnlessCan("create", "Estimate");
+      const [src] = await db.select().from(schema.estimates).where(eq(schema.estimates.id, input.estimateId));
+      if (!src || src.kind !== "change_order") throw new TRPCError({ code: "NOT_FOUND", message: "Change order not found" });
+      if (src.status === "accepted" || src.status === "under_contract") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "This change order is accepted. A further change needs a new change order." });
+      }
+      if (src.status === "draft") throw new TRPCError({ code: "BAD_REQUEST", message: "This change order is still a draft. Edit it directly." });
+      const siblings = await db
+        .select({ revision: schema.estimates.revision })
+        .from(schema.estimates)
+        .where(and(eq(schema.estimates.projectId, src.projectId), eq(schema.estimates.kind, "change_order"), src.number ? eq(schema.estimates.number, src.number) : undefined));
+      const next = siblings.reduce((a, r) => Math.max(a, r.revision), 0) + 1;
+      if (next - 1 !== src.revision && siblings.some((r) => r.revision > src.revision)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "A newer revision of this change order already exists." });
+      }
+      const created = await cloneProposal(ctx.tenant, ctx.userId, src.id, {
+        name: src.name,
+        slugSuffix: `-rev${next}`,
+        revision: next,
+        revisionOfId: src.id,
+        extra: { kind: "change_order", number: src.number, baseEstimateId: src.baseEstimateId },
+      });
+      await createAuditLog(db, schema, {
+        entityType: "Estimate",
+        entityId: created.id,
+        action: AuditAction.CREATE,
+        actorId: ctx.userId,
+        changes: { after: { kind: "change_order", number: src.number, revision: next } },
+      });
+      return { id: created.id, slug: created.slug, revision: next };
+    }),
+
+  /** Delete a change order that has not been sent. */
+  deleteChangeOrder: protectedProcedure
+    .input(z.object({ estimateId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+      }
+      const { db, schema } = ctx.tenant;
+      const abilities = await loadAbilities({ tenant: ctx.tenant, userId: ctx.userId, orgRole: ctx.orgRole });
+      ForbiddenError.from(abilities).throwUnlessCan("delete", "Estimate");
+      const [src] = await db.select().from(schema.estimates).where(eq(schema.estimates.id, input.estimateId));
+      if (!src || src.kind !== "change_order") throw new TRPCError({ code: "NOT_FOUND", message: "Change order not found" });
+      if (src.status !== "draft") throw new TRPCError({ code: "BAD_REQUEST", message: "Only a draft change order can be deleted." });
+      await db.delete(schema.estimates).where(eq(schema.estimates.id, src.id));
+      await createAuditLog(db, schema, {
+        entityType: "Estimate",
+        entityId: src.id,
+        action: AuditAction.DELETE,
+        actorId: ctx.userId,
+        changes: { before: { kind: "change_order", number: src.number, name: src.name } },
+      });
+      return { ok: true as const };
     }),
 });

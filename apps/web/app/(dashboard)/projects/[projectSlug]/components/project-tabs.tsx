@@ -53,7 +53,7 @@ export function ProjectTabs({ projectSlug, projectMode, lifecyclePhase, headerSt
   const prefetchOverview = () => {
     if (!projectId) return;
     utils.budget.getProjectSummary.prefetch({ projectId });
-    utils.changeOrder.list.prefetch({ projectId });
+    utils.proposal.listChangeOrders.prefetch({ projectId });
     utils.paymentApp.getSummary.prefetch({ projectId });
     utils.sov.list.prefetch({ projectId });
     utils.paymentApp.getRetainage.prefetch({ projectId });
@@ -79,7 +79,7 @@ export function ProjectTabs({ projectSlug, projectMode, lifecyclePhase, headerSt
 
   const prefetchChangeOrders = () => {
     if (!projectId) return;
-    utils.changeOrder.list.prefetch({ projectId });
+    utils.proposal.listChangeOrders.prefetch({ projectId });
   };
 
   const prefetchSOV = () => {

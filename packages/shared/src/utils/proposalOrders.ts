@@ -55,7 +55,7 @@ export function costCategoryForType(type: CostLineType): string | null {
 }
 
 /** PO/WO/INV number: prefix + project number + two-digit sequence, e.g. PO2024-001-01. */
-export function formatDocNumber(prefix: "PO" | "WO" | "INV", projectNumber: string | null, seq: number): string {
+export function formatDocNumber(prefix: "PO" | "WO" | "INV" | "CO", projectNumber: string | null, seq: number): string {
   return `${prefix}${projectNumber ?? ""}-${String(seq).padStart(2, "0")}`;
 }
 

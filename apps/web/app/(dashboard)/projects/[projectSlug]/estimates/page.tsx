@@ -125,7 +125,7 @@ export default function EstimatesPage({
               Export CSV
             </Button>
             {hasAccepted ? (
-              <span className="text-sm text-muted-foreground">Accepted. Changes now go through change orders.</span>
+              <span className="text-sm text-muted-foreground">Accepted. Changes now go through <Link href={`/projects/${projectSlug}/change-orders`} className="underline underline-offset-2">change orders</Link>.</span>
             ) : (
             <Button onClick={startNew} disabled={!projectId || createNext.isPending}>
               <Plus className="mr-2 h-4 w-4" />

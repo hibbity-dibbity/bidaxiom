@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -50,7 +51,7 @@ export default function ProposalPreviewPage({
 
   const send = trpc.proposal.send.useMutation({
     onSuccess: (r) => {
-      toast.success(`Proposal marked as sent. Terms version ${r.termsVersion} saved with it.`);
+      toast.success(`${isCO ? "Change order" : "Proposal"} marked as sent. Terms version ${r.termsVersion} saved with it.`);
       setConfirmOpen(false);
       utils.proposal.customerView.invalidate({ estimateId });
       utils.proposal.get.invalidate({ estimateId });
@@ -61,7 +62,11 @@ export default function ProposalPreviewPage({
     },
   });
 
-  const builderHref = `/projects/${projectSlug}/estimates/${estimateSlug}`;
+  // The same page serves change orders under their own tab.
+  const pathname = usePathname();
+  const isCO = pathname.includes("/change-orders/");
+  const noun = isCO ? "change order" : "proposal";
+  const builderHref = `/projects/${projectSlug}/${isCO ? "change-orders" : "estimates"}/${estimateSlug}`;
 
   if (error) {
     return (
@@ -127,10 +132,13 @@ export default function ProposalPreviewPage({
         <div id="proposal-doc" className="flex w-full max-w-[860px] flex-col gap-8 border bg-background px-16 py-14 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-6">
             <div className="flex flex-col gap-1">
-              <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Proposal</div>
+              <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                {data.kind === "change_order" ? `Change order${data.number ? ` ${data.number}` : ""}` : "Proposal"}
+              </div>
               <div className="text-[28px] font-bold leading-tight tracking-tight">
                 {[data.projectNumber, data.projectName].filter(Boolean).join(" - ") || "Proposal"}
               </div>
+              {data.kind === "change_order" && <div className="text-base font-semibold">{data.title}</div>}
               {data.revision > 0 && <div className="text-sm text-muted-foreground">Rev {data.revision}</div>}
               <div className="text-sm text-muted-foreground">Prepared for {data.customerName ?? "[Customer]"}</div>
               {data.projectAddress && <div className="text-sm text-muted-foreground">{data.projectAddress}</div>}
@@ -178,6 +186,16 @@ export default function ProposalPreviewPage({
                 <span className="tabular-nums">{money(view.total)}</span>
               </div>
             </div>
+            {data.contract && (
+              <div className="flex flex-col items-end gap-1 pb-2 pt-1">
+                <TotalRow label="Contract value before this change order" value={money(data.contract.before)} />
+                <TotalRow label="This change order" value={money(data.contract.change)} />
+                <div className="flex w-[300px] justify-between border-t pt-1.5 text-sm font-semibold">
+                  <span>New contract value</span>
+                  <span className="tabular-nums">{money(data.contract.after)}</span>
+                </div>
+              </div>
+            )}
           </section>
 
           {view.options.length > 0 && (
@@ -221,7 +239,7 @@ export default function ProposalPreviewPage({
             </div>
             {view.options.length > 0 && (
               <div className="pt-2 text-xs text-muted-foreground">
-                Amounts shown for the base proposal. Accepted options are invoiced on the same percentages.
+                Amounts shown for the base {noun}. Accepted options are invoiced on the same percentages.
               </div>
             )}
           </section>
@@ -248,9 +266,9 @@ export default function ProposalPreviewPage({
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Mark this proposal as sent?</AlertDialogTitle>
+            <AlertDialogTitle>Mark this {noun} as sent?</AlertDialogTitle>
             <AlertDialogDescription>
-              The proposal is recorded as sent and locked, and keeps the current master terms (version {data.terms.version}).
+              The {noun} is recorded as sent and locked, and keeps the current master terms (version {data.terms.version}).
               Later changes to your terms will not change it. To change it after sending, create a revision. Email delivery is not set up yet, so use Download PDF to send it to {customer}.
             </AlertDialogDescription>
           </AlertDialogHeader>

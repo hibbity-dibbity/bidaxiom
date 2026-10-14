@@ -11,7 +11,7 @@ export function CashFlow({ projectId, projectSlug }: { projectId: string; projec
   const { data: summary } = trpc.order.projectSummary.useQuery({ projectId });
   const { data: invoices } = trpc.invoice.list.useQuery({ projectId });
   const statusFor = (milestoneId: string) => {
-    const inv = invoices?.rows.find((r) => r.milestoneId === milestoneId);
+    const inv = invoices?.rows.find((r) => r.milestoneIds.includes(milestoneId));
     if (!inv || inv.status === "draft") return "Upcoming";
     if (inv.status === "paid") return "Collected";
     if (inv.overdue) return "Overdue";
@@ -23,6 +23,7 @@ export function CashFlow({ projectId, projectSlug }: { projectId: string; projec
   const drafts = summary?.rows.filter((r) => !r.issued) ?? [];
   const schedule = active?.schedule ?? [];
   const scheduleTotal = schedule.reduce((a, m) => a + m.amount, 0);
+  const changeOrders = active?.changeOrders ?? [];
   const path = (r: { kind: "purchase" | "work"; id: string }) => `/projects/${projectSlug}/orders/${r.id}`;
 
   return (
@@ -55,10 +56,27 @@ export function CashFlow({ projectId, projectSlug }: { projectId: string; projec
                     <td className="px-3 py-2 text-muted-foreground">{statusFor(m.id)}</td>
                   </tr>
                 ))}
+                {changeOrders.map((co) => (
+                  <React.Fragment key={co.id}>
+                    <tr className="border-b bg-muted/30 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      <td className="px-3 py-1.5" colSpan={4}>
+                        Change order {co.number}{co.revision > 0 ? ` Rev ${co.revision}` : ""}: {co.name}
+                      </td>
+                    </tr>
+                    {co.schedule.map((m) => (
+                      <tr key={m.id} className="border-b last:border-0">
+                        <td className="px-3 py-2">{m.name}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{m.percent}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{dollars(m.amount / 100)}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{statusFor(m.id)}</td>
+                      </tr>
+                    ))}
+                  </React.Fragment>
+                ))}
                 <tr className="bg-muted/50 font-semibold">
-                  <td className="px-3 py-2">Contract value</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{schedule.reduce((a, m) => a + m.percent, 0)}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{dollars(scheduleTotal / 100)}</td>
+                  <td className="px-3 py-2">Contract value{changeOrders.length > 0 ? " (with change orders)" : ""}</td>
+                  <td className="px-3 py-2 text-right" />
+                  <td className="px-3 py-2 text-right tabular-nums">{dollars((scheduleTotal + changeOrders.reduce((a, co) => a + co.contractValue, 0)) / 100)}</td>
                   <td />
                 </tr>
               </tbody>

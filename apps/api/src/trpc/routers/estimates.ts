@@ -84,7 +84,7 @@ export const estimatesRouter = router({
       const estimates = await db
         .select()
         .from(schema.estimates)
-        .where(eq(schema.estimates.projectId, input.projectId))
+        .where(and(eq(schema.estimates.projectId, input.projectId), eq(schema.estimates.kind, "proposal")))
         .orderBy(desc(schema.estimates.createdAt));
 
       // Get line item counts

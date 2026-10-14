@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { asc, desc, eq, inArray, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
 import { ForbiddenError } from "@casl/ability";
 import { router } from "../trpc.js";
 import { protectedProcedure } from "../procedures.js";
@@ -51,6 +51,28 @@ async function loadInvoice(c: Ctx, invoiceId: string) {
   return inv;
 }
 
+/** "Proposal" or "CO26-014-01 Rev 1: name" for the estimate an invoice milestone came from. */
+async function sourceLabels(c: Ctx, estimateIds: string[]) {
+  const { db, schema } = c.tenant;
+  const map = new Map<string, { label: string; kind: string; number: string | null; name: string; revision: number }>();
+  if (estimateIds.length === 0) return map;
+  const rows = await db
+    .select({ id: schema.estimates.id, kind: schema.estimates.kind, number: schema.estimates.number, name: schema.estimates.name, revision: schema.estimates.revision })
+    .from(schema.estimates)
+    .where(inArray(schema.estimates.id, estimateIds));
+  for (const r of rows) {
+    const label =
+      r.kind === "change_order"
+        ? `${r.number ?? "Change order"}${r.revision > 0 ? ` Rev ${r.revision}` : ""}: ${r.name}`
+        : r.revision > 0 ? `Proposal Rev ${r.revision}` : "Proposal";
+    map.set(r.id, { label, kind: r.kind, number: r.number, name: r.name, revision: r.revision });
+  }
+  return map;
+}
+
+/** Natural order of invoice numbers (INV26-014-02 before INV26-014-10). */
+const byNumber = (a: { number: string }, b: { number: string }) => a.number.localeCompare(b.number, undefined, { numeric: true });
+
 export const invoiceRouter = router({
   /** Invoices for a project with received/outstanding per invoice and the totals the header uses. */
   list: protectedProcedure.input(z.object({ projectId: z.string().uuid() })).query(async ({ ctx, input }) => {
@@ -65,6 +87,10 @@ export const invoiceRouter = router({
     const pays = invoices.length
       ? await db.select().from(schema.invoicePayments).where(inArray(schema.invoicePayments.invoiceId, invoices.map((i) => i.id)))
       : [];
+    const items = invoices.length
+      ? await db.select().from(schema.invoiceItems).where(inArray(schema.invoiceItems.invoiceId, invoices.map((i) => i.id)))
+      : [];
+    const sources = await sourceLabels(c, [...new Set(invoices.map((i) => i.estimateId))]);
     const today = todayText();
     const rows = invoices.map((i) => {
       const amount = Number(i.amount);
@@ -77,6 +103,10 @@ export const invoiceRouter = router({
         milestoneName: i.milestoneName,
         percent: Number(i.percent),
         amount,
+        milestoneIds: [i.milestoneId, ...items.filter((x) => x.invoiceId === i.id).map((x) => x.milestoneId)].filter((v): v is string => Boolean(v)),
+        itemCount: items.filter((x) => x.invoiceId === i.id).length,
+        source: sources.get(i.estimateId)?.label ?? "",
+        isChangeOrder: sources.get(i.estimateId)?.kind === "change_order",
         status: i.status,
         sentOn: i.sentOn,
         dueOn: i.dueOn,
@@ -102,7 +132,9 @@ export const invoiceRouter = router({
     await can(c, "read");
     const { db, schema } = c.tenant;
     const inv = await loadInvoice(c, input.invoiceId);
-    const all = await db.select().from(schema.invoices).where(eq(schema.invoices.estimateId, inv.estimateId)).orderBy(asc(schema.invoices.sortOrder));
+    const all = (await db.select().from(schema.invoices).where(eq(schema.invoices.projectId, inv.projectId))).sort(byNumber);
+    const items = await db.select().from(schema.invoiceItems).where(eq(schema.invoiceItems.invoiceId, inv.id)).orderBy(asc(schema.invoiceItems.sortOrder));
+    const sources = await sourceLabels(c, [inv.estimateId]);
     const payments = await db
       .select()
       .from(schema.invoicePayments)
@@ -129,10 +161,7 @@ export const invoiceRouter = router({
           .where(eq(schema.customers.id, project.customerId))
           .limit(1)
       : [];
-    const [est] = await db
-      .select({ revision: schema.estimates.revision, slug: schema.estimates.slug })
-      .from(schema.estimates)
-      .where(eq(schema.estimates.id, inv.estimateId));
+    const src = sources.get(inv.estimateId);
     const [profile] = await db
       .select({
         phone: schema.companyProfiles.phone,
@@ -159,7 +188,9 @@ export const invoiceRouter = router({
     const amount = Number(inv.amount);
     const received = r2(payments.reduce((a, p) => a + Number(p.amount), 0));
     const contractValue = r2(all.reduce((a, i) => a + Number(i.amount), 0));
-    const throughThis = r2(all.filter((i) => i.sortOrder <= inv.sortOrder).reduce((a, i) => a + Number(i.amount), 0));
+    const idx = all.findIndex((i) => i.id === inv.id);
+    const throughThis = r2(all.slice(0, idx + 1).reduce((a, i) => a + Number(i.amount), 0));
+    const hasChangeOrders = (await db.select({ k: schema.estimates.kind }).from(schema.estimates).where(and(eq(schema.estimates.projectId, inv.projectId), eq(schema.estimates.kind, "change_order"), inArray(schema.estimates.status, ["accepted", "under_contract"]))).limit(1)).length > 0;
     return {
       invoice: {
         id: inv.id,
@@ -175,7 +206,9 @@ export const invoiceRouter = router({
         overdue: isOverdue(inv.status, inv.dueOn, todayText()),
       },
       projectId: inv.projectId,
-      proposalRevision: est?.revision ?? 0,
+      source: src ? { label: src.label, kind: src.kind, number: src.number, name: src.name, revision: src.revision } : null,
+      items: items.map((x) => ({ id: x.id, label: x.label, sourceLabel: x.sourceLabel, percent: Number(x.percent), amount: Number(x.amount) })),
+      hasChangeOrders,
       companyName: c.tenant.companyName,
       companyContact,
       customerName: customer ? customer.companyName || customer.contactName : null,
@@ -191,6 +224,52 @@ export const invoiceRouter = router({
       canSend: inv.status === "draft",
     };
   }),
+
+  /**
+   * Merge unsent invoices into one. The earliest invoice number is kept; the others are removed.
+   * The merged invoice lists each original milestone, with the proposal or change order it came from.
+   */
+  merge: protectedProcedure
+    .input(z.object({ invoiceIds: z.array(z.string().uuid()).min(2).max(50) }))
+    .mutation(async ({ ctx, input }) => {
+      const c = need(ctx);
+      await can(c, "update");
+      const { db, schema } = c.tenant;
+      const rows = (await db.select().from(schema.invoices).where(inArray(schema.invoices.id, input.invoiceIds))).sort(byNumber);
+      if (rows.length !== new Set(input.invoiceIds).size) throw new TRPCError({ code: "NOT_FOUND", message: "Invoice not found." });
+      if (new Set(rows.map((r) => r.projectId)).size > 1) throw new TRPCError({ code: "BAD_REQUEST", message: "Those invoices are on different projects." });
+      if (rows.some((r) => r.status !== "draft")) throw new TRPCError({ code: "BAD_REQUEST", message: "Only invoices that have not been sent can be merged." });
+      const sources = await sourceLabels(c, [...new Set(rows.map((r) => r.estimateId))]);
+      const existingItems = await db.select().from(schema.invoiceItems).where(inArray(schema.invoiceItems.invoiceId, rows.map((r) => r.id)));
+      const parts: Array<{ estimateId: string; milestoneId: string | null; label: string; sourceLabel: string; percent: string; amount: string }> = [];
+      for (const r of rows) {
+        const mine = existingItems.filter((x) => x.invoiceId === r.id).sort((a, b) => a.sortOrder - b.sortOrder);
+        if (mine.length > 0) {
+          for (const x of mine) parts.push({ estimateId: x.estimateId, milestoneId: x.milestoneId, label: x.label, sourceLabel: x.sourceLabel, percent: x.percent, amount: x.amount });
+        } else {
+          parts.push({ estimateId: r.estimateId, milestoneId: r.milestoneId, label: r.milestoneName, sourceLabel: sources.get(r.estimateId)?.label ?? "", percent: r.percent, amount: r.amount });
+        }
+      }
+      const keep = rows[0];
+      const total = r2(parts.reduce((a, p) => a + Number(p.amount), 0));
+      await db.transaction(async (tx) => {
+        await tx.delete(schema.invoiceItems).where(eq(schema.invoiceItems.invoiceId, keep.id));
+        await tx.insert(schema.invoiceItems).values(parts.map((p, i) => ({ invoiceId: keep.id, ...p, sortOrder: i })));
+        await tx.delete(schema.invoices).where(inArray(schema.invoices.id, rows.slice(1).map((r) => r.id)));
+        await tx
+          .update(schema.invoices)
+          .set({ amount: String(total), milestoneName: `Combined invoice (${parts.length} items)`, percent: "0", milestoneId: null, updatedAt: new Date() })
+          .where(eq(schema.invoices.id, keep.id));
+      });
+      await createAuditLog(db, schema, {
+        entityType: "Invoice",
+        entityId: keep.id,
+        action: AuditAction.UPDATE,
+        actorId: c.userId,
+        changes: { after: { merged: rows.map((r) => r.number), amount: total } },
+      });
+      return { id: keep.id, number: keep.number, removed: rows.slice(1).map((r) => r.number) };
+    }),
 
   /** Internal note printed on the invoice. Drafts only. */
   updateNotes: protectedProcedure

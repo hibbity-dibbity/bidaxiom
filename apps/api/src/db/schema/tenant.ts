@@ -1147,6 +1147,9 @@ export function createTenantSchema(schemaName: string) {
     revision: integer("revision").notNull().default(0), // 0 for the original, 1+ for revisions of a sent proposal
     revisionOfId: uuid("revision_of_id"), // the proposal this one revises
     isActive: boolean("is_active").notNull().default(false), // the one proposal per project that feeds the project numbers
+    kind: text("kind").notNull().default("proposal"), // proposal, change_order
+    number: text("number"), // change orders only: CO<job number>-01. Revisions of one change order share it
+    baseEstimateId: uuid("base_estimate_id"), // change orders only: the accepted proposal it changes
     slug: text("slug").unique(), // URL-safe slug for routing
     createdBy: text("created_by").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -1328,6 +1331,22 @@ export function createTenantSchema(schemaName: string) {
     reference: text("reference"), // check number, ACH id
     createdBy: text("created_by").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * The parts of a merged invoice. An invoice with no rows here is a single milestone invoice.
+   * Merging drafts into one invoice records each original milestone here.
+   */
+  const invoiceItems = schema.table("invoice_items", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    invoiceId: uuid("invoice_id").notNull().references(() => invoices.id, { onDelete: "cascade" }),
+    estimateId: uuid("estimate_id").notNull(), // the proposal or change order the milestone came from
+    milestoneId: uuid("milestone_id"),
+    label: text("label").notNull(), // the milestone phrase from the schedule builder
+    sourceLabel: text("source_label").notNull(), // "Proposal" or "CO26-014-01 Rev 1: name"
+    percent: numeric("percent", { precision: 5, scale: 2 }).notNull().default("0"),
+    amount: numeric("amount", { precision: 15, scale: 2 }).notNull(),
+    sortOrder: integer("sort_order").notNull().default(0),
   });
 
   /**
@@ -1525,6 +1544,7 @@ export function createTenantSchema(schemaName: string) {
     orderPayments,
     invoices,
     invoicePayments,
+    invoiceItems,
     costCodeTemplates,
     templateLineItems,
     laborRateTemplates,

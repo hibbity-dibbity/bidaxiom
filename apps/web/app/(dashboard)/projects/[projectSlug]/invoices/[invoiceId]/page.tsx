@@ -173,21 +173,40 @@ export default function InvoicePage({ params }: { params: { projectSlug: string;
           </div>
 
           <div className="space-y-2">
-            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Billing milestone</div>
-            <div className="grid grid-cols-[1fr_auto] gap-x-8 border-y py-3 text-sm">
-              <div>
-                <div className="font-semibold">{inv.milestoneName}</div>
-                <div className="text-muted-foreground">
-                  {inv.percent}% of the contract value, per the invoicing schedule in the proposal{data.proposalRevision > 0 ? ` (Rev ${data.proposalRevision})` : ""}.
+            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {data.items.length > 0 ? "Billing milestones" : "Billing milestone"}
+            </div>
+            <div className="border-y">
+              {data.items.length > 0 ? (
+                data.items.map((x) => (
+                  <div key={x.id} className="grid grid-cols-[1fr_auto] gap-x-8 border-b py-3 text-sm last:border-0">
+                    <div>
+                      <div className="font-semibold">{x.label}</div>
+                      <div className="text-muted-foreground">
+                        {x.percent > 0 ? `${x.percent}% of ` : ""}{x.sourceLabel}, per its invoicing schedule.
+                      </div>
+                    </div>
+                    <div className="text-right text-base font-semibold tabular-nums">{dollars(x.amount)}</div>
+                  </div>
+                ))
+              ) : (
+                <div className="grid grid-cols-[1fr_auto] gap-x-8 py-3 text-sm">
+                  <div>
+                    <div className="font-semibold">{inv.milestoneName}</div>
+                    <div className="text-muted-foreground">
+                      {inv.percent}% of {data.source?.kind === "change_order" ? `change order ${data.source.label}` : `the contract value, per the invoicing schedule in the proposal${data.source && data.source.revision > 0 ? ` (Rev ${data.source.revision})` : ""}`}
+                      {data.source?.kind === "change_order" ? ", per its invoicing schedule" : ""}.
+                    </div>
+                  </div>
+                  <div className="text-right text-base font-semibold tabular-nums">{dollars(inv.amount)}</div>
                 </div>
-              </div>
-              <div className="text-right text-base font-semibold tabular-nums">{dollars(inv.amount)}</div>
+              )}
             </div>
           </div>
 
           <div className="ml-auto w-full max-w-sm space-y-1.5 text-sm">
-            <div className="flex justify-between"><span className="text-muted-foreground">Contract value</span><span className="tabular-nums">{dollars(data.contractValue)}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">This invoice ({inv.milestoneName})</span><span className="tabular-nums">{dollars(inv.amount)}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Contract value{data.hasChangeOrders ? " (with change orders)" : ""}</span><span className="tabular-nums">{dollars(data.contractValue)}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">This invoice{data.items.length === 0 ? ` (${inv.milestoneName})` : ""}</span><span className="tabular-nums">{dollars(inv.amount)}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Billed through this invoice</span><span className="tabular-nums">{dollars(data.billedThroughThis)}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Remaining to bill</span><span className="tabular-nums">{dollars(data.balanceAfterThis)}</span></div>
             <div className="flex justify-between border-t pt-2 text-base font-bold"><span>Amount due</span><span className="tabular-nums">{dollars(inv.amount)}</span></div>

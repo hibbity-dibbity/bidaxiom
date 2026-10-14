@@ -87,6 +87,10 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
   const [saveState, setSaveState] = React.useState<SaveState>({ kind: "idle" });
 
   const locked = data?.estimate.isLocked ?? false;
+  const isCO = data?.estimate.kind === "change_order";
+  // Change orders use the same builder under their own tab.
+  const section = isCO ? "change-orders" : "estimates";
+  const noun = isCO ? "change order" : "proposal";
   const router = useRouter();
   const utils = trpc.useUtils();
   const createNext = trpc.proposal.createNext.useMutation({
@@ -94,6 +98,14 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
       toast.success(`Rev ${r.revision} created`);
       utils.estimates.list.invalidate();
       router.push(`/projects/${projectSlug}/estimates/${r.slug}`);
+    },
+    onError: (e) => toast.error("Could not create a revision", { description: e.message }),
+  });
+  const reviseCO = trpc.proposal.reviseChangeOrder.useMutation({
+    onSuccess: (r) => {
+      toast.success(`Rev ${r.revision} created`);
+      utils.proposal.listChangeOrders.invalidate();
+      router.push(`/projects/${projectSlug}/change-orders/${r.slug}`);
     },
     onError: (e) => toast.error("Could not create a revision", { description: e.message }),
   });
@@ -455,14 +467,14 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
           {latestRevision ? (
             <div className="flex gap-2">
               <Button asChild variant="outline">
-                <Link href={`/projects/${projectSlug}/estimates/${latestRevision.slug}`}>Open Rev {latestRevision.revision}</Link>
+                <Link href={`/projects/${projectSlug}/${section}/${latestRevision.slug}`}>Open Rev {latestRevision.revision}</Link>
               </Button>
               <Button type="button" onClick={() => setAcceptOpen(true)}>Mark accepted</Button>
             </div>
           ) : (
             <div className="flex gap-2">
-              <Button type="button" disabled={createNext.isPending} variant="outline" onClick={() => createNext.mutate({ projectId: data!.estimate.projectId, copyFromId: estimateId })}>
-                {createNext.isPending ? "Creating…" : "Create new revision"}
+              <Button type="button" disabled={createNext.isPending || reviseCO.isPending} variant="outline" onClick={() => (isCO ? reviseCO.mutate({ estimateId }) : createNext.mutate({ projectId: data!.estimate.projectId, copyFromId: estimateId }))}>
+                {createNext.isPending || reviseCO.isPending ? "Creating…" : "Create new revision"}
               </Button>
               <Button type="button" onClick={() => setAcceptOpen(true)}>Mark accepted</Button>
             </div>
@@ -473,14 +485,17 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
         <div className="rounded-md border bg-muted px-4 py-3 text-sm">
           <strong>Accepted and locked.</strong>{" "}
           {data?.estimate.acceptedAt ? `Accepted ${new Date(data.estimate.acceptedAt).toLocaleDateString()}. ` : ""}
-          Contract value {money(data?.acceptance.contractValue ?? 0)}. Scope changes go through change orders.
+          {isCO ? "Change order value" : "Contract value"} {money(data?.acceptance.contractValue ?? 0)}. {isCO ? "A further change needs a new change order." : "Scope changes go through change orders."}
         </div>
       )}
 
       {/* Title row */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex min-w-0 flex-1 basis-[480px] flex-col gap-2">
-          <h1 className="text-2xl font-bold tracking-tight">{settings.name}</h1>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {isCO && data?.estimate.number && <span className="mr-2 text-muted-foreground">{data.estimate.number}{(data.estimate.revision ?? 0) > 0 ? ` Rev ${data.estimate.revision}` : ""}</span>}
+            {settings.name}
+          </h1>
           <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
             <label className="flex items-center gap-2">
               Valid for
@@ -491,7 +506,7 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
             <StatusBadge variant={data?.estimate.status === "draft" ? "draft" : "pending"}>
               {STATUS_LABEL[data?.estimate.status ?? "draft"] ?? data?.estimate.status ?? ""}
             </StatusBadge>
-            {isActive ? (
+            {isCO ? null : isActive ? (
               <StatusBadge variant="approved">Active proposal</StatusBadge>
             ) : (
               <Button type="button" size="sm" variant="outline" disabled={setActive.isPending} onClick={() => setActive.mutate({ estimateId })}>
@@ -506,7 +521,7 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
             <Button type="button" variant="outline" disabled title="Waiting for your changes to save">Customer view</Button>
           ) : (
             <Button asChild variant="outline">
-              <Link href={`/projects/${projectSlug}/estimates/${estimateSlug}/preview`}>Customer view</Link>
+              <Link href={`/projects/${projectSlug}/${section}/${estimateSlug}/preview`}>Customer view</Link>
             </Button>
           )}
         </div>
@@ -668,7 +683,7 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
             <Row label="Global costs" value={money(result.totals.globalTotal)} />
             <Row label="Sales tax" value={money(result.totals.tax)} />
             <div className="flex items-baseline justify-between border-t pt-2.5">
-              <span className="text-sm font-semibold">Proposal total</span>
+              <span className="text-sm font-semibold">{isCO ? "Change order total" : "Proposal total"}</span>
               <span className="text-2xl font-bold tracking-tight tabular-nums">{money(result.totals.total)}</span>
             </div>
             <div className="flex justify-between text-[13px] text-muted-foreground">
@@ -785,13 +800,17 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
           lines={data.lines}
           computed={data.computed}
           milestones={data.milestones}
+          changeOrder={isCO}
           onAccepted={() => {
             utils.proposal.get.invalidate({ estimateId });
             utils.order.listCards.invalidate();
             utils.order.projectSummary.invalidate();
             utils.estimates.list.invalidate();
+            utils.invoice.list.invalidate();
+            utils.proposal.activeForProject.invalidate();
+            utils.proposal.listChangeOrders.invalidate();
             // Orders now live in the project's Purchase Orders and Work Orders tabs.
-            router.push(`/projects/${projectSlug}/purchase-orders`);
+            router.push(isCO ? `/projects/${projectSlug}/change-orders` : `/projects/${projectSlug}/purchase-orders`);
           }}
         />
       )}
@@ -860,7 +879,7 @@ function validate(
   milestones: BuilderMilestone[],
   settings: BuilderSettings
 ): string | null {
-  if (!settings.name.trim()) return "Give the proposal a name.";
+  if (!settings.name.trim()) return "Give it a name.";
   if (lines.some((l) => !l.name.trim())) return "Every line needs a name.";
   if (lines.some((l) => !l.unit.trim())) return "Every line needs a unit.";
   if (globals.some((g) => !g.name.trim())) return "Every global cost needs a name.";

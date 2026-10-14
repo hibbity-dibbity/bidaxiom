@@ -39,10 +39,12 @@ interface Props {
   computed: ProposalResult;
   milestones: Array<{ id: string; name: string; percent: number }>;
   onAccepted: () => void;
+  /** a change order adds to the contract instead of setting it */
+  changeOrder?: boolean;
 }
 
 /** Ask which optional items the customer took, show what that does to the contract, then accept. */
-export function AcceptDialog({ open, onOpenChange, estimateId, lines, computed, milestones, onAccepted }: Props) {
+export function AcceptDialog({ open, onOpenChange, estimateId, lines, computed, milestones, onAccepted, changeOrder = false }: Props) {
   const [chosen, setChosen] = React.useState<string[]>([]);
   React.useEffect(() => {
     if (open) setChosen([]);
@@ -50,7 +52,7 @@ export function AcceptDialog({ open, onOpenChange, estimateId, lines, computed, 
 
   const accept = trpc.proposal.accept.useMutation({
     onSuccess: (r) => {
-      toast.success(`Accepted. Contract value ${money(r.contractValue)}. ${r.orders.length} draft orders and the draft invoices were created.`);
+      toast.success(`Accepted. ${changeOrder ? "Added to the contract:" : "Contract value"} ${money(r.contractValue)}. ${r.orders.length} draft orders and the draft invoices were created.`);
       onOpenChange(false);
       onAccepted();
     },
@@ -69,10 +71,10 @@ export function AcceptDialog({ open, onOpenChange, estimateId, lines, computed, 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl">
         <DialogHeader>
-          <DialogTitle>Mark proposal accepted</DialogTitle>
+          <DialogTitle>{changeOrder ? "Mark change order accepted" : "Mark proposal accepted"}</DialogTitle>
           <DialogDescription>
-            Choose the optional items the customer accepted. Accepting locks this proposal, sets the contract value and invoicing amounts,
-            and creates draft purchase orders, work orders and invoices (one per milestone, sent later by you).
+            Choose the optional items the customer accepted. {changeOrder ? "Accepting locks this change order, adds its amount to the contract value," : "Accepting locks this proposal, sets the contract value and invoicing amounts,"}
+            and creates draft purchase orders, work orders and invoices (one per milestone, sent later by you).{changeOrder ? " The invoices are separate from the proposal's; you can merge unsent invoices into one." : ""}
           </DialogDescription>
         </DialogHeader>
 
@@ -95,16 +97,16 @@ export function AcceptDialog({ open, onOpenChange, estimateId, lines, computed, 
             ))}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">This proposal has no optional items.</p>
+          <p className="text-sm text-muted-foreground">{changeOrder ? "This change order has no optional items." : "This proposal has no optional items."}</p>
         )}
 
         <div className="flex flex-col gap-1.5 rounded-md bg-muted p-3 text-sm">
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Proposal total</span>
+            <span className="text-muted-foreground">{changeOrder ? "Change order total" : "Proposal total"}</span>
             <span className="tabular-nums">{money(computed.totals.total)}</span>
           </div>
           <div className="flex justify-between border-t pt-1.5 text-base font-semibold">
-            <span>Contract value</span>
+            <span>{changeOrder ? "Added to contract" : "Contract value"}</span>
             <span className="tabular-nums">{money(acceptance.contractValue)}</span>
           </div>
           <div className="flex justify-between text-muted-foreground">
