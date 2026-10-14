@@ -33,6 +33,13 @@ export default function InvoicesPage({ params }: { params: { projectSlug: string
     },
     onError: (e) => toast.error("Could not merge", { description: e.message }),
   });
+  const unmerge = trpc.invoice.unmerge.useMutation({
+    onSuccess: (r) => {
+      toast.success(`Split ${r.number}`, { description: r.created.length ? `New invoices: ${r.created.join(", ")}.` : undefined });
+      utils.invoice.list.invalidate();
+    },
+    onError: (e) => toast.error("Could not split the invoice", { description: e.message }),
+  });
   const record = trpc.invoice.recordPayment.useMutation({
     onSuccess: () => {
       toast.success("Marked paid");
@@ -136,7 +143,7 @@ export default function InvoicesPage({ params }: { params: { projectSlug: string
                     </td>
                     <td className="px-3 py-2 text-right tabular-nums">{dollars(r.amount)}</td>
                     <td className="px-3 py-2">
-                      <InvoiceStatusBadge status={r.status} overdue={r.overdue} />
+                      <InvoiceStatusBadge status={r.status} overdue={r.overdue} amount={r.amount} />
                     </td>
                     <td className="px-3 py-2">{shortDate(r.sentOn)}</td>
                     <td className="px-3 py-2">{shortDate(r.dueOn)}</td>
@@ -144,9 +151,23 @@ export default function InvoicesPage({ params }: { params: { projectSlug: string
                     <td className="px-3 py-2 text-right tabular-nums">{r.outstanding === null ? "—" : dollars(r.outstanding)}</td>
                     <td className="whitespace-nowrap px-3 py-2 text-right">
                       {r.status === "draft" ? (
-                        <Link href={`/projects/${projectSlug}/invoices/${r.id}`} className="text-xs text-muted-foreground hover:underline">
-                          Open to send
-                        </Link>
+                        <span className="flex justify-end gap-3">
+                          {r.itemCount > 1 && (
+                            <button
+                              type="button"
+                              disabled={unmerge.isPending}
+                              className="text-xs text-muted-foreground hover:underline"
+                              onClick={() => {
+                                if (window.confirm(`Split ${r.number} back into ${r.itemCount} separate invoices?`)) unmerge.mutate({ invoiceId: r.id });
+                              }}
+                            >
+                              Split
+                            </button>
+                          )}
+                          <Link href={`/projects/${projectSlug}/invoices/${r.id}`} className="text-xs text-muted-foreground hover:underline">
+                            Open to send
+                          </Link>
+                        </span>
                       ) : r.status === "paid" ? null : (
                         <span className="flex justify-end gap-2">
                           <Button asChild size="sm" variant="outline">
@@ -172,7 +193,7 @@ export default function InvoicesPage({ params }: { params: { projectSlug: string
             </table>
           </div>
           <p className="max-w-3xl text-sm text-muted-foreground">
-            Drafts are not counted as billed until you send them. Sent invoices are locked. If the contract value changes later, only invoices not yet sent are re-amounted.
+            Drafts are not counted as billed until you send them. Sent invoices are locked. A change order adds its own invoices; a deductive one adds a credit, which you can merge into an unsent invoice to net it out.
           </p>
         </>
       )}

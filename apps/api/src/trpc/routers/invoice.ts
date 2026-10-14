@@ -271,6 +271,46 @@ export const invoiceRouter = router({
       return { id: keep.id, number: keep.number, removed: rows.slice(1).map((r) => r.number) };
     }),
 
+  /**
+   * Split an unsent merged invoice back into one invoice per original milestone. The first keeps
+   * this invoice's number; the others are numbered after the project's last invoice.
+   */
+  unmerge: protectedProcedure.input(z.object({ invoiceId: z.string().uuid() })).mutation(async ({ ctx, input }) => {
+    const c = need(ctx);
+    await can(c, "update");
+    const { db, schema } = c.tenant;
+    const inv = await loadInvoice(c, input.invoiceId);
+    if (inv.status !== "draft") throw new TRPCError({ code: "BAD_REQUEST", message: "Only invoices that have not been sent can be split." });
+    const items = await db.select().from(schema.invoiceItems).where(eq(schema.invoiceItems.invoiceId, inv.id)).orderBy(asc(schema.invoiceItems.sortOrder));
+    if (items.length < 2) throw new TRPCError({ code: "BAD_REQUEST", message: "This invoice is not a combined invoice." });
+    const all = await db.select({ number: schema.invoices.number, sortOrder: schema.invoices.sortOrder }).from(schema.invoices).where(eq(schema.invoices.projectId, inv.projectId));
+    const prefix = inv.number.replace(/-\d+$/, "");
+    let seq = all.reduce((a, r) => Math.max(a, Number(/-(\d+)$/.exec(r.number)?.[1] ?? 0)), 0);
+    let sort = all.reduce((a, r) => Math.max(a, r.sortOrder), -1);
+    const created: string[] = [];
+    await db.transaction(async (tx) => {
+      const [first, ...rest] = items;
+      await tx.update(schema.invoices).set({
+        estimateId: first.estimateId, milestoneId: first.milestoneId, milestoneName: first.label,
+        percent: first.percent, amount: first.amount, updatedAt: new Date(),
+      }).where(eq(schema.invoices.id, inv.id));
+      for (const x of rest) {
+        seq += 1;
+        sort += 1;
+        const number = `${prefix}-${String(seq).padStart(2, "0")}`;
+        await tx.insert(schema.invoices).values({
+          projectId: inv.projectId, estimateId: x.estimateId, milestoneId: x.milestoneId, number,
+          milestoneName: x.label, percent: x.percent, amount: x.amount, status: "draft",
+          paymentTerms: inv.paymentTerms, sortOrder: sort, createdBy: c.userId,
+        });
+        created.push(number);
+      }
+      await tx.delete(schema.invoiceItems).where(eq(schema.invoiceItems.invoiceId, inv.id));
+    });
+    await createAuditLog(db, schema, { entityType: "Invoice", entityId: inv.id, action: AuditAction.UPDATE, actorId: c.userId, changes: { after: { unmerged: [inv.number, ...created] } } });
+    return { id: inv.id, number: inv.number, created };
+  }),
+
   /** Internal note printed on the invoice. Drafts only. */
   updateNotes: protectedProcedure
     .input(z.object({ invoiceId: z.string().uuid(), notes: z.string().max(5000).nullable() }))
@@ -296,17 +336,19 @@ export const invoiceRouter = router({
       const { db, schema } = c.tenant;
       const inv = await loadInvoice(c, input.invoiceId);
       if (inv.status !== "draft") throw new TRPCError({ code: "BAD_REQUEST", message: "This invoice was already sent." });
-      if (Number(inv.amount) <= 0) throw new TRPCError({ code: "BAD_REQUEST", message: "This invoice has no amount to bill." });
+      const credit = Number(inv.amount) < 0;
+      if (Number(inv.amount) === 0) throw new TRPCError({ code: "BAD_REQUEST", message: "This invoice has no amount to bill." });
       const sentOn = input.sentOn ?? todayText();
       const dueOn = input.dueOn ?? dueDateFor(sentOn, inv.paymentTerms);
       if (dueOn < sentOn) throw new TRPCError({ code: "BAD_REQUEST", message: "The due date is before the date sent." });
-      await db.update(schema.invoices).set({ status: "sent", sentOn, dueOn, updatedAt: new Date() }).where(eq(schema.invoices.id, inv.id));
+      // A credit (negative amount) has nothing to collect, so it is settled when sent.
+      await db.update(schema.invoices).set({ status: credit ? "paid" : "sent", sentOn, dueOn, updatedAt: new Date() }).where(eq(schema.invoices.id, inv.id));
       await createAuditLog(db, schema, {
         entityType: "Invoice",
         entityId: inv.id,
         action: AuditAction.UPDATE,
         actorId: c.userId,
-        changes: { before: { status: "draft" }, after: { status: "sent", sentOn, dueOn } },
+        changes: { before: { status: "draft" }, after: { status: credit ? "paid" : "sent", sentOn, dueOn } },
       });
       return { id: inv.id, sentOn, dueOn };
     }),

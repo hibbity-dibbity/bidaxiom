@@ -84,7 +84,7 @@ export default function InvoicePage({ params }: { params: { projectSlug: string;
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold tracking-tight">{inv.number}</h1>
-          <InvoiceStatusBadge status={inv.status} overdue={inv.overdue} />
+          <InvoiceStatusBadge status={inv.status} overdue={inv.overdue} amount={inv.amount} />
         </div>
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="outline">
@@ -118,13 +118,13 @@ export default function InvoicePage({ params }: { params: { projectSlug: string;
                 }}
               />
             </label>
-            <Button type="button" disabled={send.isPending || inv.amount <= 0} onClick={() => send.mutate({ invoiceId, sentOn, dueOn: effectiveDue })}>
+            <Button type="button" disabled={send.isPending || inv.amount === 0} onClick={() => send.mutate({ invoiceId, sentOn, dueOn: effectiveDue })}>
               Send {inv.number}
             </Button>
             <Button
               type="button"
               variant="outline"
-              disabled={sendingPaid || send.isPending || inv.amount <= 0}
+              disabled={sendingPaid || send.isPending || inv.amount === 0}
               onClick={sendAndPay}
             >
               Send and mark paid in full

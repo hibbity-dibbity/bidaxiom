@@ -34,7 +34,8 @@ const costLineInputSchema = z.object({
   costCodeId: z.number().int().nullable().optional(),
   quantity: z.number().min(0).max(1e9),
   unit: z.string().min(1).max(20),
-  unitCost: z.number().min(0).max(1e9),
+  /** negative only on change orders (a credit / deductive line) */
+  unitCost: z.number().min(-1e9).max(1e9),
   /** percent of price, 0 up to but not including 100 */
   marginPercent: z.number().min(0).lt(100),
   /** padding on cost, percent of cost */
@@ -283,7 +284,9 @@ function sendBlocker(c: Awaited<ReturnType<typeof loadComputed>>): string | null
   if (c.estimate.status === "submitted") return "This proposal has already been sent. Create a revision to change and resend it.";
   if (LOCKED_STATUSES.includes(c.estimate.status)) return "This proposal is already accepted.";
   const baseParents = c.lines.filter((l) => !l.parentId && !l.isOptional);
-  if (baseParents.length === 0 || c.result.totals.total <= 0) return "Add at least one priced line before sending.";
+  const isCo = c.estimate.kind === "change_order";
+  if (baseParents.length === 0 || (isCo ? c.result.totals.total === 0 : c.result.totals.total <= 0)) return "Add at least one priced line before sending.";
+  if (!isCo && c.lines.some((l) => Number(l.unitCost) < 0)) return "Only a change order can have a negative unit cost.";
   if (c.lines.some((l) => !l.name.trim())) return "Every line needs a name.";
   if (c.milestones.length === 0) return "Add an invoicing schedule.";
   if (c.milestones.some((m) => !m.name.trim())) return "Every milestone needs a name.";
@@ -523,6 +526,9 @@ export const proposalRouter = router({
 
     const structureError = validateLineStructure(input.lines);
     if (structureError) throw new TRPCError({ code: "BAD_REQUEST", message: structureError });
+    if (existing.kind !== "change_order" && input.lines.some((l) => l.unitCost < 0)) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "Only a change order can have a negative unit cost (a credit)." });
+    }
 
     const proposalTotal = computeProposal({
       lines: input.lines.map((l) => ({

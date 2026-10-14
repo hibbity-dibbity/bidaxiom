@@ -187,7 +187,7 @@ export function computeProposal(input: ProposalInput): ProposalResult {
   const globalTotal = globals.reduce((a, g) => a + toCents(g.amount), 0);
   const shares = spreadByWeight(
     globalTotal,
-    baseParents.map((p) => lineResults[p.id].cost)
+    baseParents.map((p) => Math.abs(lineResults[p.id].cost))
   );
 
   const parents: ParentResult[] = baseParents.map((p, i) => {

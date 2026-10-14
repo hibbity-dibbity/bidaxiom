@@ -165,3 +165,14 @@ test("an optional item can hold several lines (labor + material) and stays out o
   const a = applyAcceptance(r, ["opt"]);
   assert.equal(a.contractValue, 100000 + 150000 + 10000);
 });
+
+test("a deductive change order (negative unit cost) totals negative and schedules a credit", () => {
+  const r = computeProposal({
+    lines: [L("p1", null, "other", 0, 0), L("c1", "p1", "material", 2, -500, { marginPercent: 20 })],
+    globals: [],
+    taxRatePercent: 0,
+  });
+  assert.equal(r.totals.total, -125000);
+  const sched = computeSchedule(r.totals.total, [{ id: "m", percent: 100 }]);
+  assert.equal(sched[0].amount, -125000);
+});

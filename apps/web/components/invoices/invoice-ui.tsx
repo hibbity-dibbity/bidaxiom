@@ -17,7 +17,8 @@ export const STATUS_LABEL: Record<string, string> = {
   paid: "Paid",
 };
 
-export function InvoiceStatusBadge({ status, overdue }: { status: string; overdue?: boolean }) {
+export function InvoiceStatusBadge({ status, overdue, amount }: { status: string; overdue?: boolean; amount?: number }) {
+  if (typeof amount === "number" && amount < 0) return <StatusBadge variant={status === "draft" ? "draft" : "approved"}>{status === "draft" ? "Draft credit" : "Credit"}</StatusBadge>;
   if (overdue) return <StatusBadge variant="error">Overdue</StatusBadge>;
   const variant = status === "draft" ? "draft" : status === "paid" ? "approved" : "pending";
   return <StatusBadge variant={variant}>{STATUS_LABEL[status] ?? status}</StatusBadge>;

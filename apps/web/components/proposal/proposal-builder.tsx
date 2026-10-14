@@ -435,8 +435,8 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
             onChange={(e) => patchLine(line.id, { unit: e.target.value })} />
         </div>
         <div className="px-1">
-          <NumField className={cn(cellInput, "text-right")} aria-label="Unit cost" min={0} step="0.01" disabled={locked}
-            value={line.unitCost} onChange={(v) => patchLine(line.id, { unitCost: Math.max(v, 0) })} />
+          <NumField className={cn(cellInput, "text-right")} aria-label="Unit cost" min={isCO ? undefined : 0} step="0.01" disabled={locked}
+            value={line.unitCost} onChange={(v) => patchLine(line.id, { unitCost: isCO ? v : Math.max(v, 0) })} />
         </div>
         <div className="px-1">
           <NumField className={cn(cellInput, "text-right")} aria-label="Contingency percent" min={0} max={1000} step="0.5" disabled={locked}
