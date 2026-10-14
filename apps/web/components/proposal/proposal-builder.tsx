@@ -19,7 +19,6 @@ import {
 } from "@construction/shared";
 import { NumField } from "./num-field";
 import { AcceptDialog } from "./accept-dialog";
-import { DraftOrdersPanel } from "./draft-orders-panel";
 import {
   COST_TYPES,
   MAX_MARGIN,
@@ -655,7 +654,7 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
           </div>
 
           <p className="max-w-3xl text-xs leading-relaxed text-muted-foreground">
-            <strong className="text-foreground">On proposal:</strong> Price shown lists the child with its price marked as included in the parent, so it is not added again. Name only lists the child without a price. Hidden keeps the line for costing and removes it from the customer&apos;s copy. Margin set on a parent applies to every child; a later edit to a child overrides it. Vendor is optional and only pre-sorts the draft orders; you can change it on the order. Type Other is for inclusion and exclusion wording or notes: it has no cost code and creates no order.
+            <strong className="text-foreground">On proposal:</strong> Price shown lists the child with its price marked as included in the parent, so it is not added again. Name only lists the child without a price. Hidden keeps the line for costing and removes it from the customer&apos;s copy. Margin set on a parent applies to every child; a later edit to a child overrides it. Vendor is optional and only pre-sorts the draft orders; you can change it on the order. Type Other is for inclusion and exclusion wording or notes: it creates no order.
           </p>
         </div>
 
@@ -777,7 +776,6 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
         </div>
       </div>
 
-      {(status === "accepted" || status === "under_contract") && <DraftOrdersPanel estimateId={estimateId} projectSlug={projectSlug} estimateSlug={estimateSlug} />}
 
       {data && (
         <AcceptDialog
@@ -789,8 +787,11 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
           milestones={data.milestones}
           onAccepted={() => {
             utils.proposal.get.invalidate({ estimateId });
-            utils.order.listForEstimate.invalidate({ estimateId });
+            utils.order.listCards.invalidate();
+            utils.order.projectSummary.invalidate();
             utils.estimates.list.invalidate();
+            // Orders now live in the project's Purchase Orders and Work Orders tabs.
+            router.push(`/projects/${projectSlug}/purchase-orders`);
           }}
         />
       )}

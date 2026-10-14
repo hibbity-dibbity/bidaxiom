@@ -151,9 +151,9 @@ function mapLine(l: {
 }
 
 export const orderRouter = router({
-  /** Orders generated from one proposal, with vendor names, lines and totals (dollars). */
-  listForEstimate: protectedProcedure
-    .input(z.object({ estimateId: z.string().uuid() }))
+  /** Orders of one kind on a project, with vendors, insurance warnings and lines (dollars). Drives the PO and WO tabs. */
+  listCards: protectedProcedure
+    .input(z.object({ projectId: z.string().uuid(), kind: z.enum(["purchase", "work"]) }))
     .query(async ({ ctx, input }) => {
       const c = need(ctx);
       await can(c, "read");
@@ -161,8 +161,8 @@ export const orderRouter = router({
       const orders = await db
         .select()
         .from(schema.orders)
-        .where(eq(schema.orders.estimateId, input.estimateId))
-        .orderBy(asc(schema.orders.kind), asc(schema.orders.number));
+        .where(and(eq(schema.orders.projectId, input.projectId), eq(schema.orders.kind, input.kind)))
+        .orderBy(asc(schema.orders.number));
       if (orders.length === 0) return [];
 
       const lines = await db
@@ -170,11 +170,14 @@ export const orderRouter = router({
         .from(schema.orderLines)
         .where(inArray(schema.orderLines.orderId, orders.map((o) => o.id)))
         .orderBy(asc(schema.orderLines.sortOrder));
+      const pays = await db.select().from(schema.orderPayments).where(inArray(schema.orderPayments.orderId, orders.map((o) => o.id)));
       const vendors = await vendorInfo(c, [...new Set(orders.map((o) => o.vendorId).filter((v): v is string => !!v))]);
 
       return orders.map((o) => {
         const ol = lines.filter((l) => l.orderId === o.id).map(mapLine);
         const v = o.vendorId ? vendors.get(o.vendorId) : undefined;
+        const paid = pays.filter((p) => p.orderId === o.id).reduce((a, p) => a + Number(p.amount), 0);
+        const projectedTotal = ol.reduce((a, l) => a + l.projectedCost, 0);
         return {
           id: o.id,
           kind: o.kind as "purchase" | "work",
@@ -184,8 +187,11 @@ export const orderRouter = router({
           vendorId: o.vendorId,
           vendorName: o.vendorId ? (v?.name ?? "Unknown vendor") : null,
           insurance: insuranceFor(o.kind, v?.insuranceExpiresAt, !!o.vendorId),
+          fromProposal: o.estimateId !== null,
           budgetTotal: ol.reduce((a, l) => a + l.budgetCost, 0),
-          projectedTotal: ol.reduce((a, l) => a + l.projectedCost, 0),
+          projectedTotal,
+          paid,
+          outstanding: countsAsIssued(o.status) ? Math.max(projectedTotal - paid, 0) : null,
           lines: ol,
         };
       });

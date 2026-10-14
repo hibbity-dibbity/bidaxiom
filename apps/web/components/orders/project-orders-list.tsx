@@ -1,40 +1,86 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/shared/page-header";
-import { OrderStatusBadge, dollars } from "./order-ui";
+import { OrderCard } from "./order-card";
+import { dollars, signed } from "./order-ui";
 import { Plus } from "lucide-react";
 
-/** Purchase Orders or Work Orders tab of a project. */
+/**
+ * Purchase Orders or Work Orders tab of a project: review the drafts created at acceptance, pick
+ * vendors, split, move and merge lines, issue, revise, and open an order for details and payments.
+ */
 export function ProjectOrdersList({ projectSlug, kind }: { projectSlug: string; kind: "purchase" | "work" }) {
   const router = useRouter();
   const isWork = kind === "work";
+  const noun = isWork ? "WO" : "PO";
   const { data: project } = trpc.project.getBySlug.useQuery({ slug: projectSlug });
   const projectId = project?.id ?? "";
-  const { data, isLoading } = trpc.order.listForProject.useQuery({ projectId, kind }, { enabled: !!projectId });
-  const { data: active } = trpc.proposal.activeForProject.useQuery({ projectId }, { enabled: !!projectId });
   const utils = trpc.useUtils();
+  const { data: orders, isLoading } = trpc.order.listCards.useQuery({ projectId, kind }, { enabled: !!projectId });
+  const { data: vendors } = trpc.order.vendorOptions.useQuery();
+  const [picked, setPicked] = React.useState<Record<string, string[]>>({});
+
+  const refresh = () => {
+    utils.order.listCards.invalidate();
+    utils.order.projectSummary.invalidate();
+  };
+  const fail = (title: string) => (e: { message: string }) => toast.error(title, { description: e.message });
   const create = trpc.order.createManual.useMutation({
     onSuccess: (r) => {
-      utils.order.listForProject.invalidate();
-      utils.order.projectSummary.invalidate();
+      refresh();
       router.push(`/projects/${projectSlug}/orders/${r.id}`);
     },
-    onError: (e) => toast.error("Could not create the order", { description: e.message }),
+    onError: fail("Could not create the order"),
+  });
+  const update = trpc.order.update.useMutation({ onSuccess: refresh, onError: fail("Could not update the order") });
+  const updateLine = trpc.order.updateLine.useMutation({ onSuccess: refresh, onError: fail("Could not update the line") });
+  const move = trpc.order.moveLines.useMutation({
+    onSuccess: (r) => {
+      toast.success(`Moved to ${r.number}`);
+      setPicked({});
+      refresh();
+    },
+    onError: fail("Could not move the lines"),
+  });
+  const merge = trpc.order.merge.useMutation({
+    onSuccess: () => {
+      toast.success("Orders merged");
+      setPicked({});
+      refresh();
+    },
+    onError: fail("Could not merge"),
+  });
+  const issue = trpc.order.issue.useMutation({
+    onSuccess: () => {
+      toast.success("Order issued");
+      refresh();
+    },
+    onError: fail("Could not issue"),
+  });
+  const revise = trpc.order.revise.useMutation({
+    onSuccess: (r) => {
+      toast.success(`Reopened as Rev ${r.revision} draft`);
+      refresh();
+    },
+    onError: fail("Could not revise"),
   });
 
-  const rows = data?.rows ?? [];
-  const total = rows.reduce((a, r) => a + r.cost, 0);
-  const paid = rows.reduce((a, r) => a + r.paid, 0);
-  const outstanding = rows.reduce((a, r) => a + (r.outstanding ?? 0), 0);
-  const hasDrafts = rows.some((r) => r.status === "draft" && r.fromProposal);
-  const reviewHref = active?.accepted ? `/projects/${projectSlug}/estimates/${active.slug}/orders` : null;
+  const list = orders ?? [];
+  const budget = list.reduce((a, o) => a + o.budgetTotal, 0);
+  const projected = list.reduce((a, o) => a + o.projectedTotal, 0);
+  const paid = list.reduce((a, o) => a + o.paid, 0);
+  const outstanding = list.reduce((a, o) => a + (o.outstanding ?? 0), 0);
+  const drafts = list.filter((o) => o.status === "draft");
+  const needVendor = drafts.filter((o) => !o.vendorId).length;
+  const busy = update.isPending || move.isPending || merge.isPending || issue.isPending || revise.isPending;
+  // Drafts first so the work to do is at the top, then issued orders by number.
+  const sorted = [...list].sort((a, b) => Number(a.status !== "draft") - Number(b.status !== "draft") || a.number.localeCompare(b.number));
 
   return (
     <div className="space-y-6">
@@ -42,78 +88,72 @@ export function ProjectOrdersList({ projectSlug, kind }: { projectSlug: string; 
         title={isWork ? "Work Orders" : "Purchase Orders"}
         description={
           isWork
-            ? "Labor and subcontract scope, one order per subcontractor. Each lists the scope you send to confirm it matches yours."
-            : "Materials and equipment, one order per vendor. Created from the proposal on acceptance."
+            ? "Labor and subcontract scope, one order per subcontractor. Drafts are created from the accepted proposal. Pick the subcontractor, split lines if needed, then issue. Each lists the scope you send to confirm it matches yours."
+            : "Materials and equipment, one order per vendor. Drafts are created from the accepted proposal. Pick the vendor, split lines if needed, then issue."
         }
         actions={
-          <>
-            {reviewHref && hasDrafts && (
-              <Button asChild variant="outline">
-                <Link href={reviewHref}>Review drafts</Link>
-              </Button>
-            )}
-            <Button type="button" disabled={!projectId || create.isPending} onClick={() => create.mutate({ projectId, kind })}>
-              <Plus className="mr-2 h-4 w-4" />
-              {isWork ? "New work order" : "New PO"}
-            </Button>
-          </>
+          <Button type="button" disabled={!projectId || create.isPending} onClick={() => create.mutate({ projectId, kind })}>
+            <Plus className="mr-2 h-4 w-4" />
+            {isWork ? "New work order" : "New PO"}
+          </Button>
         }
       />
 
       {isLoading || !projectId ? (
         <Skeleton className="h-40 w-full" />
-      ) : rows.length === 0 ? (
+      ) : list.length === 0 ? (
         <div className="rounded-md border bg-background px-4 py-10 text-center text-sm text-muted-foreground">
           No {isWork ? "work" : "purchase"} orders yet. They are created when a proposal is accepted, or add one by hand.
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-md border bg-background">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                <th className="px-3 py-2">{isWork ? "WO" : "PO"}</th>
-                <th className="px-3 py-2">{isWork ? "Subcontractor" : "Vendor"}</th>
-                <th className="px-3 py-2">{isWork ? "Scope lines" : "From cost lines"}</th>
-                <th className="px-3 py-2 text-right">Cost</th>
-                <th className="px-3 py-2 text-right">Paid</th>
-                <th className="px-3 py-2 text-right">Outstanding</th>
-                <th className="px-3 py-2">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.id} className="border-b last:border-0">
-                  <td className="px-3 py-2 font-semibold">
-                    <Link href={`/projects/${projectSlug}/orders/${r.id}`} className="hover:underline">
-                      {r.number}
-                    </Link>
-                  </td>
-                  <td className={r.vendorName ? "px-3 py-2" : "px-3 py-2 text-financial-pending"}>{r.vendorName ?? "Assign vendor"}</td>
-                  <td className="max-w-md truncate px-3 py-2 text-muted-foreground" title={r.lineSummary}>
-                    {r.lineSummary || "No lines"}
-                    {!r.fromProposal && <span className="ml-2 text-xs">(added by hand)</span>}
-                  </td>
-                  <td className="px-3 py-2 text-right tabular-nums">{dollars(r.cost)}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{dollars(r.paid)}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{r.outstanding === null ? "—" : dollars(r.outstanding)}</td>
-                  <td className="px-3 py-2">
-                    <OrderStatusBadge status={r.status} revision={r.revision} />
-                  </td>
-                </tr>
-              ))}
-              <tr className="bg-muted/50 font-semibold">
-                <td className="px-3 py-2" colSpan={3}>Total</td>
-                <td className="px-3 py-2 text-right tabular-nums">{dollars(total)}</td>
-                <td className="px-3 py-2 text-right tabular-nums">{dollars(paid)}</td>
-                <td className="px-3 py-2 text-right tabular-nums">{dollars(outstanding)}</td>
-                <td />
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <>
+          <div className="grid gap-3 sm:grid-cols-5">
+            {[
+              ["Cost budget", dollars(budget)],
+              ["Projected cost", dollars(projected)],
+              ["Projected vs budget", signed(projected - budget)],
+              ["Paid", dollars(paid)],
+              ["Outstanding", dollars(outstanding)],
+            ].map(([k, v]) => (
+              <div key={k} className="rounded-md border bg-background px-3 py-2">
+                <div className="text-xs uppercase tracking-wider text-muted-foreground">{k}</div>
+                <div className="text-lg font-semibold tabular-nums">{v}</div>
+              </div>
+            ))}
+          </div>
+          {drafts.length > 0 && (
+            <p className="text-sm text-muted-foreground">
+              {drafts.length} draft{drafts.length > 1 ? "s" : ""} to review{needVendor > 0 ? `, ${needVendor} need a vendor before issuing` : ""}. Drafts are not counted as outstanding until issued.
+            </p>
+          )}
+
+          <div className="space-y-3">
+            {sorted.map((o) => (
+              <OrderCard
+                key={o.id}
+                order={o}
+                noun={noun}
+                projectSlug={projectSlug}
+                siblings={sorted.filter((r) => r.id !== o.id && r.status === "draft")}
+                vendors={vendors ?? []}
+                selected={picked[o.id] ?? []}
+                setSelected={(ids) => setPicked((p) => ({ ...p, [o.id]: ids }))}
+                busy={busy}
+                onVendor={(vendorId) => update.mutate({ orderId: o.id, vendorId })}
+                onProjected={(lineId, v) => updateLine.mutate({ lineId, projectedCost: v })}
+                onExclusions={(lineId, v) => updateLine.mutate({ lineId, exclusions: v })}
+                onSplit={(ids) => move.mutate({ lineIds: ids })}
+                onMoveTo={(ids, toOrderId) => move.mutate({ lineIds: ids, toOrderId })}
+                onMerge={(intoOrderId) => merge.mutate({ fromOrderId: o.id, intoOrderId })}
+                onIssue={() => issue.mutate({ orderId: o.id })}
+                onRevise={() => revise.mutate({ orderId: o.id })}
+              />
+            ))}
+          </div>
+        </>
       )}
       <p className="max-w-3xl text-sm text-muted-foreground">
-        Cost is the projected cost. Outstanding counts issued orders only. {isWork ? "A work order" : "A PO"} added by hand appears here with no link to the proposal and no customer charge.
+        An insurance warning on a work order does not stop you from issuing it. Issued orders are locked. To change one, revise it: it reopens as a draft with the next revision, the earlier revision is kept, and a line moved to another vendor appears on a new order. Projected cost is what you expect to pay, for example from a vendor&apos;s quote. Budget is the cost on the proposal and never changes. {isWork ? "A work order" : "A PO"} added by hand has no link to the proposal and no customer charge.
       </p>
     </div>
   );

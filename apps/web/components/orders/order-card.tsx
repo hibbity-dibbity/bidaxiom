@@ -2,147 +2,19 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { toast } from "sonner";
-import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { PageHeader } from "@/components/shared/page-header";
 import { BlurNumber, BlurText, InsuranceWarning, OrderStatusBadge, dollars, fieldCls, signed } from "./order-ui";
-import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "@construction/api/src/trpc/router";
-type Order = inferRouterOutputs<AppRouter>["order"]["listForEstimate"][number];
 
-export function OrdersReview({ projectSlug, estimateSlug }: { projectSlug: string; estimateSlug: string }) {
-  const { data: estimate } = trpc.estimates.getBySlug.useQuery({ slug: estimateSlug });
-  const estimateId = estimate?.id ?? "";
-  const utils = trpc.useUtils();
-  const { data: orders, isLoading } = trpc.order.listForEstimate.useQuery({ estimateId }, { enabled: !!estimateId });
-  const { data: vendors } = trpc.order.vendorOptions.useQuery();
-  const [picked, setPicked] = React.useState<Record<string, string[]>>({});
+export type CardOrder = inferRouterOutputs<AppRouter>["order"]["listCards"][number];
 
-  const refresh = () => utils.order.listForEstimate.invalidate({ estimateId });
-  const fail = (title: string) => (e: { message: string }) => toast.error(title, { description: e.message });
-  const update = trpc.order.update.useMutation({ onSuccess: refresh, onError: fail("Could not update the order") });
-  const updateLine = trpc.order.updateLine.useMutation({ onSuccess: refresh, onError: fail("Could not update the line") });
-  const move = trpc.order.moveLines.useMutation({
-    onSuccess: (r) => {
-      toast.success(`Moved to ${r.number}`);
-      setPicked({});
-      refresh();
-    },
-    onError: fail("Could not move the lines"),
-  });
-  const merge = trpc.order.merge.useMutation({
-    onSuccess: () => {
-      toast.success("Orders merged");
-      setPicked({});
-      refresh();
-    },
-    onError: fail("Could not merge"),
-  });
-  const issue = trpc.order.issue.useMutation({
-    onSuccess: () => {
-      toast.success("Order issued");
-      refresh();
-    },
-    onError: fail("Could not issue"),
-  });
-  const revise = trpc.order.revise.useMutation({
-    onSuccess: (r) => {
-      toast.success(`Reopened as Rev ${r.revision} draft`);
-      refresh();
-    },
-    onError: fail("Could not revise"),
-  });
-
-  if (isLoading || !estimateId) return <Skeleton className="h-64 w-full" />;
-  const list = orders ?? [];
-  const budget = list.reduce((a, o) => a + o.budgetTotal, 0);
-  const projected = list.reduce((a, o) => a + o.projectedTotal, 0);
-  const drafts = list.filter((o) => o.status === "draft").length;
-  const unassigned = list.filter((o) => o.status === "draft" && !o.vendorId).length;
-
-  const groups = [
-    { kind: "purchase" as const, title: "Purchase orders (materials and equipment)", noun: "PO" },
-    { kind: "work" as const, title: "Work orders (labor and subcontract scope)", noun: "WO" },
-  ];
-
-  return (
-    <div className="space-y-6">
-      <nav className="flex items-center gap-1 text-sm text-muted-foreground">
-        <Link href={`/projects/${projectSlug}/estimates/${estimateSlug}`} className="hover:underline">
-          {estimate?.name ?? "Proposal"}
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5" />
-        <span>Review orders</span>
-      </nav>
-      <PageHeader
-        title="Review draft orders"
-        description="Orders were drafted from the accepted proposal and sorted by the vendor set in the builder. Pick the vendor for each order, split lines into separate orders if needed, then issue. The proposal and customer price do not change."
-      />
-
-      <div className="grid gap-3 sm:grid-cols-4">
-        {[
-          ["Cost budget", dollars(budget)],
-          ["Projected cost", dollars(projected)],
-          ["Projected vs budget", signed(projected - budget)],
-          ["Drafts to issue", `${drafts}${unassigned ? ` (${unassigned} need a vendor)` : ""}`],
-        ].map(([k, v]) => (
-          <div key={k} className="rounded-md border bg-background px-3 py-2">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">{k}</div>
-            <div className="text-lg font-semibold tabular-nums">{v}</div>
-          </div>
-        ))}
-      </div>
-
-      {groups.map((g) => {
-        const rows = list.filter((o) => o.kind === g.kind);
-        if (rows.length === 0) return null;
-        return (
-          <section key={g.kind} className="space-y-3">
-            <h2 className="text-lg font-semibold">{g.title}</h2>
-            {rows.map((o) => (
-              <OrderCard
-                key={o.id}
-                order={o}
-                noun={g.noun}
-                projectSlug={projectSlug}
-                siblings={rows.filter((r) => r.id !== o.id && r.status === "draft")}
-                vendors={vendors ?? []}
-                selected={picked[o.id] ?? []}
-                setSelected={(ids) => setPicked((p) => ({ ...p, [o.id]: ids }))}
-                busy={update.isPending || move.isPending || merge.isPending || issue.isPending || revise.isPending}
-                onVendor={(vendorId) => update.mutate({ orderId: o.id, vendorId })}
-                onProjected={(lineId, v) => updateLine.mutate({ lineId, projectedCost: v })}
-                onExclusions={(lineId, v) => updateLine.mutate({ lineId, exclusions: v })}
-                onSplit={(ids) => move.mutate({ lineIds: ids })}
-                onMoveTo={(ids, toOrderId) => move.mutate({ lineIds: ids, toOrderId })}
-                onMerge={(intoOrderId) => merge.mutate({ fromOrderId: o.id, intoOrderId })}
-                onIssue={() => issue.mutate({ orderId: o.id })}
-                onRevise={() => revise.mutate({ orderId: o.id })}
-              />
-            ))}
-          </section>
-        );
-      })}
-
-      <p className="max-w-3xl text-sm text-muted-foreground">
-        An insurance warning on a work order does not stop you from issuing it. Issued orders are locked. To change one, revise it: the order
-        reopens as a draft with the next revision, the earlier revision is kept, and a line moved to another vendor appears on a new order.
-        Projected cost is what you expect to pay, for example from a vendor&apos;s quote. Budget is the cost on the proposal and never changes.
-      </p>
-    </div>
-  );
-}
-
-function OrderCard(props: {
-  order: Order;
+export function OrderCard(props: {
+  order: CardOrder;
   noun: string;
   projectSlug: string;
-  siblings: Order[];
+  siblings: CardOrder[];
   vendors: Array<{ id: string; name: string; kind: string }>;
   selected: string[];
   setSelected: (ids: string[]) => void;
@@ -224,7 +96,9 @@ function OrderCard(props: {
 
       <div className="flex flex-wrap items-center justify-between gap-2 border-t px-3 py-2">
         {locked ? (
-          <span className="text-sm text-muted-foreground">Issued and locked.</span>
+          <span className="text-sm text-muted-foreground">
+            Issued and locked. Paid {dollars(o.paid)} · Outstanding {dollars(o.outstanding ?? 0)}
+          </span>
         ) : (
           <div className="flex flex-wrap items-center gap-2">
             <Button type="button" size="sm" variant="outline" disabled={!canSplit || props.busy} onClick={() => props.onSplit(selected)}>

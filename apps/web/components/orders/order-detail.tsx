@@ -39,7 +39,7 @@ export function OrderDetail({ projectSlug, orderId }: { projectSlug: string; ord
 
   const refresh = () => {
     utils.order.get.invalidate({ orderId });
-    utils.order.listForEstimate.invalidate();
+    utils.order.listCards.invalidate();
     utils.order.projectSummary.invalidate();
     utils.order.listForProject.invalidate();
   };
@@ -96,7 +96,7 @@ export function OrderDetail({ projectSlug, orderId }: { projectSlug: string; ord
   const vendorName = data.vendor?.name ?? (isWork ? "subcontractor not assigned" : "vendor not assigned");
   const pickable = vendors ?? [];
   const listHref = `/projects/${projectSlug}/${isWork ? "work-orders" : "purchase-orders"}`;
-  const reviewHref = data.estimate ? `/projects/${projectSlug}/estimates/${data.estimate.slug}/orders` : listHref;
+  const reviewHref = listHref;
   const issuedLike = o.status !== "draft";
   const outstanding = Math.max(data.projectedTotal - data.paid, 0);
   const save = (patch: Record<string, unknown>) => update.mutate({ orderId, ...patch } as never);
@@ -105,7 +105,7 @@ export function OrderDetail({ projectSlug, orderId }: { projectSlug: string; ord
     <div className="space-y-6">
       <nav className="flex items-center gap-1 text-sm text-muted-foreground">
         <Link href={reviewHref} className="hover:underline">
-          {data.estimate ? "Review orders" : isWork ? "Work orders" : "Purchase orders"}
+          {isWork ? "Work Orders" : "Purchase Orders"}
         </Link>
         <ChevronRight className="h-3.5 w-3.5" />
         <span>{o.number}</span>
@@ -120,7 +120,7 @@ export function OrderDetail({ projectSlug, orderId }: { projectSlug: string; ord
         actions={
           <>
             <Button asChild variant="outline">
-              <Link href={reviewHref}>{data.estimate ? "Back to review" : "Back to list"}</Link>
+              <Link href={reviewHref}>Back to list</Link>
             </Button>
             {locked ? (
               data.canRevise && (

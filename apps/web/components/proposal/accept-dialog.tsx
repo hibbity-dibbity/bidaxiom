@@ -50,7 +50,7 @@ export function AcceptDialog({ open, onOpenChange, estimateId, lines, computed, 
 
   const accept = trpc.proposal.accept.useMutation({
     onSuccess: (r) => {
-      toast.success(`Accepted. Contract value ${money(r.contractValue)}, ${r.orders.length} draft orders created.`);
+      toast.success(`Accepted. Contract value ${money(r.contractValue)}, ${r.orders.length} draft orders created. Review them on the Purchase Orders and Work Orders tabs.`);
       onOpenChange(false);
       onAccepted();
     },
