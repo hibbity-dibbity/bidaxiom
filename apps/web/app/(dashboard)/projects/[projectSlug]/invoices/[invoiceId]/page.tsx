@@ -5,6 +5,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { usePdfDownload } from "@/lib/pdf-download";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InvoiceStatusBadge, dollars, shortDate } from "@/components/invoices/invoice-ui";
@@ -28,6 +29,7 @@ const field = "h-9 rounded-md border bg-background px-2 text-sm";
 /** Invoice as the customer receives it, with the actions to send it and record payments. */
 export default function InvoicePage({ params }: { params: { projectSlug: string; invoiceId: string } }) {
   const { projectSlug, invoiceId } = params;
+  const pdf = usePdfDownload();
   const utils = trpc.useUtils();
   const { data, isLoading } = trpc.invoice.get.useQuery({ invoiceId }, { refetchOnMount: "always" });
   const [sentOn, setSentOn] = React.useState(today());
@@ -90,8 +92,8 @@ export default function InvoicePage({ params }: { params: { projectSlug: string;
           <Button asChild variant="outline">
             <Link href={`/projects/${projectSlug}/invoices`}>Back to invoices</Link>
           </Button>
-          <Button type="button" variant="outline" onClick={() => window.print()}>
-            Download PDF
+          <Button type="button" variant="outline" disabled={pdf.pending} onClick={() => pdf.download("invoice", invoiceId)}>
+            {pdf.pending ? "Making PDF..." : "Download PDF"}
           </Button>
         </div>
       </div>

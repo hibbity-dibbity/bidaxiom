@@ -4,6 +4,7 @@ import { eq, isNull, sql, and } from "drizzle-orm";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { router } from "../trpc.js";
 import { protectedProcedure } from "../procedures.js";
+import { renderDocumentPdf } from "../../pdf/documents.js";
 import { buildProposalHtml, type ProposalPdfData } from "../../pdf/templates/proposal.js";
 import { buildChangeOrderHtml, type ChangeOrderPdfData } from "../../pdf/templates/change-order.js";
 import { buildPaymentAppHtml, type PaymentAppPdfData } from "../../pdf/templates/payment-app.js";
@@ -80,6 +81,23 @@ export const pdfRouter = router({
    */
   getStatus: protectedProcedure
     .query(() => ({ ok: true })),
+
+  /**
+   * PDF of a proposal, change order, invoice or order exactly as it looks on screen. Returned as
+   * base64 so the browser can save it. Email uses the same renderer.
+   */
+  document: protectedProcedure
+    .input(z.object({ kind: z.enum(["proposal", "invoice", "order"]), id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId || !ctx.orgId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+      const out = await renderDocumentPdf(
+        ctx.tenant,
+        { userId: ctx.userId, orgId: ctx.orgId, orgRole: ctx.orgRole ?? "org:member", orgName: ctx.tenant.companyName },
+        input.kind,
+        input.id
+      );
+      return { filename: out.filename, base64: out.buffer.toString("base64") };
+    }),
 
   /**
    * Generate a Proposal PDF for an estimate.

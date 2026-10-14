@@ -123,6 +123,9 @@ export function OrderDetail({ projectSlug, orderId }: { projectSlug: string; ord
             <Button asChild variant="outline">
               <Link href={reviewHref}>Back to list</Link>
             </Button>
+            <Button asChild variant="outline">
+              <Link href={`/projects/${projectSlug}/orders/${orderId}/document`}>Vendor copy</Link>
+            </Button>
             {locked ? (
               data.canRevise && (
                 <Button type="button" disabled={revise.isPending} onClick={() => revise.mutate({ orderId })}>

@@ -40,6 +40,8 @@ services:
       JWT_REFRESH_SECRET: local-dev-refresh-secret-change-me-0123
       SESSION_SECRET: local-dev-session-secret-change-me-01234
       CORS_ORIGIN: http://localhost:3000
+      # The PDF renderer opens the web app by its service name.
+      WEB_INTERNAL_URL: http://web:3000
       NEXT_PUBLIC_APP_URL: http://localhost:3000
 
   web:

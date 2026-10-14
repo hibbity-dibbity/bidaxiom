@@ -46,7 +46,11 @@ const fastify = Fastify({
 
 // Register plugins
 await fastify.register(cors, {
-  origin: process.env.CORS_ORIGIN ?? "http://localhost:3000",
+  // The PDF renderer opens the web app by its internal address, so that origin is allowed too.
+  origin: [
+    ...(process.env.CORS_ORIGIN ?? "http://localhost:3000").split(",").map((s) => s.trim()).filter(Boolean),
+    ...(process.env.WEB_INTERNAL_URL ? [new URL(process.env.WEB_INTERNAL_URL).origin] : []),
+  ],
   credentials: true,
 });
 

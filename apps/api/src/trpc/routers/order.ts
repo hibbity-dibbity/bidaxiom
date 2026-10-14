@@ -6,6 +6,7 @@ import { router } from "../trpc.js";
 import { protectedProcedure } from "../procedures.js";
 import { defineAbilitiesFor } from "../../auth/abilities.js";
 import { createAuditLog } from "../../audit/logger.js";
+import { companyContactLines } from "../../services/companyContact.js";
 import {
   AuditAction,
   insuranceStatus,
@@ -260,6 +261,8 @@ export const orderRouter = router({
         notes: order.notes,
       },
       project: proj ?? null,
+      companyName: c.tenant.companyName,
+      companyContact: await companyContactLines(c.tenant),
       estimate: est ?? null,
       vendor: v ? { id: order.vendorId as string, name: v.name, paymentTerms: v.paymentTerms, w9OnFile: v.w9OnFile } : null,
       insurance: insuranceFor(order.kind, v?.insuranceExpiresAt, !!order.vendorId),
