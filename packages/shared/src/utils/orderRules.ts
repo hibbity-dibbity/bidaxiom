@@ -16,8 +16,20 @@ export function isEditable(status: string): boolean {
   return status === "draft";
 }
 
+/** Issued orders, including ones with payments recorded, can be revised. */
 export function canRevise(status: string): boolean {
-  return status === "issued";
+  return status === "issued" || status === "partially_paid";
+}
+
+/** Order status after issue or a payment change, from what has been paid against projected cost. */
+export function statusAfterPayments(paid: number, projected: number): "issued" | "partially_paid" | "paid" {
+  if (paid <= 0) return "issued";
+  return paid + 0.005 >= projected ? "paid" : "partially_paid";
+}
+
+/** Issued (open or paid) orders count toward outstanding; drafts do not. */
+export function countsAsIssued(status: string): boolean {
+  return status === "issued" || status === "partially_paid" || status === "paid" || status === "closed";
 }
 
 /** Reasons an order cannot be issued yet. Empty means it can. */

@@ -18,6 +18,7 @@ import { UserPlus, X, Plus, Trash2 } from "lucide-react";
 import type { ProjectRole } from "@construction/shared";
 import { toast } from "sonner";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { CashFlow } from "@/components/orders/cash-flow";
 
 const NOTE_MAX = 500;
 
@@ -142,6 +143,8 @@ export default function ProjectOverviewPage({
       {project.description && (
         <p className="text-sm text-muted-foreground -mt-4">{project.description}</p>
       )}
+
+      <CashFlow projectId={project.id} projectSlug={projectSlug} />
 
       {/* Dimensions */}
       <div className="space-y-3">

@@ -338,6 +338,8 @@ export {
 
 export {
   canRevise,
+  countsAsIssued,
+  statusAfterPayments,
   insuranceMessage,
   insuranceStatus,
   isEditable,

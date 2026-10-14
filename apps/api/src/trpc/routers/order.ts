@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { ForbiddenError } from "@casl/ability";
 import { router } from "../trpc.js";
 import { protectedProcedure } from "../procedures.js";
@@ -15,6 +15,8 @@ import {
   issueBlockers,
   moveBlockers,
   nextOrderNumber,
+  statusAfterPayments,
+  countsAsIssued,
 } from "@construction/shared";
 
 /**
@@ -206,10 +208,17 @@ export const orderRouter = router({
       .select({ name: schema.projects.name, jobNumber: schema.projects.jobNumber })
       .from(schema.projects)
       .where(eq(schema.projects.id, order.projectId));
-    const [est] = await db
-      .select({ slug: schema.estimates.slug, name: schema.estimates.name })
-      .from(schema.estimates)
-      .where(eq(schema.estimates.id, order.estimateId));
+    const [est] = order.estimateId
+      ? await db
+          .select({ slug: schema.estimates.slug, name: schema.estimates.name })
+          .from(schema.estimates)
+          .where(eq(schema.estimates.id, order.estimateId))
+      : [];
+    const payments = await db
+      .select()
+      .from(schema.orderPayments)
+      .where(eq(schema.orderPayments.orderId, order.id))
+      .orderBy(desc(schema.orderPayments.paidAt), desc(schema.orderPayments.createdAt));
     const revisions = await db
       .select({
         id: schema.orderRevisions.id,
@@ -248,9 +257,12 @@ export const orderRouter = router({
       estimate: est ?? null,
       vendor: v ? { id: order.vendorId as string, name: v.name, paymentTerms: v.paymentTerms, w9OnFile: v.w9OnFile } : null,
       insurance: insuranceFor(order.kind, v?.insuranceExpiresAt, !!order.vendorId),
-      lines: mapped,
+      lines: mapped.map((l, i) => ({ ...l, manual: lines[i].sourceLineId === null })),
       budgetTotal: mapped.reduce((a, l) => a + l.budgetCost, 0),
       projectedTotal: mapped.reduce((a, l) => a + l.projectedCost, 0),
+      payments: payments.map((p) => ({ id: p.id, amount: Number(p.amount), paidAt: p.paidAt, reference: p.reference })),
+      paid: payments.reduce((a, p) => a + Number(p.amount), 0),
+      fromProposal: order.estimateId !== null,
       blockers: issueBlockers({ status: order.status, vendorId: order.vendorId, lineCount: lines.length }),
       canEdit: isEditable(order.status),
       canRevise: canRevise(order.status),
@@ -481,7 +493,10 @@ export const orderRouter = router({
           reason: input.reason ?? (order.revision === 0 ? "Issued" : null),
           createdBy: c.userId,
         });
-        await tx.update(schema.orders).set({ status: "issued", issuedAt: now, updatedAt: now }).where(eq(schema.orders.id, order.id));
+        const paidRows = await tx.select({ amount: schema.orderPayments.amount }).from(schema.orderPayments).where(eq(schema.orderPayments.orderId, order.id));
+        const paid = paidRows.reduce((a, r) => a + Number(r.amount), 0);
+        const projected = snapshot.projectedTotal;
+        await tx.update(schema.orders).set({ status: statusAfterPayments(paid, projected), issuedAt: now, updatedAt: now }).where(eq(schema.orders.id, order.id));
       });
       await createAuditLog(db, schema, {
         entityType: "Order",
@@ -512,5 +527,199 @@ export const orderRouter = router({
       changes: { before: { status: "issued", revision: order.revision }, after: { status: "draft", revision: next } },
     });
     return { id: order.id, revision: next };
+  }),
+
+  /** Add a draft order by hand (materials missed in estimating, extra scope). No proposal link, no customer charge. */
+  createManual: protectedProcedure
+    .input(z.object({ projectId: z.string().uuid(), kind: z.enum(["purchase", "work"]), vendorId: z.string().uuid().nullable().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const c = need(ctx);
+      await can(c, "update");
+      const { db, schema } = c.tenant;
+      const [proj] = await db.select({ jobNumber: schema.projects.jobNumber }).from(schema.projects).where(eq(schema.projects.id, input.projectId));
+      if (!proj) throw new TRPCError({ code: "NOT_FOUND", message: "Project not found." });
+      const used = await db.select({ number: schema.orders.number }).from(schema.orders).where(eq(schema.orders.projectId, input.projectId));
+      const number = nextOrderNumber(used.map((u) => u.number), input.kind === "purchase" ? "PO" : "WO", proj.jobNumber ?? null);
+      const [row] = await db
+        .insert(schema.orders)
+        .values({ projectId: input.projectId, estimateId: null, kind: input.kind, number, vendorId: input.vendorId ?? null, status: "draft", createdBy: c.userId })
+        .returning({ id: schema.orders.id });
+      await createAuditLog(db, schema, { entityType: "Order", entityId: row.id, action: AuditAction.CREATE, actorId: c.userId, changes: { after: { number, manual: true } } });
+      return { id: row.id, number };
+    }),
+
+  /** Add a line to a draft order by hand. Budget is 0 (it was not on the proposal); projected is the expected cost. */
+  addLine: protectedProcedure
+    .input(z.object({ orderId: z.string().uuid(), description: z.string().min(1).max(300), projectedCost: z.number().min(0).max(1e9) }))
+    .mutation(async ({ ctx, input }) => {
+      const c = need(ctx);
+      await can(c, "update");
+      const { db, schema } = c.tenant;
+      const order = await loadOrder(c, input.orderId);
+      mustBeDraft(order.status);
+      const existing = await db.select({ id: schema.orderLines.id }).from(schema.orderLines).where(eq(schema.orderLines.orderId, order.id));
+      const category = order.kind === "purchase" ? "COGS: Materials & Supplies" : "COGS: Subcontract Labor";
+      const [row] = await db
+        .insert(schema.orderLines)
+        .values({
+          orderId: order.id,
+          sourceLineId: null,
+          description: input.description.trim(),
+          category,
+          budgetCost: "0",
+          projectedCost: String(Math.round(input.projectedCost * 100) / 100),
+          sortOrder: existing.length,
+        })
+        .returning({ id: schema.orderLines.id });
+      await db.update(schema.orders).set({ updatedAt: new Date() }).where(eq(schema.orders.id, order.id));
+      return { id: row.id };
+    }),
+
+  /** Remove a line that was added by hand from a draft order. Lines from the proposal stay. */
+  removeLine: protectedProcedure.input(z.object({ lineId: z.string().uuid() })).mutation(async ({ ctx, input }) => {
+    const c = need(ctx);
+    await can(c, "update");
+    const { db, schema } = c.tenant;
+    const [line] = await db.select().from(schema.orderLines).where(eq(schema.orderLines.id, input.lineId));
+    if (!line) throw new TRPCError({ code: "NOT_FOUND", message: "Line not found." });
+    const order = await loadOrder(c, line.orderId);
+    mustBeDraft(order.status);
+    if (line.sourceLineId !== null) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "Lines from the proposal cannot be deleted. Move them to another order instead." });
+    }
+    await db.delete(schema.orderLines).where(eq(schema.orderLines.id, line.id));
+    return { id: line.id };
+  }),
+
+  /** Record a payment against an issued order. Cannot exceed the order's projected cost. */
+  recordPayment: protectedProcedure
+    .input(z.object({ orderId: z.string().uuid(), amount: z.number().gt(0).max(1e9), paidAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), reference: z.string().max(200).nullable().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const c = need(ctx);
+      await can(c, "update");
+      const { db, schema } = c.tenant;
+      const order = await loadOrder(c, input.orderId);
+      if (!countsAsIssued(order.status)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Issue the order before recording payments." });
+      }
+      const amount = Math.round(input.amount * 100) / 100;
+      await db.transaction(async (tx) => {
+        const lines = await tx.select({ p: schema.orderLines.projectedCost }).from(schema.orderLines).where(eq(schema.orderLines.orderId, order.id));
+        const projected = lines.reduce((a, l) => a + Number(l.p), 0);
+        const prior = await tx.select({ a: schema.orderPayments.amount }).from(schema.orderPayments).where(eq(schema.orderPayments.orderId, order.id));
+        const paid = prior.reduce((a, r) => a + Number(r.a), 0);
+        if (paid + amount > projected + 0.005) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: `That is more than the ${projected.toFixed(2)} order total. Only ${(projected - paid).toFixed(2)} is outstanding.` });
+        }
+        await tx.insert(schema.orderPayments).values({ orderId: order.id, amount: String(amount), paidAt: input.paidAt, reference: input.reference ?? null, createdBy: c.userId });
+        await tx.update(schema.orders).set({ status: statusAfterPayments(paid + amount, projected), updatedAt: new Date() }).where(eq(schema.orders.id, order.id));
+      });
+      await createAuditLog(db, schema, { entityType: "Order", entityId: order.id, action: AuditAction.UPDATE, actorId: c.userId, changes: { after: { payment: amount, paidAt: input.paidAt } } });
+      return { id: order.id };
+    }),
+
+  /** Delete a payment entered by mistake. */
+  deletePayment: protectedProcedure.input(z.object({ paymentId: z.string().uuid() })).mutation(async ({ ctx, input }) => {
+    const c = need(ctx);
+    await can(c, "update");
+    const { db, schema } = c.tenant;
+    const [pay] = await db.select().from(schema.orderPayments).where(eq(schema.orderPayments.id, input.paymentId));
+    if (!pay) throw new TRPCError({ code: "NOT_FOUND", message: "Payment not found." });
+    const order = await loadOrder(c, pay.orderId);
+    await db.transaction(async (tx) => {
+      await tx.delete(schema.orderPayments).where(eq(schema.orderPayments.id, pay.id));
+      if (countsAsIssued(order.status)) {
+        const lines = await tx.select({ p: schema.orderLines.projectedCost }).from(schema.orderLines).where(eq(schema.orderLines.orderId, order.id));
+        const projected = lines.reduce((a, l) => a + Number(l.p), 0);
+        const rest = await tx.select({ a: schema.orderPayments.amount }).from(schema.orderPayments).where(eq(schema.orderPayments.orderId, order.id));
+        const paid = rest.reduce((a, r) => a + Number(r.a), 0);
+        await tx.update(schema.orders).set({ status: statusAfterPayments(paid, projected), updatedAt: new Date() }).where(eq(schema.orders.id, order.id));
+      }
+    });
+    await createAuditLog(db, schema, { entityType: "Order", entityId: order.id, action: AuditAction.UPDATE, actorId: c.userId, changes: { before: { payment: Number(pay.amount) } } });
+    return { id: order.id };
+  }),
+
+  /** Purchase orders or work orders for a project, with cost, paid and outstanding (dollars). */
+  listForProject: protectedProcedure
+    .input(z.object({ projectId: z.string().uuid(), kind: z.enum(["purchase", "work"]) }))
+    .query(async ({ ctx, input }) => {
+      const c = need(ctx);
+      await can(c, "read");
+      const { db, schema } = c.tenant;
+      const orders = await db
+        .select()
+        .from(schema.orders)
+        .where(and(eq(schema.orders.projectId, input.projectId), eq(schema.orders.kind, input.kind)))
+        .orderBy(asc(schema.orders.number));
+      if (orders.length === 0) return { rows: [], hasProposal: false };
+      const ids = orders.map((o) => o.id);
+      const lines = await db.select().from(schema.orderLines).where(inArray(schema.orderLines.orderId, ids)).orderBy(asc(schema.orderLines.sortOrder));
+      const pays = await db.select().from(schema.orderPayments).where(inArray(schema.orderPayments.orderId, ids));
+      const vendors = await vendorInfo(c, [...new Set(orders.map((o) => o.vendorId).filter((v): v is string => !!v))]);
+      const rows = orders.map((o) => {
+        const ol = lines.filter((l) => l.orderId === o.id);
+        const cost = ol.reduce((a, l) => a + Number(l.projectedCost), 0);
+        const paid = pays.filter((p) => p.orderId === o.id).reduce((a, p) => a + Number(p.amount), 0);
+        const issued = countsAsIssued(o.status);
+        return {
+          id: o.id,
+          number: o.number,
+          status: o.status,
+          revision: o.revision,
+          vendorName: o.vendorId ? (vendors.get(o.vendorId)?.name ?? "Unknown vendor") : null,
+          lineSummary: ol.map((l) => l.description.split(": ").pop() as string).join(", "),
+          fromProposal: o.estimateId !== null,
+          cost,
+          paid,
+          outstanding: issued ? Math.max(cost - paid, 0) : null,
+        };
+      });
+      return { rows, hasProposal: orders.some((o) => o.estimateId !== null) };
+    }),
+
+  /**
+   * Numbers for the project header and Overview: cost budget, projected cost, paid, outstanding,
+   * order counts, and the cash-out rows. Billed and collected stay 0 until invoices exist.
+   */
+  projectSummary: protectedProcedure.input(z.object({ projectId: z.string().uuid() })).query(async ({ ctx, input }) => {
+    const c = need(ctx);
+    await can(c, "read");
+    const { db, schema } = c.tenant;
+    const orders = await db.select().from(schema.orders).where(eq(schema.orders.projectId, input.projectId)).orderBy(asc(schema.orders.kind), asc(schema.orders.number));
+    const ids = orders.map((o) => o.id);
+    const lines = ids.length ? await db.select().from(schema.orderLines).where(inArray(schema.orderLines.orderId, ids)) : [];
+    const pays = ids.length ? await db.select().from(schema.orderPayments).where(inArray(schema.orderPayments.orderId, ids)) : [];
+    const vendors = await vendorInfo(c, [...new Set(orders.map((o) => o.vendorId).filter((v): v is string => !!v))]);
+    const rows = orders.map((o) => {
+      const ol = lines.filter((l) => l.orderId === o.id);
+      const projected = ol.reduce((a, l) => a + Number(l.projectedCost), 0);
+      const budget = ol.reduce((a, l) => a + Number(l.budgetCost), 0);
+      const paid = pays.filter((p) => p.orderId === o.id).reduce((a, p) => a + Number(p.amount), 0);
+      const issued = countsAsIssued(o.status);
+      return {
+        id: o.id,
+        kind: o.kind as "purchase" | "work",
+        number: o.number,
+        status: o.status,
+        vendorName: o.vendorId ? (vendors.get(o.vendorId)?.name ?? "Unknown vendor") : null,
+        budget,
+        projected,
+        paid,
+        outstanding: issued ? Math.max(projected - paid, 0) : 0,
+        issued,
+      };
+    });
+    const sum = (f: (r: (typeof rows)[number]) => number) => rows.reduce((a, r) => a + f(r), 0);
+    return {
+      costBudget: sum((r) => r.budget),
+      projectedCost: sum((r) => r.projected),
+      paid: sum((r) => r.paid),
+      outstanding: sum((r) => r.outstanding),
+      draftTotal: sum((r) => (r.issued ? 0 : r.projected)),
+      purchaseCount: rows.filter((r) => r.kind === "purchase").length,
+      workCount: rows.filter((r) => r.kind === "work").length,
+      rows,
+    };
   }),
 });

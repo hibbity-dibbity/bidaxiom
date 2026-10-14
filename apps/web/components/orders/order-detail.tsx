@@ -11,6 +11,12 @@ import { BlurNumber, BlurText, InsuranceWarning, OrderStatusBadge, dollars, fiel
 import { revisionLabel } from "@construction/shared";
 import { ChevronRight } from "lucide-react";
 import { format } from "date-fns";
+import { Trash2 } from "lucide-react";
+
+function today() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 const TERMS = ["Due on receipt", "Net 15", "Net 30", "Net 45"];
 
@@ -28,14 +34,44 @@ export function OrderDetail({ projectSlug, orderId }: { projectSlug: string; ord
   const { data, isLoading } = trpc.order.get.useQuery({ orderId });
   const { data: vendors } = trpc.order.vendorOptions.useQuery();
   const [reason, setReason] = React.useState("");
+  const [newLine, setNewLine] = React.useState({ description: "", cost: "" });
+  const [pay, setPay] = React.useState({ amount: "", date: today(), reference: "" });
 
   const refresh = () => {
     utils.order.get.invalidate({ orderId });
     utils.order.listForEstimate.invalidate();
+    utils.order.projectSummary.invalidate();
+    utils.order.listForProject.invalidate();
   };
   const fail = (title: string) => (e: { message: string }) => toast.error(title, { description: e.message });
   const update = trpc.order.update.useMutation({ onSuccess: refresh, onError: fail("Could not save") });
   const updateLine = trpc.order.updateLine.useMutation({ onSuccess: refresh, onError: fail("Could not save the line") });
+  const addLine = trpc.order.addLine.useMutation({
+    onSuccess: () => {
+      setNewLine({ description: "", cost: "" });
+      refresh();
+    },
+    onError: fail("Could not add the line"),
+  });
+  const removeLine = trpc.order.removeLine.useMutation({ onSuccess: refresh, onError: fail("Could not remove the line") });
+  const recordPayment = trpc.order.recordPayment.useMutation({
+    onSuccess: () => {
+      toast.success("Payment recorded");
+      setPay({ amount: "", date: today(), reference: "" });
+      refresh();
+      utils.order.projectSummary.invalidate();
+      utils.order.listForProject.invalidate();
+    },
+    onError: fail("Could not record the payment"),
+  });
+  const deletePayment = trpc.order.deletePayment.useMutation({
+    onSuccess: () => {
+      refresh();
+      utils.order.projectSummary.invalidate();
+      utils.order.listForProject.invalidate();
+    },
+    onError: fail("Could not delete the payment"),
+  });
   const issue = trpc.order.issue.useMutation({
     onSuccess: () => {
       toast.success("Order issued");
@@ -59,14 +95,17 @@ export function OrderDetail({ projectSlug, orderId }: { projectSlug: string; ord
   const noun = isWork ? "Work order" : "Purchase order";
   const vendorName = data.vendor?.name ?? (isWork ? "subcontractor not assigned" : "vendor not assigned");
   const pickable = vendors ?? [];
-  const reviewHref = data.estimate ? `/projects/${projectSlug}/estimates/${data.estimate.slug}/orders` : `/projects/${projectSlug}/estimates`;
+  const listHref = `/projects/${projectSlug}/${isWork ? "work-orders" : "purchase-orders"}`;
+  const reviewHref = data.estimate ? `/projects/${projectSlug}/estimates/${data.estimate.slug}/orders` : listHref;
+  const issuedLike = o.status !== "draft";
+  const outstanding = Math.max(data.projectedTotal - data.paid, 0);
   const save = (patch: Record<string, unknown>) => update.mutate({ orderId, ...patch } as never);
 
   return (
     <div className="space-y-6">
       <nav className="flex items-center gap-1 text-sm text-muted-foreground">
         <Link href={reviewHref} className="hover:underline">
-          Review orders
+          {data.estimate ? "Review orders" : isWork ? "Work orders" : "Purchase orders"}
         </Link>
         <ChevronRight className="h-3.5 w-3.5" />
         <span>{o.number}</span>
@@ -81,7 +120,7 @@ export function OrderDetail({ projectSlug, orderId }: { projectSlug: string; ord
         actions={
           <>
             <Button asChild variant="outline">
-              <Link href={reviewHref}>Back to review</Link>
+              <Link href={reviewHref}>{data.estimate ? "Back to review" : "Back to list"}</Link>
             </Button>
             {locked ? (
               data.canRevise && (
@@ -132,8 +171,27 @@ export function OrderDetail({ projectSlug, orderId }: { projectSlug: string; ord
                 ) : (
                   <div className="text-xs text-muted-foreground">{l.category}</div>
                 )}
+                {l.manual && !locked && (
+                  <button type="button" aria-label={`Remove ${l.description}`} className="col-span-5 -mt-1 justify-self-end text-xs text-muted-foreground hover:text-destructive" onClick={() => removeLine.mutate({ lineId: l.id })}>
+                    <Trash2 className="mr-1 inline h-3 w-3" />Remove this line
+                  </button>
+                )}
               </div>
             ))}
+            {!locked && !data.fromProposal && (
+              <form
+                className="flex flex-wrap items-center gap-2 border-b px-3 py-2"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const cost = Number(newLine.cost);
+                  if (newLine.description.trim() && Number.isFinite(cost) && cost >= 0) addLine.mutate({ orderId, description: newLine.description, projectedCost: cost });
+                }}
+              >
+                <input aria-label="New line description" placeholder={isWork ? "Scope line" : "Item"} className={fieldCls + " max-w-xs"} value={newLine.description} onChange={(e) => setNewLine((n) => ({ ...n, description: e.target.value }))} />
+                <input aria-label="New line projected cost" type="number" step="0.01" min={0} placeholder="Projected cost" className={fieldCls + " w-36 text-right"} value={newLine.cost} onChange={(e) => setNewLine((n) => ({ ...n, cost: e.target.value }))} />
+                <Button type="submit" size="sm" variant="outline" disabled={addLine.isPending}>Add line</Button>
+              </form>
+            )}
             <div className="grid grid-cols-[1fr_110px_130px_110px_1.2fr] items-center gap-2 px-3 py-2 text-sm font-semibold">
               <span>Order total</span>
               <span className="text-right tabular-nums">{dollars(data.budgetTotal)}</span>
@@ -142,6 +200,49 @@ export function OrderDetail({ projectSlug, orderId }: { projectSlug: string; ord
               <span />
             </div>
           </section>
+
+          {issuedLike && (
+            <section className="space-y-2">
+              <div className="flex items-baseline justify-between">
+                <h2 className="text-sm font-semibold">Payments</h2>
+                <span className="text-sm text-muted-foreground">
+                  Paid {dollars(data.paid)} · Outstanding {dollars(outstanding)}
+                </span>
+              </div>
+              <ul className="divide-y rounded-md border bg-background text-sm">
+                {data.payments.length === 0 && <li className="px-3 py-2 text-muted-foreground">No payments recorded.</li>}
+                {data.payments.map((p) => (
+                  <li key={p.id} className="flex items-center justify-between gap-3 px-3 py-2">
+                    <span>
+                      {format(new Date(`${p.paidAt}T12:00:00`), "MMM d, yyyy")}
+                      {p.reference && <span className="ml-2 text-muted-foreground">{p.reference}</span>}
+                    </span>
+                    <span className="flex items-center gap-3">
+                      <span className="tabular-nums">{dollars(p.amount)}</span>
+                      <button type="button" aria-label="Delete payment" className="text-muted-foreground hover:text-destructive" onClick={() => deletePayment.mutate({ paymentId: p.id })}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {o.status !== "paid" && !(o.status === "draft") && (
+                <form
+                  className="flex flex-wrap items-center gap-2"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const amount = Number(pay.amount);
+                    if (Number.isFinite(amount) && amount > 0) recordPayment.mutate({ orderId, amount, paidAt: pay.date, reference: pay.reference.trim() || null });
+                  }}
+                >
+                  <input aria-label="Payment amount" type="number" step="0.01" min={0} placeholder="Amount" className={fieldCls + " w-36 text-right"} value={pay.amount} onChange={(e) => setPay((p) => ({ ...p, amount: e.target.value }))} />
+                  <input aria-label="Payment date" type="date" className={fieldCls + " w-40"} value={pay.date} onChange={(e) => setPay((p) => ({ ...p, date: e.target.value }))} />
+                  <input aria-label="Payment reference" placeholder="Check or ACH reference" className={fieldCls + " max-w-xs"} value={pay.reference} onChange={(e) => setPay((p) => ({ ...p, reference: e.target.value }))} />
+                  <Button type="submit" size="sm" disabled={recordPayment.isPending}>Record payment</Button>
+                </form>
+              )}
+            </section>
+          )}
 
           <section className="space-y-2">
             <h2 className="text-sm font-semibold">{isWork ? "Scope notes and assumptions" : "Order notes"}</h2>

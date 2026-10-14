@@ -831,6 +831,10 @@ export const proposalRouter = router({
         contingency,
         profit,
         optionsTotal: c.result.options.reduce((a, o) => a + o.price + o.tax, 0),
+        /** cents; milestone amounts follow the contract value */
+        schedule: computeSchedule(contractValue, c.milestones).map((r) => ({ ...r, name: c.milestones.find((m) => m.id === r.id)?.name ?? "" })),
+        acceptedOptionNames: accepted ? c.lines.filter((l) => !l.parentId && l.isOptional && acceptedIds.includes(l.id)).map((l) => l.name) : [],
+        declinedOptionNames: accepted ? c.lines.filter((l) => !l.parentId && l.isOptional && !acceptedIds.includes(l.id)).map((l) => l.name) : [],
       };
     }),
 

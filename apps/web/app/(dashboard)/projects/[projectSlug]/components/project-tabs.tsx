@@ -16,18 +16,20 @@ interface ProjectTabsProps {
     documentsCount: number;
     invoicesCount: number;
   } | null;
+  orderCounts?: { purchase: number; work: number } | null;
 }
 
 const ALL_SECTIONS = [
   { name: "Overview",      href: "" },
   { name: "Documents",     href: "/documents" },
   { name: "Proposals",     href: "/estimates" },
+  { name: "Purchase Orders", href: "/purchase-orders" },
+  { name: "Work Orders",   href: "/work-orders" },
   { name: "Change Orders", href: "/change-orders" },
   { name: "Invoices",      href: "/invoices" },
-  { name: "Expenses",      href: "/expenses" },
 ] as const;
 
-export function ProjectTabs({ projectSlug, projectMode, lifecyclePhase, headerStats }: ProjectTabsProps) {
+export function ProjectTabs({ projectSlug, projectMode, lifecyclePhase, headerStats, orderCounts }: ProjectTabsProps) {
   const pathname = usePathname();
   const utils = trpc.useUtils();
 
@@ -117,10 +119,13 @@ export function ProjectTabs({ projectSlug, projectMode, lifecyclePhase, headerSt
     "/invoices": prefetchInvoices,
     "/rfqs": prefetchRFQs,
     "/estimates": prefetchEstimates,
-    "/expenses": () => {},
+    "/purchase-orders": () => {},
+    "/work-orders": () => {},
   };
 
   const getBadgeCount = (href: string): number => {
+    if (href === "/purchase-orders") return orderCounts?.purchase ?? 0;
+    if (href === "/work-orders") return orderCounts?.work ?? 0;
     if (!headerStats) return 0;
     switch (href) {
       case "/change-orders": return headerStats.changeOrdersPendingCount;

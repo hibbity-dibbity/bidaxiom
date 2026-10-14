@@ -37,6 +37,28 @@ export default function ProjectLayout({ children, params }: ProjectLayoutProps) 
     { enabled: !!project?.id }
   );
 
+  // Header stat bar: contract value from the active proposal, cost and cash out from the orders.
+  // Billed and collected stay 0 until invoices are built.
+  const { data: activeProposal } = trpc.proposal.activeForProject.useQuery(
+    { projectId: project?.id ?? "" },
+    { enabled: !!project?.id }
+  );
+  const { data: orderSummary } = trpc.order.projectSummary.useQuery(
+    { projectId: project?.id ?? "" },
+    { enabled: !!project?.id }
+  );
+  const billed = 0;
+  const collected = 0;
+  const stats = {
+    contractValue: activeProposal ? activeProposal.contractValue / 100 : 0,
+    billed,
+    collected,
+    costBudget: orderSummary?.costBudget ?? 0,
+    paid: orderSummary?.paid ?? 0,
+    outstanding: orderSummary?.outstanding ?? 0,
+    cashPosition: collected - (orderSummary?.paid ?? 0),
+  };
+
   const isAdmin = orgRole === "org:admin";
 
   // Determine if the current user can manually transition lifecycle phases.
@@ -111,7 +133,7 @@ export default function ProjectLayout({ children, params }: ProjectLayoutProps) 
             restoredAt: project.restoredAt ?? null,
             customerBudget: project.customerBudget ?? null,
           }}
-          headerStats={headerStats ?? null}
+          stats={stats}
           canTransition={canTransition}
           canDelete={isAdmin}
         />
@@ -120,6 +142,7 @@ export default function ProjectLayout({ children, params }: ProjectLayoutProps) 
           projectMode={project.projectMode ?? "gc_advanced"}
           lifecyclePhase={project.lifecyclePhase ?? "opportunity"}
           headerStats={headerStats ?? null}
+          orderCounts={orderSummary ? { purchase: orderSummary.purchaseCount, work: orderSummary.workCount } : null}
         />
       </div>
       {/* Scrollable content area with restored top padding */}

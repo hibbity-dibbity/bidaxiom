@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { canRevise, insuranceStatus, isEditable, issueBlockers, moveBlockers, nextOrderNumber } from "./orderRules";
+import { canRevise, countsAsIssued, statusAfterPayments, insuranceStatus, isEditable, issueBlockers, moveBlockers, nextOrderNumber } from "./orderRules";
 
 test("issue needs a draft, a vendor and lines", () => {
   assert.deepEqual(issueBlockers({ status: "draft", vendorId: "v", lineCount: 2 }), []);
@@ -11,7 +11,7 @@ test("issue needs a draft, a vendor and lines", () => {
 
 test("only drafts are editable, only issued can be revised", () => {
   assert.ok(isEditable("draft") && !isEditable("issued"));
-  assert.ok(canRevise("issued") && !canRevise("draft") && !canRevise("paid"));
+  assert.ok(canRevise("issued") && canRevise("partially_paid") && !canRevise("draft") && !canRevise("paid"));
 });
 
 test("lines move only between drafts of one kind", () => {
@@ -35,4 +35,12 @@ test("insurance status", () => {
   assert.equal(insuranceStatus("2026-10-01T00:00:00Z", now), "expired");
   assert.equal(insuranceStatus("2026-10-30T00:00:00Z", now), "expiring");
   assert.equal(insuranceStatus("2027-03-01T00:00:00Z", now), "ok");
+});
+
+test("status follows payments and drafts are not outstanding", () => {
+  assert.equal(statusAfterPayments(0, 100), "issued");
+  assert.equal(statusAfterPayments(40, 100), "partially_paid");
+  assert.equal(statusAfterPayments(100, 100), "paid");
+  assert.equal(statusAfterPayments(100.004, 100), "paid");
+  assert.ok(countsAsIssued("partially_paid") && !countsAsIssued("draft"));
 });

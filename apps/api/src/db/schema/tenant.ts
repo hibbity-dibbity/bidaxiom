@@ -1218,7 +1218,7 @@ export function createTenantSchema(schemaName: string) {
   const orders = schema.table("orders", {
     id: uuid("id").primaryKey().defaultRandom(),
     projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
-    estimateId: uuid("estimate_id").notNull().references(() => estimates.id, { onDelete: "cascade" }),
+    estimateId: uuid("estimate_id").references(() => estimates.id, { onDelete: "cascade" }), // null for orders added by hand
     kind: text("kind").notNull(), // purchase, work
     number: text("number").notNull(), // PO<job number>-01, WO<job number>-01
     vendorId: uuid("vendor_id"), // subcontractor_directory.id
@@ -1248,6 +1248,17 @@ export function createTenantSchema(schemaName: string) {
     revision: integer("revision").notNull(),
     snapshot: jsonb("snapshot").notNull().$type<Record<string, unknown>>(),
     reason: text("reason"),
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /** Payments recorded against an issued order. Paid and outstanding come from here. */
+  const orderPayments = schema.table("order_payments", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orderId: uuid("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
+    amount: numeric("amount", { precision: 15, scale: 2 }).notNull(),
+    paidAt: text("paid_at").notNull(), // YYYY-MM-DD
+    reference: text("reference"), // check number, ACH id
     createdBy: text("created_by").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   });
@@ -1472,6 +1483,7 @@ export function createTenantSchema(schemaName: string) {
     orders,
     orderLines,
     orderRevisions,
+    orderPayments,
     costCodeTemplates,
     templateLineItems,
     laborRateTemplates,

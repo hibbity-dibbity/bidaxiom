@@ -40,16 +40,14 @@ interface ProjectHeaderProps {
     restoredAt?: string | null;
     customerBudget?: string | null;
   };
-  headerStats: {
+  stats: {
     contractValue: number;
-    billedToDate: number;
-    paidToDate: number;
-    balanceToComplete: number;
-    retainageHeld: number;
-    projectedProfit: number | null;
-    projectedMargin: number | null;
-    customerBudgetAmount: number | null;
-    customerBudgetDelta: number | null;
+    billed: number;
+    collected: number;
+    costBudget: number;
+    paid: number;
+    outstanding: number;
+    cashPosition: number;
   } | null;
   canTransition: boolean;
   canDelete?: boolean;
@@ -63,33 +61,6 @@ function formatAddress(
 ): string | null {
   const parts = [street1, [city, state].filter(Boolean).join(", "), zip].filter(Boolean);
   return parts.length > 0 ? parts.join(" ") : null;
-}
-
-function formatCurrencyDisplay(amount: number): { text: string; negative: boolean } {
-  const negative = amount < 0;
-  const abs = Math.abs(amount);
-  const formatted = new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(abs);
-  return { text: negative ? `(${formatted})` : formatted, negative };
-}
-
-function formatDelta(delta: number | null): { text: string; over: boolean } | null {
-  if (delta === null) return null;
-  const abs = Math.abs(delta);
-  const formatted = new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(abs);
-  // delta = contractValue - customerBudget
-  // positive delta means contract > customer budget = "over"
-  // negative delta means contract < customer budget = "under"
-  return { text: `${formatted} ${delta > 0 ? "over" : "under"}`, over: delta > 0 };
 }
 
 function DatePickerField({
@@ -149,7 +120,7 @@ function DatePickerField({
   );
 }
 
-export function ProjectHeader({ project, headerStats, canTransition, canDelete }: ProjectHeaderProps) {
+export function ProjectHeader({ project, stats, canTransition, canDelete }: ProjectHeaderProps) {
   const utils = trpc.useUtils();
 
   const setModeMutation = trpc.project.setMode.useMutation({
@@ -294,88 +265,25 @@ export function ProjectHeader({ project, headerStats, canTransition, canDelete }
         </div>
       )}
 
-      {/* Row 3: Financial stat bar */}
+      {/* Row 3: Financial stat bar (contract, cash in, cost, cash out) */}
       <div className="flex items-center gap-6 pb-3 overflow-x-auto">
-        {/* Contract Value */}
-        <div className="flex flex-col min-w-0 shrink-0">
-          <span className="text-xs text-muted-foreground leading-tight whitespace-nowrap">Contract Value</span>
-          <CurrencyDisplay amount={headerStats?.contractValue ?? 0} className="text-sm font-semibold" />
-        </div>
-
-        {/* Profit — uses formatCurrencyDisplay (NOT CurrencyDisplay) for accounting parentheses */}
-        <div className="flex flex-col min-w-0 shrink-0">
-          <span className="text-xs text-muted-foreground leading-tight whitespace-nowrap">Profit</span>
-          {headerStats?.projectedProfit !== null && headerStats?.projectedProfit !== undefined ? (
-            (() => {
-              const { text, negative } = formatCurrencyDisplay(headerStats.projectedProfit);
-              return (
-                <span className={`text-sm font-semibold ${negative ? "text-destructive" : ""}`}>
-                  {text}
-                </span>
-              );
-            })()
-          ) : (
-            <span className="text-sm font-semibold">—</span>
-          )}
-          <span className="text-xs text-muted-foreground">Actual: —</span>
-        </div>
-
-        {/* Margin */}
-        <div className="flex flex-col min-w-0 shrink-0">
-          <span className="text-xs text-muted-foreground leading-tight whitespace-nowrap">Margin</span>
-          {headerStats?.projectedMargin !== null && headerStats?.projectedMargin !== undefined ? (
-            <span className="text-sm font-semibold">
-              {(headerStats.projectedMargin * 100).toFixed(1)}%
-            </span>
-          ) : (
-            <span className="text-sm font-semibold">—</span>
-          )}
-          <span className="text-xs text-muted-foreground">Actual: —</span>
-        </div>
-
-        {/* Billed to Date */}
-        <div className="flex flex-col min-w-0 shrink-0">
-          <span className="text-xs text-muted-foreground leading-tight whitespace-nowrap">Billed to Date</span>
-          <CurrencyDisplay amount={headerStats?.billedToDate ?? 0} className="text-sm font-semibold" />
-        </div>
-
-        {/* Paid to Date */}
-        <div className="flex flex-col min-w-0 shrink-0">
-          <span className="text-xs text-muted-foreground leading-tight whitespace-nowrap">Paid to Date</span>
-          <CurrencyDisplay amount={headerStats?.paidToDate ?? 0} className="text-sm font-semibold" />
-        </div>
-
-        {/* Balance to Complete */}
-        <div className="flex flex-col min-w-0 shrink-0">
-          <span className="text-xs text-muted-foreground leading-tight whitespace-nowrap">Balance to Complete</span>
-          <CurrencyDisplay amount={headerStats?.balanceToComplete ?? 0} className="text-sm font-semibold" />
-        </div>
-
-        {/* Retainage Held */}
-        <div className="flex flex-col min-w-0 shrink-0">
-          <span className="text-xs text-muted-foreground leading-tight whitespace-nowrap">Retainage Held</span>
-          <CurrencyDisplay amount={headerStats?.retainageHeld ?? 0} className="text-sm font-semibold" />
-        </div>
-
-        {/* Customer Budget — placed at end */}
-        <div className="flex flex-col min-w-0 shrink-0">
-          <span className="text-xs text-muted-foreground leading-tight whitespace-nowrap">Customer Budget</span>
-          {headerStats?.customerBudgetAmount !== null && headerStats?.customerBudgetAmount !== undefined ? (
-            <>
-              <CurrencyDisplay amount={headerStats.customerBudgetAmount} className="text-sm font-semibold" />
-              {(() => {
-                const delta = formatDelta(headerStats.customerBudgetDelta ?? null);
-                return delta ? (
-                  <span className={`text-xs ${delta.over ? "text-destructive" : "text-muted-foreground"}`}>
-                    {delta.text}
-                  </span>
-                ) : null;
-              })()}
-            </>
-          ) : (
-            <span className="text-sm font-semibold">—</span>
-          )}
-        </div>
+        {[
+          ["Contract Value", stats?.contractValue ?? 0, false],
+          ["Billed", stats?.billed ?? 0, false],
+          ["Collected", stats?.collected ?? 0, false],
+          ["Cost Budget", stats?.costBudget ?? 0, false],
+          ["Paid", stats?.paid ?? 0, false],
+          ["Outstanding to Pay", stats?.outstanding ?? 0, false],
+          ["Cash Position", stats?.cashPosition ?? 0, true],
+        ].map(([label, amount, signed]) => (
+          <div key={label as string} className="flex flex-col min-w-0 shrink-0">
+            <span className="text-xs text-muted-foreground leading-tight whitespace-nowrap">{label as string}</span>
+            <CurrencyDisplay
+              amount={amount as number}
+              className={`text-sm font-semibold ${signed && (amount as number) < 0 ? "text-destructive" : ""}`}
+            />
+          </div>
+        ))}
       </div>
     </div>
   );
