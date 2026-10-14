@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { phoneSchema, addressSchema } from "../schemas/common";
+import { PAYMENT_TERMS } from "./bidding";
 
 /**
  * Customer creation schema
@@ -16,6 +17,8 @@ export const createCustomerSchema = z.object({
   city: z.string().max(100).optional(),
   state: z.string().length(2).optional(),
   zip: z.string().max(10).optional(),
+  /** this customer's default payment terms; empty uses the company default */
+  paymentTerms: z.enum(PAYMENT_TERMS).nullable().optional(),
 });
 
 /**
@@ -33,6 +36,7 @@ export const updateCustomerSchema = z.object({
   city: z.string().max(100).nullable().optional(),
   state: z.string().length(2).nullable().optional(),
   zip: z.string().max(10).nullable().optional(),
+  paymentTerms: z.enum(PAYMENT_TERMS).nullable().optional(),
 });
 
 /**
@@ -50,6 +54,7 @@ export type Customer = {
   city: string | null;
   state: string | null;
   zip: string | null;
+  paymentTerms?: string | null;
   slug: string | null;
   createdBy: string;
   // Dates arrive as ISO strings over tRPC (JSON).

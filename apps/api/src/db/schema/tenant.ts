@@ -142,6 +142,7 @@ export function createTenantSchema(schemaName: string) {
     city: text("city"),
     state: text("state"), // 2-char US state abbreviation
     zip: text("zip"),
+    paymentTerms: text("payment_terms"), // default terms for this customer's proposals; null uses the company default
     slug: text("slug").unique(), // URL-safe slug for routing
     createdBy: text("created_by").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -1141,7 +1142,7 @@ export function createTenantSchema(schemaName: string) {
     linkedBidId: uuid("linked_bid_id"),
     // Proposal builder fields (phase 2). A proposal is an estimate.
     salesTaxPercent: numeric("sales_tax_percent", { precision: 5, scale: 2 }).notNull().default("0"),
-    paymentTerms: text("payment_terms").notNull().default("Net 30"),
+    paymentTerms: text("payment_terms").notNull().default("Due on receipt"),
     validDays: integer("valid_days").notNull().default(30),
     termsVersionId: uuid("terms_version_id"), // master terms version pinned when the proposal is sent
     revision: integer("revision").notNull().default(0), // 0 for the original, 1+ for revisions of a sent proposal

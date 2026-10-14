@@ -60,5 +60,6 @@ export {
   subcontractorStatusEnum,
   vendorKindEnum,
   PAYMENT_TERMS,
+  DEFAULT_PAYMENT_TERMS,
   type VendorKind,
 } from "../types/bidding";

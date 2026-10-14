@@ -35,6 +35,9 @@ export type VendorKind = z.infer<typeof vendorKindEnum>;
 /** Payment terms offered in the directory */
 export const PAYMENT_TERMS = ["Due on receipt", "Net 15", "Net 30", "Net 45", "Net 60"] as const;
 
+/** Terms a new proposal gets when its customer has none of their own. */
+export const DEFAULT_PAYMENT_TERMS = "Due on receipt" as const;
+
 /** Terms, credit and compliance fields shared by create and update */
 const vendorExtraFields = {
   kind: vendorKindEnum,

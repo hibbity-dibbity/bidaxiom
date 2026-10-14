@@ -65,6 +65,7 @@ export const customerRouter = router({
             city: schema.customers.city,
             state: schema.customers.state,
             zip: schema.customers.zip,
+            paymentTerms: schema.customers.paymentTerms,
             slug: schema.customers.slug,
             createdBy: schema.customers.createdBy,
             createdAt: schema.customers.createdAt,
@@ -206,6 +207,7 @@ export const customerRouter = router({
           city: input.city || null,
           state: input.state || null,
           zip: input.zip || null,
+          paymentTerms: input.paymentTerms || null,
           createdBy: userId,
         })
         .returning();
@@ -279,6 +281,7 @@ export const customerRouter = router({
       if (input.city !== undefined) updateValues.city = input.city || null;
       if (input.state !== undefined) updateValues.state = input.state || null;
       if (input.zip !== undefined) updateValues.zip = input.zip || null;
+      if (input.paymentTerms !== undefined) updateValues.paymentTerms = input.paymentTerms || null;
 
       // Regenerate slug if name changed
       if (input.companyName !== undefined || input.contactName !== undefined) {

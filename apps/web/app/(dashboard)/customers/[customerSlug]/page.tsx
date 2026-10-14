@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/form";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { AddressInput } from "@/components/ui/address-input";
+import { PaymentTermsField } from "@/components/customers/payment-terms-field";
 import { ChevronRight, Building2, User, Mail, Phone, MapPin, Briefcase, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { customerFormSchema, toCustomerPayload, type CustomerFormData } from "@/lib/customer-form";
@@ -65,6 +66,7 @@ export default function CustomerDetailPage({
       contactName: "",
       phone: "",
       email: "",
+      paymentTerms: "",
       address: { street1: "", street2: "", city: "", state: "", zipCode: "" },
     },
   });
@@ -109,6 +111,7 @@ export default function CustomerDetailPage({
       contactName: customer.contactName,
       phone: customer.phone || "",
       email: customer.email || "",
+      paymentTerms: customer.paymentTerms || "",
       address: {
         street1: customer.street1 || "",
         street2: customer.street2 || "",
@@ -251,6 +254,15 @@ export default function CustomerDetailPage({
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Payment terms</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-sm">{customer.paymentTerms || "Company default"}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Projects</CardTitle>
             <Briefcase className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -347,6 +359,7 @@ export default function CustomerDetailPage({
                   </FormItem>
                 )} />
               </div>
+              <PaymentTermsField form={form} />
               <div className="space-y-2">
                 <h4 className="text-sm font-medium">Address</h4>
                 <AddressInput form={form} prefix="address" />

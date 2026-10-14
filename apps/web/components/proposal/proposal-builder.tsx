@@ -76,7 +76,7 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
   const [settings, setSettings] = React.useState<BuilderSettings>({
     name: "",
     salesTaxPercent: 0,
-    paymentTerms: "Net 30",
+    paymentTerms: "Due on receipt",
     validDays: 30,
   });
   const [blanket, setBlanket] = React.useState(25);

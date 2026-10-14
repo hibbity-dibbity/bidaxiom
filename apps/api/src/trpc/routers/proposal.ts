@@ -5,6 +5,7 @@ import { protectedProcedure } from "../procedures.js";
 import {
   AuditAction,
   PAYMENT_TERMS,
+  DEFAULT_PAYMENT_TERMS,
   computeProposal,
   applyAcceptance,
   computeSchedule,
@@ -791,11 +792,13 @@ export const proposalRouter = router({
         });
       } else {
         const [project] = await db
-          .select({ jobNumber: schema.projects.jobNumber })
+          .select({ jobNumber: schema.projects.jobNumber, customerId: schema.projects.customerId })
           .from(schema.projects)
           .where(eq(schema.projects.id, input.projectId))
           .limit(1);
         if (!project) throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+        // The customer's own terms, else the company default.
+        const [cust] = await db.select({ paymentTerms: schema.customers.paymentTerms }).from(schema.customers).where(eq(schema.customers.id, project.customerId)).limit(1);
         const identifier = project.jobNumber ? `est-${project.jobNumber}` : `est-${input.projectId.slice(0, 8)}`;
         const slug = await uniqueSlug(ctx.tenant, generateSlug(identifier, name));
         const [row] = await db
@@ -806,6 +809,7 @@ export const proposalRouter = router({
             status: "draft",
             projectType: "commercial",
             currentVersion: 1,
+            paymentTerms: cust?.paymentTerms ?? DEFAULT_PAYMENT_TERMS,
             revision: next,
             slug,
             createdBy: ctx.userId,

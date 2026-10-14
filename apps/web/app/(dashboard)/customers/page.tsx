@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/form";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { AddressInput } from "@/components/ui/address-input";
+import { PaymentTermsField } from "@/components/customers/payment-terms-field";
 import { Plus, ChevronRight, Building2, User, Mail, Phone, MapPin, ChevronsUpDown, ChevronUp, ChevronDown, Search, SearchX } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -67,6 +68,7 @@ export default function CustomersPage() {
       contactName: "",
       phone: "",
       email: "",
+      paymentTerms: "",
       address: {
         street1: "",
         street2: "",
@@ -115,6 +117,7 @@ export default function CustomersPage() {
       contactName: "",
       phone: "",
       email: "",
+      paymentTerms: "",
       address: {
         street1: "",
         street2: "",
@@ -134,6 +137,7 @@ export default function CustomersPage() {
       contactName: customer.contactName,
       phone: customer.phone || "",
       email: customer.email || "",
+      paymentTerms: customer.paymentTerms || "",
       address: {
         street1: customer.street1 || "",
         street2: customer.street2 || "",
@@ -431,6 +435,8 @@ export default function CustomersPage() {
                 />
               </div>
 
+              <PaymentTermsField form={form} />
+
               <div className="space-y-2">
                 <h4 className="text-sm font-medium">Address</h4>
                 <AddressInput form={form} prefix="address" />
@@ -517,6 +523,8 @@ export default function CustomersPage() {
                   )}
                 />
               </div>
+
+              <PaymentTermsField form={form} />
 
               <div className="space-y-2">
                 <h4 className="text-sm font-medium">Address</h4>

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createCustomerSchema, addressSchema } from "@construction/shared";
+import { createCustomerSchema, addressSchema, type PAYMENT_TERMS } from "@construction/shared";
 
 /**
  * Form-level customer schema. The API takes a flat address (street1..zip);
@@ -8,7 +8,7 @@ import { createCustomerSchema, addressSchema } from "@construction/shared";
  */
 export const customerFormSchema = createCustomerSchema
   .omit({ street1: true, street2: true, city: true, state: true, zip: true })
-  .extend({ address: addressSchema.optional() });
+  .extend({ address: addressSchema.optional(), paymentTerms: z.string().optional() });
 
 export type CustomerFormData = z.infer<typeof customerFormSchema>;
 
@@ -23,5 +23,6 @@ export function toCustomerPayload(data: CustomerFormData) {
     city: data.address?.city,
     state: data.address?.state,
     zip: data.address?.zipCode,
+    paymentTerms: (data.paymentTerms || null) as (typeof PAYMENT_TERMS)[number] | null,
   };
 }
