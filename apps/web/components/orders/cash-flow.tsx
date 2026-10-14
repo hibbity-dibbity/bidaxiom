@@ -9,6 +9,14 @@ import { dollars } from "./order-ui";
 export function CashFlow({ projectId, projectSlug }: { projectId: string; projectSlug: string }) {
   const { data: active } = trpc.proposal.activeForProject.useQuery({ projectId });
   const { data: summary } = trpc.order.projectSummary.useQuery({ projectId });
+  const { data: invoices } = trpc.invoice.list.useQuery({ projectId });
+  const statusFor = (milestoneId: string) => {
+    const inv = invoices?.rows.find((r) => r.milestoneId === milestoneId);
+    if (!inv || inv.status === "draft") return "Upcoming";
+    if (inv.status === "paid") return "Collected";
+    if (inv.overdue) return "Overdue";
+    return inv.status === "partially_paid" ? "Partly collected" : "Billed";
+  };
 
   if (!active && (!summary || summary.rows.length === 0)) return null;
   const issued = summary?.rows.filter((r) => r.issued) ?? [];
@@ -44,7 +52,7 @@ export function CashFlow({ projectId, projectSlug }: { projectId: string; projec
                     <td className="px-3 py-2">{m.name}</td>
                     <td className="px-3 py-2 text-right tabular-nums">{m.percent}</td>
                     <td className="px-3 py-2 text-right tabular-nums">{dollars(m.amount / 100)}</td>
-                    <td className="px-3 py-2 text-muted-foreground">Upcoming</td>
+                    <td className="px-3 py-2 text-muted-foreground">{statusFor(m.id)}</td>
                   </tr>
                 ))}
                 <tr className="bg-muted/50 font-semibold">
@@ -61,7 +69,7 @@ export function CashFlow({ projectId, projectSlug }: { projectId: string; projec
                 {active.declinedOptionNames.length > 0 && <>Declined: {active.declinedOptionNames.join(", ")}.</>}
               </p>
             )}
-            <p className="text-xs text-muted-foreground">Billed and collected will track here once invoices are added.</p>
+            <p className="text-xs text-muted-foreground">Status follows the invoices on the <Link href={`/projects/${projectSlug}/invoices`} className="underline underline-offset-2">Invoices</Link> tab.</p>
           </div>
         )}
 

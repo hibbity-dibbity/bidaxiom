@@ -17,6 +17,7 @@ interface ProjectTabsProps {
     invoicesCount: number;
   } | null;
   orderCounts?: { purchase: number; work: number } | null;
+  openInvoices?: number;
 }
 
 const ALL_SECTIONS = [
@@ -29,7 +30,7 @@ const ALL_SECTIONS = [
   { name: "Invoices",      href: "/invoices" },
 ] as const;
 
-export function ProjectTabs({ projectSlug, projectMode, lifecyclePhase, headerStats, orderCounts }: ProjectTabsProps) {
+export function ProjectTabs({ projectSlug, projectMode, lifecyclePhase, headerStats, orderCounts, openInvoices }: ProjectTabsProps) {
   const pathname = usePathname();
   const utils = trpc.useUtils();
 
@@ -126,6 +127,7 @@ export function ProjectTabs({ projectSlug, projectMode, lifecyclePhase, headerSt
   const getBadgeCount = (href: string): number => {
     if (href === "/purchase-orders") return orderCounts?.purchase ?? 0;
     if (href === "/work-orders") return orderCounts?.work ?? 0;
+    if (href === "/invoices") return openInvoices ?? 0;
     if (!headerStats) return 0;
     switch (href) {
       case "/change-orders": return headerStats.changeOrdersPendingCount;

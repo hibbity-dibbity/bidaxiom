@@ -38,7 +38,6 @@ export default function ProjectLayout({ children, params }: ProjectLayoutProps) 
   );
 
   // Header stat bar: contract value from the active proposal, cost and cash out from the orders.
-  // Billed and collected stay 0 until invoices are built.
   const { data: activeProposal } = trpc.proposal.activeForProject.useQuery(
     { projectId: project?.id ?? "" },
     { enabled: !!project?.id }
@@ -47,8 +46,12 @@ export default function ProjectLayout({ children, params }: ProjectLayoutProps) 
     { projectId: project?.id ?? "" },
     { enabled: !!project?.id }
   );
-  const billed = 0;
-  const collected = 0;
+  const { data: invoiceSummary } = trpc.invoice.list.useQuery(
+    { projectId: project?.id ?? "" },
+    { enabled: !!project?.id }
+  );
+  const billed = invoiceSummary?.billed ?? 0;
+  const collected = invoiceSummary?.collected ?? 0;
   const stats = {
     contractValue: activeProposal ? activeProposal.contractValue / 100 : 0,
     billed,
@@ -143,6 +146,7 @@ export default function ProjectLayout({ children, params }: ProjectLayoutProps) 
           lifecyclePhase={project.lifecyclePhase ?? "opportunity"}
           headerStats={headerStats ?? null}
           orderCounts={orderSummary ? { purchase: orderSummary.purchaseCount, work: orderSummary.workCount } : null}
+          openInvoices={invoiceSummary?.openCount ?? 0}
         />
       </div>
       {/* Scrollable content area with restored top padding */}

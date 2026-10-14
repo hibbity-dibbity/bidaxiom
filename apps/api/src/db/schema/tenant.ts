@@ -1292,6 +1292,45 @@ export function createTenantSchema(schemaName: string) {
   });
 
   /**
+   * Customer invoices. One draft per invoicing-schedule milestone is created when a proposal is
+   * accepted; sending is a separate manual action that sets sentOn and dueOn. Amounts are dollars.
+   */
+  const invoices = schema.table(
+    "invoices",
+    {
+      id: uuid("id").primaryKey().defaultRandom(),
+      projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+      estimateId: uuid("estimate_id").notNull().references(() => estimates.id, { onDelete: "cascade" }),
+      milestoneId: uuid("milestone_id"), // invoice_milestones.id it came from
+      number: text("number").notNull(), // INV<job number>-01
+      milestoneName: text("milestone_name").notNull(), // wording from the schedule builder, shown to the customer
+      percent: numeric("percent", { precision: 5, scale: 2 }).notNull(),
+      amount: numeric("amount", { precision: 15, scale: 2 }).notNull(),
+      status: text("status").notNull().default("draft"), // draft, sent, partially_paid, paid
+      sentOn: text("sent_on"), // YYYY-MM-DD
+      dueOn: text("due_on"), // YYYY-MM-DD
+      paymentTerms: text("payment_terms"),
+      notes: text("notes"),
+      sortOrder: integer("sort_order").notNull().default(0),
+      createdBy: text("created_by").notNull(),
+      createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+      updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+    },
+    (t) => ({ projectNumberUnique: unique().on(t.projectId, t.number) })
+  );
+
+  /** Money received from the customer against an invoice. */
+  const invoicePayments = schema.table("invoice_payments", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    invoiceId: uuid("invoice_id").notNull().references(() => invoices.id, { onDelete: "cascade" }),
+    amount: numeric("amount", { precision: 15, scale: 2 }).notNull(),
+    receivedAt: text("received_at").notNull(), // YYYY-MM-DD
+    reference: text("reference"), // check number, ACH id
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
    * Estimate line items
    * Individual cost line items within an estimate
    */
@@ -1484,6 +1523,8 @@ export function createTenantSchema(schemaName: string) {
     orderLines,
     orderRevisions,
     orderPayments,
+    invoices,
+    invoicePayments,
     costCodeTemplates,
     templateLineItems,
     laborRateTemplates,

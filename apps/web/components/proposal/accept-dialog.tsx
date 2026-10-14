@@ -50,7 +50,7 @@ export function AcceptDialog({ open, onOpenChange, estimateId, lines, computed, 
 
   const accept = trpc.proposal.accept.useMutation({
     onSuccess: (r) => {
-      toast.success(`Accepted. Contract value ${money(r.contractValue)}, ${r.orders.length} draft orders created. Review them on the Purchase Orders and Work Orders tabs.`);
+      toast.success(`Accepted. Contract value ${money(r.contractValue)}. ${r.orders.length} draft orders and the draft invoices were created.`);
       onOpenChange(false);
       onAccepted();
     },
@@ -72,7 +72,7 @@ export function AcceptDialog({ open, onOpenChange, estimateId, lines, computed, 
           <DialogTitle>Mark proposal accepted</DialogTitle>
           <DialogDescription>
             Choose the optional items the customer accepted. Accepting locks this proposal, sets the contract value and invoicing amounts,
-            and creates draft purchase orders and work orders.
+            and creates draft purchase orders, work orders and invoices (one per milestone, sent later by you).
           </DialogDescription>
         </DialogHeader>
 

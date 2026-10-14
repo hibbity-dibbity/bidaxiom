@@ -20,6 +20,7 @@ import { eq, asc, desc, and, isNull, inArray } from "drizzle-orm";
 import { generateSlug } from "../../utils/slug.js";
 import { ForbiddenError } from "@casl/ability";
 import { ensureCurrentTerms, readTermsVersion } from "./terms.js";
+import { createInvoiceDrafts } from "../../services/invoiceDrafts.js";
 
 const costLineTypeEnum = z.enum(["labor", "material", "subcontractor", "equipment", "other"]);
 const visibilityEnum = z.enum(["price", "name_only", "hidden"]);
@@ -839,6 +840,40 @@ export const proposalRouter = router({
     }),
 
   /**
+   * Create the draft invoices for an accepted proposal that has none (for example one accepted
+   * before invoices existed). Does nothing if invoices already exist.
+   */
+  createInvoices: protectedProcedure
+    .input(z.object({ estimateId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+      }
+      const { db, schema } = ctx.tenant;
+      const abilities = await loadAbilities({ tenant: ctx.tenant, userId: ctx.userId, orgRole: ctx.orgRole });
+      ForbiddenError.from(abilities).throwUnlessCan("update", "Estimate");
+      const c = await loadComputed(ctx.tenant, input.estimateId);
+      if (c.estimate.acceptedAt == null) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Invoices are created when a proposal is accepted." });
+      }
+      const existing = await db.select({ id: schema.invoices.id }).from(schema.invoices).where(eq(schema.invoices.estimateId, input.estimateId)).limit(1);
+      if (existing.length > 0) return { created: 0 };
+      const acceptedIds = c.lines.filter((l) => l.isOptional && l.optionAccepted === true).map((l) => l.id);
+      const acceptance = applyAcceptance(c.result, acceptedIds);
+      const [proj] = await db.select({ jobNumber: schema.projects.jobNumber }).from(schema.projects).where(eq(schema.projects.id, c.estimate.projectId));
+      const made = await createInvoiceDrafts(db, schema, {
+        projectId: c.estimate.projectId,
+        estimateId: input.estimateId,
+        jobNumber: proj?.jobNumber ?? null,
+        contractValueCents: acceptance.contractValue,
+        milestones: c.milestones,
+        paymentTerms: c.estimate.paymentTerms ?? null,
+        userId: ctx.userId,
+      });
+      return { created: made.length };
+    }),
+
+  /**
    * Mark a sent proposal accepted. The customer's chosen options are recorded, the contract
    * value and invoicing amounts follow from them, the proposal locks, it becomes the project's
    * active proposal, and draft purchase orders and work orders are generated from its cost lines.
@@ -926,6 +961,15 @@ export const proposalRouter = router({
           );
           out.push({ id: order.id, number, kind: d.kind, vendorId: d.vendorId, lines: d.lines.length, total: d.total });
         }
+        await createInvoiceDrafts(tx as unknown as typeof db, schema, {
+          projectId,
+          estimateId: input.estimateId,
+          jobNumber: projectNumber,
+          contractValueCents: acceptance.contractValue,
+          milestones: c.milestones,
+          paymentTerms: c.estimate.paymentTerms ?? null,
+          userId,
+        });
         return out;
       });
 
