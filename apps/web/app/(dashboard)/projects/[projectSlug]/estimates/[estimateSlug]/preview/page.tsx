@@ -245,13 +245,16 @@ export default function ProposalPreviewPage({
           </section>
 
           {data.kind === "change_order" ? (
-            <section className="flex flex-col gap-3">
-              {data.terms.sections.map((sec) => (
-                <div key={sec.id} className="flex flex-col gap-1.5">
-                  <SectionHead left={sec.title} right="" />
-                  {sec.body && <div className="whitespace-pre-wrap pt-1 text-[13px] leading-relaxed">{sec.body}</div>}
-                </div>
-              ))}
+            <section>
+              <SectionHead left="Change Order / Extra Work Authorization" right="" />
+              <div className="flex flex-col gap-2 pt-3 text-[10.5px] leading-snug text-muted-foreground">
+                {data.terms.sections.map((sec) => (
+                  <div key={sec.id}>
+                    <strong className="text-foreground">{sec.title}</strong>
+                    {sec.body && <div className="whitespace-pre-wrap">{sec.body}</div>}
+                  </div>
+                ))}
+              </div>
             </section>
           ) : (
             <section>
