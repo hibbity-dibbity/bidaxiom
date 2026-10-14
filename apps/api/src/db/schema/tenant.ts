@@ -1285,6 +1285,23 @@ export function createTenantSchema(schemaName: string) {
     sortOrder: integer("sort_order").notNull().default(0),
   });
 
+  /** Every document email sent from the app (or tried), for the "last emailed" line and a paper trail. */
+  const emailLog = schema.table("email_log", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    kind: text("kind").notNull(), // proposal, invoice, order
+    entityId: uuid("entity_id").notNull(),
+    projectId: uuid("project_id"),
+    toAddresses: text("to_addresses").notNull(),
+    ccAddresses: text("cc_addresses"),
+    subject: text("subject").notNull(),
+    attachmentName: text("attachment_name"),
+    status: text("status").notNull(), // sent, failed
+    providerId: text("provider_id"),
+    error: text("error"),
+    sentBy: text("sent_by").notNull(),
+    sentAt: timestamp("sent_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
   /** Files attached to a purchase or work order. The file itself is a project document. */
   const orderDocuments = schema.table("order_documents", {
     id: uuid("id").primaryKey().defaultRandom(),
@@ -1554,6 +1571,7 @@ export function createTenantSchema(schemaName: string) {
     orderRevisions,
     orderPayments,
     orderDocuments,
+    emailLog,
     invoices,
     invoicePayments,
     invoiceItems,

@@ -6,6 +6,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePdfDownload } from "@/lib/pdf-download";
+import { EmailDocumentDialog } from "@/components/shared/email-document-dialog";
 import { dollars, shortDate } from "@/components/invoices/invoice-ui";
 import { revisionLabel } from "@construction/shared";
 
@@ -25,6 +26,7 @@ export default function OrderDocumentPage({ params }: { params: { projectSlug: s
   const { projectSlug, orderId } = params;
   const { data, isLoading, error } = trpc.order.get.useQuery({ orderId });
   const pdf = usePdfDownload();
+  const [emailOpen, setEmailOpen] = React.useState(false);
 
   if (error) return <p className="text-sm text-financial-negative">Could not load the order: {error.message}</p>;
   if (isLoading || !data) return <Skeleton className="h-[600px] w-full" />;
@@ -48,8 +50,13 @@ export default function OrderDocumentPage({ params }: { params: { projectSlug: s
           <Button type="button" variant="outline" disabled={pdf.pending} onClick={() => pdf.download("order", orderId)}>
             {pdf.pending ? "Making PDF..." : "Download PDF"}
           </Button>
+          <Button type="button" disabled={draft} title={draft ? "Issue the order first" : undefined} onClick={() => setEmailOpen(true)}>
+            Email to vendor
+          </Button>
         </div>
       </div>
+
+      <EmailDocumentDialog kind="order" id={orderId} open={emailOpen} onOpenChange={setEmailOpen} />
 
       <div className="flex justify-center rounded-md border bg-muted p-6 print:border-0 print:bg-transparent print:p-0">
         <div id="order-doc" className="flex w-full max-w-[860px] flex-col gap-8 border bg-background px-16 py-14 shadow-sm">

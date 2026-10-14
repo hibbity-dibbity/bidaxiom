@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { usePdfDownload } from "@/lib/pdf-download";
+import { EmailDocumentDialog } from "@/components/shared/email-document-dialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -50,6 +51,7 @@ export default function ProposalPreviewPage({
   );
   const [confirmOpen, setConfirmOpen] = React.useState(false);
   const pdf = usePdfDownload();
+  const [emailOpen, setEmailOpen] = React.useState(false);
 
   const send = trpc.proposal.send.useMutation({
     onSuccess: (r) => {
@@ -95,6 +97,7 @@ export default function ProposalPreviewPage({
   return (
     <div className="space-y-6">
       <style>{PRINT_CSS}</style>
+      <EmailDocumentDialog kind="proposal" id={estimateId} open={emailOpen} onOpenChange={setEmailOpen} onSent={() => { utils.proposal.customerView.invalidate({ estimateId }); utils.proposal.get.invalidate({ estimateId }); }} />
 
       <div className="flex flex-wrap items-start justify-between gap-4 print:hidden">
         <div>
@@ -109,9 +112,12 @@ export default function ProposalPreviewPage({
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="outline"><Link href={builderHref}>Back to builder</Link></Button>
           <Button type="button" variant="outline" disabled={pdf.pending || !estimateId} onClick={() => pdf.download("proposal", estimateId)}>{pdf.pending ? "Making PDF..." : "Download PDF"}</Button>
+          <Button type="button" disabled={!!data.blocker && !sent} onClick={() => setEmailOpen(true)}>
+            {sent ? "Email again" : "Email to customer"}
+          </Button>
           {!sent && (
-            <Button type="button" disabled={!!data.blocker || send.isPending} onClick={() => setConfirmOpen(true)}>
-              Send to customer
+            <Button type="button" variant="outline" disabled={!!data.blocker || send.isPending} onClick={() => setConfirmOpen(true)}>
+              Mark as sent
             </Button>
           )}
         </div>

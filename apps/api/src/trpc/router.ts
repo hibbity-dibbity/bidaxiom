@@ -25,6 +25,7 @@ import { searchRouter } from "./routers/search.js";
 import { estimatesRouter } from "./routers/estimates.js";
 import { estimateTemplatesRouter } from "./routers/estimateTemplates.js";
 import { proposalRouter } from "./routers/proposal.js";
+import { emailRouter } from "./routers/email.js";
 import { termsRouter } from "./routers/terms.js";
 import { orderRouter } from "./routers/order.js";
 import { templateRouter } from "./routers/template.js";
@@ -50,6 +51,7 @@ export const appRouter = router({
   project: projectRouter,
   document: documentRouter,
   pdf: pdfRouter,
+  email: emailRouter,
   invoice: invoiceRouter,
   rfq: rfqRouter,
   subcontractor: subcontractorRouter,

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { usePdfDownload } from "@/lib/pdf-download";
+import { EmailDocumentDialog } from "@/components/shared/email-document-dialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InvoiceStatusBadge, dollars, shortDate } from "@/components/invoices/invoice-ui";
@@ -30,6 +31,7 @@ const field = "h-9 rounded-md border bg-background px-2 text-sm";
 export default function InvoicePage({ params }: { params: { projectSlug: string; invoiceId: string } }) {
   const { projectSlug, invoiceId } = params;
   const pdf = usePdfDownload();
+  const [emailOpen, setEmailOpen] = React.useState(false);
   const utils = trpc.useUtils();
   const { data, isLoading } = trpc.invoice.get.useQuery({ invoiceId }, { refetchOnMount: "always" });
   const [sentOn, setSentOn] = React.useState(today());
@@ -83,6 +85,7 @@ export default function InvoicePage({ params }: { params: { projectSlug: string;
   return (
     <div className="space-y-6">
       <style>{PRINT_CSS}</style>
+      <EmailDocumentDialog kind="invoice" id={invoiceId} open={emailOpen} onOpenChange={setEmailOpen} onSent={() => { utils.invoice.get.invalidate({ invoiceId }); utils.invoice.list.invalidate(); }} />
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold tracking-tight">{inv.number}</h1>
@@ -94,6 +97,9 @@ export default function InvoicePage({ params }: { params: { projectSlug: string;
           </Button>
           <Button type="button" variant="outline" disabled={pdf.pending} onClick={() => pdf.download("invoice", invoiceId)}>
             {pdf.pending ? "Making PDF..." : "Download PDF"}
+          </Button>
+          <Button type="button" variant="outline" disabled={inv.amount === 0} onClick={() => setEmailOpen(true)}>
+            {inv.status === "draft" ? "Email to customer" : "Email again"}
           </Button>
         </div>
       </div>

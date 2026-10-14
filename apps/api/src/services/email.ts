@@ -217,3 +217,45 @@ export async function sendInvitationEmail(
     throw new Error("Failed to send invitation email");
   }
 }
+
+export interface DocumentMail {
+  fromName: string;
+  replyTo?: string | null;
+  to: string[];
+  cc?: string[];
+  subject: string;
+  text: string;
+  attachment: { filename: string; content: Buffer };
+}
+
+/** "Thomson Enterprises <documents@bidaxiom.com>": the company name in front of the app's sending address. */
+function fromWithName(name: string): string {
+  const addr = getFromEmail().replace(/^.*<([^>]+)>.*$/, "$1");
+  return `${name.replace(/["<>\r\n]/g, "").trim() || "BidAxiom"} <${addr}>`;
+}
+
+const escapeHtml = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+/**
+ * Send a document with its PDF attached. Unlike the account emails above, this never pretends to
+ * succeed: with no RESEND_API_KEY it throws, so a document is not recorded as emailed when it was not.
+ */
+export async function sendDocumentMail(mail: DocumentMail): Promise<{ id: string | null }> {
+  const client = getResendClient();
+  if (!client) {
+    throw new Error("Email is not set up yet. Add RESEND_API_KEY to the .env file and restart the app.");
+  }
+  const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#111">${escapeHtml(mail.text).replace(/\n/g, "<br>")}</div>`;
+  const { data, error } = await client.emails.send({
+    from: fromWithName(mail.fromName),
+    to: mail.to,
+    ...(mail.cc && mail.cc.length ? { cc: mail.cc } : {}),
+    ...(mail.replyTo ? { replyTo: mail.replyTo } : {}),
+    subject: mail.subject,
+    text: mail.text,
+    html,
+    attachments: [{ filename: mail.attachment.filename, content: mail.attachment.content }],
+  });
+  if (error) throw new Error(error.message || "The email service refused the message.");
+  return { id: data?.id ?? null };
+}

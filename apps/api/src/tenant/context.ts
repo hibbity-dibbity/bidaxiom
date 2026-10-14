@@ -116,6 +116,7 @@ export async function buildTenantContext(
       orderRevisions: tenantDb.orderRevisions,
       orderPayments: tenantDb.orderPayments,
       orderDocuments: tenantDb.orderDocuments,
+      emailLog: tenantDb.emailLog,
       invoices: tenantDb.invoices,
       invoicePayments: tenantDb.invoicePayments,
       invoiceItems: tenantDb.invoiceItems,
