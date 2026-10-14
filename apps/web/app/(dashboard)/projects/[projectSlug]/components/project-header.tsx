@@ -48,6 +48,8 @@ interface ProjectHeaderProps {
     paid: number;
     outstanding: number;
     cashPosition: number;
+    profit: number;
+    marginPercent: number | null;
   } | null;
   canTransition: boolean;
   canDelete?: boolean;
@@ -272,10 +274,21 @@ export function ProjectHeader({ project, stats, canTransition, canDelete }: Proj
           ["Billed", stats?.billed ?? 0, false],
           ["Collected", stats?.collected ?? 0, false],
           ["Cost Budget", stats?.costBudget ?? 0, false],
+          ["Projected Profit", stats?.profit ?? 0, true],
           ["Paid", stats?.paid ?? 0, false],
           ["Outstanding to Pay", stats?.outstanding ?? 0, false],
           ["Cash Position", stats?.cashPosition ?? 0, true],
-        ].map(([label, amount, signed]) => (
+        ].flatMap((row, i) =>
+          // The margin sits right after projected profit, as a percent of contract value.
+          row[0] === "Projected Profit"
+            ? [row, ["Margin", stats?.marginPercent ?? null, "percent"]]
+            : [row]
+        ).map(([label, amount, signed]) => signed === "percent" ? (
+          <div key={label as string} className="flex flex-col min-w-0 shrink-0">
+            <span className="text-xs text-muted-foreground leading-tight whitespace-nowrap">{label as string}</span>
+            <span className="text-sm font-semibold tabular-nums">{amount === null ? "—" : `${(amount as number).toFixed(1)}%`}</span>
+          </div>
+        ) : (
           <div key={label as string} className="flex flex-col min-w-0 shrink-0">
             <span className="text-xs text-muted-foreground leading-tight whitespace-nowrap">{label as string}</span>
             <CurrencyDisplay

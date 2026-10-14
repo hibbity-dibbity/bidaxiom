@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { BlurNumber, BlurText, InsuranceWarning, OrderStatusBadge, dollars, fieldCls, signed } from "./order-ui";
 import { revisionLabel } from "@construction/shared";
 import { ChevronRight } from "lucide-react";
+import { OrderAttachments } from "./order-attachments";
 import { format } from "date-fns";
 import { Trash2 } from "lucide-react";
 
@@ -252,6 +253,8 @@ export function OrderDetail({ projectSlug, orderId }: { projectSlug: string; ord
               )}
             </section>
           )}
+
+          <OrderAttachments orderId={orderId} projectId={o.projectId} />
 
           <section className="space-y-2">
             <h2 className="text-sm font-semibold">{isWork ? "Scope notes and assumptions" : "Order notes"}</h2>

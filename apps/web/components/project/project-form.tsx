@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { customerFormSchema, toCustomerPayload } from "@/lib/customer-form";
+import { PaymentTermsField } from "@/components/customers/payment-terms-field";
 import { createProjectSchema, previewJobNumber, validateJobNumberFormat } from "@construction/shared";
 import { z } from "zod";
 import { trpc } from "@/lib/trpc";
@@ -70,6 +71,7 @@ export function ProjectForm() {
       contactName: "",
       phone: "",
       email: "",
+      paymentTerms: "",
       address: { street1: "", street2: "", city: "", state: "", zipCode: "" },
     },
   });
@@ -524,6 +526,8 @@ export function ProjectForm() {
                   )}
                 />
               </div>
+
+              <PaymentTermsField form={customerForm} />
 
               <div className="space-y-2">
                 <h4 className="text-sm font-medium">Address</h4>

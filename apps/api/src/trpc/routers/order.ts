@@ -624,6 +624,54 @@ export const orderRouter = router({
       return { id: order.id };
     }),
 
+  /** Files attached to an order, newest first. Open them with document.getDownloadUrl. */
+  attachments: protectedProcedure.input(z.object({ orderId: z.string().uuid() })).query(async ({ ctx, input }) => {
+    const c = need(ctx);
+    await can(c, "read");
+    const { db, schema } = c.tenant;
+    const rows = await db
+      .select({
+        id: schema.orderDocuments.id,
+        documentId: schema.documents.id,
+        name: schema.documents.name,
+        fileSize: schema.documents.fileSize,
+        contentType: schema.documents.contentType,
+        addedAt: schema.orderDocuments.createdAt,
+      })
+      .from(schema.orderDocuments)
+      .innerJoin(schema.documents, eq(schema.documents.id, schema.orderDocuments.documentId))
+      .where(eq(schema.orderDocuments.orderId, input.orderId))
+      .orderBy(desc(schema.orderDocuments.createdAt));
+    return rows;
+  }),
+
+  /** Attach an uploaded project document (created with document.create) to an order. */
+  attachDocument: protectedProcedure
+    .input(z.object({ orderId: z.string().uuid(), documentId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const c = need(ctx);
+      await can(c, "update");
+      const { db, schema } = c.tenant;
+      const order = await loadOrder(c, input.orderId);
+      const [doc] = await db.select({ id: schema.documents.id, projectId: schema.documents.projectId }).from(schema.documents).where(eq(schema.documents.id, input.documentId));
+      if (!doc || doc.projectId !== order.projectId) throw new TRPCError({ code: "BAD_REQUEST", message: "That file is not on this project." });
+      const [row] = await db.insert(schema.orderDocuments).values({ orderId: order.id, documentId: doc.id, createdBy: c.userId }).returning({ id: schema.orderDocuments.id });
+      await createAuditLog(db, schema, { entityType: "Order", entityId: order.id, action: AuditAction.UPDATE, actorId: c.userId, changes: { after: { attached: doc.id } } });
+      return { id: row.id };
+    }),
+
+  /** Remove an attachment from an order. The file stays in the project's documents. */
+  detachDocument: protectedProcedure.input(z.object({ attachmentId: z.string().uuid() })).mutation(async ({ ctx, input }) => {
+    const c = need(ctx);
+    await can(c, "update");
+    const { db, schema } = c.tenant;
+    const [row] = await db.select().from(schema.orderDocuments).where(eq(schema.orderDocuments.id, input.attachmentId));
+    if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Attachment not found." });
+    await db.delete(schema.orderDocuments).where(eq(schema.orderDocuments.id, row.id));
+    await createAuditLog(db, schema, { entityType: "Order", entityId: row.orderId, action: AuditAction.UPDATE, actorId: c.userId, changes: { before: { attached: row.documentId } } });
+    return { id: row.orderId };
+  }),
+
   /** Delete a payment entered by mistake. */
   deletePayment: protectedProcedure.input(z.object({ paymentId: z.string().uuid() })).mutation(async ({ ctx, input }) => {
     const c = need(ctx);

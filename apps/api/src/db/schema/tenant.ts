@@ -1285,6 +1285,15 @@ export function createTenantSchema(schemaName: string) {
     sortOrder: integer("sort_order").notNull().default(0),
   });
 
+  /** Files attached to a purchase or work order. The file itself is a project document. */
+  const orderDocuments = schema.table("order_documents", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orderId: uuid("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
+    documentId: uuid("document_id").notNull().references(() => documents.id, { onDelete: "cascade" }),
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
   /**
    * Invoicing schedule: percentage milestones that must total 100.
    */
@@ -1544,6 +1553,7 @@ export function createTenantSchema(schemaName: string) {
     orderLines,
     orderRevisions,
     orderPayments,
+    orderDocuments,
     invoices,
     invoicePayments,
     invoiceItems,

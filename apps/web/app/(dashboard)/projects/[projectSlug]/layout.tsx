@@ -52,6 +52,8 @@ export default function ProjectLayout({ children, params }: ProjectLayoutProps) 
     paid: orderSummary?.paid ?? 0,
     outstanding: orderSummary?.outstanding ?? 0,
     cashPosition: collected - (orderSummary?.paid ?? 0),
+    profit: activeProposal ? activeProposal.profit / 100 : 0,
+    marginPercent: activeProposal && activeProposal.contractValue > 0 ? (activeProposal.profit / activeProposal.contractValue) * 100 : null,
   };
 
   const isAdmin = orgRole === "org:admin";
