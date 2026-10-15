@@ -7,6 +7,9 @@
 export function browserApiUrl(): string {
   const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
   if (typeof window === "undefined") return base;
+  // The PDF renderer runs inside the API container and sets this to the API's own address.
+  const forced = (window as unknown as { __BIDAXIOM_API_URL__?: string }).__BIDAXIOM_API_URL__;
+  if (forced) return forced;
   try {
     const u = new URL(base);
     const local = u.hostname === "localhost" || u.hostname === "127.0.0.1";

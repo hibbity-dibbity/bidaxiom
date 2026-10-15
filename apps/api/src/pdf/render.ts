@@ -32,13 +32,25 @@ export async function renderWebPageToPdf(viewer: PdfViewer, path: string, readyS
   const browser = await getBrowser();
   const page = await browser.newPage();
   try {
+    // The page is opened as http://web:3000, so tell it where the API is from inside this container.
+    const apiUrl = `http://localhost:${process.env.API_PORT ?? process.env.PORT ?? "3001"}`;
+    await page.evaluateOnNewDocument(`window.__BIDAXIOM_API_URL__ = ${JSON.stringify(apiUrl)};`);
+    const problems: string[] = [];
+    page.on("requestfailed", (r) => problems.push(`${r.method()} ${r.url()} failed: ${r.failure()?.errorText ?? "unknown"}`));
+    page.on("pageerror", (e) => problems.push(`page error: ${e instanceof Error ? e.message : String(e)}`));
+    page.on("response", (r) => { if (r.status() >= 400) problems.push(`${r.status()} ${r.url()}`); });
     await page.setCookie({ name: "construction_session", value: sealed, url: base, httpOnly: true, secure: false, sameSite: "Lax" });
     await page.emulateMediaType("print");
     await page.emulateMediaFeatures([{ name: "prefers-color-scheme", value: "light" }]);
     const res = await page.goto(`${base}${path}`, { waitUntil: "networkidle2", timeout: 45_000 });
     if (!res || !res.ok()) throw new Error(`The page for the PDF did not load (${res?.status() ?? "no response"}).`);
     if (page.url().includes("/sign-in")) throw new Error("The PDF renderer could not sign in to the web app.");
-    await page.waitForSelector(readySelector, { timeout: 30_000 });
+    try {
+      await page.waitForSelector(readySelector, { timeout: 30_000 });
+    } catch {
+      const detail = problems.slice(0, 4).join("; ");
+      throw new Error(`The document did not finish loading for the PDF.${detail ? ` ${detail}` : ""}`);
+    }
     // Let fonts and any late queries settle.
     await new Promise((r) => setTimeout(r, 400));
     // Lift the document out of the app shell, whose fixed-height scroll areas would cut it to one page.
