@@ -50,7 +50,15 @@ const fastify = Fastify({
 const lanOrigin = (origin: string) => {
   try {
     const h = new URL(origin).hostname;
-    return /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.)/.test(h) || h.endsWith(".local") || h === "localhost";
+    // Private IP addresses, "localhost", and local computer names (DESKTOP-ABC, my-pc.local, my-pc.lan).
+    return (
+      /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.)/.test(h) ||
+      h === "localhost" ||
+      !h.includes(".") ||
+      h.endsWith(".local") ||
+      h.endsWith(".lan") ||
+      h.endsWith(".home")
+    );
   } catch {
     return false;
   }
@@ -66,6 +74,9 @@ await fastify.register(cors, {
 
 await fastify.register(helmet, {
   contentSecurityPolicy: false,
+  // The web app is on another port, and Safari applies this header to cross-origin fetches too.
+  // Which origins may read responses is still decided by the CORS list above.
+  crossOriginResourcePolicy: { policy: "cross-origin" },
 });
 
 // Register tRPC
