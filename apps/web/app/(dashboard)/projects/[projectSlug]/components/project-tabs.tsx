@@ -23,6 +23,7 @@ const ALL_SECTIONS = [
   { name: "Overview",      href: "" },
   { name: "Documents",     href: "/documents" },
   { name: "Proposals",     href: "/estimates" },
+  { name: "Takeoffs",      href: "/takeoffs" },
   { name: "Purchase Orders", href: "/purchase-orders" },
   { name: "Work Orders",   href: "/work-orders" },
   { name: "Change Orders", href: "/change-orders" },

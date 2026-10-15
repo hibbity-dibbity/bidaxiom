@@ -1312,6 +1312,24 @@ export function createTenantSchema(schemaName: string) {
   });
 
   /**
+   * Material takeoffs: a concrete or metal building estimator run for a project.
+   * Stores the dimensions plus any quantity and price overrides; the material list is recomputed
+   * from them. It can be copied into a proposal and (later) turned into purchase orders.
+   */
+  const materialTakeoffs = schema.table("material_takeoffs", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(), // concrete, metal_building
+    name: text("name").notNull(),
+    inputs: jsonb("inputs").notNull().$type<Record<string, unknown>>(),
+    qtyOverrides: jsonb("qty_overrides").notNull().$type<Record<string, number>>().default({}),
+    costOverrides: jsonb("cost_overrides").notNull().$type<Record<string, number>>().default({}),
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
    * Invoicing schedule: percentage milestones that must total 100.
    */
   const invoiceMilestones = schema.table("invoice_milestones", {
@@ -1571,6 +1589,7 @@ export function createTenantSchema(schemaName: string) {
     orderRevisions,
     orderPayments,
     orderDocuments,
+    materialTakeoffs,
     emailLog,
     invoices,
     invoicePayments,

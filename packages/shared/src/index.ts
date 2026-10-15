@@ -363,3 +363,22 @@ export {
   type DraftInvoiceInput,
   type InvoiceStatus,
 } from "./utils/invoiceRules";
+
+export {
+  PSI_UPCHARGE,
+  REBAR_LB_PER_FT,
+  DEFAULT_CONCRETE,
+  DEFAULT_METAL,
+  METAL_PRICES,
+  computeConcrete,
+  computeMetalBuilding,
+  applyOverrides,
+  takeoffTotal,
+  type TakeoffKind,
+  type TakeoffLine,
+  type TakeoffLineType,
+  type ConcreteInputs,
+  type ConcreteResult,
+  type MetalBuildingInputs,
+  type MetalBuildingResult,
+} from "./utils/takeoff";
