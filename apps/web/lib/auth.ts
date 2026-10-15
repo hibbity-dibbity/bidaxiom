@@ -62,6 +62,11 @@ export async function refreshAccessToken(): Promise<string | null> {
     if (result?.accessToken && result?.refreshToken) {
       session.accessToken = result.accessToken;
       session.refreshToken = result.refreshToken;
+      try {
+        // Keep the "second factor done" flag in step with the new token (it turns on after setting one up).
+        const claims = JSON.parse(Buffer.from(result.accessToken.split(".")[1], "base64").toString());
+        if (typeof claims.hasMfa === "boolean") session.hasMfa = claims.hasMfa;
+      } catch {}
       await session.save();
       return result.accessToken;
     }

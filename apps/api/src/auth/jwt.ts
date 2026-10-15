@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { SignJWT, jwtVerify } from "jose";
 
 /**
@@ -35,6 +36,8 @@ export interface AccessTokenPayload {
 export interface RefreshTokenPayload {
   userId: string;
   tokenFamily: string;
+  /** The sign-in that started this session passed a second factor (authenticator code, passkey or the company's identity provider). */
+  hasMfa?: boolean;
 }
 
 /**
@@ -67,9 +70,11 @@ export async function signAccessToken(payload: AccessTokenPayload): Promise<stri
 export async function signRefreshToken(payload: RefreshTokenPayload): Promise<string> {
   const jwt = await new SignJWT({
     tokenFamily: payload.tokenFamily,
+    hasMfa: payload.hasMfa === true,
   })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(payload.userId)
+    .setJti(randomBytes(12).toString("base64url")) // two tokens minted in the same second must still differ
     .setIssuedAt()
     .setExpirationTime(REFRESH_TOKEN_TTL)
     .sign(getJwtRefreshSecret());
@@ -108,5 +113,6 @@ export async function verifyRefreshToken(token: string): Promise<RefreshTokenPay
   return {
     userId: payload.sub as string,
     tokenFamily: payload.tokenFamily as string,
+    hasMfa: payload.hasMfa === true,
   };
 }

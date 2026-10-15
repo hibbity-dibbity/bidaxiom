@@ -30,6 +30,7 @@ import { templateRouter } from "./routers/template.js";
 import { notesRouter } from "./routers/notes.js";
 import { takeoffRouter } from "./routers/takeoff.js";
 import { ssoRouter } from "./routers/sso.js";
+import { passkeyRouter } from "./routers/passkey.js";
 
 /**
  * Root application router.
@@ -70,6 +71,7 @@ export const appRouter = router({
   notes: notesRouter,
   takeoff: takeoffRouter,
   sso: ssoRouter,
+  passkey: passkeyRouter,
 });
 
 /**

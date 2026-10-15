@@ -17,6 +17,7 @@ import { hashPassword, verifyPassword } from "../../auth/password.js";
 import { signAccessToken, signRefreshToken, verifyAccessToken, verifyRefreshToken } from "../../auth/jwt.js";
 import { generateToken, hashToken } from "../../auth/tokens.js";
 import { passwordLoginBlocked } from "../../auth/oidc/sso.js";
+import { hasSecondFactor } from "../../auth/session.js";
 import { generateMfaSecret, verifyMfaToken, verifyBackupCode } from "../../auth/mfa.js";
 import {
   checkLoginRateLimit,
@@ -224,14 +225,19 @@ export const authRouter = router({
         });
       }
 
-      // MFA check
-      if (user.mfaEnabled) {
+      // MFA check: an authenticator app and/or passkeys. A password alone never opens a session for these people.
+      const hasPasskey = await hasSecondFactor(user.id, false);
+      if (user.mfaEnabled || hasPasskey) {
         if (!input.mfaToken) {
-          // Client needs to show MFA input
+          // Client shows whichever second steps this person has set up
           return {
             requiresMfa: true,
             userId: user.id,
+            methods: { totp: user.mfaEnabled, passkey: hasPasskey },
           };
+        }
+        if (!user.mfaEnabled) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Use your passkey to finish signing in" });
         }
 
         // Verify MFA token or backup code
@@ -295,6 +301,7 @@ export const authRouter = router({
       const refreshToken = await signRefreshToken({
         userId: user.id,
         tokenFamily,
+        hasMfa: user.mfaEnabled,
       });
 
       // Store refresh token hash in database
@@ -412,17 +419,21 @@ export const authRouter = router({
       const orgId = membership?.organizationId || "";
       const orgRole = membership?.role || "org:member";
 
+      // Stays true once the session passed a second factor; becomes true when one is set up during the session.
+      const sessionMfa = payload.hasMfa === true || (await hasSecondFactor(user.id, user.mfaEnabled));
+
       // Generate new token pair
       const newAccessToken = await signAccessToken({
         userId: user.id,
         orgId,
         orgRole,
-        hasMfa: user.mfaEnabled,
+        hasMfa: sessionMfa,
       });
 
       const newRefreshToken = await signRefreshToken({
         userId: user.id,
         tokenFamily: storedToken.familyId, // Keep same family
+        hasMfa: sessionMfa,
       });
 
       const newRefreshTokenHash = hashToken(newRefreshToken);
@@ -806,6 +817,14 @@ export const authRouter = router({
       }
 
       // Check MFA is currently enabled
+      {
+        const adminRow = await getAuthDb().query.organizationMemberships.findFirst({
+          where: and(eq(organizationMemberships.userId, user.id), eq(organizationMemberships.role, "org:admin")),
+        });
+        if (adminRow && !(await hasSecondFactor(user.id, false))) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Company admins need a second factor. Add a passkey before turning off the authenticator app." });
+        }
+      }
       if (!user.mfaEnabled) {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -901,7 +920,7 @@ export const authRouter = router({
         userId: user.id,
         orgId: membership.organizationId,
         orgRole: membership.role,
-        hasMfa: user.mfaEnabled,
+        hasMfa: ctx.hasMfa === true || user.mfaEnabled,
       });
 
       return {

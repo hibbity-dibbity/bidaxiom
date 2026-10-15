@@ -1,5 +1,6 @@
 import {
   integer,
+  bigint,
   pgTable,
   uuid,
   text,
@@ -9,6 +10,23 @@ import {
   unique,
   jsonb,
 } from "drizzle-orm/pg-core";
+
+/** A person's passkey (WebAuthn credential). The private key never leaves their device. */
+export const passkeys = pgTable("passkeys", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  credentialId: text("credential_id").notNull().unique(),
+  publicKey: text("public_key").notNull(), // JWK as JSON
+  alg: integer("alg").notNull(),
+  counter: bigint("counter", { mode: "number" }).notNull().default(0),
+  transports: jsonb("transports").$type<string[]>().notNull().default([]),
+  backedUp: boolean("backed_up").notNull().default(false),
+  name: text("name").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+}, (table) => ({
+  userIdx: index("idx_passkeys_user").on(table.userId),
+}));
 
 /**
  * Public schema: tenants table

@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { Loader2, Copy, CheckCircle2, AlertTriangle } from "lucide-react";
 import { getSafeRedirectUrl } from "@/lib/utils/safe-redirect";
+import { PasskeysCard } from "@/components/settings/passkeys-card";
 
 const API_URL = browserApiUrl();
 
@@ -69,14 +70,14 @@ function MfaSetupPage() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${accessToken}`,
           },
-          body: JSON.stringify({ json: {} }),
+          body: JSON.stringify({}),
         });
 
         const data = await response.json();
-        const result = data.result?.data?.json;
+        const result = data.result?.data;
 
         if (!response.ok || !result) {
-          const error = data.error?.json?.message || "Failed to initialize MFA setup";
+          const error = data.error?.message || "Failed to initialize MFA setup";
           toast.error(error);
           return;
         }
@@ -116,21 +117,22 @@ function MfaSetupPage() {
           Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
-          json: {
-            token: data.token,
-            secret: setupData.secret,
-            hashedBackupCodes: setupData.hashedBackupCodes,
-          },
+          token: data.token,
+          secret: setupData.secret,
+          hashedBackupCodes: setupData.hashedBackupCodes,
         }),
       });
 
       const result = await response.json();
 
-      if (!response.ok || !result.result?.data?.json) {
-        const error = result.error?.json?.message || "Verification failed";
+      if (!response.ok || !result.result?.data) {
+        const error = result.error?.message || "Verification failed";
         toast.error(error);
         return;
       }
+
+      // Pick up a fresh session that knows the second factor is now set up.
+      await fetch("/api/auth/refresh-session", { method: "POST" });
 
       // Show backup codes
       setShowBackupCodes(true);
@@ -256,6 +258,7 @@ function MfaSetupPage() {
   }
 
   return (
+    <div className="space-y-6">
     <Card>
       <CardHeader>
         <CardTitle>Multi-Factor Authentication Required</CardTitle>
@@ -317,6 +320,9 @@ function MfaSetupPage() {
         </CardFooter>
       </form>
     </Card>
+    <p className="text-center text-sm text-muted-foreground">Or use a passkey instead of an authenticator app:</p>
+    <PasskeysCard afterChange={() => router.push(getSafeRedirectUrl(redirectUrl))} />
+    </div>
   );
 }
 

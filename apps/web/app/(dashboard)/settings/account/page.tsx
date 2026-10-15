@@ -20,6 +20,8 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2, Shield } from "lucide-react";
 import { ThemeToggle } from "@/components/settings/theme-toggle";
+import { PasskeysCard } from "@/components/settings/passkeys-card";
+import { trpc } from "@/lib/trpc";
 
 const API_URL = browserApiUrl();
 
@@ -42,7 +44,9 @@ const passwordSchema = z
 type PasswordFormData = z.infer<typeof passwordSchema>;
 
 export default function AccountSettingsPage() {
-  const { user, hasMfa } = useAuth();
+  const { user } = useAuth();
+  const status = trpc.passkey.status.useQuery();
+  const hasMfa = status.data?.totp ?? false;
 
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isDisablingMfa, setIsDisablingMfa] = useState(false);
@@ -138,6 +142,7 @@ export default function AccountSettingsPage() {
 
       toast.success("MFA has been disabled");
       setDisableMfaPassword("");
+      status.refetch();
     } catch (error) {
       toast.error("An error occurred. Please try again.");
       console.error(error);
@@ -248,10 +253,13 @@ export default function AccountSettingsPage() {
       {/* Section 3: Appearance */}
       <ThemeToggle />
 
+      {/* Passkeys */}
+      <PasskeysCard />
+
       {/* Section 4: Two-Factor Authentication */}
       <Card>
         <CardHeader>
-          <CardTitle>Two-Factor Authentication</CardTitle>
+          <CardTitle>Authenticator app</CardTitle>
           <CardDescription>
             Add an extra layer of security to your account.
           </CardDescription>

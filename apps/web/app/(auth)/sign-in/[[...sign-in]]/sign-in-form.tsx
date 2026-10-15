@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { getSafeRedirectUrl } from "@/lib/utils/safe-redirect";
 import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
+import { getPasskey, passkeysSupported, passkeyErrorMessage } from "@/lib/passkey";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -36,6 +37,25 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
   const [step, setStep] = useState<"email" | "choose" | "password">("email");
   const [emailInput, setEmailInput] = useState("");
   const routeMutation = trpc.sso.route.useMutation();
+  const [canPasskey, setCanPasskey] = useState(false);
+  const [mfaMethods, setMfaMethods] = useState<{ totp: boolean; passkey: boolean }>({ totp: true, passkey: false });
+  useEffect(() => setCanPasskey(passkeysSupported()), []);
+  const passkeyStart = trpc.passkey.loginStart.useMutation();
+  const passkeyFinish = trpc.passkey.loginFinish.useMutation();
+  const signInWithPasskey = async () => {
+    setIsLoading(true);
+    try {
+      const { token, options } = await passkeyStart.mutateAsync();
+      const response = await getPasskey(options);
+      const result = await passkeyFinish.mutateAsync({ token, response });
+      await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(result) });
+      toast.success("Login successful!");
+      router.push(result.org ? getSafeRedirectUrl(redirectUrl) : "/onboarding");
+    } catch (e) {
+      toast.error(e instanceof Error && !(e instanceof DOMException) ? e.message : passkeyErrorMessage(e));
+      setIsLoading(false);
+    }
+  };
   const goSso = (email: string) => {
     window.location.href = `/api/auth/sso/start?email=${encodeURIComponent(email)}`;
   };
@@ -89,6 +109,8 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
       if ("requiresMfa" in result && result.requiresMfa) {
         setMfaRequired(true);
         setMfaUserId(result.userId);
+        setMfaMethods((result as { methods?: { totp: boolean; passkey: boolean } }).methods ?? { totp: true, passkey: false });
+        setIsLoading(false);
         return;
       }
 
@@ -226,7 +248,15 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
         </CardHeader>
         <form onSubmit={handleSubmitMfa(onMfaSubmit)}>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
+            {mfaMethods.passkey && canPasskey && (
+              <Button type="button" variant={mfaMethods.totp ? "outline" : "default"} className="w-full" disabled={isLoading} onClick={signInWithPasskey}>
+                Use a passkey
+              </Button>
+            )}
+            {mfaMethods.passkey && !canPasskey && !mfaMethods.totp && (
+              <p className="text-sm text-muted-foreground">This account uses a passkey. Open BidAxiom on a device and browser that supports passkeys over a secure (https) address.</p>
+            )}
+            {mfaMethods.totp && (<div className="space-y-2">
               <Label htmlFor="mfaToken">Authentication Code</Label>
               <Input
                 id="mfaToken"
@@ -241,12 +271,14 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
               {mfaErrors.mfaToken && (
                 <p className="text-sm text-destructive">{mfaErrors.mfaToken.message}</p>
               )}
-            </div>
+            </div>)}
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Verifying..." : "Verify"}
-            </Button>
+            {mfaMethods.totp && (
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Verifying..." : "Verify"}
+              </Button>
+            )}
             <Button
               type="button"
               variant="ghost"
@@ -308,6 +340,11 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
             <Button type="submit" className="w-full" disabled={routeMutation.isPending || !emailInput.trim()}>
               {routeMutation.isPending ? "Checking..." : "Continue"}
             </Button>
+            {canPasskey && (
+              <Button type="button" variant="outline" className="w-full" disabled={isLoading} onClick={signInWithPasskey}>
+                Sign in with a passkey
+              </Button>
+            )}
             <p className="text-center text-sm text-muted-foreground">
               Don&apos;t have an account?{" "}
               <Link href="/sign-up" className="text-primary hover:underline">Sign up</Link>
@@ -317,6 +354,11 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
       ) : (
       <form onSubmit={handleSubmitLogin(onLoginSubmit)}>
         <CardContent className="space-y-4">
+          {canPasskey && (
+            <Button type="button" variant="outline" className="w-full" disabled={isLoading} onClick={signInWithPasskey}>
+              Sign in with a passkey
+            </Button>
+          )}
           {step === "choose" && (
             <Button type="button" className="w-full" onClick={() => goSso(emailInput.trim())}>
               Continue with your company sign-in

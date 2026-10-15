@@ -42,8 +42,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(signInUrl);
   }
 
-  // MFA enforcement
-  if (ENFORCE_MFA && !session.hasMfa && !pathname.startsWith(mfaSetupRoute)) {
+  // MFA enforcement: company admins always, everyone when ENFORCE_MFA is on.
+  if ((ENFORCE_MFA || session.orgRole === "org:admin") && !session.hasMfa && !pathname.startsWith(mfaSetupRoute)) {
     return NextResponse.redirect(new URL(mfaSetupRoute, request.url));
   }
 
