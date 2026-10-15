@@ -259,3 +259,25 @@ export async function sendDocumentMail(mail: DocumentMail): Promise<{ id: string
   if (error) throw new Error(error.message || "The email service refused the message.");
   return { id: data?.id ?? null };
 }
+
+/** Send a one-time code proving the recipient controls an email domain (single sign-on setup). */
+export async function sendDomainCodeEmail(email: string, domain: string, code: string): Promise<void> {
+  const subject = `Your BidAxiom code for ${domain}`;
+  const html = `
+    <h2>Confirm ${domain} for single sign-on</h2>
+    <p>Enter this code in BidAxiom to confirm your company owns <strong>${domain}</strong>:</p>
+    <p style="font-size:24px;letter-spacing:4px"><strong>${code}</strong></p>
+    <p>It expires in 30 minutes. If you did not ask for this, ignore this email.</p>
+  `;
+  const client = getResendClient();
+  if (!client) {
+    console.log(`[EMAIL DEV] Domain code for ${domain} to ${email}: ${code}`);
+    return;
+  }
+  try {
+    await client.emails.send({ from: getFromEmail(), to: email, subject, html });
+  } catch (err) {
+    console.error(`[EMAIL] Failed to send domain code to ${email}:`, err);
+    throw new Error("Failed to send the code");
+  }
+}

@@ -1,4 +1,5 @@
 import {
+  integer,
   pgTable,
   uuid,
   text,
@@ -217,7 +218,10 @@ export const ssoDomains = pgTable("sso_domains", {
   id: uuid("id").primaryKey().defaultRandom(),
   connectionId: uuid("connection_id").notNull().references(() => ssoConnections.id, { onDelete: "cascade" }),
   domain: text("domain").notNull(),
-  token: text("token").notNull(),
+  token: text("token"),
+  codeHash: text("code_hash"),
+  codeExpiresAt: timestamp("code_expires_at", { withTimezone: true }),
+  codeAttempts: integer("code_attempts").notNull().default(0),
   verifiedAt: timestamp("verified_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({

@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-type Conn = { id: string; provider: string; issuer: string; clientId: string; verified: boolean; enabled: boolean; enforceSso: boolean; autoProvision: boolean; defaultRole: string; domains: { id: string; domain: string; verified: boolean; txtName: string; txtValue: string }[]; youAreLinked: boolean };
+type Conn = { id: string; provider: string; issuer: string; clientId: string; verified: boolean; enabled: boolean; enforceSso: boolean; autoProvision: boolean; defaultRole: string; domains: { id: string; domain: string; verified: boolean }[]; youAreLinked: boolean };
 type Preset = { key: string; label: string; field: { name: string; label: string; help: string } | null };
 
 /** Admin: this company's own single sign-on (OpenID Connect). You register an app with your identity provider. */
@@ -158,34 +158,22 @@ function Options({ conn, roles, onSaved }: { conn: Conn; roles: { key: string; l
 
 function Domains({ conn, onChanged }: { conn: Conn; onChanged: () => void }) {
   const [domain, setDomain] = React.useState("");
-  const add = trpc.sso.domainAdd.useMutation({ onSuccess: () => { setDomain(""); onChanged(); }, onError: (e) => toast.error(e.message) });
-  const verify = trpc.sso.domainVerify.useMutation({ onSuccess: () => { toast.success("Domain verified"); onChanged(); }, onError: (e) => toast.error(e.message) });
+  const add = trpc.sso.domainAdd.useMutation({
+    onSuccess: (r) => { setDomain(""); if (r.verified) toast.success("Domain verified"); onChanged(); },
+    onError: (e) => toast.error(e.message),
+  });
   const remove = trpc.sso.domainRemove.useMutation({ onSuccess: onChanged, onError: (e) => toast.error(e.message) });
   return (
     <Card>
       <CardHeader>
         <CardTitle>3. Your email domains</CardTitle>
         <CardDescription>
-          People whose email ends in one of these domains are sent to your provider when they sign in. To prove you own a domain, add a DNS TXT record with the name and value shown, then click Verify. At least one verified domain is required to turn single sign-on on.
+          People whose email ends in one of these domains are sent to your provider when they sign in. We confirm you own a domain by emailing a code to an address there. At least one verified domain is required to turn single sign-on on.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {conn.domains.map((d) => (
-          <div key={d.id} className="space-y-2 rounded-md border p-3 text-sm">
-            <div className="flex items-center justify-between gap-2">
-              <span className="font-medium">{d.domain} {d.verified ? <span className="text-green-600">✓ verified</span> : <span className="text-amber-600">not verified</span>}</span>
-              <span className="flex gap-2">
-                {!d.verified && <Button size="sm" disabled={verify.isPending} onClick={() => verify.mutate({ id: d.id })}>Verify</Button>}
-                <Button size="sm" variant="outline" onClick={() => remove.mutate({ id: d.id })}>Remove</Button>
-              </span>
-            </div>
-            {!d.verified && (
-              <div className="space-y-1 text-muted-foreground">
-                <div>TXT record name: <code className="break-all rounded bg-muted px-1">{d.txtName}</code></div>
-                <div>TXT record value: <code className="break-all rounded bg-muted px-1">{d.txtValue}</code></div>
-              </div>
-            )}
-          </div>
+          <DomainRow key={d.id} d={d} onChanged={onChanged} onRemove={() => remove.mutate({ id: d.id })} />
         ))}
         <div className="flex gap-2">
           <Input className="max-w-xs" placeholder="yourcompany.com" value={domain} onChange={(e) => setDomain(e.target.value)} />
@@ -193,5 +181,35 @@ function Domains({ conn, onChanged }: { conn: Conn; onChanged: () => void }) {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function DomainRow({ d, onChanged, onRemove }: { d: Conn["domains"][number]; onChanged: () => void; onRemove: () => void }) {
+  const [email, setEmail] = React.useState("");
+  const [code, setCode] = React.useState("");
+  const [sent, setSent] = React.useState(false);
+  const send = trpc.sso.domainSendCode.useMutation({ onSuccess: () => { setSent(true); toast.success("Code sent"); }, onError: (e) => toast.error(e.message) });
+  const verify = trpc.sso.domainVerify.useMutation({ onSuccess: () => { toast.success("Domain verified"); onChanged(); }, onError: (e) => toast.error(e.message) });
+  return (
+    <div className="space-y-2 rounded-md border p-3 text-sm">
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-medium">{d.domain} {d.verified ? <span className="text-green-600">✓ verified</span> : <span className="text-amber-600">not verified</span>}</span>
+        <Button size="sm" variant="outline" onClick={onRemove}>Remove</Button>
+      </div>
+      {!d.verified && (
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <Input className="max-w-xs" placeholder={`you@${d.domain}`} value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Button size="sm" disabled={send.isPending || !email.trim()} onClick={() => send.mutate({ id: d.id, email })}>{sent ? "Resend code" : "Email me a code"}</Button>
+          </div>
+          {sent && (
+            <div className="flex gap-2">
+              <Input className="w-32" inputMode="numeric" maxLength={6} placeholder="6-digit code" value={code} onChange={(e) => setCode(e.target.value)} />
+              <Button size="sm" disabled={verify.isPending || code.trim().length !== 6} onClick={() => verify.mutate({ id: d.id, code })}>Verify</Button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

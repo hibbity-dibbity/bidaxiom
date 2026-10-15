@@ -4,11 +4,12 @@ import { and, eq, isNotNull } from "drizzle-orm";
 import { router, publicProcedure } from "../trpc.js";
 import { protectedProcedure } from "../procedures.js";
 import { getDb } from "../../db/client.js";
-import { ssoConnections, ssoDomains, ssoIdentities } from "../../db/schema/public.js";
+import { ssoConnections, ssoDomains, ssoIdentities, users } from "../../db/schema/public.js";
 import { PRESETS, issuerFor, discover } from "../../auth/oidc/providers.js";
 import { beginSso, beginSetup, finishSso, connectionForEmail, SsoError } from "../../auth/oidc/sso.js";
 import { encryptSecret } from "../../auth/oidc/secret.js";
-import { newDomainToken, domainHasToken, txtName, txtValue } from "../../auth/oidc/dns.js";
+import { createHash, randomInt } from "node:crypto";
+import { sendDomainCodeEmail } from "../../services/email.js";
 import { ROLES } from "../../auth/roles.js";
 import { createAuditLog } from "../../audit/logger.js";
 import { AuditAction } from "@construction/shared";
@@ -26,6 +27,7 @@ function requireAdmin(ctx: { orgRole: string | null; orgId: string | null; userI
 }
 
 const PUBLIC_MAIL = new Set(["gmail.com", "googlemail.com", "outlook.com", "hotmail.com", "live.com", "msn.com", "yahoo.com", "aol.com", "icloud.com", "me.com", "proton.me", "protonmail.com", "gmx.com", "mail.com"]);
+const hashCode = (id: string, code: string) => createHash("sha256").update(`${id}:${code}`).digest("hex");
 const DOMAIN = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/;
 
 export const ssoRouter = router({
@@ -74,7 +76,7 @@ export const ssoRouter = router({
             id: conn.id, provider: conn.provider, issuer: conn.issuer, clientId: conn.clientId, verified: conn.verified,
             enabled: conn.enabled, enforceSso: conn.enforceSso, autoProvision: conn.autoProvision, defaultRole: conn.defaultRole,
             youAreLinked: Boolean(linked),
-            domains: domains.map((d) => ({ id: d.id, domain: d.domain, verified: Boolean(d.verifiedAt), txtName: txtName(d.domain), txtValue: txtValue(d.token) })),
+            domains: domains.map((d) => ({ id: d.id, domain: d.domain, verified: Boolean(d.verifiedAt) })),
           }
         : null,
     };
@@ -146,9 +148,9 @@ export const ssoRouter = router({
       return { ok: true as const };
     }),
 
-  /** Admin: claim an email domain. Ownership is proven with a DNS TXT record. */
+  /** Admin: claim an email domain. Proven by an emailed code, or instantly when the admin's own verified email is on it. */
   domainAdd: protectedProcedure.input(z.object({ domain: z.string().max(100) })).mutation(async ({ ctx, input }) => {
-    const { orgId } = requireAdmin(ctx);
+    const { orgId, userId } = requireAdmin(ctx);
     const db = getDb();
     const conn = await db.query.ssoConnections.findFirst({ where: eq(ssoConnections.organizationId, orgId) });
     if (!conn) throw new TRPCError({ code: "BAD_REQUEST", message: "Save the connection details first." });
@@ -157,21 +159,54 @@ export const ssoRouter = router({
     if (PUBLIC_MAIL.has(domain)) throw new TRPCError({ code: "BAD_REQUEST", message: "Public email services like this can't be claimed. Use your company's own domain." });
     const taken = await db.query.ssoDomains.findFirst({ where: and(eq(ssoDomains.domain, domain), isNotNull(ssoDomains.verifiedAt)) });
     if (taken) throw new TRPCError({ code: "CONFLICT", message: "That domain is already in use by another company." });
-    await db.insert(ssoDomains).values({ connectionId: conn.id, domain, token: newDomainToken() }).onConflictDoNothing();
-    return { ok: true as const };
+    const me = await db.query.users.findFirst({ where: eq(users.id, userId) });
+    const mine = me?.emailVerified && me.email.toLowerCase().endsWith(`@${domain}`);
+    try {
+      await db.insert(ssoDomains).values({ connectionId: conn.id, domain, verifiedAt: mine ? new Date() : null }).onConflictDoNothing();
+    } catch {
+      throw new TRPCError({ code: "CONFLICT", message: "That domain is already in use by another company." });
+    }
+    return { ok: true as const, verified: Boolean(mine) };
   }),
 
-  domainVerify: protectedProcedure.input(z.object({ id: z.string().uuid() })).mutation(async ({ ctx, input }) => {
+  /** Admin: email a 6-digit code to an address at the domain. */
+  domainSendCode: protectedProcedure.input(z.object({ id: z.string().uuid(), email: z.string().email().max(200) })).mutation(async ({ ctx, input }) => {
     const { orgId } = requireAdmin(ctx);
     const db = getDb();
     const conn = await db.query.ssoConnections.findFirst({ where: eq(ssoConnections.organizationId, orgId) });
     const d = conn ? await db.query.ssoDomains.findFirst({ where: and(eq(ssoDomains.id, input.id), eq(ssoDomains.connectionId, conn.id)) }) : null;
     if (!d) throw new TRPCError({ code: "NOT_FOUND", message: "Domain not found" });
-    if (!(await domainHasToken(d.domain, d.token))) {
-      throw new TRPCError({ code: "BAD_REQUEST", message: `We could not find the record yet. DNS changes can take a few minutes to appear; check that ${txtName(d.domain)} has the exact value shown, then try again.` });
+    const email = input.email.trim().toLowerCase();
+    if (!email.endsWith(`@${d.domain}`)) throw new TRPCError({ code: "BAD_REQUEST", message: `Enter an email address at ${d.domain}.` });
+    if (d.codeExpiresAt && d.codeExpiresAt.getTime() - 29 * 60_000 > Date.now()) {
+      throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "A code was just sent. Wait a minute before asking for another." });
+    }
+    const code = String(randomInt(0, 1_000_000)).padStart(6, "0");
+    await db.update(ssoDomains).set({ codeHash: hashCode(d.id, code), codeExpiresAt: new Date(Date.now() + 30 * 60_000), codeAttempts: 0 }).where(eq(ssoDomains.id, d.id));
+    try {
+      await sendDomainCodeEmail(email, d.domain, code);
+    } catch {
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "We couldn't send the email. Try again shortly." });
+    }
+    return { ok: true as const };
+  }),
+
+  domainVerify: protectedProcedure.input(z.object({ id: z.string().uuid(), code: z.string().trim().length(6) })).mutation(async ({ ctx, input }) => {
+    const { orgId } = requireAdmin(ctx);
+    const db = getDb();
+    const conn = await db.query.ssoConnections.findFirst({ where: eq(ssoConnections.organizationId, orgId) });
+    const d = conn ? await db.query.ssoDomains.findFirst({ where: and(eq(ssoDomains.id, input.id), eq(ssoDomains.connectionId, conn.id)) }) : null;
+    if (!d) throw new TRPCError({ code: "NOT_FOUND", message: "Domain not found" });
+    if (!d.codeHash || !d.codeExpiresAt || d.codeExpiresAt.getTime() < Date.now()) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "That code has expired. Send a new one." });
+    }
+    if (d.codeAttempts >= 5) throw new TRPCError({ code: "BAD_REQUEST", message: "Too many wrong tries. Send a new code." });
+    if (hashCode(d.id, input.code) !== d.codeHash) {
+      await db.update(ssoDomains).set({ codeAttempts: d.codeAttempts + 1 }).where(eq(ssoDomains.id, d.id));
+      throw new TRPCError({ code: "BAD_REQUEST", message: "That code is not right." });
     }
     try {
-      await db.update(ssoDomains).set({ verifiedAt: new Date() }).where(eq(ssoDomains.id, d.id));
+      await db.update(ssoDomains).set({ verifiedAt: new Date(), codeHash: null, codeExpiresAt: null }).where(eq(ssoDomains.id, d.id));
     } catch {
       throw new TRPCError({ code: "CONFLICT", message: "That domain is already in use by another company." });
     }
