@@ -11,9 +11,9 @@ interface ProjectTabsProps {
   projectMode: string;
   lifecyclePhase: string;
   headerStats?: {
-    changeOrdersPendingCount: number;
+    changeOrdersCount: number;
+    proposalsCount: number;
     documentsCount: number;
-    invoicesCount: number;
   } | null;
   orderCounts?: { purchase: number; work: number } | null;
   openInvoices?: number;
@@ -22,11 +22,11 @@ interface ProjectTabsProps {
 const ALL_SECTIONS = [
   { name: "Overview",      href: "" },
   { name: "Documents",     href: "/documents" },
-  { name: "Proposals",     href: "/estimates" },
   { name: "Takeoffs",      href: "/takeoffs" },
+  { name: "Proposals",     href: "/estimates" },
+  { name: "Change Orders", href: "/change-orders" },
   { name: "Purchase Orders", href: "/purchase-orders" },
   { name: "Work Orders",   href: "/work-orders" },
-  { name: "Change Orders", href: "/change-orders" },
   { name: "Invoices",      href: "/invoices" },
 ] as const;
 
@@ -99,9 +99,9 @@ export function ProjectTabs({ projectSlug, projectMode, lifecyclePhase, headerSt
     if (href === "/invoices") return openInvoices ?? 0;
     if (!headerStats) return 0;
     switch (href) {
-      case "/change-orders": return headerStats.changeOrdersPendingCount;
+      case "/change-orders": return headerStats.changeOrdersCount;
+      case "/estimates": return headerStats.proposalsCount;
       case "/documents": return headerStats.documentsCount;
-      case "/invoices": return headerStats.invoicesCount;
       default: return 0;
     }
   };

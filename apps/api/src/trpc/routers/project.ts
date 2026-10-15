@@ -1420,10 +1420,9 @@ export const projectRouter = router({
         projectBudget,
         billedToDate,
         retainageHeldSum,
-        changeOrdersPendingCount,
-        paymentAppsPendingCount,
+        changeOrdersCount,
+        proposalsCount,
         documentsCount,
-        invoicesCount,
       ] = await Promise.all([
         // 1. Accepted estimate totalCost, directCosts, overheadAmount
         db
@@ -1475,28 +1474,17 @@ export const projectRouter = router({
           .from(schema.retainageHeld)
           .where(eq(schema.retainageHeld.projectId, projectId)),
 
-        // 6. CO pending badge count
+        // 6. Change orders count (tab badge)
         db
           .select({ count: count() })
-          .from(schema.changeOrders)
-          .where(
-            and(
-              eq(schema.changeOrders.projectId, projectId),
-              inArray(schema.changeOrders.status, ["pco_submitted", "pending_approval"])
-            )
-          ),
+          .from(schema.estimates)
+          .where(and(eq(schema.estimates.projectId, projectId), eq(schema.estimates.kind, "change_order"))),
 
-        // 7. Payment apps pending badge count — submitted/approved and not yet paid
+        // 7. Proposals count (tab badge)
         db
           .select({ count: count() })
-          .from(schema.paymentApps)
-          .where(
-            and(
-              eq(schema.paymentApps.projectId, projectId),
-              inArray(schema.paymentApps.status, ["submitted", "approved"]),
-              isNull(schema.paymentApps.paidAt)
-            )
-          ),
+          .from(schema.estimates)
+          .where(and(eq(schema.estimates.projectId, projectId), eq(schema.estimates.kind, "proposal"))),
 
         // 8. Documents count
         db
@@ -1504,11 +1492,6 @@ export const projectRouter = router({
           .from(schema.documents)
           .where(eq(schema.documents.projectId, projectId)),
 
-        // 9. Invoices count (payment app count as AR proxy)
-        db
-          .select({ count: count() })
-          .from(schema.paymentApps)
-          .where(eq(schema.paymentApps.projectId, projectId)),
       ]);
 
       // Post-query computation
@@ -1582,10 +1565,9 @@ export const projectRouter = router({
         paidToDate,
         balanceToComplete: contractValue - paidToDate,
         retainageHeld: retainageTotal,
-        changeOrdersPendingCount: Number(changeOrdersPendingCount[0]?.count ?? 0),
-        paymentAppsPendingCount: Number(paymentAppsPendingCount[0]?.count ?? 0),
+        changeOrdersCount: Number(changeOrdersCount[0]?.count ?? 0),
+        proposalsCount: Number(proposalsCount[0]?.count ?? 0),
         documentsCount: Number(documentsCount[0]?.count ?? 0),
-        invoicesCount: Number(invoicesCount[0]?.count ?? 0),
         projectedProfit,
         projectedMargin,
         customerBudgetAmount,
