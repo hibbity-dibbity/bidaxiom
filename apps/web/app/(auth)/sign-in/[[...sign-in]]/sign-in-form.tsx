@@ -14,6 +14,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { getSafeRedirectUrl } from "@/lib/utils/safe-redirect";
+import { useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -29,6 +31,11 @@ type MfaFormData = z.infer<typeof mfaSchema>;
 
 export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
   const router = useRouter();
+  const ssoError = useSearchParams().get("sso_error");
+  const { data: ssoProviders } = trpc.sso.providers.useQuery();
+  useEffect(() => {
+    if (ssoError) toast.error(ssoError);
+  }, [ssoError]);
 
   const [isLoading, setIsLoading] = useState(false);
   const [mfaRequired, setMfaRequired] = useState(false);
@@ -303,6 +310,12 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? "Signing in..." : "Sign In"}
           </Button>
+          {(ssoProviders ?? []).map((p) => (
+            <Button key={p.key} type="button" variant="outline" className="w-full" disabled={isLoading}
+              onClick={() => { window.location.href = `/api/auth/sso/start?provider=${p.key}`; }}>
+              Sign in with {p.label}
+            </Button>
+          ))}
           <p className="text-center text-sm text-muted-foreground">
             Don&apos;t have an account?{" "}
             <Link href="/sign-up" className="text-primary hover:underline">

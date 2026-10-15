@@ -29,6 +29,7 @@ import { orderRouter } from "./routers/order.js";
 import { templateRouter } from "./routers/template.js";
 import { notesRouter } from "./routers/notes.js";
 import { takeoffRouter } from "./routers/takeoff.js";
+import { ssoRouter } from "./routers/sso.js";
 
 /**
  * Root application router.
@@ -68,6 +69,7 @@ export const appRouter = router({
   template: templateRouter,
   notes: notesRouter,
   takeoff: takeoffRouter,
+  sso: ssoRouter,
 });
 
 /**

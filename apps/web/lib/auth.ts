@@ -47,9 +47,7 @@ export async function refreshAccessToken(): Promise<string | null> {
     const response = await fetch(`${API_URL}/trpc/auth.refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        json: { refreshToken: session.refreshToken },
-      }),
+      body: JSON.stringify({ refreshToken: session.refreshToken }),
     });
 
     if (!response.ok) {
@@ -59,7 +57,7 @@ export async function refreshAccessToken(): Promise<string | null> {
     }
 
     const data = await response.json();
-    const result = data.result?.data?.json;
+    const result = data.result?.data;
 
     if (result?.accessToken && result?.refreshToken) {
       session.accessToken = result.accessToken;

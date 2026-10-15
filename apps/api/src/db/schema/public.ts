@@ -175,3 +175,39 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
 }, (table) => ({
   userIdx: index("idx_password_reset_user").on(table.userId),
 }));
+
+/**
+ * Single sign-on connection: one company's link to an identity provider (OIDC).
+ * Microsoft first; other providers add a row with their own provider key. `tenantRef` is the
+ * provider's own id for the customer's directory (Entra tenant id) and is bound to one company.
+ */
+export const ssoConnections = pgTable("sso_connections", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  provider: text("provider").notNull(), // microsoft
+  tenantRef: text("tenant_ref").notNull(),
+  enabled: boolean("enabled").notNull().default(true),
+  enforceSso: boolean("enforce_sso").notNull().default(false), // members (not admins) must use SSO, not a password
+  autoProvision: boolean("auto_provision").notNull().default(false), // create accounts on first sign-in
+  defaultRole: text("default_role").notNull().default("org:member"),
+  allowedDomains: jsonb("allowed_domains").$type<string[]>().notNull().default([]), // optional extra email-domain filter
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  tenantUnique: unique().on(table.provider, table.tenantRef),
+  orgProviderUnique: unique().on(table.organizationId, table.provider),
+}));
+
+/** A user's identity at a provider (their stable id inside the customer's directory). */
+export const ssoIdentities = pgTable("sso_identities", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  provider: text("provider").notNull(),
+  tenantRef: text("tenant_ref").notNull(),
+  subject: text("subject").notNull(),
+  email: text("email"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  identityUnique: unique().on(table.provider, table.tenantRef, table.subject),
+  userIdx: index("idx_sso_identities_user").on(table.userId),
+}));

@@ -16,6 +16,7 @@ import {
 import { hashPassword, verifyPassword } from "../../auth/password.js";
 import { signAccessToken, signRefreshToken, verifyAccessToken, verifyRefreshToken } from "../../auth/jwt.js";
 import { generateToken, hashToken } from "../../auth/tokens.js";
+import { passwordLoginBlocked } from "../../auth/oidc/sso.js";
 import { generateMfaSecret, verifyMfaToken, verifyBackupCode } from "../../auth/mfa.js";
 import {
   checkLoginRateLimit,
@@ -212,6 +213,14 @@ export const authRouter = router({
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "Please verify your email before logging in",
+        });
+      }
+
+      // A company that requires single sign-on does not accept passwords from its members.
+      if (await passwordLoginBlocked(user.id)) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Your company requires Microsoft sign-in. Use the Sign in with Microsoft button.",
         });
       }
 
