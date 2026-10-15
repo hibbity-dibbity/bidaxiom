@@ -20,8 +20,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
+import { DocumentActions } from "@/components/shared/document-actions";
 import { useDebounce } from "@/hooks/use-debounce";
-import { ChevronRight, Download, FileText, Plus, Search, SearchX } from "lucide-react";
+import { Download, FileText, Plus, Search, SearchX } from "lucide-react";
 import { formatCurrency } from "@construction/shared";
 import { format } from "date-fns";
 
@@ -164,7 +165,7 @@ export default function EstimatesPage({
                 <TableHead className="text-right">Proposal Total</TableHead>
                 <TableHead>Created Date</TableHead>
                 <TableHead>Active</TableHead>
-                <TableHead className="w-[100px]"></TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -210,8 +211,13 @@ export default function EstimatesPage({
                       </Button>
                     )}
                   </TableCell>
-                  <TableCell className="w-[48px]">
-                    <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" />
+                  <TableCell>
+                    <DocumentActions
+                      kind="proposal"
+                      id={estimate.id}
+                      previewHref={`/projects/${projectSlug}/estimates/${estimate.slug}/preview`}
+                      onSent={() => utils.estimates.list.invalidate()}
+                    />
                   </TableCell>
                 </TableRow>
               ))}

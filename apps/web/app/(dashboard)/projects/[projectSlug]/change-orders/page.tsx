@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { DocumentActions } from "@/components/shared/document-actions";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
@@ -107,6 +108,7 @@ export default function ChangeOrdersPage({ params }: { params: { projectSlug: st
                   <th className="px-3 py-2">Sent</th>
                   <th className="px-3 py-2">Accepted</th>
                   <th className="px-3 py-2 text-right">Amount</th>
+                  <th className="px-3 py-2 text-right">Actions</th>
                   <th className="px-3 py-2"></th>
                 </tr>
               </thead>
@@ -124,6 +126,14 @@ export default function ChangeOrdersPage({ params }: { params: { projectSlug: st
                     <td className="px-3 py-2">{r.sentAt ? shortDate(new Date(r.sentAt).toISOString().slice(0, 10)) : "—"}</td>
                     <td className="px-3 py-2">{r.acceptedAt ? shortDate(new Date(r.acceptedAt).toISOString().slice(0, 10)) : "—"}</td>
                     <td className="px-3 py-2 text-right tabular-nums">{dollars(r.total / 100)}</td>
+                    <td className="px-3 py-2">
+                      <DocumentActions
+                        kind="proposal"
+                        id={r.id}
+                        previewHref={`/projects/${projectSlug}/change-orders/${r.slug}/preview`}
+                        onSent={() => utils.proposal.listChangeOrders.invalidate()}
+                      />
+                    </td>
                     <td className="px-3 py-2 text-right">
                       {r.status === "draft" && (
                         <button

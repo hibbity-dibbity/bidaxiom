@@ -18,6 +18,7 @@ import {
   type CostLineInput,
 } from "@construction/shared";
 import { NumField } from "./num-field";
+import { DocumentActions } from "@/components/shared/document-actions";
 import { AcceptDialog } from "./accept-dialog";
 import {
   COST_TYPES,
@@ -517,13 +518,15 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
         </div>
         <div className="flex items-center gap-3">
           <SaveIndicator state={saveState} dirty={dirty} />
-          {dirty || saveState.kind === "saving" ? (
-            <Button type="button" variant="outline" disabled title="Waiting for your changes to save">Customer view</Button>
-          ) : (
-            <Button asChild variant="outline">
-              <Link href={`/projects/${projectSlug}/${section}/${estimateSlug}/preview`}>Customer view</Link>
-            </Button>
-          )}
+          <DocumentActions
+            kind="proposal"
+            id={estimateId}
+            size="default"
+            previewHref={`/projects/${projectSlug}/${section}/${estimateSlug}/preview`}
+            disabled={dirty || saveState.kind === "saving"}
+            disabledReason="Waiting for your changes to save"
+            onSent={() => { utils.proposal.get.invalidate({ estimateId }); }}
+          />
         </div>
       </div>
 

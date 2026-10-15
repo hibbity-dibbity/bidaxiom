@@ -102,7 +102,7 @@ export default function ProposalPreviewPage({
       <div className="flex flex-wrap items-start justify-between gap-4 print:hidden">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold tracking-tight">Customer view</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Preview</h1>
             {sent && data.sentAt && <StatusBadge variant={data.status === "submitted" ? "pending" : "approved"}>{data.status === "submitted" ? "Sent" : "Accepted"} {new Date(data.sentAt).toLocaleDateString()}</StatusBadge>}
           </div>
           <p className="text-muted-foreground">
