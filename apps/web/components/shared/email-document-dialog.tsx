@@ -33,6 +33,8 @@ export function EmailDocumentDialog({
   const [message, setMessage] = React.useState("");
   const [replyTo, setReplyTo] = React.useState("");
   const [copyMe, setCopyMe] = React.useState(true);
+  const [signOnline, setSignOnline] = React.useState(true);
+  const [attachPdf, setAttachPdf] = React.useState(true);
   const loaded = React.useRef<string>("");
 
   React.useEffect(() => {
@@ -47,6 +49,8 @@ export function EmailDocumentDialog({
       setSubject(data.subject);
       setMessage(data.message);
       setReplyTo(data.replyTo ?? "");
+      setSignOnline(data.canSign);
+      setAttachPdf(true);
     }
   }, [open, data, id]);
 
@@ -62,15 +66,16 @@ export function EmailDocumentDialog({
   const toList = split(to);
   const ccList = [...split(cc), ...(copyMe && data?.ccMe ? [data.ccMe] : [])];
   const bad = [...toList, ...ccList].find((a) => !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(a));
-  const canSend = toList.length > 0 && !bad && subject.trim() !== "" && message.trim() !== "" && !data?.blocker && !send.isPending;
+  const online = !!data?.canSign && signOnline;
+  const canSend = (online || attachPdf || kind !== "proposal") && toList.length > 0 && !bad && subject.trim() !== "" && message.trim() !== "" && !data?.blocker && !send.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl">
         <DialogHeader>
-          <DialogTitle>Email as PDF</DialogTitle>
+          <DialogTitle>{data?.canSign ? "Send to customer" : "Email as PDF"}</DialogTitle>
           <DialogDescription>
-            The document goes out as a PDF attachment{data?.willMarkSent ? " and is marked as sent" : ""}.
+            {data?.canSign ? "Send a link to review and sign online, a PDF copy, or both" : "The document goes out as a PDF attachment"}{data?.willMarkSent ? ". It is marked as sent" : ""}.
           </DialogDescription>
         </DialogHeader>
         {isLoading || !data ? (
@@ -99,6 +104,19 @@ export function EmailDocumentDialog({
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Message</span>
               <textarea className={field} rows={9} value={message} onChange={(e) => setMessage(e.target.value)} />
             </label>
+            {data.canSign && (
+              <div className="space-y-1.5 rounded-md border bg-muted/40 p-3">
+                <label className="flex items-start gap-2">
+                  <input type="checkbox" className="mt-0.5 h-4 w-4" checked={signOnline} onChange={(e) => setSignOnline(e.target.checked)} />
+                  <span><strong>Include a link to review and sign online.</strong> The customer picks any optional items and signs; it is accepted automatically and a signed PDF is filed in the project's Documents. The link is added to the end of your message.</span>
+                </label>
+                <label className="flex items-start gap-2">
+                  <input type="checkbox" className="mt-0.5 h-4 w-4" checked={attachPdf} onChange={(e) => setAttachPdf(e.target.checked)} />
+                  <span><strong>Attach a PDF copy.</strong></span>
+                </label>
+                {!signOnline && !attachPdf && <p className="text-xs text-financial-negative">Choose the link, the PDF, or both.</p>}
+              </div>
+            )}
             <label className="block space-y-1">
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Replies go to</span>
               <input className={field} value={replyTo} onChange={(e) => setReplyTo(e.target.value)} />
@@ -116,7 +134,7 @@ export function EmailDocumentDialog({
           <Button
             type="button"
             disabled={!canSend}
-            onClick={() => send.mutate({ kind, id, to: toList, cc: ccList, subject: subject.trim(), message, replyTo: replyTo.trim() || null })}
+            onClick={() => send.mutate({ kind, id, to: toList, cc: ccList, subject: subject.trim(), message, replyTo: replyTo.trim() || null, signOnline: online, attachPdf: kind === "proposal" ? attachPdf : true })}
           >
             {send.isPending ? "Sending..." : "Send email"}
           </Button>

@@ -85,7 +85,7 @@ type Tenant = NonNullable<
 >;
 
 /** Load a proposal's rows and run the shared calculation. Used by customer view and send. */
-async function loadComputed(tenant: Tenant, estimateId: string) {
+export async function loadComputed(tenant: Tenant, estimateId: string) {
   const { db, schema } = tenant;
   const [estimate] = await db.select().from(schema.estimates).where(eq(schema.estimates.id, estimateId)).limit(1);
   if (!estimate) throw new TRPCError({ code: "NOT_FOUND", message: "Proposal not found" });
@@ -344,6 +344,264 @@ async function loadAbilities(ctx: {
  * its cost lines, global costs and invoicing schedule, and returns computed totals
  * from the shared calculation module.
  */
+/** The customer-facing document data (shared by the signed-in preview and the public signing page). */
+export async function buildCustomerViewData(tenant: Tenant, userId: string, estimateId: string) {
+  const { db, schema } = tenant;
+  const c = await loadComputed(tenant, estimateId);
+  const view = buildCustomerView({ lines: c.lines, result: c.result, milestones: c.milestones });
+
+  const [project] = await db
+    .select({
+      name: schema.projects.name,
+      jobNumber: schema.projects.jobNumber,
+      customerId: schema.projects.customerId,
+      street1: schema.projects.street1,
+      street2: schema.projects.street2,
+      city: schema.projects.city,
+      state: schema.projects.state,
+      zip: schema.projects.zip,
+    })
+    .from(schema.projects)
+    .where(eq(schema.projects.id, c.estimate.projectId))
+    .limit(1);
+  const [customer] = project
+    ? await db
+        .select({ companyName: schema.customers.companyName, contactName: schema.customers.contactName })
+        .from(schema.customers)
+        .where(eq(schema.customers.id, project.customerId))
+        .limit(1)
+    : [];
+
+  const [profile] = await db
+    .select({
+      phone: schema.companyProfiles.phone,
+      website: schema.companyProfiles.website,
+      street1: schema.companyProfiles.street1,
+      street2: schema.companyProfiles.street2,
+      city: schema.companyProfiles.city,
+      state: schema.companyProfiles.state,
+      zip: schema.companyProfiles.zip,
+    })
+    .from(schema.companyProfiles)
+    .where(isNull(schema.companyProfiles.validTo))
+    .limit(1);
+  const cityState = [profile?.city, [profile?.state, profile?.zip].filter(Boolean).join(" ")].filter(Boolean).join(", ");
+  const companyContact = [
+    profile?.phone,
+    profile?.website,
+    [[profile?.street1, profile?.street2].filter(Boolean).join(" "), cityState].filter(Boolean).join(", "),
+  ].filter((v): v is string => Boolean(v && v.trim()));
+
+  const pinned = c.estimate.termsVersionId ? await readTermsVersion(tenant, c.estimate.termsVersionId) : null;
+  const terms = pinned ?? (await ensureCurrentTerms(tenant, userId, c.estimate.kind === "change_order" ? "change_order" : "proposal"));
+
+  const addressParts = project
+    ? [project.street1, project.street2, [project.city, project.state].filter(Boolean).join(", "), project.zip].filter(Boolean)
+    : [];
+  // A change order shows what the contract was, what this changes, and what it becomes.
+  let contract: { before: number; change: number; after: number } | null = null;
+  if (c.estimate.kind === "change_order") {
+    let before = 0;
+    if (c.estimate.baseEstimateId) before += (await acceptedValueCents(tenant, c.estimate.baseEstimateId)).contractValue;
+    for (const co of await acceptedChangeOrders(tenant, c.estimate.projectId)) {
+      if (co.row.id !== c.estimate.id) before += co.contractValue;
+    }
+    const change = c.estimate.acceptedAt ? (await acceptedValueCents(tenant, c.estimate.id)).contractValue : c.result.totals.total;
+    contract = { before, change, after: before + change };
+  }
+  const [signature] = await db
+    .select()
+    .from(schema.proposalSignatures)
+    .where(and(eq(schema.proposalSignatures.estimateId, estimateId), eq(schema.proposalSignatures.outcome, "accepted")))
+    .orderBy(desc(schema.proposalSignatures.signedAt))
+    .limit(1);
+  return {
+    kind: c.estimate.kind,
+    number: c.estimate.number,
+    contract,
+    title: c.estimate.name,
+    status: c.estimate.status,
+    sentAt: c.estimate.submittedAt,
+    revision: c.estimate.revision,
+    validDays: c.estimate.validDays,
+    paymentTerms: c.estimate.paymentTerms,
+    projectNumber: project?.jobNumber ?? null,
+    companyContact,
+    companyName: tenant.companyName,
+    customerName: customer ? (customer.companyName || customer.contactName) : null,
+    projectName: project?.name ?? null,
+    projectAddress: addressParts.length > 0 ? addressParts.join(", ") : null,
+    salesTaxPercent: Number(c.estimate.salesTaxPercent),
+    view,
+    terms: { version: terms.version, sections: terms.sections, pinned: Boolean(pinned) },
+    blocker: sendBlocker(c),
+    signature: signature
+      ? {
+          signerName: signature.signerName,
+          signerEmail: signature.signerEmail,
+          signatureType: signature.signatureType,
+          signatureImage: signature.signatureImage,
+          signedAt: signature.signedAt,
+          ip: signature.ip,
+          userAgent: signature.userAgent,
+          documentHash: signature.documentHash,
+          acceptedOptionIds: signature.acceptedOptionIds,
+          contractValueCents: signature.contractValueCents === null ? null : Number(signature.contractValueCents),
+          pdfDocumentId: signature.pdfDocumentId,
+        }
+      : null,
+  };
+}
+
+/** What the contract value would be with these options chosen (cents). Used by the signing page. */
+export async function previewAcceptance(tenant: Tenant, estimateId: string, optionIds: string[]) {
+  const c = await loadComputed(tenant, estimateId);
+  const valid = c.lines.filter((l) => l.isOptional && !l.parentId).map((l) => l.id);
+  const chosen = [...new Set(optionIds)].filter((id) => valid.includes(id));
+  const a = applyAcceptance(c.result, chosen);
+  return { contractValue: a.contractValue, chosen };
+}
+
+/** Mark a sent proposal accepted: records options, locks it, drafts orders and invoices. Callers check permission. */
+export async function acceptProposal(tenant: Tenant, userId: string, estimateId: string, acceptedOptionIds: string[]) {
+  const { db, schema } = tenant;
+  const c = await loadComputed(tenant, estimateId);
+  if (c.estimate.status === "draft") {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Send the proposal to the customer before marking it accepted." });
+  }
+  if (c.estimate.status !== "submitted") {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "This proposal is already accepted." });
+  }
+  const isCO = c.estimate.kind === "change_order";
+  if (isCO) {
+    const [base] = c.estimate.baseEstimateId
+      ? await db.select({ status: schema.estimates.status }).from(schema.estimates).where(eq(schema.estimates.id, c.estimate.baseEstimateId))
+      : [];
+    if (!base || !["accepted", "under_contract"].includes(base.status)) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "The proposal this change order changes is not accepted." });
+    }
+  }
+  const optionIds = c.lines.filter((l) => l.isOptional && !l.parentId).map((l) => l.id);
+  const accepted = [...new Set(acceptedOptionIds)];
+  if (accepted.some((id) => !optionIds.includes(id))) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "One of the selected options is not an option on this proposal." });
+  }
+
+  const sourceLines = c.lines.map((l) => ({
+    id: l.id,
+    parentId: l.parentId,
+    name: l.name,
+    type: l.type,
+    costCodeId: l.costCodeId,
+    vendorId: l.vendorId,
+    isOptional: l.isOptional,
+  }));
+  const acceptance = applyAcceptance(c.result, accepted);
+
+  // Takeoffs copied in as one lump-sum line still order from their itemized material list: the
+  // snapshot is expanded into stand-in child lines so the purchase orders list every material.
+  const links = await db.select().from(schema.proposalTakeoffLinks).where(eq(schema.proposalTakeoffLinks.estimateId, estimateId));
+  const hasKids = new Set(c.lines.filter((l) => l.parentId).map((l) => l.parentId as string));
+  const synthOwner = new Map<string, { lineId: string; takeoffId: string; key: string }>();
+  const orderLinesSrc = sourceLines.map((l) => ({ ...l }));
+  const orderResult = { ...c.result, lines: { ...c.result.lines } };
+  for (const link of links) {
+    const parent = orderLinesSrc.find((l) => l.id === link.lineId);
+    if (!parent || hasKids.has(parent.id)) continue; // removed from the proposal, or already itemized
+    parent.type = "other";
+    link.snapshot.forEach((s, i) => {
+      const id = `synth:${link.id}:${i}`;
+      orderLinesSrc.push({
+        id, parentId: parent.id, name: `${s.name} — ${s.quantity} ${s.unit} @ ${s.unitCost.toFixed(2)}`,
+        type: s.type as typeof parent.type, costCodeId: null, vendorId: s.vendorId, isOptional: false,
+      });
+      orderResult.lines[id] = { ...(orderResult.lines[parent.id] ?? {}), cost: Math.round(s.quantity * s.unitCost * 100) } as (typeof orderResult.lines)[string];
+      synthOwner.set(id, { lineId: parent.id, takeoffId: link.takeoffId, key: s.key });
+    });
+  }
+  const drafts = generateDraftOrders(orderLinesSrc, orderResult, accepted);
+  const projectId = c.estimate.projectId;
+  const [proj] = await db.select({ jobNumber: schema.projects.jobNumber }).from(schema.projects).where(eq(schema.projects.id, projectId));
+  const projectNumber = proj?.jobNumber ?? null;
+  const now = new Date();
+
+  const createdOrders = await db.transaction(async (tx) => {
+    for (const id of optionIds) {
+      await tx
+        .update(schema.proposalCostLines)
+        .set({ optionAccepted: accepted.includes(id) })
+        .where(eq(schema.proposalCostLines.id, id));
+    }
+    await tx
+      .update(schema.estimates)
+      .set({ status: "accepted", acceptedAt: now, updatedAt: now })
+      .where(eq(schema.estimates.id, estimateId));
+    if (!isCO) {
+      await tx.update(schema.estimates).set({ isActive: false }).where(eq(schema.estimates.projectId, projectId));
+      await tx.update(schema.estimates).set({ isActive: true }).where(eq(schema.estimates.id, estimateId));
+    }
+
+    const existing = await tx
+      .select({ kind: schema.orders.kind })
+      .from(schema.orders)
+      .where(eq(schema.orders.projectId, projectId));
+    const counters = {
+      purchase: existing.filter((o) => o.kind === "purchase").length,
+      work: existing.filter((o) => o.kind === "work").length,
+    };
+    const out: Array<{ id: string; number: string; kind: string; vendorId: string | null; lines: number; total: number }> = [];
+    for (const d of drafts) {
+      counters[d.kind] += 1;
+      const number = formatDocNumber(d.kind === "purchase" ? "PO" : "WO", projectNumber, counters[d.kind]);
+      const [order] = await tx
+        .insert(schema.orders)
+        .values({ projectId, estimateId: estimateId, kind: d.kind, number, vendorId: d.vendorId, status: "draft", createdBy: userId })
+        .returning({ id: schema.orders.id });
+      await tx.insert(schema.orderLines).values(
+        d.lines.map((l, i) => ({
+          orderId: order.id,
+          sourceLineId: synthOwner.get(l.sourceLineId)?.lineId ?? l.sourceLineId,
+          takeoffId: synthOwner.get(l.sourceLineId)?.takeoffId ?? null,
+          takeoffKey: synthOwner.get(l.sourceLineId)?.key ?? null,
+          description: l.description,
+          category: l.category,
+          budgetCost: String(l.budgetCost / 100),
+          projectedCost: String(l.budgetCost / 100),
+          sortOrder: i,
+        }))
+      );
+      out.push({ id: order.id, number, kind: d.kind, vendorId: d.vendorId, lines: d.lines.length, total: d.total });
+    }
+    await createInvoiceDrafts(tx as unknown as typeof db, schema, {
+      projectId,
+      estimateId: estimateId,
+      jobNumber: projectNumber,
+      contractValueCents: acceptance.contractValue,
+      milestones: c.milestones,
+      paymentTerms: c.estimate.paymentTerms ?? null,
+      userId,
+    });
+    return out;
+  });
+
+  await createAuditLog(db, schema, {
+    entityType: "Estimate",
+    entityId: estimateId,
+    action: AuditAction.UPDATE,
+    actorId: userId,
+    changes: {
+      before: { status: "submitted" },
+      after: {
+        status: "accepted",
+        acceptedOptions: accepted.length,
+        contractValue: acceptance.contractValue,
+        draftOrders: createdOrders.length,
+      },
+    },
+  });
+  return { contractValue: acceptance.contractValue, costBudget: acceptance.costBudget, orders: createdOrders };
+}
+
 export const proposalRouter = router({
   /** Full proposal with computed totals. */
   get: protectedProcedure
@@ -639,93 +897,9 @@ export const proposalRouter = router({
       if (!ctx.tenant || !ctx.userId) {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
       }
-      const { db, schema } = ctx.tenant;
       const abilities = await loadAbilities({ tenant: ctx.tenant, userId: ctx.userId, orgRole: ctx.orgRole });
       ForbiddenError.from(abilities).throwUnlessCan("read", "Estimate");
-
-      const c = await loadComputed(ctx.tenant, input.estimateId);
-      const view = buildCustomerView({ lines: c.lines, result: c.result, milestones: c.milestones });
-
-      const [project] = await db
-        .select({
-          name: schema.projects.name,
-          jobNumber: schema.projects.jobNumber,
-          customerId: schema.projects.customerId,
-          street1: schema.projects.street1,
-          street2: schema.projects.street2,
-          city: schema.projects.city,
-          state: schema.projects.state,
-          zip: schema.projects.zip,
-        })
-        .from(schema.projects)
-        .where(eq(schema.projects.id, c.estimate.projectId))
-        .limit(1);
-      const [customer] = project
-        ? await db
-            .select({ companyName: schema.customers.companyName, contactName: schema.customers.contactName })
-            .from(schema.customers)
-            .where(eq(schema.customers.id, project.customerId))
-            .limit(1)
-        : [];
-
-      const [profile] = await db
-        .select({
-          phone: schema.companyProfiles.phone,
-          website: schema.companyProfiles.website,
-          street1: schema.companyProfiles.street1,
-          street2: schema.companyProfiles.street2,
-          city: schema.companyProfiles.city,
-          state: schema.companyProfiles.state,
-          zip: schema.companyProfiles.zip,
-        })
-        .from(schema.companyProfiles)
-        .where(isNull(schema.companyProfiles.validTo))
-        .limit(1);
-      const cityState = [profile?.city, [profile?.state, profile?.zip].filter(Boolean).join(" ")].filter(Boolean).join(", ");
-      const companyContact = [
-        profile?.phone,
-        profile?.website,
-        [[profile?.street1, profile?.street2].filter(Boolean).join(" "), cityState].filter(Boolean).join(", "),
-      ].filter((v): v is string => Boolean(v && v.trim()));
-
-      const pinned = c.estimate.termsVersionId ? await readTermsVersion(ctx.tenant, c.estimate.termsVersionId) : null;
-      const terms = pinned ?? (await ensureCurrentTerms(ctx.tenant, ctx.userId, c.estimate.kind === "change_order" ? "change_order" : "proposal"));
-
-      const addressParts = project
-        ? [project.street1, project.street2, [project.city, project.state].filter(Boolean).join(", "), project.zip].filter(Boolean)
-        : [];
-      // A change order shows what the contract was, what this changes, and what it becomes.
-      let contract: { before: number; change: number; after: number } | null = null;
-      if (c.estimate.kind === "change_order") {
-        let before = 0;
-        if (c.estimate.baseEstimateId) before += (await acceptedValueCents(ctx.tenant, c.estimate.baseEstimateId)).contractValue;
-        for (const co of await acceptedChangeOrders(ctx.tenant, c.estimate.projectId)) {
-          if (co.row.id !== c.estimate.id) before += co.contractValue;
-        }
-        const change = c.estimate.acceptedAt ? (await acceptedValueCents(ctx.tenant, c.estimate.id)).contractValue : c.result.totals.total;
-        contract = { before, change, after: before + change };
-      }
-      return {
-        kind: c.estimate.kind,
-        number: c.estimate.number,
-        contract,
-        title: c.estimate.name,
-        status: c.estimate.status,
-        sentAt: c.estimate.submittedAt,
-        revision: c.estimate.revision,
-        validDays: c.estimate.validDays,
-        paymentTerms: c.estimate.paymentTerms,
-        projectNumber: project?.jobNumber ?? null,
-        companyContact,
-        companyName: ctx.tenant.companyName,
-        customerName: customer ? (customer.companyName || customer.contactName) : null,
-        projectName: project?.name ?? null,
-        projectAddress: addressParts.length > 0 ? addressParts.join(", ") : null,
-        salesTaxPercent: Number(c.estimate.salesTaxPercent),
-        view,
-        terms: { version: terms.version, sections: terms.sections, pinned: Boolean(pinned) },
-        blocker: sendBlocker(c),
-      };
+      return buildCustomerViewData(ctx.tenant, ctx.userId, input.estimateId);
     }),
 
   /**
@@ -984,146 +1158,9 @@ export const proposalRouter = router({
       if (!ctx.tenant || !ctx.userId) {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
       }
-      const { db, schema } = ctx.tenant;
-      const userId = ctx.userId;
-      const abilities = await loadAbilities({ tenant: ctx.tenant, userId, orgRole: ctx.orgRole });
+      const abilities = await loadAbilities({ tenant: ctx.tenant, userId: ctx.userId, orgRole: ctx.orgRole });
       ForbiddenError.from(abilities).throwUnlessCan("update", "Estimate");
-
-      const c = await loadComputed(ctx.tenant, input.estimateId);
-      if (c.estimate.status === "draft") {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Send the proposal to the customer before marking it accepted." });
-      }
-      if (c.estimate.status !== "submitted") {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "This proposal is already accepted." });
-      }
-      const isCO = c.estimate.kind === "change_order";
-      if (isCO) {
-        const [base] = c.estimate.baseEstimateId
-          ? await db.select({ status: schema.estimates.status }).from(schema.estimates).where(eq(schema.estimates.id, c.estimate.baseEstimateId))
-          : [];
-        if (!base || !["accepted", "under_contract"].includes(base.status)) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "The proposal this change order changes is not accepted." });
-        }
-      }
-      const optionIds = c.lines.filter((l) => l.isOptional && !l.parentId).map((l) => l.id);
-      const accepted = [...new Set(input.acceptedOptionIds)];
-      if (accepted.some((id) => !optionIds.includes(id))) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "One of the selected options is not an option on this proposal." });
-      }
-
-      const sourceLines = c.lines.map((l) => ({
-        id: l.id,
-        parentId: l.parentId,
-        name: l.name,
-        type: l.type,
-        costCodeId: l.costCodeId,
-        vendorId: l.vendorId,
-        isOptional: l.isOptional,
-      }));
-      const acceptance = applyAcceptance(c.result, accepted);
-
-      // Takeoffs copied in as one lump-sum line still order from their itemized material list: the
-      // snapshot is expanded into stand-in child lines so the purchase orders list every material.
-      const links = await db.select().from(schema.proposalTakeoffLinks).where(eq(schema.proposalTakeoffLinks.estimateId, input.estimateId));
-      const hasKids = new Set(c.lines.filter((l) => l.parentId).map((l) => l.parentId as string));
-      const synthOwner = new Map<string, { lineId: string; takeoffId: string; key: string }>();
-      const orderLinesSrc = sourceLines.map((l) => ({ ...l }));
-      const orderResult = { ...c.result, lines: { ...c.result.lines } };
-      for (const link of links) {
-        const parent = orderLinesSrc.find((l) => l.id === link.lineId);
-        if (!parent || hasKids.has(parent.id)) continue; // removed from the proposal, or already itemized
-        parent.type = "other";
-        link.snapshot.forEach((s, i) => {
-          const id = `synth:${link.id}:${i}`;
-          orderLinesSrc.push({
-            id, parentId: parent.id, name: `${s.name} — ${s.quantity} ${s.unit} @ ${s.unitCost.toFixed(2)}`,
-            type: s.type as typeof parent.type, costCodeId: null, vendorId: s.vendorId, isOptional: false,
-          });
-          orderResult.lines[id] = { ...(orderResult.lines[parent.id] ?? {}), cost: Math.round(s.quantity * s.unitCost * 100) } as (typeof orderResult.lines)[string];
-          synthOwner.set(id, { lineId: parent.id, takeoffId: link.takeoffId, key: s.key });
-        });
-      }
-      const drafts = generateDraftOrders(orderLinesSrc, orderResult, accepted);
-      const projectId = c.estimate.projectId;
-      const [proj] = await db.select({ jobNumber: schema.projects.jobNumber }).from(schema.projects).where(eq(schema.projects.id, projectId));
-      const projectNumber = proj?.jobNumber ?? null;
-      const now = new Date();
-
-      const createdOrders = await db.transaction(async (tx) => {
-        for (const id of optionIds) {
-          await tx
-            .update(schema.proposalCostLines)
-            .set({ optionAccepted: accepted.includes(id) })
-            .where(eq(schema.proposalCostLines.id, id));
-        }
-        await tx
-          .update(schema.estimates)
-          .set({ status: "accepted", acceptedAt: now, updatedAt: now })
-          .where(eq(schema.estimates.id, input.estimateId));
-        if (!isCO) {
-          await tx.update(schema.estimates).set({ isActive: false }).where(eq(schema.estimates.projectId, projectId));
-          await tx.update(schema.estimates).set({ isActive: true }).where(eq(schema.estimates.id, input.estimateId));
-        }
-
-        const existing = await tx
-          .select({ kind: schema.orders.kind })
-          .from(schema.orders)
-          .where(eq(schema.orders.projectId, projectId));
-        const counters = {
-          purchase: existing.filter((o) => o.kind === "purchase").length,
-          work: existing.filter((o) => o.kind === "work").length,
-        };
-        const out: Array<{ id: string; number: string; kind: string; vendorId: string | null; lines: number; total: number }> = [];
-        for (const d of drafts) {
-          counters[d.kind] += 1;
-          const number = formatDocNumber(d.kind === "purchase" ? "PO" : "WO", projectNumber, counters[d.kind]);
-          const [order] = await tx
-            .insert(schema.orders)
-            .values({ projectId, estimateId: input.estimateId, kind: d.kind, number, vendorId: d.vendorId, status: "draft", createdBy: userId })
-            .returning({ id: schema.orders.id });
-          await tx.insert(schema.orderLines).values(
-            d.lines.map((l, i) => ({
-              orderId: order.id,
-              sourceLineId: synthOwner.get(l.sourceLineId)?.lineId ?? l.sourceLineId,
-              takeoffId: synthOwner.get(l.sourceLineId)?.takeoffId ?? null,
-              takeoffKey: synthOwner.get(l.sourceLineId)?.key ?? null,
-              description: l.description,
-              category: l.category,
-              budgetCost: String(l.budgetCost / 100),
-              projectedCost: String(l.budgetCost / 100),
-              sortOrder: i,
-            }))
-          );
-          out.push({ id: order.id, number, kind: d.kind, vendorId: d.vendorId, lines: d.lines.length, total: d.total });
-        }
-        await createInvoiceDrafts(tx as unknown as typeof db, schema, {
-          projectId,
-          estimateId: input.estimateId,
-          jobNumber: projectNumber,
-          contractValueCents: acceptance.contractValue,
-          milestones: c.milestones,
-          paymentTerms: c.estimate.paymentTerms ?? null,
-          userId,
-        });
-        return out;
-      });
-
-      await createAuditLog(db, schema, {
-        entityType: "Estimate",
-        entityId: input.estimateId,
-        action: AuditAction.UPDATE,
-        actorId: userId,
-        changes: {
-          before: { status: "submitted" },
-          after: {
-            status: "accepted",
-            acceptedOptions: accepted.length,
-            contractValue: acceptance.contractValue,
-            draftOrders: createdOrders.length,
-          },
-        },
-      });
-      return { contractValue: acceptance.contractValue, costBudget: acceptance.costBudget, orders: createdOrders };
+      return acceptProposal(ctx.tenant, ctx.userId, input.estimateId, input.acceptedOptionIds);
     }),
   // ---- Change orders: built like proposals (estimates.kind = "change_order") ----
 

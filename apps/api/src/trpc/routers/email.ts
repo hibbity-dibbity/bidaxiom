@@ -10,6 +10,7 @@ import { AuditAction } from "@construction/shared";
 import { renderDocumentPdf, type PdfKind } from "../../pdf/documents.js";
 import { sendDocumentMail } from "../../services/email.js";
 import { proposalRouter } from "./proposal.js";
+import { createSigningLink } from "./signing.js";
 import { invoiceRouter } from "./invoice.js";
 
 /**
@@ -58,6 +59,7 @@ async function describe(ctx: Ctx, kind: PdfKind, id: string) {
       subject: `${label} - ${projectLabel(p)}`,
       intro: `Please find attached ${co ? `change order ${e.number ?? ""}${rev}`.trim() : `our proposal${rev}`} for ${projectLabel(p)}.`,
       draft: e.status === "draft",
+      signable: e.status === "draft" || e.status === "submitted",
       blocker: null as string | null,
     };
   }
@@ -120,6 +122,7 @@ export const emailRouter = router({
       replyTo: me.email,
       ccMe: me.email,
       willMarkSent: d.draft,
+      canSign: input.kind === "proposal" && "signable" in d && d.signable === true,
       blocker: d.blocker,
       history,
     };
@@ -136,6 +139,10 @@ export const emailRouter = router({
         subject: z.string().min(1).max(300),
         message: z.string().min(1).max(10000),
         replyTo: z.string().email().nullable().optional(),
+        /** Proposals and change orders: add a private link to review and sign online. */
+        signOnline: z.boolean().default(false),
+        /** Attach the PDF. At least one of link or PDF is required. */
+        attachPdf: z.boolean().default(true),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -151,26 +158,38 @@ export const emailRouter = router({
         markedSent = true;
       }
 
+      if (!input.attachPdf && !(input.signOnline && input.kind === "proposal")) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Choose to attach the PDF, include the signing link, or both." });
+      }
       const to = clean(input.to);
       const cc = clean(input.cc).filter((a) => !to.map((t) => t.toLowerCase()).includes(a.toLowerCase()));
       let filename: string | null = null;
       try {
-        const out = await renderDocumentPdf(c.tenant, { userId: c.userId, orgId: c.orgId, orgRole: c.orgRole, orgName: c.tenant.companyName }, input.kind, input.id);
-        filename = out.filename;
+        let body = input.message;
+        if (input.signOnline && input.kind === "proposal") {
+          const [cur] = await db.select({ status: schema.estimates.status }).from(schema.estimates).where(eq(schema.estimates.id, input.id));
+          if (cur?.status !== "submitted") throw new TRPCError({ code: "BAD_REQUEST", message: "This is already accepted, so it cannot be sent for signing. Attach the PDF instead." });
+          const link = await createSigningLink({ organizationId: c.orgId, userId: c.userId, estimateId: input.id, recipientEmail: to.join(", ") });
+          body += `\n\nReview and sign online:\n${link.url}\n\nThis private link works until ${link.expiresAt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}.`;
+        }
+        const out = input.attachPdf || input.kind !== "proposal"
+          ? await renderDocumentPdf(c.tenant, { userId: c.userId, orgId: c.orgId, orgRole: c.orgRole, orgName: c.tenant.companyName }, input.kind, input.id)
+          : null;
+        filename = out?.filename ?? null;
         const r = await sendDocumentMail({
           fromName: c.tenant.companyName,
           replyTo: input.replyTo ?? null,
           to,
           cc,
           subject: input.subject,
-          text: input.message,
-          attachment: { filename: out.filename, content: out.buffer },
+          text: body,
+          attachment: out ? { filename: out.filename, content: out.buffer } : null,
         });
         await db.insert(schema.emailLog).values({
           kind: input.kind, entityId: input.id, projectId: d.projectId, toAddresses: to.join(", "), ccAddresses: cc.join(", ") || null,
-          subject: input.subject, attachmentName: filename, status: "sent", providerId: r.id, sentBy: c.userId,
+          subject: input.subject, attachmentName: filename ?? (input.signOnline ? "(signing link)" : null), status: "sent", providerId: r.id, sentBy: c.userId,
         });
-        await createAuditLog(db, schema, { entityType: "Email", entityId: input.id, action: AuditAction.CREATE, actorId: c.userId, changes: { after: { kind: input.kind, to, cc, subject: input.subject } } });
+        await createAuditLog(db, schema, { entityType: "Email", entityId: input.id, action: AuditAction.CREATE, actorId: c.userId, changes: { after: { kind: input.kind, to, cc, subject: input.subject, signOnline: input.signOnline, attachPdf: input.attachPdf } } });
         return { sent: true, markedSent, to };
       } catch (e) {
         const message = e instanceof Error ? e.message : "The email could not be sent.";

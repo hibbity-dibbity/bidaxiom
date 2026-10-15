@@ -225,7 +225,7 @@ export interface DocumentMail {
   cc?: string[];
   subject: string;
   text: string;
-  attachment: { filename: string; content: Buffer };
+  attachment?: { filename: string; content: Buffer } | null;
 }
 
 /** "Thomson Enterprises <documents@bidaxiom.com>": the company name in front of the app's sending address. */
@@ -254,7 +254,7 @@ export async function sendDocumentMail(mail: DocumentMail): Promise<{ id: string
     subject: mail.subject,
     text: mail.text,
     html,
-    attachments: [{ filename: mail.attachment.filename, content: mail.attachment.content }],
+    ...(mail.attachment ? { attachments: [{ filename: mail.attachment.filename, content: mail.attachment.content }] } : {}),
   });
   if (error) throw new Error(error.message || "The email service refused the message.");
   return { id: data?.id ?? null };

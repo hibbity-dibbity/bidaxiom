@@ -20,6 +20,7 @@ import {
 import { NumField } from "./num-field";
 import { DocumentActions } from "@/components/shared/document-actions";
 import { AcceptDialog } from "./accept-dialog";
+import { SigningStatus } from "./signing-status";
 import {
   COST_TYPES,
   MAX_MARGIN,
@@ -489,6 +490,8 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
           {isCO ? "Change order value" : "Contract value"} {money(data?.acceptance.contractValue ?? 0)}. {isCO ? "A further change needs a new change order." : "Scope changes go through change orders."}
         </div>
       )}
+
+      <SigningStatus estimateId={estimateId} enabled={locked} />
 
       {/* Title row */}
       <div className="flex flex-wrap items-start justify-between gap-4">
