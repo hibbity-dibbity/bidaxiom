@@ -35,10 +35,11 @@ services:
       S3_ACCESS_KEY_ID: minioadmin
       S3_SECRET_ACCESS_KEY: minioadmin
       S3_BUCKET_NAME: construction-dev
-      # Local-only secrets. Do not reuse these anywhere else.
-      JWT_SECRET: local-dev-jwt-secret-change-me-0123456789
-      JWT_REFRESH_SECRET: local-dev-refresh-secret-change-me-0123
-      SESSION_SECRET: local-dev-session-secret-change-me-01234
+      # Signing secrets. The defaults are public (they are in this file), so set your own long random
+      # values in the .env file next to this one before exposing BidAxiom beyond your own network.
+      JWT_SECRET: ${JWT_SECRET:-local-dev-jwt-secret-change-me-0123456789}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-local-dev-refresh-secret-change-me-0123}
+      SESSION_SECRET: ${SESSION_SECRET:-local-dev-session-secret-change-me-01234}
       CORS_ORIGIN: http://localhost:3000
       # The PDF renderer opens the web app by its service name.
       WEB_INTERNAL_URL: http://web:3000
@@ -64,7 +65,7 @@ services:
       - api
     environment:
       PORT: "3000"
-      SESSION_SECRET: local-dev-session-secret-change-me-01234
+      SESSION_SECRET: ${SESSION_SECRET:-local-dev-session-secret-change-me-01234}
       NEXT_PUBLIC_API_URL: http://localhost:3001
       # Server-side calls from inside the web container reach the API by its service name.
       API_INTERNAL_URL: http://api:3001

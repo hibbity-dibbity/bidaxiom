@@ -325,6 +325,9 @@ export const customerRouter = router({
         });
       }
 
+      if (ctx.orgRole !== "org:admin" && ctx.orgRole !== "org:project_manager") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only an admin or project manager can delete a customer." });
+      }
       const { db, schema } = ctx.tenant;
       const userId = ctx.userId;
 

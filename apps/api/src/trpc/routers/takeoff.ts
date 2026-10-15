@@ -44,6 +44,7 @@ const costOf = (lines: TakeoffLine[]) => lines.filter((l) => !l.info).reduce((s,
 export const takeoffRouter = router({
   list: protectedProcedure.input(z.object({ projectId: z.string().uuid() })).query(async ({ ctx, input }) => {
     if (!ctx.tenant) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+    await assertCanEdit(ctx, "read");
     const { db, schema } = ctx.tenant;
     const rows = await db
       .select()
@@ -59,6 +60,7 @@ export const takeoffRouter = router({
   /** Draft proposals and change orders a takeoff can be copied into. */
   targets: protectedProcedure.input(z.object({ projectId: z.string().uuid() })).query(async ({ ctx, input }) => {
     if (!ctx.tenant) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+    await assertCanEdit(ctx, "read");
     const { db, schema } = ctx.tenant;
     const rows = await db
       .select({ id: schema.estimates.id, name: schema.estimates.name, kind: schema.estimates.kind, revision: schema.estimates.revision })
@@ -70,6 +72,7 @@ export const takeoffRouter = router({
 
   get: protectedProcedure.input(z.object({ id: z.string().uuid() })).query(async ({ ctx, input }) => {
     if (!ctx.tenant) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+    await assertCanEdit(ctx, "read");
     const { db, schema } = ctx.tenant;
     const [row] = await db.select().from(schema.materialTakeoffs).where(eq(schema.materialTakeoffs.id, input.id)).limit(1);
     if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Takeoff not found" });
@@ -180,11 +183,11 @@ export const takeoffRouter = router({
     }),
 });
 
-async function assertCanEdit(ctx: { tenant: unknown; userId: string | null; orgRole: string | null }) {
+async function assertCanEdit(ctx: { tenant: unknown; userId: string | null; orgRole: string | null }, action: "update" | "read" = "update") {
   const t = ctx.tenant as NonNullable<Awaited<ReturnType<typeof import("../../tenant/context.js").buildTenantContext>>>;
   const memberships = await t.db
     .select({ projectId: t.schema.projectTeamMembers.projectId, role: t.schema.projectTeamMembers.role })
     .from(t.schema.projectTeamMembers)
     .where(eq(t.schema.projectTeamMembers.userId, ctx.userId ?? ""));
-  ForbiddenError.from(defineAbilitiesFor(ctx.orgRole ?? "org:member", ctx.userId ?? "", memberships)).throwUnlessCan("update", "Estimate");
+  ForbiddenError.from(defineAbilitiesFor(ctx.orgRole ?? "org:member", ctx.userId ?? "", memberships)).throwUnlessCan(action, "Estimate");
 }

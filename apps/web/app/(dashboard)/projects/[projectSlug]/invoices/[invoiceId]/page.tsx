@@ -107,7 +107,7 @@ export default function InvoicePage({ params }: { params: { projectSlug: string;
       {draft && (
         <div className="space-y-3 rounded-md border bg-muted px-4 py-3 text-sm print:hidden">
           <div>
-            <strong>Draft.</strong> Sending is a separate step. It sets the date sent and the due date and locks the invoice. Email delivery is not set up yet, so use Download PDF to send it to {data.customerName ?? "the customer"}.
+            <strong>Draft.</strong> Sending is a separate step. It sets the date sent and the due date and locks the invoice. Use Email or Download PDF to send it to {data.customerName ?? "the customer"}.
           </div>
           <div className="flex flex-wrap items-end gap-3">
             <label className="space-y-1">

@@ -8,12 +8,18 @@ import { SignJWT, jwtVerify } from "jose";
  */
 
 // Lazy-load secrets to ensure dotenv runs first
+function requireSecret(name: string): Uint8Array {
+  const v = process.env[name] ?? "";
+  if (v.length < 32) throw new Error(`${name} must be set to a random value of at least 32 characters`);
+  return new TextEncoder().encode(v);
+}
+
 function getJwtSecret(): Uint8Array {
-  return new TextEncoder().encode(process.env.JWT_SECRET || "");
+  return requireSecret("JWT_SECRET");
 }
 
 function getJwtRefreshSecret(): Uint8Array {
-  return new TextEncoder().encode(process.env.JWT_REFRESH_SECRET || "");
+  return requireSecret("JWT_REFRESH_SECRET");
 }
 
 const ACCESS_TOKEN_TTL = "15m"; // 15 minutes

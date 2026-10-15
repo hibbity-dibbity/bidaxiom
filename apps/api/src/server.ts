@@ -332,6 +332,11 @@ const port = Number(process.env.API_PORT) || 3001;
 const host = process.env.HOST ?? "0.0.0.0";
 
 try {
+  for (const name of ["JWT_SECRET", "JWT_REFRESH_SECRET", "SESSION_SECRET"]) {
+    if ((process.env[name] ?? "").includes("local-dev-")) {
+      fastify.log.warn(`${name} is the public default from docker-compose. Set your own random value in .env before exposing BidAxiom beyond your own network.`);
+    }
+  }
   await fastify.listen({ port, host });
   console.log(`API server running at http://localhost:${port}`);
 } catch (err) {

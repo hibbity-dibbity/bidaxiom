@@ -257,7 +257,7 @@ export default function ProposalPreviewPage({
               <SectionHead left="Change Order / Extra Work Authorization" right="" />
               <div className="flex flex-col gap-2 pt-3 text-[10.5px] leading-snug text-muted-foreground">
                 {data.terms.sections.map((sec) => (
-                  <div key={sec.id}>
+                  <div key={sec.id} style={{ breakInside: "avoid" }}>
                     <strong className="text-foreground">{sec.title}</strong>
                     {sec.body && <div className="whitespace-pre-wrap">{sec.body}</div>}
                   </div>
@@ -269,7 +269,7 @@ export default function ProposalPreviewPage({
               <SectionHead left="Terms and conditions" right={`Master terms, version ${data.terms.version}`} />
               <div className="flex flex-col gap-2 pt-3 text-[10.5px] leading-snug text-muted-foreground">
                 {data.terms.sections.map((s, i) => (
-                  <div key={s.id}>
+                  <div key={s.id} style={{ breakInside: "avoid" }}>
                     <strong className="text-foreground">{i + 1}. {s.title}</strong>
                     {s.body && <div className="whitespace-pre-wrap">{s.body}</div>}
                   </div>
@@ -278,7 +278,7 @@ export default function ProposalPreviewPage({
             </section>
           )}
 
-          <div className="flex flex-wrap gap-12 pt-4">
+          <div style={{ breakInside: "avoid" }} className="flex flex-wrap gap-12 pt-4">
             <div className="min-w-[240px] flex-1 border-t border-foreground pt-2 text-xs text-muted-foreground">Accepted by (signature and date)</div>
             <div className="min-w-[240px] flex-1 border-t border-foreground pt-2 text-xs text-muted-foreground">{data.companyName} (signature and date)</div>
           </div>
@@ -291,7 +291,7 @@ export default function ProposalPreviewPage({
             <AlertDialogTitle>Mark this {noun} as sent?</AlertDialogTitle>
             <AlertDialogDescription>
               The {noun} is recorded as sent and locked, and keeps the current {isCO ? "authorization wording" : "master terms"} (version {data.terms.version}).
-              Later changes to your {isCO ? "wording" : "terms"} will not change it. To change it after sending, create a revision. Email delivery is not set up yet, so use Download PDF to send it to {customer}.
+              Later changes to your {isCO ? "wording" : "terms"} will not change it. To change it after sending, create a revision. Use Email or Download PDF to send it to {customer}.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -308,7 +308,7 @@ export default function ProposalPreviewPage({
 
 function SectionHead({ left, right }: { left: string; right: string }) {
   return (
-    <div className="flex justify-between border-b-2 border-foreground pb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+    <div style={{ breakAfter: "avoid" }} className="flex justify-between border-b-2 border-foreground pb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
       <span>{left}</span>
       <span>{right}</span>
     </div>

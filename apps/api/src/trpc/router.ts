@@ -1,7 +1,6 @@
 import { router } from "./trpc.js";
 import { authRouter } from "./routers/auth.js";
 import { healthRouter } from "./routers/health.js";
-import { tenantRouter } from "./routers/tenant.js";
 import { auditRouter } from "./routers/audit.js";
 import { companyRouter } from "./routers/company.js";
 import { customerRouter } from "./routers/customer.js";
@@ -23,7 +22,6 @@ import { calendarRouter } from "./routers/calendar.js";
 import { organizationRouter } from "./routers/organization.js";
 import { searchRouter } from "./routers/search.js";
 import { estimatesRouter } from "./routers/estimates.js";
-import { estimateTemplatesRouter } from "./routers/estimateTemplates.js";
 import { proposalRouter } from "./routers/proposal.js";
 import { emailRouter } from "./routers/email.js";
 import { termsRouter } from "./routers/terms.js";
@@ -42,7 +40,6 @@ import { takeoffRouter } from "./routers/takeoff.js";
 export const appRouter = router({
   auth: authRouter,
   health: healthRouter,
-  tenant: tenantRouter,
   audit: auditRouter,
   company: companyRouter,
   customer: customerRouter,
@@ -65,7 +62,6 @@ export const appRouter = router({
   calendar: calendarRouter,
   search: searchRouter,
   estimates: estimatesRouter,
-  estimateTemplates: estimateTemplatesRouter,
   proposal: proposalRouter,
   terms: termsRouter,
   order: orderRouter,
