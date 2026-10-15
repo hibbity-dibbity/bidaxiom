@@ -367,6 +367,9 @@ export {
 export {
   PSI_UPCHARGE,
   REBAR_LB_PER_FT,
+  REBAR_DIAMETER_IN,
+  chooseBays,
+  splitSheets,
   DEFAULT_CONCRETE,
   DEFAULT_METAL,
   METAL_PRICES,

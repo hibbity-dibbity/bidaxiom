@@ -46,8 +46,14 @@ const METAL_SECTIONS: Section[] = [
   { title: "Building", fields: [
     { key: "widthFt", label: "Width", unit: "ft" }, { key: "lengthFt", label: "Length", unit: "ft" }, { key: "eaveFt", label: "Eave height", unit: "ft" },
   ] },
-  { title: "Framing rules", fields: [
-    { key: "bayFt", label: "Frame spacing (max)", unit: "ft" }, { key: "purlinSpacingFt", label: "Purlin spacing", unit: "ft" }, { key: "girtSpacingFt", label: "Girt spacing", unit: "ft" },
+  { title: "Frame spacing (bays)", fields: [
+    { key: "preferredBayFt", label: "Preferred bay", unit: "ft" }, { key: "minBayFt", label: "Shortest bay", unit: "ft" }, { key: "maxBayFt", label: "Longest bay", unit: "ft" },
+  ] },
+  { title: "Members and panels", fields: [
+    { key: "purlinMaxSpacingFt", label: "Purlins, max on center", unit: "ft" }, { key: "girtMaxSpacingFt", label: "Girts, max on center", unit: "ft" },
+    { key: "memberLengthFt", label: "Purlin / girt / strut length", unit: "ft" },
+    { key: "maxSheetFt", label: "Longest sheet", unit: "ft" }, { key: "roofLapIn", label: "Roof end lap", unit: "in" }, { key: "wallLapIn", label: "Wall end lap", unit: "in" },
+    { key: "panelPerFt", label: "Panel price", unit: "$/ft" },
   ] },
   { title: "Doors, awning, gutter", fields: [
     { key: "walkDoors", label: "3070 walk doors" }, { key: "rollUp12", label: "12x12 roll ups" }, { key: "rollUp10", label: "10x10 roll ups" }, { key: "rollUp8", label: "8x8 roll ups" },
@@ -176,12 +182,12 @@ export function TakeoffEditor({ projectSlug, takeoffId }: { projectSlug: string;
           )}
           {computed.metal && (
             <div className="grid grid-cols-3 gap-3">
-              <Stat label="Frames" value={String(computed.metal.frames)} sub="including both ends" />
+              <Stat label="Frames" value={String(computed.metal.frames)} sub={`${computed.metal.bays} bay${computed.metal.bays === 1 ? "" : "s"} at ${computed.metal.bayFt} ft`} />
               <Stat label="Wall + roof area" value={`${computed.metal.surfaceSf.toLocaleString()} sf`} sub="drives screws and sealant" />
               <Stat label="Material cost" value={dollars(total)} sub="before sales tax" />
             </div>
           )}
-          {computed.concrete?.warnings.map((w) => <p key={w} className="text-sm text-amber-600">{w}</p>)}
+          {[...(computed.concrete?.warnings ?? []), ...(computed.metal?.warnings ?? [])].map((w) => <p key={w} className="text-sm text-amber-600">{w}</p>)}
 
           <div className="overflow-x-auto rounded-md border bg-background">
             <table className="w-full text-sm">
