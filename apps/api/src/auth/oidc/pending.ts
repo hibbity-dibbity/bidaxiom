@@ -7,15 +7,14 @@ import { createHmac, randomBytes, createHash } from "node:crypto";
  * signing key, so it can never be used as an access token and cannot be forged or altered.
  */
 export interface PendingSso {
-  provider: string;
+  connectionId: string;
   purpose: "login" | "setup";
   state: string;
   nonce: string;
   codeVerifier: string;
   redirectUri: string;
-  /** setup only: who is connecting which company */
+  /** setup only: who is testing the connection */
   userId?: string;
-  organizationId?: string;
 }
 
 function key(): Uint8Array {

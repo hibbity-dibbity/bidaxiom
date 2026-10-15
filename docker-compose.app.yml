@@ -45,9 +45,6 @@ services:
       WEB_INTERNAL_URL: http://web:3000
       # Email (Resend). Put RESEND_API_KEY in a file named .env next to this one; EMAIL_FROM is the
       # sending address on your verified domain.
-      # Microsoft sign-in (optional): one app registration for all of your customers. See the Settings > Single Sign-On page.
-      MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
-      MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       EMAIL_FROM: ${EMAIL_FROM:-documents@bidaxiom.com}
       # Lets a phone or laptop on the same network use the app (see docs in deploy/README if present).

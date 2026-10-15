@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { callSso, publicOrigin, setPending } from "@/lib/sso-api";
 
-/** Sign in with an identity provider: send the browser to the provider's sign-in page. */
+/** Sign in with a company's own identity provider: send the browser to its sign-in page. */
 export async function GET(request: Request) {
   const origin = publicOrigin(request);
-  const provider = new URL(request.url).searchParams.get("provider") ?? "microsoft";
+  const company = new URL(request.url).searchParams.get("company") ?? "";
   try {
-    const r = await callSso<{ authUrl: string; pendingToken: string }>("start", { provider, redirectUri: `${origin}/api/auth/sso/callback` });
+    const r = await callSso<{ authUrl: string; pendingToken: string }>("start", { companyCode: company, redirectUri: `${origin}/api/auth/sso/callback` });
     await setPending(r.pendingToken);
     return NextResponse.redirect(r.authUrl);
   } catch (e) {

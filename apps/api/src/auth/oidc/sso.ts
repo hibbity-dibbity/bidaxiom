@@ -1,9 +1,10 @@
 import { and, eq } from "drizzle-orm";
 import { randomBytes } from "node:crypto";
 import { getDb } from "../../db/client.js";
-import { users, organizationMemberships, ssoConnections, ssoIdentities } from "../../db/schema/public.js";
+import { users, organizations, organizationMemberships, ssoConnections, ssoIdentities } from "../../db/schema/public.js";
 import { hashPassword } from "../password.js";
-import { getProvider } from "./providers.js";
+import { authorizeUrl, exchange } from "./providers.js";
+import { decryptSecret } from "./secret.js";
 import { newPkce, signPending, verifyPending, type PendingSso } from "./pending.js";
 import { issueSsoSession } from "../session.js";
 
@@ -18,72 +19,80 @@ function checkRedirect(uri: string) {
   if (u.pathname !== CALLBACK_PATH || u.search || u.hash || !/^https?:$/.test(u.protocol)) throw new SsoError("Bad return address");
 }
 
-export async function beginSso(input: { provider: string; purpose: "login" | "setup"; redirectUri: string; loginHint?: string; userId?: string; organizationId?: string }) {
-  const adapter = getProvider(input.provider);
-  if (!adapter) throw new SsoError("Unknown sign-in provider");
-  if (!adapter.configured()) throw new SsoError(`${adapter.label} sign-in is not set up on this server yet.`);
+async function start(conn: typeof ssoConnections.$inferSelect, input: { purpose: "login" | "setup"; redirectUri: string; loginHint?: string; userId?: string }) {
   checkRedirect(input.redirectUri);
   const pk = newPkce();
   const pending: PendingSso = {
-    provider: input.provider, purpose: input.purpose, state: pk.state, nonce: pk.nonce, codeVerifier: pk.codeVerifier,
-    redirectUri: input.redirectUri, userId: input.userId, organizationId: input.organizationId,
+    connectionId: conn.id, purpose: input.purpose, state: pk.state, nonce: pk.nonce, codeVerifier: pk.codeVerifier,
+    redirectUri: input.redirectUri, userId: input.userId,
   };
-  return {
-    authUrl: adapter.authorizeUrl({ redirectUri: input.redirectUri, state: pk.state, nonce: pk.nonce, codeChallenge: pk.codeChallenge, loginHint: input.loginHint }),
-    pendingToken: await signPending(pending),
-  };
+  let url: string;
+  try {
+    url = await authorizeUrl(conn, { redirectUri: input.redirectUri, state: pk.state, nonce: pk.nonce, codeChallenge: pk.codeChallenge, loginHint: input.loginHint });
+  } catch (e) {
+    throw new SsoError(e instanceof Error ? e.message : "Could not reach the identity provider");
+  }
+  return { authUrl: url, pendingToken: await signPending(pending) };
+}
+
+/** Sign in: the company code (its slug) says which company's identity provider to use. */
+export async function beginSso(input: { companyCode: string; redirectUri: string; loginHint?: string }) {
+  const db = getDb();
+  const org = await db.query.organizations.findFirst({ where: eq(organizations.slug, input.companyCode.trim().toLowerCase()) });
+  const conn = org ? await db.query.ssoConnections.findFirst({ where: eq(ssoConnections.organizationId, org.id) }) : null;
+  if (!conn || !conn.enabled || !conn.verified) throw new SsoError("Single sign-on is not set up for that company code.");
+  return start(conn, { purpose: "login", redirectUri: input.redirectUri, loginHint: input.loginHint });
+}
+
+/** Admin: test a saved connection by signing in through it once. That also links the admin's own account. */
+export async function beginSetup(input: { organizationId: string; userId: string; redirectUri: string }) {
+  const conn = await getDb().query.ssoConnections.findFirst({ where: eq(ssoConnections.organizationId, input.organizationId) });
+  if (!conn) throw new SsoError("Save the connection details first.");
+  return start(conn, { purpose: "setup", redirectUri: input.redirectUri, userId: input.userId });
 }
 
 export type SsoResult =
   | { kind: "login"; session: Awaited<ReturnType<typeof issueSsoSession>> }
-  | { kind: "setup"; organizationId: string };
+  | { kind: "setup" };
 
 export async function finishSso(input: { code: string; state: string; pendingToken: string }): Promise<SsoResult> {
   let pending: PendingSso;
   try { pending = await verifyPending(input.pendingToken); } catch { throw new SsoError("This sign-in expired. Please start again."); }
   if (pending.state !== input.state) throw new SsoError("Sign-in response did not match the request. Please start again.");
-  const adapter = getProvider(pending.provider);
-  if (!adapter) throw new SsoError("Unknown sign-in provider");
+  const db = getDb();
+  const conn = await db.query.ssoConnections.findFirst({ where: eq(ssoConnections.id, pending.connectionId) });
+  if (!conn) throw new SsoError("That connection no longer exists.");
   let id;
   try {
-    id = await adapter.exchange({ code: input.code, redirectUri: pending.redirectUri, codeVerifier: pending.codeVerifier, nonce: pending.nonce });
+    id = await exchange({ issuer: conn.issuer, clientId: conn.clientId, clientSecret: decryptSecret(conn.clientSecretEnc) }, {
+      code: input.code, redirectUri: pending.redirectUri, codeVerifier: pending.codeVerifier, nonce: pending.nonce,
+    });
   } catch (e) {
     throw new SsoError(e instanceof Error ? e.message : "Sign-in failed");
   }
-  const db = getDb();
+  const linked = await db.query.ssoIdentities.findFirst({ where: and(eq(ssoIdentities.connectionId, conn.id), eq(ssoIdentities.subject, id.subject)) });
 
   if (pending.purpose === "setup") {
-    if (!pending.userId || !pending.organizationId) throw new SsoError("Bad request");
+    if (!pending.userId) throw new SsoError("Bad request");
     const m = await db.query.organizationMemberships.findFirst({
-      where: and(eq(organizationMemberships.userId, pending.userId), eq(organizationMemberships.organizationId, pending.organizationId)),
+      where: and(eq(organizationMemberships.userId, pending.userId), eq(organizationMemberships.organizationId, conn.organizationId)),
     });
     if (!m || m.role !== "org:admin") throw new SsoError("Only a company admin can connect sign-in.");
-    const taken = await db.query.ssoConnections.findFirst({ where: and(eq(ssoConnections.provider, pending.provider), eq(ssoConnections.tenantRef, id.tenantRef)) });
-    if (taken && taken.organizationId !== pending.organizationId) throw new SsoError("That Microsoft organization is already connected to another BidAxiom company.");
-    const mine = await db.query.ssoConnections.findFirst({ where: and(eq(ssoConnections.organizationId, pending.organizationId), eq(ssoConnections.provider, pending.provider)) });
-    if (mine) {
-      await db.update(ssoConnections).set({ tenantRef: id.tenantRef, enabled: true, updatedAt: new Date() }).where(eq(ssoConnections.id, mine.id));
-    } else {
-      await db.insert(ssoConnections).values({ organizationId: pending.organizationId, provider: pending.provider, tenantRef: id.tenantRef });
-    }
-    const linked = await db.query.ssoIdentities.findFirst({ where: and(eq(ssoIdentities.provider, pending.provider), eq(ssoIdentities.tenantRef, id.tenantRef), eq(ssoIdentities.subject, id.subject)) });
-    if (linked && linked.userId !== pending.userId) throw new SsoError("That Microsoft account is already linked to a different BidAxiom user.");
-    if (!linked) await db.insert(ssoIdentities).values({ userId: pending.userId, provider: pending.provider, tenantRef: id.tenantRef, subject: id.subject, email: id.email });
-    return { kind: "setup", organizationId: pending.organizationId };
+    if (linked && linked.userId !== pending.userId) throw new SsoError("That account is already linked to a different BidAxiom user.");
+    if (!linked) await db.insert(ssoIdentities).values({ userId: pending.userId, connectionId: conn.id, subject: id.subject, email: id.email });
+    await db.update(ssoConnections).set({ verified: true, updatedAt: new Date() }).where(eq(ssoConnections.id, conn.id));
+    return { kind: "setup" };
   }
 
-  // Sign-in: the person's Microsoft directory decides which company this is.
-  const conn = await db.query.ssoConnections.findFirst({ where: and(eq(ssoConnections.provider, pending.provider), eq(ssoConnections.tenantRef, id.tenantRef)) });
-  if (!conn || !conn.enabled) throw new SsoError("Your Microsoft organization is not connected to a BidAxiom company. Ask your BidAxiom admin to set up Microsoft sign-in.");
+  if (!conn.enabled || !conn.verified) throw new SsoError("Single sign-on is turned off for this company.");
   const domains = conn.allowedDomains ?? [];
   if (domains.length > 0 && !(id.email && domains.includes(id.email.split("@")[1]))) throw new SsoError("Your email address is not allowed to sign in to this company.");
 
-  const identity = await db.query.ssoIdentities.findFirst({ where: and(eq(ssoIdentities.provider, pending.provider), eq(ssoIdentities.tenantRef, id.tenantRef), eq(ssoIdentities.subject, id.subject)) });
   let userId: string;
-  if (identity) {
-    userId = identity.userId;
+  if (linked) {
+    userId = linked.userId;
   } else {
-    if (!id.email) throw new SsoError("Microsoft did not share an email address for this account.");
+    if (!id.email) throw new SsoError("Your identity provider did not share a verified email address for this account.");
     const existing = await db.query.users.findFirst({ where: eq(users.email, id.email) });
     if (existing) {
       // Never take over an account just because an email matches: only people already in this company link.
@@ -104,9 +113,8 @@ export async function finishSso(input: { code: string; state: string; pendingTok
       }).returning({ id: users.id });
       userId = created.id;
     }
-    await db.insert(ssoIdentities).values({ userId, provider: pending.provider, tenantRef: id.tenantRef, subject: id.subject, email: id.email });
+    await db.insert(ssoIdentities).values({ userId, connectionId: conn.id, subject: id.subject, email: id.email });
   }
-  // Make sure they belong to this company (auto-provisioned and invited-then-linked people may not yet).
   const member = await db.query.organizationMemberships.findFirst({
     where: and(eq(organizationMemberships.userId, userId), eq(organizationMemberships.organizationId, conn.organizationId)),
   });
@@ -122,6 +130,6 @@ export async function passwordLoginBlocked(userId: string): Promise<boolean> {
   const db = getDb();
   const m = await db.query.organizationMemberships.findFirst({ where: eq(organizationMemberships.userId, userId) });
   if (!m || m.role === "org:admin") return false;
-  const conn = await db.query.ssoConnections.findFirst({ where: and(eq(ssoConnections.organizationId, m.organizationId), eq(ssoConnections.enabled, true), eq(ssoConnections.enforceSso, true)) });
+  const conn = await db.query.ssoConnections.findFirst({ where: and(eq(ssoConnections.organizationId, m.organizationId), eq(ssoConnections.enabled, true), eq(ssoConnections.verified, true), eq(ssoConnections.enforceSso, true)) });
   return Boolean(conn);
 }

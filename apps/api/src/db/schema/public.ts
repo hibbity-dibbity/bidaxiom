@@ -177,15 +177,17 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
 }));
 
 /**
- * Single sign-on connection: one company's link to an identity provider (OIDC).
- * Microsoft first; other providers add a row with their own provider key. `tenantRef` is the
- * provider's own id for the customer's directory (Entra tenant id) and is bound to one company.
+ * Single sign-on connection: one company's own OpenID Connect app registration (Microsoft, Google,
+ * Okta, ...). The company creates the registration and gives us the issuer, client id and secret.
  */
 export const ssoConnections = pgTable("sso_connections", {
   id: uuid("id").primaryKey().defaultRandom(),
-  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
-  provider: text("provider").notNull(), // microsoft
-  tenantRef: text("tenant_ref").notNull(),
+  organizationId: uuid("organization_id").notNull().unique().references(() => organizations.id, { onDelete: "cascade" }),
+  provider: text("provider").notNull(), // preset used to fill it in: microsoft, google, oidc
+  issuer: text("issuer").notNull(),
+  clientId: text("client_id").notNull(),
+  clientSecretEnc: text("client_secret_enc").notNull(), // AES-GCM, see auth/oidc/secret.ts
+  verified: boolean("verified").notNull().default(false), // an admin has signed in through it successfully
   enabled: boolean("enabled").notNull().default(true),
   enforceSso: boolean("enforce_sso").notNull().default(false), // members (not admins) must use SSO, not a password
   autoProvision: boolean("auto_provision").notNull().default(false), // create accounts on first sign-in
@@ -193,21 +195,17 @@ export const ssoConnections = pgTable("sso_connections", {
   allowedDomains: jsonb("allowed_domains").$type<string[]>().notNull().default([]), // optional extra email-domain filter
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-}, (table) => ({
-  tenantUnique: unique().on(table.provider, table.tenantRef),
-  orgProviderUnique: unique().on(table.organizationId, table.provider),
-}));
+});
 
-/** A user's identity at a provider (their stable id inside the customer's directory). */
+/** A user's identity at their company's identity provider (the provider's stable id for them). */
 export const ssoIdentities = pgTable("sso_identities", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  provider: text("provider").notNull(),
-  tenantRef: text("tenant_ref").notNull(),
+  connectionId: uuid("connection_id").notNull().references(() => ssoConnections.id, { onDelete: "cascade" }),
   subject: text("subject").notNull(),
   email: text("email"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
-  identityUnique: unique().on(table.provider, table.tenantRef, table.subject),
+  identityUnique: unique().on(table.connectionId, table.subject),
   userIdx: index("idx_sso_identities_user").on(table.userId),
 }));

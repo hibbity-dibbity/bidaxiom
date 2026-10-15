@@ -32,7 +32,8 @@ type MfaFormData = z.infer<typeof mfaSchema>;
 export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
   const router = useRouter();
   const ssoError = useSearchParams().get("sso_error");
-  const { data: ssoProviders } = trpc.sso.providers.useQuery();
+  const [ssoOpen, setSsoOpen] = useState(false);
+  const [company, setCompany] = useState("");
   useEffect(() => {
     if (ssoError) toast.error(ssoError);
   }, [ssoError]);
@@ -310,12 +311,16 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? "Signing in..." : "Sign In"}
           </Button>
-          {(ssoProviders ?? []).map((p) => (
-            <Button key={p.key} type="button" variant="outline" className="w-full" disabled={isLoading}
-              onClick={() => { window.location.href = `/api/auth/sso/start?provider=${p.key}`; }}>
-              Sign in with {p.label}
+          {ssoOpen ? (
+            <div className="flex w-full gap-2">
+              <Input aria-label="Company code" placeholder="Company code (for example thomson)" value={company} onChange={(e) => setCompany(e.target.value)} autoFocus />
+              <Button type="button" disabled={!company.trim()} onClick={() => { window.location.href = `/api/auth/sso/start?company=${encodeURIComponent(company.trim())}`; }}>Continue</Button>
+            </div>
+          ) : (
+            <Button type="button" variant="outline" className="w-full" disabled={isLoading} onClick={() => setSsoOpen(true)}>
+              Sign in with single sign-on
             </Button>
-          ))}
+          )}
           <p className="text-center text-sm text-muted-foreground">
             Don&apos;t have an account?{" "}
             <Link href="/sign-up" className="text-primary hover:underline">
