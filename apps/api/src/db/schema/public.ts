@@ -247,3 +247,24 @@ export const ssoDomains = pgTable("sso_domains", {
 }, (table) => ({
   connDomainUnique: unique().on(table.connectionId, table.domain),
 }));
+
+/**
+ * A link emailed to a customer to review and e-sign a proposal. The token itself is only in the email;
+ * only its hash is stored. The link points at one estimate in one company's data.
+ */
+export const signingLinks = pgTable("signing_links", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  createdBy: uuid("created_by").notNull(), // the BidAxiom user who sent it
+  estimateId: uuid("estimate_id").notNull(),
+  tokenHash: text("token_hash").notNull().unique(),
+  recipientEmail: text("recipient_email"),
+  recipientName: text("recipient_name"),
+  status: text("status").notNull().default("pending"), // pending, signed, declined, revoked
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  viewedAt: timestamp("viewed_at", { withTimezone: true }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  estimateIdx: index("idx_signing_links_estimate").on(table.estimateId),
+}));

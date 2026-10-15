@@ -73,7 +73,7 @@ export function TakeoffEditor({ projectSlug, takeoffId }: { projectSlug: string;
   const [cost, setCost] = React.useState<Record<string, number>>({});
   const [vendors, setVendors] = React.useState<Record<string, string>>({});
   const vendorList = trpc.order.vendorOptions.useQuery();
-  const ordered = trpc.takeoff.orders.useQuery({ takeoffId });
+  const tracking = trpc.takeoff.tracking.useQuery({ takeoffId });
   const [dirty, setDirty] = React.useState(false);
   const [target, setTarget] = React.useState("");
   const [mode, setMode] = React.useState<"itemized" | "single">("itemized");
@@ -93,18 +93,13 @@ export function TakeoffEditor({ projectSlug, takeoffId }: { projectSlug: string;
     onSuccess: () => { setDirty(false); utils.takeoff.get.invalidate({ id: takeoffId }); utils.takeoff.list.invalidate(); toast.success("Saved"); },
     onError: (e) => toast.error("Could not save", { description: e.message }),
   });
-  const makePos = trpc.takeoff.createPurchaseOrders.useMutation({
-    onSuccess: (r) => {
-      utils.takeoff.orders.invalidate({ takeoffId });
-      const n = r.orders.length;
-      toast.success(`${n} draft purchase order${n === 1 ? "" : "s"} ${r.orders.some((o) => o.added) ? "created or updated" : "created"}`, {
-        description: [r.alreadyOrdered ? `${r.alreadyOrdered} line${r.alreadyOrdered === 1 ? " was" : "s were"} already ordered.` : "", r.skippedOther ? `${r.skippedOther} labor or subcontract line${r.skippedOther === 1 ? "" : "s"} left for work orders.` : ""].filter(Boolean).join(" ") || undefined,
-      });
-    },
-    onError: (e) => toast.error("Could not create purchase orders", { description: e.message }),
-  });
   const addTo = trpc.takeoff.addToProposal.useMutation({
-    onSuccess: (r) => toast.success(`Added ${r.added} line${r.added === 1 ? "" : "s"} to the proposal`, { description: `Materials total ${dollars(r.total)} before margin and tax.` }),
+    onSuccess: (r) => {
+      utils.takeoff.tracking.invalidate({ takeoffId });
+      utils.takeoff.targets.invalidate();
+      setTarget("");
+      toast.success(`Added ${r.added} line${r.added === 1 ? "" : "s"} to the proposal`, { description: `Materials total ${dollars(r.total)} before margin and tax. Purchase orders are drafted when the proposal is accepted.` });
+    },
     onError: (e) => toast.error("Could not add to the proposal", { description: e.message }),
   });
 
@@ -249,9 +244,7 @@ export function TakeoffEditor({ projectSlug, takeoffId }: { projectSlug: string;
                         </td>
                         <td className="p-2 text-right tabular-nums">{l.info ? "" : dollars(l.quantity * l.unitCost)}</td>
                         <td className="p-2">
-                          {ordered.data?.byKey[l.key] ? (
-                            <Link className="text-xs text-primary hover:underline" href={`/projects/${projectSlug}/orders/${ordered.data.byKey[l.key].orderId}`}>On {ordered.data.byKey[l.key].number}</Link>
-                          ) : orderable(l) ? (
+                          {orderable(l) ? (
                             <select aria-label={`${l.name} vendor`} className="h-7 w-full max-w-[200px] rounded border bg-background px-1 text-xs" value={vendors[l.key] ?? ""} onChange={(e) => setVendor([l.key], e.target.value)}>
                               <option value="">No vendor yet</option>
                               {(vendorList.data ?? []).map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
@@ -269,27 +262,36 @@ export function TakeoffEditor({ projectSlug, takeoffId }: { projectSlug: string;
           <p className="text-xs text-muted-foreground">Edit any quantity or price to override the calculation; overridden values have an amber border. Clear the box to go back to the calculated value.</p>
 
           <div className="space-y-2 rounded-md border bg-background p-3">
-            <h2 className="text-sm font-medium">Purchase orders</h2>
+            <h2 className="text-sm font-medium">Proposal and purchase orders</h2>
             <p className="text-xs text-muted-foreground">
-              Pick a vendor for each material above, then create draft purchase orders: one per vendor, plus one for lines with no vendor yet. Review and issue them from the Purchase Orders tab. Lines already on an order are skipped, so you can run this again after changes. Labor and subcontract lines are left for work orders.
+              Pick a vendor for each material above, then copy the takeoff into a proposal below. When the customer accepts that proposal, draft purchase orders are created automatically with the full itemized material list (one per vendor, plus one for materials with no vendor yet), even if the proposal shows a single lump sum. Nothing is ordered before then.
             </p>
-            <div className="flex flex-wrap items-center gap-2">
-              <Button disabled={makePos.isPending || dirty} onClick={() => makePos.mutate({ takeoffId })}>
-                {makePos.isPending ? "Creating…" : "Create purchase orders"}
-              </Button>
-              {dirty && <span className="text-xs text-muted-foreground">Save first so the orders use the numbers and vendors on screen.</span>}
-            </div>
-            {(ordered.data?.orders ?? []).length > 0 && (
-              <ul className="space-y-1 text-sm">
-                {ordered.data!.orders.map((o) => (
-                  <li key={o.orderId}>
-                    <Link className="text-primary hover:underline" href={`/projects/${projectSlug}/orders/${o.orderId}`}>{o.number}</Link>
-                    {" "}· {o.vendor ?? "No vendor yet"} · {o.lines} line{o.lines === 1 ? "" : "s"} · {dollars(o.total)} · {o.status}
+            {(tracking.data ?? []).length === 0 ? (
+              <p className="text-sm text-muted-foreground">Not in a proposal yet.</p>
+            ) : (
+              <ul className="space-y-2 text-sm">
+                {tracking.data!.map((t) => (
+                  <li key={t.linkId} className="rounded border p-2">
+                    <Link className="font-medium text-primary hover:underline" href={`/projects/${t.projectSlug ?? projectSlug}/${t.estimateKind === "change_order" ? "change-orders" : "estimates"}/${t.slug}`}>
+                      {t.estimateKind === "change_order" ? `Change order ${t.estimateNumber ?? ""}` : "Proposal"}: {t.estimateName}{t.revision > 0 ? ` Rev ${t.revision}` : ""}
+                    </Link>
+                    {" "}· {t.mode === "single" ? "lump sum" : "itemized"} · {t.status === "draft" ? "draft" : t.status === "submitted" ? "sent, waiting for the customer" : "accepted"}
+                    {t.orders.length > 0 ? (
+                      <ul className="mt-1 space-y-0.5 pl-3 text-xs">
+                        {t.orders.map((o) => (
+                          <li key={o.orderId}>
+                            <Link className="text-primary hover:underline" href={`/projects/${projectSlug}/orders/${o.orderId}`}>{o.number}</Link>
+                            {" "}· {o.vendor ?? "No vendor yet"} · {dollars(o.total)} · {o.status}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-1 text-xs text-muted-foreground">{t.status === "draft" || t.status === "submitted" ? "Purchase orders will be created when this is accepted." : "No purchase orders came from this takeoff."}</p>
+                    )}
                   </li>
                 ))}
               </ul>
             )}
-            {ordered.data && ordered.data.orders.length > 0 && <p className="text-xs text-muted-foreground">If you also copy this takeoff into a proposal that is later accepted, its purchase orders are drafted again from the proposal. Use one route or the other for the same materials.</p>}
           </div>
 
           <div className="space-y-2 rounded-md border bg-background p-3">
@@ -300,8 +302,8 @@ export function TakeoffEditor({ projectSlug, takeoffId }: { projectSlug: string;
                 {(targets ?? []).map((t) => <option key={t.id} value={t.id}>{t.kind === "change_order" ? "Change order: " : "Proposal: "}{t.name}</option>)}
               </select>
               <select aria-label="How to add" className="h-9 rounded-md border bg-background px-2" value={mode} onChange={(e) => setMode(e.target.value as "itemized" | "single")}>
-                <option value="itemized">Every material as a line (customer sees one price)</option>
-                <option value="single">One lump-sum line</option>
+                <option value="itemized">Itemize: every material as a line (customer sees one price)</option>
+                <option value="single">Lump sum: one line, materials kept behind it</option>
               </select>
               <label className="flex items-center gap-1">Margin
                 <input type="number" min={0} max={99} className="h-9 w-16 rounded-md border bg-background px-2 text-right" value={margin} onChange={(e) => setMargin(Number(e.target.value) || 0)} />%

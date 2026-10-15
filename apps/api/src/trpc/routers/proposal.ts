@@ -265,6 +265,12 @@ async function cloneProposal(
         }))
       );
     }
+    const linkRows = await tx.select().from(schema.proposalTakeoffLinks).where(eq(schema.proposalTakeoffLinks.estimateId, src.id));
+    if (linkRows.length > 0) {
+      await tx.insert(schema.proposalTakeoffLinks).values(
+        linkRows.filter((k) => idMap.has(k.lineId)).map((k) => ({ estimateId: created.id, lineId: idMap.get(k.lineId)!, takeoffId: k.takeoffId, mode: k.mode, snapshot: k.snapshot }))
+      );
+    }
     if (globalRows.length > 0) {
       await tx.insert(schema.proposalGlobalCosts).values(
         globalRows.map((g) => ({ estimateId: created.id, name: g.name, amount: g.amount, sortOrder: g.sortOrder }))
@@ -547,6 +553,11 @@ export const proposalRouter = router({
 
     await db.transaction(async (tx) => {
       await tx.delete(schema.proposalCostLines).where(eq(schema.proposalCostLines.estimateId, input.estimateId));
+      // A takeoff whose line was deleted from the proposal is no longer part of it.
+      const keepIds = input.lines.map((l) => l.id);
+      const stale = await tx.select({ id: schema.proposalTakeoffLinks.id, lineId: schema.proposalTakeoffLinks.lineId }).from(schema.proposalTakeoffLinks).where(eq(schema.proposalTakeoffLinks.estimateId, input.estimateId));
+      const staleIds = stale.filter((x) => !keepIds.includes(x.lineId)).map((x) => x.id);
+      if (staleIds.length) await tx.delete(schema.proposalTakeoffLinks).where(inArray(schema.proposalTakeoffLinks.id, staleIds));
       await tx.delete(schema.proposalGlobalCosts).where(eq(schema.proposalGlobalCosts.estimateId, input.estimateId));
       await tx.delete(schema.invoiceMilestones).where(eq(schema.invoiceMilestones.estimateId, input.estimateId));
 
@@ -1010,7 +1021,29 @@ export const proposalRouter = router({
         isOptional: l.isOptional,
       }));
       const acceptance = applyAcceptance(c.result, accepted);
-      const drafts = generateDraftOrders(sourceLines, c.result, accepted);
+
+      // Takeoffs copied in as one lump-sum line still order from their itemized material list: the
+      // snapshot is expanded into stand-in child lines so the purchase orders list every material.
+      const links = await db.select().from(schema.proposalTakeoffLinks).where(eq(schema.proposalTakeoffLinks.estimateId, input.estimateId));
+      const hasKids = new Set(c.lines.filter((l) => l.parentId).map((l) => l.parentId as string));
+      const synthOwner = new Map<string, { lineId: string; takeoffId: string; key: string }>();
+      const orderLinesSrc = sourceLines.map((l) => ({ ...l }));
+      const orderResult = { ...c.result, lines: { ...c.result.lines } };
+      for (const link of links) {
+        const parent = orderLinesSrc.find((l) => l.id === link.lineId);
+        if (!parent || hasKids.has(parent.id)) continue; // removed from the proposal, or already itemized
+        parent.type = "other";
+        link.snapshot.forEach((s, i) => {
+          const id = `synth:${link.id}:${i}`;
+          orderLinesSrc.push({
+            id, parentId: parent.id, name: `${s.name} — ${s.quantity} ${s.unit} @ ${s.unitCost.toFixed(2)}`,
+            type: s.type as typeof parent.type, costCodeId: null, vendorId: s.vendorId, isOptional: false,
+          });
+          orderResult.lines[id] = { ...(orderResult.lines[parent.id] ?? {}), cost: Math.round(s.quantity * s.unitCost * 100) } as (typeof orderResult.lines)[string];
+          synthOwner.set(id, { lineId: parent.id, takeoffId: link.takeoffId, key: s.key });
+        });
+      }
+      const drafts = generateDraftOrders(orderLinesSrc, orderResult, accepted);
       const projectId = c.estimate.projectId;
       const [proj] = await db.select({ jobNumber: schema.projects.jobNumber }).from(schema.projects).where(eq(schema.projects.id, projectId));
       const projectNumber = proj?.jobNumber ?? null;
@@ -1051,7 +1084,9 @@ export const proposalRouter = router({
           await tx.insert(schema.orderLines).values(
             d.lines.map((l, i) => ({
               orderId: order.id,
-              sourceLineId: l.sourceLineId,
+              sourceLineId: synthOwner.get(l.sourceLineId)?.lineId ?? l.sourceLineId,
+              takeoffId: synthOwner.get(l.sourceLineId)?.takeoffId ?? null,
+              takeoffKey: synthOwner.get(l.sourceLineId)?.key ?? null,
               description: l.description,
               category: l.category,
               budgetCost: String(l.budgetCost / 100),

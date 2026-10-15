@@ -1333,6 +1333,45 @@ export function createTenantSchema(schemaName: string) {
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   });
 
+
+  /**
+   * A takeoff that was copied into a proposal. lineId is the parent cost line it created. The snapshot is
+   * the itemized material list (with vendors) at that moment; when the proposal is accepted, purchase
+   * orders are drafted from it so they are always itemized, even when the proposal shows one lump sum.
+   */
+  const proposalTakeoffLinks = schema.table("proposal_takeoff_links", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    estimateId: uuid("estimate_id").notNull().references(() => estimates.id, { onDelete: "cascade" }),
+    lineId: uuid("line_id").notNull(), // proposal_cost_lines.id (kept FK-free: lines are replaced on every save)
+    takeoffId: uuid("takeoff_id").notNull(),
+    mode: text("mode").notNull(), // itemized, single
+    snapshot: jsonb("snapshot").notNull().$type<Array<{ key: string; name: string; quantity: number; unit: string; unitCost: number; type: string; vendorId: string | null }>>().default([]),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * Customer e-signature (or decline) on a sent proposal or change order. One accepted row per
+   * estimate. The document hash fingerprints exactly what was shown and signed.
+   */
+  const proposalSignatures = schema.table("proposal_signatures", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    estimateId: uuid("estimate_id").notNull().references(() => estimates.id, { onDelete: "cascade" }),
+    outcome: text("outcome").notNull(), // accepted, declined
+    signerName: text("signer_name").notNull(),
+    signerEmail: text("signer_email"),
+    signatureType: text("signature_type"), // drawn, typed
+    signatureImage: text("signature_image"), // PNG data URL when drawn
+    acceptedOptionIds: jsonb("accepted_option_ids").notNull().$type<string[]>().default([]),
+    contractValueCents: numeric("contract_value_cents", { precision: 18, scale: 0 }),
+    documentHash: text("document_hash"),
+    termsVersion: integer("terms_version"),
+    ip: text("ip"),
+    userAgent: text("user_agent"),
+    declineReason: text("decline_reason"),
+    pdfDocumentId: uuid("pdf_document_id"), // documents.id of the signed PDF
+    signedAt: timestamp("signed_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
   /**
    * Invoicing schedule: percentage milestones that must total 100.
    */
@@ -1594,6 +1633,8 @@ export function createTenantSchema(schemaName: string) {
     orderPayments,
     orderDocuments,
     materialTakeoffs,
+    proposalTakeoffLinks,
+    proposalSignatures,
     emailLog,
     invoices,
     invoicePayments,

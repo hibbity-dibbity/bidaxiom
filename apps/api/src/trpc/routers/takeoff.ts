@@ -9,14 +9,11 @@ import {
   computeConcrete,
   computeMetalBuilding,
   applyOverrides,
-  nextOrderNumber,
-  AuditAction,
   type TakeoffLine,
 } from "@construction/shared";
 import { router } from "../trpc.js";
 import { protectedProcedure } from "../procedures.js";
 import { defineAbilitiesFor } from "../../auth/abilities.js";
-import { createAuditLog } from "../../audit/logger.js";
 
 const kindEnum = z.enum(["concrete", "metal_building"]);
 const num = z.number().finite().min(0).max(1e7);
@@ -87,34 +84,51 @@ export const takeoffRouter = router({
     };
   }),
 
-  /** Lines of this takeoff that are already on a purchase order, and the orders that hold them. */
-  orders: protectedProcedure.input(z.object({ takeoffId: z.string().uuid() })).query(async ({ ctx, input }) => {
+  /**
+   * Where this takeoff has gone: which proposals or change orders it was copied into, how each
+   * was added, its status, and the purchase orders created once that proposal was accepted.
+   */
+  tracking: protectedProcedure.input(z.object({ takeoffId: z.string().uuid() })).query(async ({ ctx, input }) => {
     if (!ctx.tenant) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
     await assertCanEdit(ctx, "read");
     const { db, schema } = ctx.tenant;
-    const rows = await db
-      .select({
-        key: schema.orderLines.takeoffKey, cost: schema.orderLines.projectedCost, orderId: schema.orders.id,
-        number: schema.orders.number, status: schema.orders.status, vendorId: schema.orders.vendorId,
-      })
-      .from(schema.orderLines)
-      .innerJoin(schema.orders, eq(schema.orders.id, schema.orderLines.orderId))
-      .where(eq(schema.orderLines.takeoffId, input.takeoffId));
-    const vendorIds = Array.from(new Set(rows.map((r) => r.vendorId).filter((v): v is string => !!v)));
-    const vendors = vendorIds.length
-      ? await db.select({ id: schema.subcontractorDirectory.id, name: schema.subcontractorDirectory.companyName }).from(schema.subcontractorDirectory).where(inArray(schema.subcontractorDirectory.id, vendorIds))
-      : [];
-    const vname = new Map(vendors.map((v) => [v.id, v.name]));
-    const byKey: Record<string, { orderId: string; number: string }> = {};
-    const byOrder = new Map<string, { orderId: string; number: string; status: string; vendor: string | null; lines: number; total: number }>();
-    for (const r of rows) {
-      if (r.key) byKey[r.key] = { orderId: r.orderId, number: r.number };
-      const o = byOrder.get(r.orderId) ?? { orderId: r.orderId, number: r.number, status: r.status, vendor: r.vendorId ? vname.get(r.vendorId) ?? null : null, lines: 0, total: 0 };
-      o.lines += 1;
-      o.total += Number(r.cost);
-      byOrder.set(r.orderId, o);
+    const links = await db.select().from(schema.proposalTakeoffLinks).where(eq(schema.proposalTakeoffLinks.takeoffId, input.takeoffId));
+    const out: Array<{
+      linkId: string; estimateId: string; estimateName: string; estimateKind: string; estimateNumber: string | null; revision: number;
+      status: string; mode: string; lineCount: number; slug: string | null; projectSlug: string | null;
+      orders: Array<{ orderId: string; number: string; status: string; vendor: string | null; total: number }>;
+    }> = [];
+    for (const l of links) {
+      const [line] = await db.select({ id: schema.proposalCostLines.id }).from(schema.proposalCostLines).where(eq(schema.proposalCostLines.id, l.lineId)).limit(1);
+      if (!line) continue; // the line was removed from the proposal
+      const [e] = await db.select().from(schema.estimates).where(eq(schema.estimates.id, l.estimateId)).limit(1);
+      if (!e) continue;
+      const [p] = await db.select({ slug: schema.projects.slug }).from(schema.projects).where(eq(schema.projects.id, e.projectId)).limit(1);
+      const kids = await db.select({ id: schema.proposalCostLines.id }).from(schema.proposalCostLines).where(eq(schema.proposalCostLines.parentId, l.lineId));
+      const lineIds = [l.lineId, ...kids.map((k) => k.id)];
+      const rows = await db
+        .select({ orderId: schema.orders.id, number: schema.orders.number, status: schema.orders.status, vendorId: schema.orders.vendorId, cost: schema.orderLines.projectedCost })
+        .from(schema.orderLines)
+        .innerJoin(schema.orders, eq(schema.orders.id, schema.orderLines.orderId))
+        .where(and(inArray(schema.orderLines.sourceLineId, lineIds), eq(schema.orders.estimateId, l.estimateId)));
+      const vendorIds = Array.from(new Set(rows.map((r) => r.vendorId).filter((v): v is string => !!v)));
+      const vendors = vendorIds.length
+        ? await db.select({ id: schema.subcontractorDirectory.id, name: schema.subcontractorDirectory.companyName }).from(schema.subcontractorDirectory).where(inArray(schema.subcontractorDirectory.id, vendorIds))
+        : [];
+      const vname = new Map(vendors.map((v) => [v.id, v.name]));
+      const byOrder = new Map<string, { orderId: string; number: string; status: string; vendor: string | null; total: number }>();
+      for (const r of rows) {
+        const o = byOrder.get(r.orderId) ?? { orderId: r.orderId, number: r.number, status: r.status, vendor: r.vendorId ? vname.get(r.vendorId) ?? null : null, total: 0 };
+        o.total += Number(r.cost);
+        byOrder.set(r.orderId, o);
+      }
+      out.push({
+        linkId: l.id, estimateId: e.id, estimateName: e.name, estimateKind: e.kind, estimateNumber: e.number, revision: e.revision,
+        status: e.status, mode: l.mode, lineCount: l.snapshot.length, slug: e.slug, projectSlug: p?.slug ?? null,
+        orders: Array.from(byOrder.values()).map((o) => ({ ...o, total: Math.round(o.total * 100) / 100 })),
+      });
     }
-    return { byKey, orders: Array.from(byOrder.values()).map((o) => ({ ...o, total: Math.round(o.total * 100) / 100 })) };
+    return out;
   }),
 
   create: protectedProcedure
@@ -166,88 +180,11 @@ export const takeoffRouter = router({
   }),
 
   /**
-   * Turn the material and equipment lines into draft purchase orders, one per vendor (lines with no vendor
-   * go on one unassigned draft). Lines already on an order are skipped, so running it again after a change
-   * only adds what is new. Labor and subcontract lines are left for work orders. Budget is 0 (these were not
-   * on an accepted proposal); projected is the takeoff cost.
-   */
-  createPurchaseOrders: protectedProcedure
-    .input(z.object({ takeoffId: z.string().uuid() }))
-    .mutation(async ({ ctx, input }) => {
-      if (!ctx.tenant || !ctx.userId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
-      const { db, schema } = ctx.tenant;
-      await assertCanEdit(ctx);
-      const [row] = await db.select().from(schema.materialTakeoffs).where(eq(schema.materialTakeoffs.id, input.takeoffId)).limit(1);
-      if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Takeoff not found" });
-      const [proj] = await db.select({ jobNumber: schema.projects.jobNumber }).from(schema.projects).where(eq(schema.projects.id, row.projectId));
-      const all = compute(row.kind as "concrete" | "metal_building", row.inputs, row.qtyOverrides, row.costOverrides).lines.filter((l) => !l.info && l.quantity > 0);
-      const orderable = all.filter((l) => l.type === "material" || l.type === "equipment");
-      const skippedOther = all.length - orderable.length;
-      const existing = await db
-        .select({ key: schema.orderLines.takeoffKey, orderId: schema.orderLines.orderId })
-        .from(schema.orderLines)
-        .where(eq(schema.orderLines.takeoffId, row.id));
-      const already = new Set(existing.map((e) => e.key));
-      const fresh = orderable.filter((l) => !already.has(l.key));
-      if (fresh.length === 0) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: orderable.length === 0 ? "There is nothing to order yet." : "Every material on this takeoff is already on a purchase order." });
-      }
-      // Only vendors that still exist and are active.
-      const assigned = Array.from(new Set(Object.values(row.vendorAssignments ?? {})));
-      const validVendors = assigned.length
-        ? await db.select({ id: schema.subcontractorDirectory.id, name: schema.subcontractorDirectory.companyName, status: schema.subcontractorDirectory.status }).from(schema.subcontractorDirectory).where(inArray(schema.subcontractorDirectory.id, assigned))
-        : [];
-      const vendorName = new Map(validVendors.filter((v) => v.status === "active").map((v) => [v.id, v.name]));
-      const groups = new Map<string, TakeoffLine[]>(); // "" = unassigned
-      for (const l of fresh) {
-        const v = row.vendorAssignments?.[l.key];
-        const k = v && vendorName.has(v) ? v : "";
-        groups.set(k, [...(groups.get(k) ?? []), l]);
-      }
-      // Draft orders from this takeoff that can take more lines.
-      const draftIds = Array.from(new Set(existing.map((e) => e.orderId)));
-      const drafts = draftIds.length
-        ? await db.select({ id: schema.orders.id, vendorId: schema.orders.vendorId, status: schema.orders.status, number: schema.orders.number }).from(schema.orders).where(inArray(schema.orders.id, draftIds))
-        : [];
-      const results: { orderId: string; number: string; vendor: string | null; lines: number; total: number; added: boolean }[] = [];
-      for (const [vendorId, lines] of groups) {
-        let target = drafts.find((d) => d.status === "draft" && (d.vendorId ?? "") === vendorId);
-        let created = false;
-        if (!target) {
-          const used = await db.select({ number: schema.orders.number }).from(schema.orders).where(eq(schema.orders.projectId, row.projectId));
-          const number = nextOrderNumber(used.map((u) => u.number), "PO", proj?.jobNumber ?? null);
-          const [o] = await db
-            .insert(schema.orders)
-            .values({ projectId: row.projectId, estimateId: null, kind: "purchase", number, vendorId: vendorId || null, status: "draft", notes: `From takeoff: ${row.name}`, createdBy: ctx.userId })
-            .returning({ id: schema.orders.id, number: schema.orders.number, vendorId: schema.orders.vendorId, status: schema.orders.status });
-          target = o;
-          created = true;
-          await createAuditLog(db, schema, { entityType: "Order", entityId: o.id, action: AuditAction.CREATE, actorId: ctx.userId, changes: { after: { number, fromTakeoff: row.name } } });
-        }
-        const current = await db.select({ id: schema.orderLines.id }).from(schema.orderLines).where(eq(schema.orderLines.orderId, target.id));
-        let sort = current.length;
-        let total = 0;
-        const values = lines.map((l) => {
-          const amount = Math.round(l.quantity * l.unitCost * 100) / 100;
-          total += amount;
-          return {
-            orderId: target!.id, sourceLineId: null,
-            description: `${l.name} — ${l.quantity} ${l.unit} @ ${l.unitCost.toFixed(2)}`,
-            category: l.type === "equipment" ? "COGS: Equipment Rental" : "COGS: Materials & Supplies",
-            budgetCost: "0", projectedCost: String(amount), takeoffId: row.id, takeoffKey: l.key, sortOrder: sort++,
-          };
-        });
-        await db.insert(schema.orderLines).values(values as never);
-        await db.update(schema.orders).set({ updatedAt: new Date() }).where(eq(schema.orders.id, target.id));
-        results.push({ orderId: target.id, number: target.number, vendor: vendorId ? vendorName.get(vendorId) ?? null : null, lines: lines.length, total: Math.round(total * 100) / 100, added: !created });
-      }
-      return { orders: results, skippedOther, alreadyOrdered: orderable.length - fresh.length };
-    }),
-
-  /**
    * Copy the priced material list into a proposal (or change order) as a new parent line.
    * "itemized" keeps every material as a hidden child line (the customer sees one price);
-   * "single" adds one lump-sum line. Locked proposals are refused.
+   * "single" adds one lump-sum line. Locked proposals are refused. Either way the itemized list and
+   * its vendors are remembered (proposal_takeoff_links), and purchase orders are drafted from that
+   * list when the proposal is accepted, never before.
    */
   addToProposal: protectedProcedure
     .input(z.object({
@@ -270,6 +207,20 @@ export const takeoffRouter = router({
       }
       const lines = compute(row.kind as "concrete" | "metal_building", row.inputs, row.qtyOverrides, row.costOverrides).lines.filter((l) => !l.info && l.quantity > 0);
       if (lines.length === 0) throw new TRPCError({ code: "BAD_REQUEST", message: "There is nothing to copy yet." });
+      // A takeoff goes into a proposal once, otherwise it could be ordered twice.
+      const prior = await db.select().from(schema.proposalTakeoffLinks).where(and(eq(schema.proposalTakeoffLinks.estimateId, input.estimateId), eq(schema.proposalTakeoffLinks.takeoffId, row.id)));
+      for (const p of prior) {
+        const [alive] = await db.select({ id: schema.proposalCostLines.id }).from(schema.proposalCostLines).where(eq(schema.proposalCostLines.id, p.lineId)).limit(1);
+        if (alive) throw new TRPCError({ code: "BAD_REQUEST", message: "This takeoff is already in that proposal. Remove its line there first to add it again." });
+        await db.delete(schema.proposalTakeoffLinks).where(eq(schema.proposalTakeoffLinks.id, p.id));
+      }
+      // Only vendors that still exist and are active.
+      const assigned = Array.from(new Set(Object.values(row.vendorAssignments ?? {})));
+      const validVendors = assigned.length
+        ? await db.select({ id: schema.subcontractorDirectory.id, status: schema.subcontractorDirectory.status }).from(schema.subcontractorDirectory).where(inArray(schema.subcontractorDirectory.id, assigned))
+        : [];
+      const okVendors = new Set(validVendors.filter((v) => v.status === "active").map((v) => v.id));
+      const vendorFor = (key: string) => { const v = row.vendorAssignments?.[key]; return v && okVendors.has(v) ? v : null; };
       const [{ top }] = await db
         .select({ top: max(schema.proposalCostLines.sortOrder) })
         .from(schema.proposalCostLines)
@@ -287,11 +238,15 @@ export const takeoffRouter = router({
               { ...base, id: parentId, parentId: null, type: "other", name: parentLabel, quantity: "0", unit: "ls", unitCost: "0", visibility: "price", sortOrder: order++ },
               ...lines.map((l) => ({
                 ...base, id: randomUUID(), parentId, type: l.type, name: l.name, quantity: String(l.quantity),
-                unit: l.unit, unitCost: String(l.unitCost), sortOrder: order++,
+                unit: l.unit, unitCost: String(l.unitCost), sortOrder: order++, vendorId: vendorFor(l.key),
                 notes: `From takeoff: ${row.name}`,
               })),
             ];
       await db.insert(schema.proposalCostLines).values(rows as never);
+      await db.insert(schema.proposalTakeoffLinks).values({
+        estimateId: input.estimateId, lineId: parentId, takeoffId: row.id, mode: input.mode,
+        snapshot: lines.map((l) => ({ key: l.key, name: l.name, quantity: l.quantity, unit: l.unit, unitCost: l.unitCost, type: l.type, vendorId: vendorFor(l.key) })),
+      });
       await db.update(schema.estimates).set({ updatedAt: new Date() }).where(eq(schema.estimates.id, input.estimateId));
       return { added: rows.length, total };
     }),
