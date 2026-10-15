@@ -182,6 +182,8 @@ export const signingRouter = router({
       const optionIds = [...new Set(input.acceptedOptionIds)].sort();
       const documentHash = sha256(JSON.stringify({ title: doc.title, number: doc.number, revision: doc.revision, view: doc.view, terms: doc.terms.sections, options: optionIds, contractValue: accepted.contractValue }));
       const signerEmail = link.recipientEmail?.split(",")[0]?.trim() || null;
+      const [co] = await db.select().from(schema.companySignature).limit(1);
+      const countersign = co && co.enabled ? co : null;
       const [sig] = await db
         .insert(schema.proposalSignatures)
         .values({
@@ -189,6 +191,8 @@ export const signingRouter = router({
           signatureType: input.signatureType, signatureImage: input.signatureType === "drawn" ? input.signatureImage : null,
           acceptedOptionIds: optionIds, contractValueCents: String(accepted.contractValue), documentHash,
           termsVersion: doc.terms.version, ip: ctx.ip ?? null, userAgent: input.userAgent ?? null,
+          companySignerName: countersign?.signerName ?? null, companySignerTitle: countersign?.signerTitle ?? null,
+          companySignatureType: countersign?.signatureType ?? null, companySignatureImage: countersign?.signatureImage ?? null,
         })
         .returning({ id: schema.proposalSignatures.id });
       await createAuditLog(db, schema, {
@@ -288,6 +292,48 @@ export const signingRouter = router({
       signature: sig ? { outcome: sig.outcome, signerName: sig.signerName, signedAt: sig.signedAt, declineReason: sig.declineReason, hasPdf: !!sig.pdfDocumentId } : null,
       pdfUrl,
     };
+  }),
+
+  /** The stored company signature for the settings page. */
+  companyGet: protectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.tenant) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+    const { db, schema } = ctx.tenant;
+    const [co] = await db.select().from(schema.companySignature).limit(1);
+    return co ? { enabled: co.enabled, signerName: co.signerName, signerTitle: co.signerTitle, signatureType: co.signatureType, signatureImage: co.signatureImage, authorizedAt: co.authorizedAt } : null;
+  }),
+
+  /** Set or replace the company signature. Admins only; saving records the authorization. */
+  companySave: protectedProcedure
+    .input(z.object({
+      signerName: z.string().trim().min(2).max(200),
+      signerTitle: z.string().trim().max(200).optional(),
+      signatureType: z.enum(["drawn", "typed"]),
+      signatureImage: z.string().max(400_000).regex(/^data:image\/png;base64,[A-Za-z0-9+/=]+$/).nullable(),
+      authorize: z.literal(true),
+      enabled: z.boolean().default(true),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+      if (ctx.orgRole !== "org:admin") throw new TRPCError({ code: "FORBIDDEN", message: "Only an administrator can set the company signature." });
+      if (input.signatureType === "drawn" && !input.signatureImage) throw new TRPCError({ code: "BAD_REQUEST", message: "Please draw the signature." });
+      const { db, schema } = ctx.tenant;
+      const values = {
+        enabled: input.enabled, signerName: input.signerName, signerTitle: input.signerTitle || null, signatureType: input.signatureType,
+        signatureImage: input.signatureType === "drawn" ? input.signatureImage : null, authorizedBy: ctx.userId, authorizedAt: new Date(),
+      };
+      const [existing] = await db.select({ id: schema.companySignature.id }).from(schema.companySignature).limit(1);
+      if (existing) await db.update(schema.companySignature).set(values).where(eq(schema.companySignature.id, existing.id));
+      else await db.insert(schema.companySignature).values(values);
+      await createAuditLog(db, schema, { entityType: "CompanySignature", entityId: existing?.id ?? "company", action: AuditAction.UPDATE, actorId: ctx.userId, changes: { after: { signer: input.signerName, title: input.signerTitle, enabled: input.enabled } } });
+      return { ok: true as const };
+    }),
+
+  /** Turn automatic countersigning off (keeps the signature on file). */
+  companyDisable: protectedProcedure.mutation(async ({ ctx }) => {
+    if (!ctx.tenant || !ctx.userId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+    if (ctx.orgRole !== "org:admin") throw new TRPCError({ code: "FORBIDDEN", message: "Only an administrator can change the company signature." });
+    await ctx.tenant.db.update(ctx.tenant.schema.companySignature).set({ enabled: false });
+    return { ok: true as const };
   }),
 
   /** Stop a pending link from working. */

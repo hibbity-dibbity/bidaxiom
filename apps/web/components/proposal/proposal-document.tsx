@@ -198,8 +198,24 @@ export function ProposalDocument({
               <div className="pt-1 text-xs text-muted-foreground">Accepted by {sig.signerName} · {new Date(sig.signedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</div>
             </div>
             <div className="min-w-[240px] flex-1">
-              <div className="flex h-16 items-end border-b border-foreground pb-1 text-sm italic text-muted-foreground">Sent electronically by {data.companyName}</div>
-              <div className="pt-1 text-xs text-muted-foreground">{data.companyName}</div>
+              {sig.company ? (
+                <>
+                  <div className="flex h-16 items-end border-b border-foreground pb-1">
+                    {sig.company.type === "drawn" && sig.company.image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={sig.company.image} alt={`Signature of ${sig.company.name}`} className="max-h-14" />
+                    ) : (
+                      <span style={{ fontFamily: "'Brush Script MT','Segoe Script','Snell Roundhand',cursive" }} className="text-3xl">{sig.company.name}</span>
+                    )}
+                  </div>
+                  <div className="pt-1 text-xs text-muted-foreground">{data.companyName} · {sig.company.name}{sig.company.title ? `, ${sig.company.title}` : ""} · {new Date(sig.signedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</div>
+                </>
+              ) : (
+                <>
+                  <div className="flex h-16 items-end border-b border-foreground pb-1 text-sm italic text-muted-foreground">Sent electronically by {data.companyName}</div>
+                  <div className="pt-1 text-xs text-muted-foreground">{data.companyName}</div>
+                </>
+              )}
             </div>
           </div>
           <section style={{ breakInside: "avoid" }} className="rounded border p-4 text-[11px] leading-relaxed text-muted-foreground">
@@ -210,6 +226,7 @@ export function ProposalDocument({
             <div>Signature method: {sig.signatureType === "drawn" ? "drawn" : "typed name"}; the signer agreed to sign electronically.</div>
             {sig.contractValueCents !== null && <div>Contract value accepted: {money(sig.contractValueCents)}{view.options.length > 0 ? ` (${sig.acceptedOptionIds.length} of ${view.options.length} optional items)` : ""}</div>}
             {sig.documentHash && <div className="break-all">Document fingerprint (SHA-256): {sig.documentHash}</div>}
+            {sig.company && <div>Countersigned for {data.companyName} by {sig.company.name}{sig.company.title ? `, ${sig.company.title}` : ""}, whose stored signature the company authorized to be applied automatically when a customer signs.</div>}
             <div>Terms version {data.terms.version}. This is a record created by BidAxiom for {data.companyName}.</div>
           </section>
         </>

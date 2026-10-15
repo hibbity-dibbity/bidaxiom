@@ -1369,7 +1369,28 @@ export function createTenantSchema(schemaName: string) {
     userAgent: text("user_agent"),
     declineReason: text("decline_reason"),
     pdfDocumentId: uuid("pdf_document_id"), // documents.id of the signed PDF
+    // The company's countersignature, copied from company_signature at the moment the customer signed.
+    companySignerName: text("company_signer_name"),
+    companySignerTitle: text("company_signer_title"),
+    companySignatureType: text("company_signature_type"),
+    companySignatureImage: text("company_signature_image"),
     signedAt: timestamp("signed_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+
+  /**
+   * The company's stored signature, applied automatically as the countersignature when a customer
+   * signs. One row per company. authorizedBy/At record who allowed the system to sign on the company's behalf.
+   */
+  const companySignature = schema.table("company_signature", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    enabled: boolean("enabled").notNull().default(true),
+    signerName: text("signer_name").notNull(),
+    signerTitle: text("signer_title"),
+    signatureType: text("signature_type").notNull(), // drawn, typed
+    signatureImage: text("signature_image"),
+    authorizedBy: text("authorized_by").notNull(),
+    authorizedAt: timestamp("authorized_at", { withTimezone: true }).defaultNow().notNull(),
   });
 
   /**
@@ -1635,6 +1656,7 @@ export function createTenantSchema(schemaName: string) {
     materialTakeoffs,
     proposalTakeoffLinks,
     proposalSignatures,
+    companySignature,
     emailLog,
     invoices,
     invoicePayments,

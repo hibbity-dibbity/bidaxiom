@@ -448,6 +448,9 @@ export async function buildCustomerViewData(tenant: Tenant, userId: string, esti
           acceptedOptionIds: signature.acceptedOptionIds,
           contractValueCents: signature.contractValueCents === null ? null : Number(signature.contractValueCents),
           pdfDocumentId: signature.pdfDocumentId,
+          company: signature.companySignerName
+            ? { name: signature.companySignerName, title: signature.companySignerTitle, type: signature.companySignatureType, image: signature.companySignatureImage }
+            : null,
         }
       : null,
   };
