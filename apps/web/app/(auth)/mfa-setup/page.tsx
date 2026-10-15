@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { Loader2, Copy, CheckCircle2, AlertTriangle } from "lucide-react";
 import { getSafeRedirectUrl } from "@/lib/utils/safe-redirect";
 import { PasskeysCard } from "@/components/settings/passkeys-card";
+import { trpc } from "@/lib/trpc";
 
 const API_URL = browserApiUrl();
 
@@ -36,6 +37,7 @@ function MfaSetupPage() {
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get("redirect_url") ?? "/";
 
+  const status = trpc.passkey.status.useQuery();
   const [isLoading, setIsLoading] = useState(true);
   const [isVerifying, setIsVerifying] = useState(false);
   const [setupData, setSetupData] = useState<SetupData | null>(null);
@@ -51,6 +53,13 @@ function MfaSetupPage() {
   });
 
   useEffect(() => {
+    if (!status.data) return;
+    // Already has an authenticator app: only the passkey step is left.
+    if (status.data.totp) {
+      setIsLoading(false);
+      return;
+    }
+    if (setupData) return;
     const initializeMfa = async () => {
       try {
         // Get access token from session
@@ -92,7 +101,23 @@ function MfaSetupPage() {
     };
 
     initializeMfa();
-  }, [router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router, status.data?.totp, !!status.data]);
+
+  const finishIfDone = async () => {
+    const r = await status.refetch();
+    if (r.data && r.data.methods >= r.data.needed) router.push(getSafeRedirectUrl(redirectUrl));
+  };
+
+  const checklist = status.data && (
+    <div className="rounded-md border p-3 text-sm space-y-1">
+      <div>{status.data.totp ? "✓" : "○"} Authenticator app</div>
+      <div>{status.data.passkeys > 0 ? "✓" : "○"} Passkey</div>
+      {status.data.needed > 1 && (
+        <p className="pt-1 text-muted-foreground">Company admins need both, so one can always back up the other.</p>
+      )}
+    </div>
+  );
 
   const onVerifySubmit = async (data: VerifyFormData) => {
     if (!setupData) return;
@@ -151,9 +176,16 @@ function MfaSetupPage() {
     toast.success("Backup codes copied to clipboard");
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     if (!backupCodesSaved) {
       toast.error("Please confirm you've saved your backup codes");
+      return;
+    }
+    const r = await status.refetch();
+    if (r.data && r.data.methods < r.data.needed) {
+      // Admins still need the passkey step.
+      setShowBackupCodes(false);
+      setSetupData(null);
       return;
     }
     router.push(getSafeRedirectUrl(redirectUrl));
@@ -235,6 +267,21 @@ function MfaSetupPage() {
     );
   }
 
+  if (!setupData && status.data?.totp) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>One more step</CardTitle>
+            <CardDescription>Add a passkey to finish securing your account.</CardDescription>
+          </CardHeader>
+          <CardContent>{checklist}</CardContent>
+        </Card>
+        <PasskeysCard afterChange={finishIfDone} />
+      </div>
+    );
+  }
+
   if (!setupData) {
     return (
       <Card>
@@ -273,6 +320,7 @@ function MfaSetupPage() {
               To protect your account and your company&apos;s data, multi-factor authentication is required.
             </AlertDescription>
           </Alert>
+          {checklist}
 
           <div className="space-y-4">
             <div>
@@ -321,7 +369,7 @@ function MfaSetupPage() {
       </form>
     </Card>
     <p className="text-center text-sm text-muted-foreground">Or use a passkey instead of an authenticator app:</p>
-    <PasskeysCard afterChange={() => router.push(getSafeRedirectUrl(redirectUrl))} />
+    <PasskeysCard afterChange={finishIfDone} />
     </div>
   );
 }

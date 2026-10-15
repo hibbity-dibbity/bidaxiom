@@ -42,8 +42,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(signInUrl);
   }
 
-  // MFA enforcement: company admins always, everyone when ENFORCE_MFA is on.
-  if ((ENFORCE_MFA || session.orgRole === "org:admin") && !session.hasMfa && !pathname.startsWith(mfaSetupRoute)) {
+  // MFA enforcement: admins need an authenticator app and a passkey, a person an admin reset needs one,
+  // and ENFORCE_MFA extends one to everyone. The API decides (mfaGate); this just sends people to the setup page.
+  if (((ENFORCE_MFA && !session.hasMfa) || session.mfaGate) && !pathname.startsWith(mfaSetupRoute)) {
     return NextResponse.redirect(new URL(mfaSetupRoute, request.url));
   }
 

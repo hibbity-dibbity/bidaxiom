@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Trash2, UserPlus, Users } from "lucide-react";
+import { KeyRound, Trash2, UserPlus, Users } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 /**
@@ -30,6 +30,7 @@ export default function MembersPage() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<string>("org:member");
   const [memberToRemove, setMemberToRemove] = useState<string | null>(null);
+  const [memberToReset, setMemberToReset] = useState<{ userId: string; label: string } | null>(null);
   const [invitationToRevoke, setInvitationToRevoke] = useState<string | null>(null);
 
   const isAdmin = orgRole === "org:admin";
@@ -55,6 +56,17 @@ export default function MembersPage() {
     },
     onError: (error) => {
       toast.error(error.message || "Failed to send invitation");
+    },
+  });
+
+  const resetMutation = trpc.organization.resetMemberSignIn.useMutation({
+    onSuccess: (r) => {
+      toast.success(`Sign-in reset. A password reset link was emailed to ${r.email}.`);
+      setMemberToReset(null);
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to reset sign-in");
+      setMemberToReset(null);
     },
   });
 
@@ -292,6 +304,15 @@ export default function MembersPage() {
                         <Button
                           variant="ghost"
                           size="sm"
+                          title="Reset sign-in"
+                          onClick={() => setMemberToReset({ userId: member.userId, label: member.firstName && member.lastName ? `${member.firstName} ${member.lastName}` : member.email })}
+                          disabled={resetMutation.isPending}
+                        >
+                          <KeyRound className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => setMemberToRemove(member.userId)}
                           disabled={removeMutation.isPending}
                         >
@@ -406,6 +427,29 @@ export default function MembersPage() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleRemoveMember} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reset Sign-in Confirmation Dialog */}
+      <AlertDialog open={!!memberToReset} onOpenChange={(open) => !open && setMemberToReset(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset sign-in for {memberToReset?.label}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Their current password stops working and they are signed out. We email them a link to choose a new password.
+              Their authenticator app and passkeys are removed, and they must set up security again the next time they sign in.
+              Use this if you think their account is at risk.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => orgId && memberToReset && resetMutation.mutate({ organizationId: orgId, userId: memberToReset.userId })}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Reset sign-in
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

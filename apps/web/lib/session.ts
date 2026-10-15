@@ -11,6 +11,8 @@ export interface SessionData {
   orgRole?: string;
   orgName?: string;
   hasMfa?: boolean;
+  /** Must finish setting up sign-in security (authenticator app + passkey for admins) before using the app. */
+  mfaGate?: boolean;
   user?: {
     email: string;
     firstName?: string | null;

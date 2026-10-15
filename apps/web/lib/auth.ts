@@ -66,6 +66,7 @@ export async function refreshAccessToken(): Promise<string | null> {
         // Keep the "second factor done" flag in step with the new token (it turns on after setting one up).
         const claims = JSON.parse(Buffer.from(result.accessToken.split(".")[1], "base64").toString());
         if (typeof claims.hasMfa === "boolean") session.hasMfa = claims.hasMfa;
+        session.mfaGate = claims.mfaGate === true;
       } catch {}
       await session.save();
       return result.accessToken;
@@ -83,7 +84,7 @@ export async function refreshAccessToken(): Promise<string | null> {
 export async function login(data: {
   accessToken: string;
   refreshToken: string;
-  user: { id: string; email: string; firstName?: string | null; lastName?: string | null; mfaEnabled: boolean };
+  user: { id: string; email: string; firstName?: string | null; lastName?: string | null; mfaEnabled: boolean; mfaGate?: boolean };
   org?: { id: string; name: string; role: string } | null;
 }) {
   const session = await getSession();
@@ -91,6 +92,7 @@ export async function login(data: {
   session.accessToken = data.accessToken;
   session.refreshToken = data.refreshToken;
   session.hasMfa = data.user.mfaEnabled;
+  session.mfaGate = data.user.mfaGate === true;
   session.user = {
     email: data.user.email,
     firstName: data.user.firstName,
@@ -136,6 +138,7 @@ export async function getSessionData(): Promise<SessionData> {
     orgRole: session.orgRole,
     orgName: session.orgName,
     hasMfa: session.hasMfa,
+    mfaGate: session.mfaGate,
     user: session.user,
     // Do NOT return tokens to client
   };

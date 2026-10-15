@@ -81,6 +81,8 @@ export const users = pgTable("users", {
   lastName: text("last_name"),
   avatarUrl: text("avatar_url"),
   mfaEnabled: boolean("mfa_enabled").notNull().default(false),
+  /** An admin reset this person's sign-in: they must set up a second factor before using the app. */
+  requireMfaSetup: boolean("require_mfa_setup").notNull().default(false),
   mfaSecret: text("mfa_secret"), // Encrypted TOTP secret
   mfaBackupCodes: jsonb("mfa_backup_codes").$type<string[]>(), // Hashed backup codes
   clerkUserId: text("clerk_user_id"), // For migration tracking, nullable

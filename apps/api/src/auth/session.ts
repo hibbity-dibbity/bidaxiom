@@ -11,7 +11,30 @@ import { hashToken } from "./tokens.js";
  * The IdP did the multi-factor step, so the session counts as MFA-verified.
  */
 export async function issueSsoSession(userId: string, organizationId: string) {
-  return issueSession(userId, organizationId);
+  return issueSession(userId, organizationId, { idp: true });
+}
+
+/** How many different kinds of second factor the person has (authenticator app, passkey). */
+export async function mfaMethodCount(userId: string, mfaEnabled: boolean): Promise<number> {
+  const hasPasskey = await hasSecondFactor(userId, false);
+  return (mfaEnabled ? 1 : 0) + (hasPasskey ? 1 : 0);
+}
+
+/**
+ * Must this person finish setting up sign-in security before using the app?
+ * Admins need two different methods (so one can back up the other); a person an admin reset needs one.
+ * A session that came from the company's identity provider is exempt: the provider did the second step.
+ */
+export async function computeMfaGate(userId: string, orgRole: string | null | undefined, idp: boolean): Promise<boolean> {
+  const user = await getDb().query.users.findFirst({ where: eq(users.id, userId) });
+  if (!user) return false;
+  const methods = await mfaMethodCount(userId, user.mfaEnabled);
+  if (user.requireMfaSetup && methods >= 1) {
+    await getDb().update(users).set({ requireMfaSetup: false }).where(eq(users.id, userId));
+  }
+  if (idp) return false;
+  if (orgRole === "org:admin" && methods < 2) return true;
+  return user.requireMfaSetup && methods < 1;
 }
 
 /** True when the person has any second factor set up (authenticator app or a passkey). */
@@ -25,7 +48,7 @@ export async function hasSecondFactor(userId: string, mfaEnabled: boolean): Prom
  * Start a session after the person proved who they are with a second factor built in
  * (single sign-on, or a passkey). With no organization given, their first company is used.
  */
-export async function issueSession(userId: string, organizationId?: string) {
+export async function issueSession(userId: string, organizationId?: string, opts: { idp?: boolean } = {}) {
   const db = getDb();
   const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
   const membership = await db.query.organizationMemberships.findFirst({
@@ -39,8 +62,11 @@ export async function issueSession(userId: string, organizationId?: string) {
   if (membership && !org) throw new Error("Company not found");
 
   const tokenFamily = nanoid();
-  const accessToken = await signAccessToken({ userId: user.id, orgId: org?.id ?? "", orgRole: membership?.role ?? "org:member", hasMfa: true });
-  const refreshToken = await signRefreshToken({ userId: user.id, tokenFamily, hasMfa: true });
+  const idp = opts.idp === true;
+  const orgRole = membership?.role ?? "org:member";
+  const mfaGate = await computeMfaGate(user.id, orgRole, idp);
+  const accessToken = await signAccessToken({ userId: user.id, orgId: org?.id ?? "", orgRole, hasMfa: true, mfaGate, idp });
+  const refreshToken = await signRefreshToken({ userId: user.id, tokenFamily, hasMfa: true, idp });
   await db.insert(refreshTokens).values({
     userId: user.id,
     tokenHash: hashToken(refreshToken),
@@ -51,7 +77,7 @@ export async function issueSession(userId: string, organizationId?: string) {
   return {
     accessToken,
     refreshToken,
-    user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, mfaEnabled: true },
+    user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, mfaEnabled: true, mfaGate },
     org: org && membership ? { id: org.id, name: org.name, role: membership.role } : null,
   };
 }

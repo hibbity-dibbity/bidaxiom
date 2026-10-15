@@ -31,6 +31,10 @@ export interface AccessTokenPayload {
   orgId: string;
   orgRole: string;
   hasMfa: boolean;
+  /** The person must finish setting up a second factor before using the app. */
+  mfaGate?: boolean;
+  /** The session came from the company's identity provider, which did the second step. */
+  idp?: boolean;
 }
 
 export interface RefreshTokenPayload {
@@ -38,6 +42,7 @@ export interface RefreshTokenPayload {
   tokenFamily: string;
   /** The sign-in that started this session passed a second factor (authenticator code, passkey or the company's identity provider). */
   hasMfa?: boolean;
+  idp?: boolean;
 }
 
 /**
@@ -51,6 +56,8 @@ export async function signAccessToken(payload: AccessTokenPayload): Promise<stri
     orgId: payload.orgId,
     orgRole: payload.orgRole,
     hasMfa: payload.hasMfa,
+    mfaGate: payload.mfaGate === true,
+    idp: payload.idp === true,
   })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(payload.userId)
@@ -71,6 +78,7 @@ export async function signRefreshToken(payload: RefreshTokenPayload): Promise<st
   const jwt = await new SignJWT({
     tokenFamily: payload.tokenFamily,
     hasMfa: payload.hasMfa === true,
+    idp: payload.idp === true,
   })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(payload.userId)
@@ -97,6 +105,8 @@ export async function verifyAccessToken(token: string): Promise<AccessTokenPaylo
     orgId: payload.orgId as string,
     orgRole: payload.orgRole as string,
     hasMfa: payload.hasMfa as boolean,
+    mfaGate: payload.mfaGate === true,
+    idp: payload.idp === true,
   };
 }
 
@@ -114,5 +124,6 @@ export async function verifyRefreshToken(token: string): Promise<RefreshTokenPay
     userId: payload.sub as string,
     tokenFamily: payload.tokenFamily as string,
     hasMfa: payload.hasMfa === true,
+    idp: payload.idp === true,
   };
 }

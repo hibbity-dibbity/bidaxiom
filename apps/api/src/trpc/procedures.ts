@@ -38,11 +38,11 @@ const ENFORCE_MFA = process.env.ENFORCE_MFA === "true";
  * or if no active organization.
  */
 const requireTenant = middleware(async ({ ctx, next }) => {
-  // Company admins always need a second factor; ENFORCE_MFA extends that to everyone.
-  if ((ENFORCE_MFA || ctx.orgRole === "org:admin") && !ctx.hasMfa) {
+  // Admins need two second-factor methods, and anyone an admin reset must set one up again; ENFORCE_MFA extends one to everyone.
+  if ((ENFORCE_MFA && !ctx.hasMfa) || ctx.mfaGate) {
     throw new TRPCError({
       code: "FORBIDDEN",
-      message: "Multi-factor authentication is required. Set up an authenticator app or a passkey.",
+      message: "Multi-factor authentication is required. Finish setting up your sign-in security (authenticator app and passkey for admins).",
     });
   }
 

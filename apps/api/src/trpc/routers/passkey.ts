@@ -88,7 +88,8 @@ export const passkeyRouter = router({
     const db = getDb();
     const user = await db.query.users.findFirst({ where: eq(users.id, ctx.userId) });
     const mine = await db.query.passkeys.findMany({ where: eq(passkeys.userId, ctx.userId), columns: { id: true } });
-    return { totp: Boolean(user?.mfaEnabled), passkeys: mine.length, adminNeedsFactor: ctx.orgRole === "org:admin" };
+    const methods = (user?.mfaEnabled ? 1 : 0) + (mine.length > 0 ? 1 : 0);
+    return { totp: Boolean(user?.mfaEnabled), passkeys: mine.length, methods, needed: ctx.orgRole === "org:admin" && !ctx.idp ? 2 : 1 };
   }),
 
   list: authProcedure.query(async ({ ctx }) => {
@@ -102,13 +103,14 @@ export const passkeyRouter = router({
     const db = getDb();
     const mine = await db.query.passkeys.findMany({ where: eq(passkeys.userId, ctx.userId), columns: { id: true } });
     if (!mine.some((p) => p.id === input.id)) throw new TRPCError({ code: "NOT_FOUND", message: "Passkey not found" });
-    // A company admin must keep at least one second factor.
+    // A company admin must keep two different methods (authenticator app and passkey).
     const user = await db.query.users.findFirst({ where: eq(users.id, ctx.userId) });
     const adminRow = await db.query.organizationMemberships.findFirst({
       where: and(eq(organizationMemberships.userId, ctx.userId), eq(organizationMemberships.role, "org:admin")),
     });
-    if (adminRow && mine.length === 1 && !user?.mfaEnabled) {
-      throw new TRPCError({ code: "BAD_REQUEST", message: "Company admins need a second factor. Set up an authenticator app before removing your last passkey." });
+    const methodsAfter = (user?.mfaEnabled ? 1 : 0) + (mine.length > 1 ? 1 : 0);
+    if (adminRow && !ctx.idp && methodsAfter < 2) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "Company admins need both an authenticator app and a passkey. Add another passkey before removing this one." });
     }
     await db.delete(passkeys).where(and(eq(passkeys.id, input.id), eq(passkeys.userId, ctx.userId)));
     return { ok: true as const };
@@ -142,6 +144,6 @@ export const passkeyRouter = router({
         throw new TRPCError({ code: "FORBIDDEN", message: "Your company requires its own single sign-on. Enter your work email and continue." });
       }
       await db.update(passkeys).set({ counter: result.counter, lastUsedAt: new Date() }).where(eq(passkeys.id, stored.id));
-      return issueSession(user.id);
+      return issueSession(user.id, undefined, { idp: false });
     }),
 });

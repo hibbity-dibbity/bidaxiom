@@ -11,7 +11,15 @@ import {
   organizationMemberships,
   organizationInvitations,
   userCompanyMappings,
+  refreshTokens,
+  passkeys,
+  passwordResetTokens,
 } from "../../db/schema/public.js";
+import { randomBytes } from "node:crypto";
+import { hashPassword } from "../../auth/password.js";
+import { sendPasswordResetEmail } from "../../services/email.js";
+import { createAuditLog } from "../../audit/logger.js";
+import { AuditAction } from "@construction/shared";
 import { provisionTenantSchema } from "../../tenant/provision.js";
 import { generateToken } from "../../auth/tokens.js";
 
@@ -349,6 +357,56 @@ export const organizationRouter = router({
       }
 
       return updated;
+    }),
+
+  /**
+   * Admin: reset someone's sign-in. Their password stops working (they get a reset link), they are signed
+   * out everywhere, and their authenticator app and passkeys are cleared so they must set up security again.
+   */
+  resetMemberSignIn: authProcedure
+    .input(z.object({ organizationId: z.string().uuid(), userId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const adminId = ctx.userId!;
+      if (ctx.mfaGate) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Finish setting up your own sign-in security first." });
+      }
+      await requireOrgAdmin(adminId, input.organizationId);
+      if (adminId === input.userId) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Use Account settings to change your own sign-in." });
+      }
+      const memberships = await db.select().from(organizationMemberships).where(eq(organizationMemberships.userId, input.userId));
+      if (!memberships.some((m) => m.organizationId === input.organizationId)) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "That person is not a member of this company." });
+      }
+      if (memberships.some((m) => m.organizationId !== input.organizationId)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "That person also belongs to other companies, so their sign-in can only be reset by themselves (Forgot password)." });
+      }
+      const [target] = await db.select().from(users).where(eq(users.id, input.userId)).limit(1);
+      if (!target) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+
+      // The old password is dead immediately; only the emailed link sets a new one.
+      await db.update(users).set({
+        passwordHash: await hashPassword(randomBytes(32).toString("base64url")),
+        hashType: "argon2id",
+        mfaEnabled: false,
+        mfaSecret: null,
+        mfaBackupCodes: null,
+        requireMfaSetup: true,
+      }).where(eq(users.id, target.id));
+      await db.delete(passkeys).where(eq(passkeys.userId, target.id));
+      await db.update(refreshTokens).set({ revokedAt: new Date() }).where(and(eq(refreshTokens.userId, target.id), sql`${refreshTokens.revokedAt} IS NULL`));
+
+      const { token, hash } = generateToken();
+      await db.insert(passwordResetTokens).values({ userId: target.id, tokenHash: hash, expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) });
+      await sendPasswordResetEmail(target.email, token);
+
+      if (ctx.tenant) {
+        await createAuditLog(ctx.tenant.db, ctx.tenant.schema, {
+          entityType: "User", entityId: target.id, action: AuditAction.UPDATE, actorId: adminId,
+          changes: { after: { signInReset: true, email: target.email } },
+        });
+      }
+      return { ok: true as const, email: target.email };
     }),
 
   /**

@@ -10,6 +10,8 @@ export interface Context {
   orgId: string | null;
   orgRole: string | null;
   hasMfa: boolean;
+  mfaGate: boolean;
+  idp: boolean;
   tenant: RequestTenantContext | null;
   ip?: string;
 }
@@ -51,6 +53,8 @@ export async function createContext(
       orgId: null,
       orgRole: null,
       hasMfa: false,
+      mfaGate: false,
+      idp: false,
       tenant: null,
       ip,
     };
@@ -72,6 +76,8 @@ export async function createContext(
         orgId: null,
         orgRole: orgRole ?? null,
         hasMfa,
+        mfaGate: payload.mfaGate === true,
+        idp: payload.idp === true,
         tenant: null,
         ip,
       };
@@ -85,6 +91,8 @@ export async function createContext(
         orgId,
         orgRole: orgRole ?? null,
         hasMfa,
+        mfaGate: payload.mfaGate === true,
+        idp: payload.idp === true,
         tenant,
         ip,
       };
@@ -96,6 +104,8 @@ export async function createContext(
         orgId,
         orgRole: orgRole ?? null,
         hasMfa,
+        mfaGate: payload.mfaGate === true,
+        idp: payload.idp === true,
         tenant: null,
         ip,
       };
@@ -108,6 +118,8 @@ export async function createContext(
       orgId: null,
       orgRole: null,
       hasMfa: false,
+      mfaGate: false,
+      idp: false,
       tenant: null,
       ip,
     };

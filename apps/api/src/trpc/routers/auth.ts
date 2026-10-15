@@ -17,7 +17,7 @@ import { hashPassword, verifyPassword } from "../../auth/password.js";
 import { signAccessToken, signRefreshToken, verifyAccessToken, verifyRefreshToken } from "../../auth/jwt.js";
 import { generateToken, hashToken } from "../../auth/tokens.js";
 import { passwordLoginBlocked } from "../../auth/oidc/sso.js";
-import { hasSecondFactor } from "../../auth/session.js";
+import { hasSecondFactor, computeMfaGate } from "../../auth/session.js";
 import { generateMfaSecret, verifyMfaToken, verifyBackupCode } from "../../auth/mfa.js";
 import {
   checkLoginRateLimit,
@@ -291,11 +291,13 @@ export const authRouter = router({
       const tokenFamily = nanoid();
 
       // Sign tokens
+      const mfaGate = await computeMfaGate(user.id, orgRole, false);
       const accessToken = await signAccessToken({
         userId: user.id,
         orgId,
         orgRole,
         hasMfa: user.mfaEnabled,
+        mfaGate,
       });
 
       const refreshToken = await signRefreshToken({
@@ -330,6 +332,7 @@ export const authRouter = router({
           firstName: user.firstName,
           lastName: user.lastName,
           mfaEnabled: user.mfaEnabled,
+          mfaGate,
         },
         org: org
           ? {
@@ -428,12 +431,15 @@ export const authRouter = router({
         orgId,
         orgRole,
         hasMfa: sessionMfa,
+        mfaGate: await computeMfaGate(user.id, orgRole, payload.idp === true),
+        idp: payload.idp === true,
       });
 
       const newRefreshToken = await signRefreshToken({
         userId: user.id,
         tokenFamily: storedToken.familyId, // Keep same family
         hasMfa: sessionMfa,
+        idp: payload.idp === true,
       });
 
       const newRefreshTokenHash = hashToken(newRefreshToken);
@@ -821,8 +827,8 @@ export const authRouter = router({
         const adminRow = await getAuthDb().query.organizationMemberships.findFirst({
           where: and(eq(organizationMemberships.userId, user.id), eq(organizationMemberships.role, "org:admin")),
         });
-        if (adminRow && !(await hasSecondFactor(user.id, false))) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Company admins need a second factor. Add a passkey before turning off the authenticator app." });
+        if (adminRow) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Company admins need both an authenticator app and a passkey, so it can't be turned off." });
         }
       }
       if (!user.mfaEnabled) {
@@ -921,6 +927,8 @@ export const authRouter = router({
         orgId: membership.organizationId,
         orgRole: membership.role,
         hasMfa: ctx.hasMfa === true || user.mfaEnabled,
+        mfaGate: await computeMfaGate(user.id, membership.role, ctx.idp),
+        idp: ctx.idp,
       });
 
       return {
