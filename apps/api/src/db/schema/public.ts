@@ -192,7 +192,6 @@ export const ssoConnections = pgTable("sso_connections", {
   enforceSso: boolean("enforce_sso").notNull().default(false), // members (not admins) must use SSO, not a password
   autoProvision: boolean("auto_provision").notNull().default(false), // create accounts on first sign-in
   defaultRole: text("default_role").notNull().default("org:member"),
-  allowedDomains: jsonb("allowed_domains").$type<string[]>().notNull().default([]), // optional extra email-domain filter
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
@@ -208,4 +207,19 @@ export const ssoIdentities = pgTable("sso_identities", {
 }, (table) => ({
   identityUnique: unique().on(table.connectionId, table.subject),
   userIdx: index("idx_sso_identities_user").on(table.userId),
+}));
+
+/**
+ * Email domains a company has claimed for single sign-on. A domain only routes sign-ins once the
+ * company has proven it owns it by publishing a DNS TXT record; each domain can belong to one company.
+ */
+export const ssoDomains = pgTable("sso_domains", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  connectionId: uuid("connection_id").notNull().references(() => ssoConnections.id, { onDelete: "cascade" }),
+  domain: text("domain").notNull(),
+  token: text("token").notNull(),
+  verifiedAt: timestamp("verified_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  connDomainUnique: unique().on(table.connectionId, table.domain),
 }));

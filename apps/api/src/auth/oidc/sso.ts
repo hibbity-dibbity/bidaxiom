@@ -1,7 +1,7 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNotNull } from "drizzle-orm";
 import { randomBytes } from "node:crypto";
 import { getDb } from "../../db/client.js";
-import { users, organizations, organizationMemberships, ssoConnections, ssoIdentities } from "../../db/schema/public.js";
+import { users, organizations, organizationMemberships, ssoConnections, ssoDomains, ssoIdentities } from "../../db/schema/public.js";
 import { hashPassword } from "../password.js";
 import { authorizeUrl, exchange } from "./providers.js";
 import { decryptSecret } from "./secret.js";
@@ -35,13 +35,22 @@ async function start(conn: typeof ssoConnections.$inferSelect, input: { purpose:
   return { authUrl: url, pendingToken: await signPending(pending) };
 }
 
-/** Sign in: the company code (its slug) says which company's identity provider to use. */
-export async function beginSso(input: { companyCode: string; redirectUri: string; loginHint?: string }) {
+/** Which company's sign-in (if any) handles this email address, from its verified domain. */
+export async function connectionForEmail(email: string) {
+  const domain = email.trim().toLowerCase().split("@")[1];
+  if (!domain) return null;
   const db = getDb();
-  const org = await db.query.organizations.findFirst({ where: eq(organizations.slug, input.companyCode.trim().toLowerCase()) });
-  const conn = org ? await db.query.ssoConnections.findFirst({ where: eq(ssoConnections.organizationId, org.id) }) : null;
-  if (!conn || !conn.enabled || !conn.verified) throw new SsoError("Single sign-on is not set up for that company code.");
-  return start(conn, { purpose: "login", redirectUri: input.redirectUri, loginHint: input.loginHint });
+  const row = await db.query.ssoDomains.findFirst({ where: and(eq(ssoDomains.domain, domain), isNotNull(ssoDomains.verifiedAt)) });
+  if (!row) return null;
+  const conn = await db.query.ssoConnections.findFirst({ where: eq(ssoConnections.id, row.connectionId) });
+  return conn && conn.enabled && conn.verified ? conn : null;
+}
+
+/** Sign in: the email address's verified domain says which company's identity provider to use. */
+export async function beginSso(input: { email: string; redirectUri: string }) {
+  const conn = await connectionForEmail(input.email);
+  if (!conn) throw new SsoError("Single sign-on is not set up for that email address.");
+  return start(conn, { purpose: "login", redirectUri: input.redirectUri, loginHint: input.email.trim().toLowerCase() });
 }
 
 /** Admin: test a saved connection by signing in through it once. That also links the admin's own account. */
@@ -85,8 +94,9 @@ export async function finishSso(input: { code: string; state: string; pendingTok
   }
 
   if (!conn.enabled || !conn.verified) throw new SsoError("Single sign-on is turned off for this company.");
-  const domains = conn.allowedDomains ?? [];
-  if (domains.length > 0 && !(id.email && domains.includes(id.email.split("@")[1]))) throw new SsoError("Your email address is not allowed to sign in to this company.");
+  // Only addresses at the company's verified domains may come in through this connection.
+  const verified = await db.query.ssoDomains.findMany({ where: and(eq(ssoDomains.connectionId, conn.id), isNotNull(ssoDomains.verifiedAt)) });
+  if (!id.email || !verified.some((d) => d.domain === id.email!.split("@")[1])) throw new SsoError("Your email address is not at one of this company's sign-in domains.");
 
   let userId: string;
   if (linked) {

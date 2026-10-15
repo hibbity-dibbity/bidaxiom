@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-type Conn = { id: string; provider: string; issuer: string; clientId: string; verified: boolean; enabled: boolean; enforceSso: boolean; autoProvision: boolean; defaultRole: string; allowedDomains: string[]; youAreLinked: boolean };
+type Conn = { id: string; provider: string; issuer: string; clientId: string; verified: boolean; enabled: boolean; enforceSso: boolean; autoProvision: boolean; defaultRole: string; domains: { id: string; domain: string; verified: boolean; txtName: string; txtValue: string }[]; youAreLinked: boolean };
 type Preset = { key: string; label: string; field: { name: string; label: string; help: string } | null };
 
 /** Admin: this company's own single sign-on (OpenID Connect). You register an app with your identity provider. */
@@ -57,10 +57,12 @@ export default function SignInSettingsPage() {
 
       <ConnectionDetails key={conn?.id ?? "new"} presets={data.presets as Preset[]} conn={conn} onSaved={refresh} />
 
+      {conn && <Domains conn={conn} onChanged={refresh} />}
+
       {conn && (
         <Card>
           <CardHeader>
-            <CardTitle>3. Test and turn on</CardTitle>
+            <CardTitle>4. Test and turn on</CardTitle>
             <CardDescription>
               {conn.verified ? "The connection works and your account is linked." : "Sign in through your provider once to confirm the details are right. This also links your own account."}
             </CardDescription>
@@ -69,7 +71,7 @@ export default function SignInSettingsPage() {
             <Button variant={conn.verified ? "outline" : "default"} onClick={() => { window.location.href = "/api/auth/sso/setup"; }}>
               {conn.verified ? "Test again" : "Test connection"}
             </Button>
-            {conn.verified && <Options conn={conn} roles={data.roles} companyCode={data.companyCode} onSaved={refresh} />}
+            {conn.verified && <Options conn={conn} roles={data.roles} onSaved={refresh} />}
             <div>
               <Button variant="outline" onClick={() => { if (window.confirm("Disconnect single sign-on? People will sign in with their BidAxiom passwords again.")) disconnect.mutate(); }}>Disconnect</Button>
             </div>
@@ -126,12 +128,11 @@ function ConnectionDetails({ presets, conn, onSaved }: { presets: Preset[]; conn
   );
 }
 
-function Options({ conn, roles, companyCode, onSaved }: { conn: Conn; roles: { key: string; label: string }[]; companyCode: string; onSaved: () => void }) {
+function Options({ conn, roles, onSaved }: { conn: Conn; roles: { key: string; label: string }[]; onSaved: () => void }) {
   const [enabled, setEnabled] = React.useState(conn.enabled);
   const [enforce, setEnforce] = React.useState(conn.enforceSso);
   const [auto, setAuto] = React.useState(conn.autoProvision);
   const [role, setRole] = React.useState(conn.defaultRole);
-  const [domains, setDomains] = React.useState(conn.allowedDomains.join(", "));
   const save = trpc.sso.update.useMutation({ onSuccess: () => { toast.success("Saved"); onSaved(); }, onError: (e) => toast.error(e.message) });
   const check = (label: string, value: boolean, set: (v: boolean) => void, help: string) => (
     <label className="flex items-start gap-3 text-sm">
@@ -141,7 +142,7 @@ function Options({ conn, roles, companyCode, onSaved }: { conn: Conn; roles: { k
   );
   return (
     <div className="space-y-4 border-t pt-4">
-      {check("Allow single sign-on", enabled, setEnabled, `People choose "Sign in with single sign-on" on the sign-in page and enter your company code${companyCode ? `: ${companyCode}` : ""}.`)}
+      {check("Allow single sign-on", enabled, setEnabled, "People type their work email on the sign-in page and are sent to your provider automatically when it matches one of your verified domains.")}
       {check("Create accounts on first sign-in", auto, setAuto, "Anyone who can sign in through your provider joins this company as the role below. Leave off to join by invitation only.")}
       <label className="block text-sm">
         <span className="font-medium">Role for new accounts</span>
@@ -149,12 +150,48 @@ function Options({ conn, roles, companyCode, onSaved }: { conn: Conn; roles: { k
           {roles.map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
         </select>
       </label>
-      <label className="block text-sm">
-        <span className="font-medium">Only these email domains (optional)</span>
-        <Input className="mt-1 max-w-md" placeholder="thomsonenterprises.com" value={domains} onChange={(e) => setDomains(e.target.value)} />
-      </label>
       {check("Require single sign-on", enforce, setEnforce, "Members must use it; passwords stop working for them. Admins can still use a password so you can't be locked out.")}
-      <Button disabled={save.isPending} onClick={() => save.mutate({ enabled, enforceSso: enforce, autoProvision: auto, defaultRole: role, allowedDomains: domains.split(/[,\s]+/).filter(Boolean) })}>Save options</Button>
+      <Button disabled={save.isPending} onClick={() => save.mutate({ enabled, enforceSso: enforce, autoProvision: auto, defaultRole: role })}>Save options</Button>
     </div>
+  );
+}
+
+function Domains({ conn, onChanged }: { conn: Conn; onChanged: () => void }) {
+  const [domain, setDomain] = React.useState("");
+  const add = trpc.sso.domainAdd.useMutation({ onSuccess: () => { setDomain(""); onChanged(); }, onError: (e) => toast.error(e.message) });
+  const verify = trpc.sso.domainVerify.useMutation({ onSuccess: () => { toast.success("Domain verified"); onChanged(); }, onError: (e) => toast.error(e.message) });
+  const remove = trpc.sso.domainRemove.useMutation({ onSuccess: onChanged, onError: (e) => toast.error(e.message) });
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>3. Your email domains</CardTitle>
+        <CardDescription>
+          People whose email ends in one of these domains are sent to your provider when they sign in. To prove you own a domain, add a DNS TXT record with the name and value shown, then click Verify. At least one verified domain is required to turn single sign-on on.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {conn.domains.map((d) => (
+          <div key={d.id} className="space-y-2 rounded-md border p-3 text-sm">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-medium">{d.domain} {d.verified ? <span className="text-green-600">✓ verified</span> : <span className="text-amber-600">not verified</span>}</span>
+              <span className="flex gap-2">
+                {!d.verified && <Button size="sm" disabled={verify.isPending} onClick={() => verify.mutate({ id: d.id })}>Verify</Button>}
+                <Button size="sm" variant="outline" onClick={() => remove.mutate({ id: d.id })}>Remove</Button>
+              </span>
+            </div>
+            {!d.verified && (
+              <div className="space-y-1 text-muted-foreground">
+                <div>TXT record name: <code className="break-all rounded bg-muted px-1">{d.txtName}</code></div>
+                <div>TXT record value: <code className="break-all rounded bg-muted px-1">{d.txtValue}</code></div>
+              </div>
+            )}
+          </div>
+        ))}
+        <div className="flex gap-2">
+          <Input className="max-w-xs" placeholder="yourcompany.com" value={domain} onChange={(e) => setDomain(e.target.value)} />
+          <Button disabled={add.isPending || !domain.trim()} onClick={() => add.mutate({ domain })}>Add domain</Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

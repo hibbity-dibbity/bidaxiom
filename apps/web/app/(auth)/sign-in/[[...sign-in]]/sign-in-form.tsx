@@ -32,8 +32,31 @@ type MfaFormData = z.infer<typeof mfaSchema>;
 export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
   const router = useRouter();
   const ssoError = useSearchParams().get("sso_error");
-  const [ssoOpen, setSsoOpen] = useState(false);
-  const [company, setCompany] = useState("");
+  // Email-first: step 1 asks only for the email, then the server says how that address signs in.
+  const [step, setStep] = useState<"email" | "choose" | "password">("email");
+  const [emailInput, setEmailInput] = useState("");
+  const routeMutation = trpc.sso.route.useMutation();
+  const goSso = (email: string) => {
+    window.location.href = `/api/auth/sso/start?email=${encodeURIComponent(email)}`;
+  };
+  const onEmailContinue = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const email = emailInput.trim();
+    if (!z.string().email().safeParse(email).success) {
+      toast.error("Enter a valid email address");
+      return;
+    }
+    try {
+      const r = await routeMutation.mutateAsync({ email });
+      if (r.sso && r.enforced) return goSso(email);
+      setValue("email", email);
+      setStep(r.sso ? "choose" : "password");
+    } catch {
+      // If routing can't be checked, fall back to the password form.
+      setValue("email", email);
+      setStep("password");
+    }
+  };
   useEffect(() => {
     if (ssoError) toast.error(ssoError);
   }, [ssoError]);
@@ -46,6 +69,7 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
   const {
     register: registerLogin,
     handleSubmit: handleSubmitLogin,
+    setValue,
     formState: { errors: loginErrors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -269,40 +293,49 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
       <CardHeader>
         <CardTitle>Sign In</CardTitle>
         <CardDescription>
-          Enter your credentials to access your account
+          {step === "email" ? "Enter your email address to continue" : "Enter your credentials to access your account"}
         </CardDescription>
       </CardHeader>
+      {step === "email" ? (
+        <form onSubmit={onEmailContinue}>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email-first">Email</Label>
+              <Input id="email-first" type="email" placeholder="you@example.com" autoFocus value={emailInput} onChange={(e) => setEmailInput(e.target.value)} disabled={routeMutation.isPending} />
+            </div>
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-4">
+            <Button type="submit" className="w-full" disabled={routeMutation.isPending || !emailInput.trim()}>
+              {routeMutation.isPending ? "Checking..." : "Continue"}
+            </Button>
+            <p className="text-center text-sm text-muted-foreground">
+              Don&apos;t have an account?{" "}
+              <Link href="/sign-up" className="text-primary hover:underline">Sign up</Link>
+            </p>
+          </CardFooter>
+        </form>
+      ) : (
       <form onSubmit={handleSubmitLogin(onLoginSubmit)}>
         <CardContent className="space-y-4">
+          {step === "choose" && (
+            <Button type="button" className="w-full" onClick={() => goSso(emailInput.trim())}>
+              Continue with your company sign-in
+            </Button>
+          )}
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="you@example.com"
-              {...registerLogin("email")}
-              disabled={isLoading}
-            />
+            <Input id="email" type="email" readOnly {...registerLogin("email")} disabled={isLoading} />
             {loginErrors.email && (
               <p className="text-sm text-destructive">{loginErrors.email.message}</p>
             )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              {...registerLogin("password")}
-              disabled={isLoading}
-            />
+            <Input id="password" type="password" placeholder="••••••••" autoFocus {...registerLogin("password")} disabled={isLoading} />
             {loginErrors.password && (
               <p className="text-sm text-destructive">{loginErrors.password.message}</p>
             )}
-            <Link
-              href="/reset-password"
-              className="text-sm text-muted-foreground hover:text-primary"
-            >
+            <Link href="/reset-password" className="text-sm text-muted-foreground hover:text-primary">
               Forgot password?
             </Link>
           </div>
@@ -311,24 +344,12 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? "Signing in..." : "Sign In"}
           </Button>
-          {ssoOpen ? (
-            <div className="flex w-full gap-2">
-              <Input aria-label="Company code" placeholder="Company code (for example thomson)" value={company} onChange={(e) => setCompany(e.target.value)} autoFocus />
-              <Button type="button" disabled={!company.trim()} onClick={() => { window.location.href = `/api/auth/sso/start?company=${encodeURIComponent(company.trim())}`; }}>Continue</Button>
-            </div>
-          ) : (
-            <Button type="button" variant="outline" className="w-full" disabled={isLoading} onClick={() => setSsoOpen(true)}>
-              Sign in with single sign-on
-            </Button>
-          )}
-          <p className="text-center text-sm text-muted-foreground">
-            Don&apos;t have an account?{" "}
-            <Link href="/sign-up" className="text-primary hover:underline">
-              Sign up
-            </Link>
-          </p>
+          <Button type="button" variant="ghost" className="w-full" disabled={isLoading} onClick={() => setStep("email")}>
+            Use a different email
+          </Button>
         </CardFooter>
       </form>
+      )}
     </Card>
     </div>
   );
