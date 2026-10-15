@@ -1282,6 +1282,8 @@ export function createTenantSchema(schemaName: string) {
     budgetCost: numeric("budget_cost", { precision: 15, scale: 2 }).notNull().default("0"),
     projectedCost: numeric("projected_cost", { precision: 15, scale: 2 }).notNull().default("0"),
     exclusions: text("exclusions"), // work orders only
+    takeoffId: uuid("takeoff_id"), // material_takeoffs.id when the line came from a takeoff
+    takeoffKey: text("takeoff_key"), // the takeoff line it came from, so a line is never ordered twice
     sortOrder: integer("sort_order").notNull().default(0),
   });
 
@@ -1324,6 +1326,8 @@ export function createTenantSchema(schemaName: string) {
     inputs: jsonb("inputs").notNull().$type<Record<string, unknown>>(),
     qtyOverrides: jsonb("qty_overrides").notNull().$type<Record<string, number>>().default({}),
     costOverrides: jsonb("cost_overrides").notNull().$type<Record<string, number>>().default({}),
+    /** line key -> vendor (subcontractor_directory.id) who will supply it; used to group purchase orders */
+    vendorAssignments: jsonb("vendor_assignments").notNull().$type<Record<string, string>>().default({}),
     createdBy: text("created_by").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),

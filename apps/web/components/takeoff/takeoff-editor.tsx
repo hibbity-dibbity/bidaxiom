@@ -71,6 +71,9 @@ export function TakeoffEditor({ projectSlug, takeoffId }: { projectSlug: string;
   const [inputs, setInputs] = React.useState<Record<string, number | string | boolean>>({});
   const [qty, setQty] = React.useState<Record<string, number>>({});
   const [cost, setCost] = React.useState<Record<string, number>>({});
+  const [vendors, setVendors] = React.useState<Record<string, string>>({});
+  const vendorList = trpc.order.vendorOptions.useQuery();
+  const ordered = trpc.takeoff.orders.useQuery({ takeoffId });
   const [dirty, setDirty] = React.useState(false);
   const [target, setTarget] = React.useState("");
   const [mode, setMode] = React.useState<"itemized" | "single">("itemized");
@@ -82,12 +85,23 @@ export function TakeoffEditor({ projectSlug, takeoffId }: { projectSlug: string;
     setInputs(data.inputs as Record<string, number | string | boolean>);
     setQty(data.qtyOverrides);
     setCost(data.costOverrides);
+    setVendors(data.vendorAssignments ?? {});
     setDirty(false);
   }, [data]);
 
   const save = trpc.takeoff.save.useMutation({
     onSuccess: () => { setDirty(false); utils.takeoff.get.invalidate({ id: takeoffId }); utils.takeoff.list.invalidate(); toast.success("Saved"); },
     onError: (e) => toast.error("Could not save", { description: e.message }),
+  });
+  const makePos = trpc.takeoff.createPurchaseOrders.useMutation({
+    onSuccess: (r) => {
+      utils.takeoff.orders.invalidate({ takeoffId });
+      const n = r.orders.length;
+      toast.success(`${n} draft purchase order${n === 1 ? "" : "s"} ${r.orders.some((o) => o.added) ? "created or updated" : "created"}`, {
+        description: [r.alreadyOrdered ? `${r.alreadyOrdered} line${r.alreadyOrdered === 1 ? " was" : "s were"} already ordered.` : "", r.skippedOther ? `${r.skippedOther} labor or subcontract line${r.skippedOther === 1 ? "" : "s"} left for work orders.` : ""].filter(Boolean).join(" ") || undefined,
+      });
+    },
+    onError: (e) => toast.error("Could not create purchase orders", { description: e.message }),
   });
   const addTo = trpc.takeoff.addToProposal.useMutation({
     onSuccess: (r) => toast.success(`Added ${r.added} line${r.added === 1 ? "" : "s"} to the proposal`, { description: `Materials total ${dollars(r.total)} before margin and tax.` }),
@@ -112,6 +126,15 @@ export function TakeoffEditor({ projectSlug, takeoffId }: { projectSlug: string;
   const groups = Array.from(new Set(lines.map((l) => l.group)));
 
   const setInput = (k: string, v: number | string | boolean) => { setInputs((s) => ({ ...s, [k]: v })); setDirty(true); };
+  const orderable = (l: TakeoffLine) => !l.info && (l.type === "material" || l.type === "equipment");
+  const setVendor = (keys: string[], vendorId: string) => {
+    setVendors((s) => {
+      const next = { ...s };
+      for (const k of keys) { if (vendorId) next[k] = vendorId; else delete next[k]; }
+      return next;
+    });
+    setDirty(true);
+  };
   const setOverride = (which: "qty" | "cost", line: TakeoffLine, raw: string) => {
     const fn = which === "qty" ? setQty : setCost;
     fn((s) => {
@@ -131,7 +154,7 @@ export function TakeoffEditor({ projectSlug, takeoffId }: { projectSlug: string;
         actions={
           <>
             <Link href={`/projects/${projectSlug}/takeoffs`} className="text-sm text-muted-foreground hover:underline">All takeoffs</Link>
-            <Button disabled={!dirty || save.isPending} onClick={() => save.mutate({ id: takeoffId, name, inputs, qtyOverrides: qty, costOverrides: cost })}>
+            <Button disabled={!dirty || save.isPending} onClick={() => save.mutate({ id: takeoffId, name, inputs, qtyOverrides: qty, costOverrides: cost, vendorAssignments: vendors })}>
               {save.isPending ? "Saving…" : dirty ? "Save" : "Saved"}
             </Button>
           </>
@@ -192,12 +215,24 @@ export function TakeoffEditor({ projectSlug, takeoffId }: { projectSlug: string;
           <div className="overflow-x-auto rounded-md border bg-background">
             <table className="w-full text-sm">
               <thead className="border-b text-left text-xs text-muted-foreground">
-                <tr><th className="p-2">Item</th><th className="p-2 text-right">Qty</th><th className="p-2">Unit</th><th className="p-2 text-right">Unit cost</th><th className="p-2 text-right">Total</th></tr>
+                <tr><th className="p-2">Item</th><th className="p-2 text-right">Qty</th><th className="p-2">Unit</th><th className="p-2 text-right">Unit cost</th><th className="p-2 text-right">Total</th><th className="p-2">Vendor</th></tr>
               </thead>
               <tbody>
                 {groups.map((g) => (
                   <React.Fragment key={g}>
-                    <tr className="bg-muted/40"><td colSpan={5} className="px-2 py-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">{g}</td></tr>
+                    <tr className="bg-muted/40">
+                      <td colSpan={5} className="px-2 py-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">{g}</td>
+                      <td className="px-2 py-1">
+                        {lines.some((l) => l.group === g && orderable(l)) && (
+                          <select aria-label={`Vendor for all ${g}`} className="h-7 w-full max-w-[200px] rounded border bg-background px-1 text-xs font-normal normal-case"
+                            value="" onChange={(e) => { if (e.target.value) setVendor(lines.filter((l) => l.group === g && orderable(l)).map((l) => l.key), e.target.value === "__none" ? "" : e.target.value); }}>
+                            <option value="">Set all…</option>
+                            <option value="__none">No vendor</option>
+                            {(vendorList.data ?? []).map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
+                          </select>
+                        )}
+                      </td>
+                    </tr>
                     {lines.filter((l) => l.group === g).map((l) => (
                       <tr key={l.key} className={`border-b last:border-0 ${l.info ? "text-muted-foreground" : ""}`}>
                         <td className="p-2">{l.name}</td>
@@ -213,15 +248,49 @@ export function TakeoffEditor({ projectSlug, takeoffId }: { projectSlug: string;
                           )}
                         </td>
                         <td className="p-2 text-right tabular-nums">{l.info ? "" : dollars(l.quantity * l.unitCost)}</td>
+                        <td className="p-2">
+                          {ordered.data?.byKey[l.key] ? (
+                            <Link className="text-xs text-primary hover:underline" href={`/projects/${projectSlug}/orders/${ordered.data.byKey[l.key].orderId}`}>On {ordered.data.byKey[l.key].number}</Link>
+                          ) : orderable(l) ? (
+                            <select aria-label={`${l.name} vendor`} className="h-7 w-full max-w-[200px] rounded border bg-background px-1 text-xs" value={vendors[l.key] ?? ""} onChange={(e) => setVendor([l.key], e.target.value)}>
+                              <option value="">No vendor yet</option>
+                              {(vendorList.data ?? []).map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
+                            </select>
+                          ) : <span className="text-xs text-muted-foreground">{l.info ? "" : "Work order"}</span>}
+                        </td>
                       </tr>
                     ))}
                   </React.Fragment>
                 ))}
               </tbody>
-              <tfoot><tr className="border-t font-medium"><td className="p-2" colSpan={4}>Material total</td><td className="p-2 text-right tabular-nums">{dollars(total)}</td></tr></tfoot>
+              <tfoot><tr className="border-t font-medium"><td className="p-2" colSpan={4}>Material total</td><td className="p-2 text-right tabular-nums">{dollars(total)}</td><td /></tr></tfoot>
             </table>
           </div>
           <p className="text-xs text-muted-foreground">Edit any quantity or price to override the calculation; overridden values have an amber border. Clear the box to go back to the calculated value.</p>
+
+          <div className="space-y-2 rounded-md border bg-background p-3">
+            <h2 className="text-sm font-medium">Purchase orders</h2>
+            <p className="text-xs text-muted-foreground">
+              Pick a vendor for each material above, then create draft purchase orders: one per vendor, plus one for lines with no vendor yet. Review and issue them from the Purchase Orders tab. Lines already on an order are skipped, so you can run this again after changes. Labor and subcontract lines are left for work orders.
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button disabled={makePos.isPending || dirty} onClick={() => makePos.mutate({ takeoffId })}>
+                {makePos.isPending ? "Creating…" : "Create purchase orders"}
+              </Button>
+              {dirty && <span className="text-xs text-muted-foreground">Save first so the orders use the numbers and vendors on screen.</span>}
+            </div>
+            {(ordered.data?.orders ?? []).length > 0 && (
+              <ul className="space-y-1 text-sm">
+                {ordered.data!.orders.map((o) => (
+                  <li key={o.orderId}>
+                    <Link className="text-primary hover:underline" href={`/projects/${projectSlug}/orders/${o.orderId}`}>{o.number}</Link>
+                    {" "}· {o.vendor ?? "No vendor yet"} · {o.lines} line{o.lines === 1 ? "" : "s"} · {dollars(o.total)} · {o.status}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {ordered.data && ordered.data.orders.length > 0 && <p className="text-xs text-muted-foreground">If you also copy this takeoff into a proposal that is later accepted, its purchase orders are drafted again from the proposal. Use one route or the other for the same materials.</p>}
+          </div>
 
           <div className="space-y-2 rounded-md border bg-background p-3">
             <h2 className="text-sm font-medium">Copy to a proposal</h2>

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { randomUUID } from "node:crypto";
 import { TRPCError } from "@trpc/server";
-import { and, asc, eq, max } from "drizzle-orm";
+import { and, asc, eq, inArray, max } from "drizzle-orm";
 import { ForbiddenError } from "@casl/ability";
 import {
   DEFAULT_CONCRETE,
@@ -9,11 +9,14 @@ import {
   computeConcrete,
   computeMetalBuilding,
   applyOverrides,
+  nextOrderNumber,
+  AuditAction,
   type TakeoffLine,
 } from "@construction/shared";
 import { router } from "../trpc.js";
 import { protectedProcedure } from "../procedures.js";
 import { defineAbilitiesFor } from "../../auth/abilities.js";
+import { createAuditLog } from "../../audit/logger.js";
 
 const kindEnum = z.enum(["concrete", "metal_building"]);
 const num = z.number().finite().min(0).max(1e7);
@@ -80,7 +83,38 @@ export const takeoffRouter = router({
       id: row.id, projectId: row.projectId, kind: row.kind as "concrete" | "metal_building", name: row.name,
       inputs: mergeInputs(row.kind as "concrete" | "metal_building", row.inputs),
       qtyOverrides: row.qtyOverrides, costOverrides: row.costOverrides,
+      vendorAssignments: row.vendorAssignments ?? {},
     };
+  }),
+
+  /** Lines of this takeoff that are already on a purchase order, and the orders that hold them. */
+  orders: protectedProcedure.input(z.object({ takeoffId: z.string().uuid() })).query(async ({ ctx, input }) => {
+    if (!ctx.tenant) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+    await assertCanEdit(ctx, "read");
+    const { db, schema } = ctx.tenant;
+    const rows = await db
+      .select({
+        key: schema.orderLines.takeoffKey, cost: schema.orderLines.projectedCost, orderId: schema.orders.id,
+        number: schema.orders.number, status: schema.orders.status, vendorId: schema.orders.vendorId,
+      })
+      .from(schema.orderLines)
+      .innerJoin(schema.orders, eq(schema.orders.id, schema.orderLines.orderId))
+      .where(eq(schema.orderLines.takeoffId, input.takeoffId));
+    const vendorIds = Array.from(new Set(rows.map((r) => r.vendorId).filter((v): v is string => !!v)));
+    const vendors = vendorIds.length
+      ? await db.select({ id: schema.subcontractorDirectory.id, name: schema.subcontractorDirectory.companyName }).from(schema.subcontractorDirectory).where(inArray(schema.subcontractorDirectory.id, vendorIds))
+      : [];
+    const vname = new Map(vendors.map((v) => [v.id, v.name]));
+    const byKey: Record<string, { orderId: string; number: string }> = {};
+    const byOrder = new Map<string, { orderId: string; number: string; status: string; vendor: string | null; lines: number; total: number }>();
+    for (const r of rows) {
+      if (r.key) byKey[r.key] = { orderId: r.orderId, number: r.number };
+      const o = byOrder.get(r.orderId) ?? { orderId: r.orderId, number: r.number, status: r.status, vendor: r.vendorId ? vname.get(r.vendorId) ?? null : null, lines: 0, total: 0 };
+      o.lines += 1;
+      o.total += Number(r.cost);
+      byOrder.set(r.orderId, o);
+    }
+    return { byKey, orders: Array.from(byOrder.values()).map((o) => ({ ...o, total: Math.round(o.total * 100) / 100 })) };
   }),
 
   create: protectedProcedure
@@ -107,6 +141,7 @@ export const takeoffRouter = router({
       inputs: z.record(z.string().max(40), z.union([num, z.string().max(20), z.boolean()])),
       qtyOverrides: overrideMap,
       costOverrides: overrideMap,
+      vendorAssignments: z.record(z.string().max(60), z.string().uuid()).refine((m) => Object.keys(m).length <= 200).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       if (!ctx.tenant) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
@@ -117,7 +152,7 @@ export const takeoffRouter = router({
       const inputs = mergeInputs(row.kind as "concrete" | "metal_building", input.inputs);
       await db
         .update(schema.materialTakeoffs)
-        .set({ name: input.name, inputs, qtyOverrides: input.qtyOverrides, costOverrides: input.costOverrides, updatedAt: new Date() })
+        .set({ name: input.name, inputs, qtyOverrides: input.qtyOverrides, costOverrides: input.costOverrides, ...(input.vendorAssignments ? { vendorAssignments: input.vendorAssignments } : {}), updatedAt: new Date() })
         .where(eq(schema.materialTakeoffs.id, input.id));
       return { ok: true as const };
     }),
@@ -129,6 +164,85 @@ export const takeoffRouter = router({
     await db.delete(schema.materialTakeoffs).where(eq(schema.materialTakeoffs.id, input.id));
     return { ok: true as const };
   }),
+
+  /**
+   * Turn the material and equipment lines into draft purchase orders, one per vendor (lines with no vendor
+   * go on one unassigned draft). Lines already on an order are skipped, so running it again after a change
+   * only adds what is new. Labor and subcontract lines are left for work orders. Budget is 0 (these were not
+   * on an accepted proposal); projected is the takeoff cost.
+   */
+  createPurchaseOrders: protectedProcedure
+    .input(z.object({ takeoffId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+      const { db, schema } = ctx.tenant;
+      await assertCanEdit(ctx);
+      const [row] = await db.select().from(schema.materialTakeoffs).where(eq(schema.materialTakeoffs.id, input.takeoffId)).limit(1);
+      if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Takeoff not found" });
+      const [proj] = await db.select({ jobNumber: schema.projects.jobNumber }).from(schema.projects).where(eq(schema.projects.id, row.projectId));
+      const all = compute(row.kind as "concrete" | "metal_building", row.inputs, row.qtyOverrides, row.costOverrides).lines.filter((l) => !l.info && l.quantity > 0);
+      const orderable = all.filter((l) => l.type === "material" || l.type === "equipment");
+      const skippedOther = all.length - orderable.length;
+      const existing = await db
+        .select({ key: schema.orderLines.takeoffKey, orderId: schema.orderLines.orderId })
+        .from(schema.orderLines)
+        .where(eq(schema.orderLines.takeoffId, row.id));
+      const already = new Set(existing.map((e) => e.key));
+      const fresh = orderable.filter((l) => !already.has(l.key));
+      if (fresh.length === 0) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: orderable.length === 0 ? "There is nothing to order yet." : "Every material on this takeoff is already on a purchase order." });
+      }
+      // Only vendors that still exist and are active.
+      const assigned = Array.from(new Set(Object.values(row.vendorAssignments ?? {})));
+      const validVendors = assigned.length
+        ? await db.select({ id: schema.subcontractorDirectory.id, name: schema.subcontractorDirectory.companyName, status: schema.subcontractorDirectory.status }).from(schema.subcontractorDirectory).where(inArray(schema.subcontractorDirectory.id, assigned))
+        : [];
+      const vendorName = new Map(validVendors.filter((v) => v.status === "active").map((v) => [v.id, v.name]));
+      const groups = new Map<string, TakeoffLine[]>(); // "" = unassigned
+      for (const l of fresh) {
+        const v = row.vendorAssignments?.[l.key];
+        const k = v && vendorName.has(v) ? v : "";
+        groups.set(k, [...(groups.get(k) ?? []), l]);
+      }
+      // Draft orders from this takeoff that can take more lines.
+      const draftIds = Array.from(new Set(existing.map((e) => e.orderId)));
+      const drafts = draftIds.length
+        ? await db.select({ id: schema.orders.id, vendorId: schema.orders.vendorId, status: schema.orders.status, number: schema.orders.number }).from(schema.orders).where(inArray(schema.orders.id, draftIds))
+        : [];
+      const results: { orderId: string; number: string; vendor: string | null; lines: number; total: number; added: boolean }[] = [];
+      for (const [vendorId, lines] of groups) {
+        let target = drafts.find((d) => d.status === "draft" && (d.vendorId ?? "") === vendorId);
+        let created = false;
+        if (!target) {
+          const used = await db.select({ number: schema.orders.number }).from(schema.orders).where(eq(schema.orders.projectId, row.projectId));
+          const number = nextOrderNumber(used.map((u) => u.number), "PO", proj?.jobNumber ?? null);
+          const [o] = await db
+            .insert(schema.orders)
+            .values({ projectId: row.projectId, estimateId: null, kind: "purchase", number, vendorId: vendorId || null, status: "draft", notes: `From takeoff: ${row.name}`, createdBy: ctx.userId })
+            .returning({ id: schema.orders.id, number: schema.orders.number, vendorId: schema.orders.vendorId, status: schema.orders.status });
+          target = o;
+          created = true;
+          await createAuditLog(db, schema, { entityType: "Order", entityId: o.id, action: AuditAction.CREATE, actorId: ctx.userId, changes: { after: { number, fromTakeoff: row.name } } });
+        }
+        const current = await db.select({ id: schema.orderLines.id }).from(schema.orderLines).where(eq(schema.orderLines.orderId, target.id));
+        let sort = current.length;
+        let total = 0;
+        const values = lines.map((l) => {
+          const amount = Math.round(l.quantity * l.unitCost * 100) / 100;
+          total += amount;
+          return {
+            orderId: target!.id, sourceLineId: null,
+            description: `${l.name} — ${l.quantity} ${l.unit} @ ${l.unitCost.toFixed(2)}`,
+            category: l.type === "equipment" ? "COGS: Equipment Rental" : "COGS: Materials & Supplies",
+            budgetCost: "0", projectedCost: String(amount), takeoffId: row.id, takeoffKey: l.key, sortOrder: sort++,
+          };
+        });
+        await db.insert(schema.orderLines).values(values as never);
+        await db.update(schema.orders).set({ updatedAt: new Date() }).where(eq(schema.orders.id, target.id));
+        results.push({ orderId: target.id, number: target.number, vendor: vendorId ? vendorName.get(vendorId) ?? null : null, lines: lines.length, total: Math.round(total * 100) / 100, added: !created });
+      }
+      return { orders: results, skippedOther, alreadyOrdered: orderable.length - fresh.length };
+    }),
 
   /**
    * Copy the priced material list into a proposal (or change order) as a new parent line.
