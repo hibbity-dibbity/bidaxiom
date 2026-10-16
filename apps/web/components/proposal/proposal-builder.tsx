@@ -334,6 +334,11 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
     });
     mark();
   };
+  // Move a whole parent line between the base proposal and the optional items (and back).
+  const toggleOptional = (id: string) => {
+    setLines((ls) => ls.map((l) => (l.id === id ? { ...l, isOptional: !l.isOptional } : l)));
+    mark();
+  };
   const addOption = () => {
     const option = blank({ isOptional: true, type: "other", name: "", quantity: 0, unit: "ls", visibility: "price" });
     const child = blank({ parentId: option.id, visibility: "name_only" });
@@ -653,12 +658,20 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
                       <div className="px-2 text-right tabular-nums text-financial-positive">{money(pr?.profit ?? 0)}</div>
                       <div className="px-2 text-right font-medium tabular-nums text-muted-foreground">{isOpt ? "" : `+${money(pr?.globalShare ?? 0)}`}</div>
                       <div className="px-2 text-right tabular-nums">{money(pr?.proposalPrice ?? 0)}</div>
-                      <div className="px-2">
+                      <div className="flex flex-col items-start gap-1 px-2">
                         {kids.length > 0 && (
                           <button type="button" disabled={locked}
                             className={cn("whitespace-nowrap rounded bg-background px-2.5 py-1 text-xs font-semibold hover:bg-border/60", sameVis ? VISIBILITY_TONE[vis[0]] : "text-muted-foreground")}
                             onClick={() => cycleAll(p.id)}>
                             {sameVis ? `All: ${VISIBILITY_LABEL[vis[0]]}` : "Mixed"}
+                          </button>
+                        )}
+                        {!locked && (
+                          <button type="button"
+                            className="whitespace-nowrap text-[11px] font-medium text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                            title={isOpt ? "Move this item into the base proposal" : "Make this an optional item the customer can accept or decline"}
+                            onClick={() => toggleOptional(p.id)}>
+                            {isOpt ? "Make base item" : "Make optional"}
                           </button>
                         )}
                       </div>
