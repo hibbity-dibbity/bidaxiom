@@ -7,6 +7,7 @@ import {
   FolderKanban,
   Users,
   HardHat,
+  Receipt,
   Settings,
 } from "lucide-react";
 import {
@@ -19,6 +20,7 @@ const mainNav = [
   { href: "/", label: "Dashboard", icon: Home },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/customers", label: "Customers", icon: Users },
+  { href: "/outstanding", label: "Outstanding", icon: Receipt },
   { href: "/subcontractors", label: "Subs & Vendors", icon: HardHat },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

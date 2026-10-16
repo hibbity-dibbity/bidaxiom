@@ -4,6 +4,7 @@ import { router } from "../trpc.js";
 import { protectedProcedure, authorizedProcedure } from "../procedures.js";
 import { getQboAuthUrl, handleQboCallback } from "../../integrations/quickbooks/oauth.js";
 import { encryptToken } from "../../integrations/quickbooks/crypto.js";
+import { diagnoseQboConnection } from "../../integrations/quickbooks/diagnose.js";
 import { getQboSyncQueue } from "../../integrations/quickbooks/queue.js";
 import { eq, sql, and } from "drizzle-orm";
 
@@ -189,6 +190,20 @@ export const quickbooksRouter = router({
     });
 
     return { success: true };
+  }),
+
+  /**
+   * Read-only health check: signs in to QuickBooks and reads company, plan, features and record counts.
+   * Writes nothing to QuickBooks. Admin-only.
+   */
+  checkConnection: authorizedProcedure.mutation(async ({ ctx }) => {
+    if (!ctx.tenant || !ctx.abilities) {
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+    }
+    if (!ctx.abilities.can("manage", "QuickBooks")) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Only administrators can check the QuickBooks connection" });
+    }
+    return diagnoseQboConnection(ctx.tenant);
   }),
 
   /**

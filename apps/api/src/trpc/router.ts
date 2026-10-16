@@ -29,6 +29,7 @@ import { notesRouter } from "./routers/notes.js";
 import { takeoffRouter } from "./routers/takeoff.js";
 import { ssoRouter } from "./routers/sso.js";
 import { attentionRouter } from "./routers/attention.js";
+import { outstandingRouter } from "./routers/outstanding.js";
 import { signingRouter } from "./routers/signing.js";
 import { passkeyRouter } from "./routers/passkey.js";
 import { platformRouter } from "./routers/platform.js";
@@ -68,6 +69,7 @@ export const appRouter = router({
   terms: termsRouter,
   order: orderRouter,
   attention: attentionRouter,
+  outstanding: outstandingRouter,
   template: templateRouter,
   notes: notesRouter,
   takeoff: takeoffRouter,
