@@ -37,6 +37,22 @@ export async function computeMfaGate(userId: string, orgRole: string | null | un
   return user.requireMfaSetup && methods < 1;
 }
 
+export const COMPANY_DISABLED_MESSAGE =
+  "Your company's BidAxiom account is disabled, so nobody there can sign in right now. Contact your company administrator or BidAxiom support.";
+
+/** Throws when the person's company has been disabled or moved to the recycle bin. */
+export async function assertCompanyActive(userId: string, organizationId?: string): Promise<void> {
+  const db = getDb();
+  const membership = await db.query.organizationMemberships.findFirst({
+    where: organizationId
+      ? and(eq(organizationMemberships.userId, userId), eq(organizationMemberships.organizationId, organizationId))
+      : eq(organizationMemberships.userId, userId),
+  });
+  if (!membership) return;
+  const org = await db.query.organizations.findFirst({ where: eq(organizations.id, membership.organizationId) });
+  if (org && (org.disabledAt || org.deletedAt)) throw new Error(COMPANY_DISABLED_MESSAGE);
+}
+
 /** True when the person has any second factor set up (authenticator app or a passkey). */
 export async function hasSecondFactor(userId: string, mfaEnabled: boolean): Promise<boolean> {
   if (mfaEnabled) return true;
@@ -57,6 +73,7 @@ export async function issueSession(userId: string, organizationId?: string, opts
       : eq(organizationMemberships.userId, userId),
   });
   if (!user) throw new Error("User not found");
+  await assertCompanyActive(userId, organizationId);
   if (organizationId && !membership) throw new Error("No access to that company");
   const org = membership ? await db.query.organizations.findFirst({ where: eq(organizations.id, membership.organizationId) }) : null;
   if (membership && !org) throw new Error("Company not found");

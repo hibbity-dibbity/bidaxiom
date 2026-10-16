@@ -42,6 +42,11 @@ export default function ResetPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [requestSent, setRequestSent] = useState(false);
   const [resetSuccess, setResetSuccess] = useState(false);
+  // A link that was already used (or has expired) is refused here, before the form is shown.
+  const tokenCheck = trpc.auth.checkResetToken.useQuery(
+    { token: token ?? "" },
+    { enabled: !!token, retry: false, refetchOnWindowFocus: false, refetchOnReconnect: false, staleTime: Infinity }
+  );
 
   const {
     register: registerRequest,
@@ -175,6 +180,33 @@ export default function ResetPasswordPage() {
           <Button className="w-full" onClick={() => router.push("/sign-in")}>
             Continue to Sign In
           </Button>
+        </CardFooter>
+      </Card>
+    );
+  }
+
+  if (token && tokenCheck.isLoading) {
+    return (
+      <Card>
+        <CardContent className="py-10 text-center text-sm text-muted-foreground">Checking your link…</CardContent>
+      </Card>
+    );
+  }
+
+  if (token && tokenCheck.data && !tokenCheck.data.valid) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>This link can&apos;t be used</CardTitle>
+          <CardDescription>
+            It has already been used or has expired. Links work once.
+          </CardDescription>
+        </CardHeader>
+        <CardFooter className="flex flex-col space-y-3">
+          <Button className="w-full" onClick={() => router.push("/sign-in")}>Go to sign in</Button>
+          <Link href="/reset-password" className="text-center text-sm text-muted-foreground hover:text-primary">
+            Send me a new link
+          </Link>
         </CardFooter>
       </Card>
     );

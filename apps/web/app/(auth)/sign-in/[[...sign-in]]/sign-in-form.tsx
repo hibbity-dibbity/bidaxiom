@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getSafeRedirectUrl } from "@/lib/utils/safe-redirect";
 import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
@@ -37,6 +38,12 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
   const [step, setStep] = useState<"email" | "choose" | "password">("email");
   const [emailInput, setEmailInput] = useState("");
   const routeMutation = trpc.sso.route.useMutation();
+  // A disabled company is shown as a notice on the page (a toast is too easy to miss).
+  const [blocked, setBlocked] = useState<string | null>(null);
+  const showError = (message: string) => {
+    if (/account is disabled/i.test(message)) setBlocked(message);
+    else toast.error(message);
+  };
   const [canPasskey, setCanPasskey] = useState(false);
   const [mfaMethods, setMfaMethods] = useState<{ totp: boolean; passkey: boolean }>({ totp: true, passkey: false });
   useEffect(() => setCanPasskey(passkeysSupported()), []);
@@ -52,7 +59,7 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
       toast.success("Login successful!");
       router.push(result.org ? getSafeRedirectUrl(redirectUrl) : "/onboarding");
     } catch (e) {
-      toast.error(e instanceof Error && !(e instanceof DOMException) ? e.message : passkeyErrorMessage(e));
+      showError(e instanceof Error && !(e instanceof DOMException) ? e.message : passkeyErrorMessage(e));
       setIsLoading(false);
     }
   };
@@ -78,7 +85,7 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
     }
   };
   useEffect(() => {
-    if (ssoError) toast.error(ssoError);
+    if (ssoError) showError(ssoError);
   }, [ssoError]);
 
   const [isLoading, setIsLoading] = useState(false);
@@ -152,7 +159,7 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
       if (isNetworkError) {
         toast.error("Cannot connect to the server. Please ensure the API is running and try again.");
       } else {
-        toast.error(error.message || "Login failed");
+        showError(error.message || "Login failed");
       }
       setIsLoading(false);
     },
@@ -322,6 +329,12 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
         />
       </div>
 
+      {blocked && (
+        <Alert variant="destructive" className="mb-4" role="alert">
+          <AlertTitle>This company&apos;s account is disabled</AlertTitle>
+          <AlertDescription>{blocked}</AlertDescription>
+        </Alert>
+      )}
       <Card>
       <CardHeader>
         <CardTitle>Sign In</CardTitle>

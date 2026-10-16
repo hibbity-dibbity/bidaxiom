@@ -17,7 +17,7 @@ import {
 } from "../../db/schema/public.js";
 import { randomBytes } from "node:crypto";
 import { hashPassword } from "../../auth/password.js";
-import { sendPasswordResetEmail } from "../../services/email.js";
+import { sendPasswordResetEmail, sendInvitationEmail } from "../../services/email.js";
 import { createAuditLog } from "../../audit/logger.js";
 import { AuditAction } from "@construction/shared";
 import { provisionTenantSchema } from "../../tenant/provision.js";
@@ -101,35 +101,21 @@ async function requireOrgMembership(userId: string, organizationId: string): Pro
   }
 }
 
-/**
- * Send invitation email to user.
- * Uses nodemailer SMTP configuration.
- */
-async function sendInvitationEmail(
+/** Email an invitation. Never throws: returns whether the email went out and why not if it did not. */
+async function mailInvitation(
+  inviterId: string,
   email: string,
   organizationName: string,
   token: string
-): Promise<void> {
-  const inviteUrl = `${process.env.WEB_URL || "http://localhost:3000"}/accept-invitation?token=${token}`;
-
-  // Import email sender dynamically to avoid initialization issues
-  const { sendReportEmail } = await import("../../services/email-sender.js");
-
-  const subject = `Invitation to join ${organizationName}`;
-  const bodyHtml = `
-    <html>
-      <body>
-        <h2>You've been invited to join ${organizationName}</h2>
-        <p>Click the link below to accept your invitation:</p>
-        <p><a href="${inviteUrl}">${inviteUrl}</a></p>
-        <p>This invitation will expire in 7 days.</p>
-      </body>
-    </html>
-  `;
-
-  // Note: sendReportEmail expects attachment, but we'll use a workaround
-  // For now, log the invitation (email sending will be implemented properly in Plan 04)
-  console.log(`Invitation email to ${email}:`, inviteUrl);
+): Promise<{ emailSent: boolean; emailError: string | null }> {
+  try {
+    const [inviter] = await db.select().from(users).where(eq(users.id, inviterId)).limit(1);
+    const name = [inviter?.firstName, inviter?.lastName].filter(Boolean).join(" ") || inviter?.email || "Your administrator";
+    const sent = await sendInvitationEmail(email, organizationName, name, token);
+    return { emailSent: sent, emailError: sent ? null : "Email is not set up on the server (no RESEND_API_KEY)." };
+  } catch (err) {
+    return { emailSent: false, emailError: err instanceof Error ? err.message : "The email service refused the message." };
+  }
 }
 
 export const organizationRouter = router({
@@ -518,15 +504,15 @@ export const organizationRouter = router({
         .where(eq(organizations.id, input.organizationId))
         .limit(1);
 
-      // Send invitation email
-      if (org) {
-        await sendInvitationEmail(input.email, org.name, token);
-      }
+      const mail = org
+        ? await mailInvitation(userId, input.email, org.name, token)
+        : { emailSent: false, emailError: "Company not found." };
 
       return {
         invitationId: invitation.id,
         email: invitation.email,
         expiresAt: invitation.expiresAt,
+        ...mail,
       };
     }),
 
@@ -553,6 +539,38 @@ export const organizationRouter = router({
         .where(eq(organizationInvitations.organizationId, input.organizationId));
 
       return invitations;
+    }),
+
+  /**
+   * Send a pending invitation again. The old link stops working: a new one is issued and the
+   * 7-day clock restarts.
+   */
+  resendInvitation: authProcedure
+    .input(z.object({ invitationId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.userId!;
+      const [invitation] = await db
+        .select()
+        .from(organizationInvitations)
+        .where(eq(organizationInvitations.id, input.invitationId))
+        .limit(1);
+      if (!invitation) throw new TRPCError({ code: "NOT_FOUND", message: "Invitation not found" });
+      await requireOrgAdmin(userId, invitation.organizationId);
+      if (invitation.status !== "pending") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Only a pending invitation can be sent again" });
+      }
+      const { token, hash } = generateToken();
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+      await db
+        .update(organizationInvitations)
+        .set({ tokenHash: hash, expiresAt })
+        .where(eq(organizationInvitations.id, invitation.id));
+      const [org] = await db.select().from(organizations).where(eq(organizations.id, invitation.organizationId)).limit(1);
+      const mail = org
+        ? await mailInvitation(userId, invitation.email, org.name, token)
+        : { emailSent: false, emailError: "Company not found." };
+      return { email: invitation.email, expiresAt, ...mail };
     }),
 
   /**

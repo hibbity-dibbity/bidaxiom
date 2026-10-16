@@ -34,6 +34,13 @@ function getResendClient(): Resend | null {
   return resendClient;
 }
 
+/** The email service reports a rejected message in its result instead of throwing; turn that into an error. */
+async function sendOrThrow(client: Resend, payload: Parameters<Resend["emails"]["send"]>[0]) {
+  const result = await client.emails.send(payload);
+  if (result.error) throw new Error(result.error.message || "The email service refused the message");
+  return result;
+}
+
 /**
  * Send verification email with token link.
  *
@@ -65,7 +72,7 @@ export async function sendVerificationEmail(email: string, token: string): Promi
     console.log(`  To: ${email}`);
     console.log(`  Subject: ${subject}`);
 
-    const result = await client.emails.send({
+    const result = await sendOrThrow(client, {
       from: getFromEmail(),
       to: email,
       subject,
@@ -106,7 +113,7 @@ export async function sendPasswordResetEmail(email: string, token: string): Prom
   }
 
   try {
-    await client.emails.send({
+    await sendOrThrow(client, {
       from: getFromEmail(),
       to: email,
       subject,
@@ -149,7 +156,7 @@ export async function sendAccountSetupEmail(
     return false;
   }
   try {
-    await client.emails.send({ from: getFromEmail(), to: email, subject, html });
+    await sendOrThrow(client, { from: getFromEmail(), to: email, subject, html });
     console.log(`[EMAIL] Account setup email sent to ${email}`);
     return true;
   } catch (err) {
@@ -198,7 +205,7 @@ export async function sendDocumentEmail(
   }
 
   try {
-    await client.emails.send({
+    await sendOrThrow(client, {
       from: getFromEmail(),
       to: recipientEmail,
       subject,
@@ -212,49 +219,39 @@ export async function sendDocumentEmail(
 }
 
 /**
- * Send organization invitation email with token link.
- *
- * @param email - Recipient email address
- * @param orgName - Organization name
- * @param inviterName - Name of person who sent the invitation
- * @param token - Invitation token (plaintext)
+ * Send organization invitation email with token link. Returns false (and logs the link) when no
+ * email service key is configured; throws if the email service rejects the message.
  */
 export async function sendInvitationEmail(
   email: string,
   orgName: string,
   inviterName: string,
   token: string
-): Promise<void> {
+): Promise<boolean> {
   const inviteUrl = `${getAppUrl()}/sign-up?invitation=${token}`;
-  const subject = `You've been invited to join ${orgName}`;
+  const subject = `${inviterName} invited you to ${orgName} on BidAxiom`;
   const html = `
-    <h2>You've been invited!</h2>
-    <p>${inviterName} has invited you to join <strong>${orgName}</strong> on Construction Management.</p>
-    <p>Click the link below to accept the invitation and create your account:</p>
-    <p><a href="${inviteUrl}">Accept Invitation</a></p>
-    <p>This invitation expires in 7 days.</p>
+    <p>Hello,</p>
+    <p>${inviterName} has invited you to join <strong>${orgName}</strong> on BidAxiom.</p>
+    <p><a href="${inviteUrl}">Accept the invitation and create your account</a></p>
+    <p>Use this email address (${email}) when you create your account. This invitation expires in 7 days.</p>
+    <p>If you weren't expecting this, you can ignore this email.</p>
   `;
 
   const client = getResendClient();
   if (!client) {
-    console.log(`[EMAIL DEV] Invitation email to ${email}:`);
-    console.log(`Subject: ${subject}`);
-    console.log(`Link: ${inviteUrl}`);
-    return;
+    console.log(`[EMAIL DEV] Invitation email to ${email}: ${inviteUrl}`);
+    return false;
   }
 
   try {
-    await client.emails.send({
-      from: getFromEmail(),
-      to: email,
-      subject,
-      html,
-    });
-    console.log(`[EMAIL] Invitation email sent to ${email}`);
+    await sendOrThrow(client, { from: getFromEmail(), to: email, subject, html });
   } catch (err) {
     console.error(`[EMAIL] Failed to send invitation email to ${email}:`, err);
-    throw new Error("Failed to send invitation email");
+    throw err;
   }
+  console.log(`[EMAIL] Invitation email sent to ${email}`);
+  return true;
 }
 
 export interface DocumentMail {
@@ -314,7 +311,7 @@ export async function sendDomainCodeEmail(email: string, domain: string, code: s
     return;
   }
   try {
-    await client.emails.send({ from: getFromEmail(), to: email, subject, html });
+    await sendOrThrow(client, { from: getFromEmail(), to: email, subject, html });
   } catch (err) {
     console.error(`[EMAIL] Failed to send domain code to ${email}:`, err);
     throw new Error("Failed to send the code");

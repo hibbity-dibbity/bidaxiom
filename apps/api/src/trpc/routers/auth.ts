@@ -17,7 +17,7 @@ import { hashPassword, verifyPassword } from "../../auth/password.js";
 import { signAccessToken, signRefreshToken, verifyAccessToken, verifyRefreshToken } from "../../auth/jwt.js";
 import { generateToken, hashToken } from "../../auth/tokens.js";
 import { passwordLoginBlocked } from "../../auth/oidc/sso.js";
-import { hasSecondFactor, computeMfaGate } from "../../auth/session.js";
+import { hasSecondFactor, computeMfaGate, assertCompanyActive, COMPANY_DISABLED_MESSAGE } from "../../auth/session.js";
 import { generateMfaSecret, verifyMfaToken, verifyBackupCode } from "../../auth/mfa.js";
 import {
   checkLoginRateLimit,
@@ -213,6 +213,13 @@ export const authRouter = router({
           code: "FORBIDDEN",
           message: "Please verify your email before logging in",
         });
+      }
+
+      // A disabled company's people cannot sign in at all.
+      try {
+        await assertCompanyActive(user.id);
+      } catch (e) {
+        throw new TRPCError({ code: "FORBIDDEN", message: e instanceof Error ? e.message : COMPANY_DISABLED_MESSAGE });
       }
 
       // A company that requires single sign-on does not accept passwords from its members.
@@ -553,6 +560,20 @@ export const authRouter = router({
   /**
    * Reset password using token.
    */
+  /** Whether a password setup/reset link can still be used (so the page can refuse a used link up front). */
+  checkResetToken: publicProcedure
+    .input(z.object({ token: z.string().min(1) }))
+    .query(async ({ input }) => {
+      const found = await getAuthDb().query.passwordResetTokens.findFirst({
+        where: and(
+          eq(passwordResetTokens.tokenHash, hashToken(input.token)),
+          sql`${passwordResetTokens.usedAt} IS NULL`,
+          sql`${passwordResetTokens.expiresAt} > NOW()`
+        ),
+      });
+      return { valid: !!found };
+    }),
+
   resetPassword: publicProcedure
     .input(
       z.object({
@@ -568,19 +589,23 @@ export const authRouter = router({
     .mutation(async ({ input }) => {
       const tokenHash = hashToken(input.token);
 
-      // Find token
-      const resetToken = await getAuthDb().query.passwordResetTokens.findFirst({
-        where: and(
-          eq(passwordResetTokens.tokenHash, tokenHash),
-          sql`${passwordResetTokens.usedAt} IS NULL`,
-          sql`${passwordResetTokens.expiresAt} > NOW()`
-        ),
-      });
+      // Use the token in one atomic step so two submissions of the same link cannot both succeed.
+      const [resetToken] = await getAuthDb()
+        .update(passwordResetTokens)
+        .set({ usedAt: new Date() })
+        .where(
+          and(
+            eq(passwordResetTokens.tokenHash, tokenHash),
+            sql`${passwordResetTokens.usedAt} IS NULL`,
+            sql`${passwordResetTokens.expiresAt} > NOW()`
+          )
+        )
+        .returning();
 
       if (!resetToken) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Invalid or expired reset token",
+          message: "This link has already been used or has expired",
         });
       }
 
@@ -595,12 +620,6 @@ export const authRouter = router({
           hashType: "argon2id",
         })
         .where(eq(users.id, resetToken.userId));
-
-      // Mark token as used
-      await getAuthDb()
-        .update(passwordResetTokens)
-        .set({ usedAt: new Date() })
-        .where(eq(passwordResetTokens.id, resetToken.id));
 
       // Revoke all refresh tokens for this user (security: force re-login everywhere)
       await getAuthDb()

@@ -48,8 +48,9 @@ export default function MembersPage() {
   );
 
   const inviteMutation = trpc.organization.invite.useMutation({
-    onSuccess: () => {
-      toast.success("Invitation sent successfully!");
+    onSuccess: (r) => {
+      if (r.emailSent) toast.success(`Invitation emailed to ${r.email}`);
+      else toast.error(`Invitation created, but the email to ${r.email} was NOT sent`, { description: `${r.emailError ?? "Unknown error"} Use Resend under Pending Invitations to try again.`, duration: 12000 });
       setInviteEmail("");
       setInviteRole("org:member");
       utils.organization.listInvitations.invalidate();
@@ -57,6 +58,15 @@ export default function MembersPage() {
     onError: (error) => {
       toast.error(error.message || "Failed to send invitation");
     },
+  });
+
+  const resendInvitationMutation = trpc.organization.resendInvitation.useMutation({
+    onSuccess: (r) => {
+      if (r.emailSent) toast.success(`Invitation emailed again to ${r.email}`);
+      else toast.error(`The email to ${r.email} was NOT sent`, { description: r.emailError ?? "Unknown error", duration: 12000 });
+      utils.organization.listInvitations.invalidate();
+    },
+    onError: (error) => toast.error(error.message || "Failed to resend invitation"),
   });
 
   const resetMutation = trpc.organization.resetMemberSignIn.useMutation({
@@ -383,6 +393,14 @@ export default function MembersPage() {
                         </TableCell>
                         <TableCell>{formatDate(invitation.expiresAt)}</TableCell>
                         <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => resendInvitationMutation.mutate({ invitationId: invitation.id })}
+                            disabled={resendInvitationMutation.isPending}
+                          >
+                            Resend
+                          </Button>
                           <Button
                             variant="ghost"
                             size="sm"

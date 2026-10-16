@@ -13,9 +13,10 @@ import { sendDomainCodeEmail } from "../../services/email.js";
 import { ROLES } from "../../auth/roles.js";
 import { createAuditLog } from "../../audit/logger.js";
 import { AuditAction } from "@construction/shared";
+import { COMPANY_DISABLED_MESSAGE } from "../../auth/session.js";
 
 function bad(e: unknown): never {
-  if (e instanceof SsoError) throw new TRPCError({ code: "BAD_REQUEST", message: e.message });
+  if (e instanceof SsoError || (e instanceof Error && e.message === COMPANY_DISABLED_MESSAGE)) throw new TRPCError({ code: "BAD_REQUEST", message: (e as Error).message });
   throw e;
 }
 
