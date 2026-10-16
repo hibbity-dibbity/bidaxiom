@@ -11,7 +11,7 @@ import { verify } from "@node-rs/argon2";
  * Algorithm: SHA1, Digits: 6, Period: 30 seconds.
  */
 
-const ISSUER = "ConstructionMgmt";
+const ISSUER = "BidAxiom";
 const BACKUP_CODE_COUNT = 10;
 const BACKUP_CODE_LENGTH = 10;
 

@@ -32,6 +32,18 @@ type SetupData = {
   hashedBackupCodes: string[]; // hashed — send to API
 };
 
+function StepIndicator({ current, total }: { current: number; total: number }) {
+  if (total < 2) return null;
+  return (
+    <div className="mb-1 flex items-center gap-2" aria-label={`Step ${current} of ${total}`}>
+      {Array.from({ length: total }, (_, i) => (
+        <div key={i} className={`h-1.5 flex-1 rounded-full ${i < current ? "bg-primary" : "bg-muted"}`} />
+      ))}
+      <span className="ml-1 whitespace-nowrap text-xs text-muted-foreground">Step {current} of {total}</span>
+    </div>
+  );
+}
+
 function MfaSetupPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -109,6 +121,7 @@ function MfaSetupPage() {
     if (r.data && r.data.methods >= r.data.needed) router.push(getSafeRedirectUrl(redirectUrl));
   };
 
+  const totalSteps = status.data?.needed ?? 1;
   const checklist = status.data && (
     <div className="rounded-md border p-3 text-sm space-y-1">
       <div>{status.data.totp ? "✓" : "○"} Authenticator app</div>
@@ -211,10 +224,11 @@ function MfaSetupPage() {
     return (
       <Card>
         <CardHeader>
+          <StepIndicator current={1} total={totalSteps} />
           <div className="flex justify-center mb-4">
             <CheckCircle2 className="h-12 w-12 text-financial-positive" />
           </div>
-          <CardTitle className="text-center">Save Your Backup Codes</CardTitle>
+          <CardTitle className="text-center">Authenticator app is set up. Save your backup codes</CardTitle>
           <CardDescription className="text-center">
             Store these codes in a safe place
           </CardDescription>
@@ -260,7 +274,7 @@ function MfaSetupPage() {
             onClick={handleComplete}
             disabled={!backupCodesSaved}
           >
-            Complete Setup
+            {totalSteps > 1 ? "Continue to passkey" : "Complete Setup"}
           </Button>
         </CardFooter>
       </Card>
@@ -272,8 +286,9 @@ function MfaSetupPage() {
       <div className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>One more step</CardTitle>
-            <CardDescription>Add a passkey to finish securing your account.</CardDescription>
+            <StepIndicator current={2} total={totalSteps} />
+            <CardTitle>Add a passkey</CardTitle>
+            <CardDescription>Your authenticator app is ready. Add a passkey (fingerprint, face or device PIN) to finish securing your account.</CardDescription>
           </CardHeader>
           <CardContent>{checklist}</CardContent>
         </Card>
@@ -308,9 +323,10 @@ function MfaSetupPage() {
     <div className="space-y-6">
     <Card>
       <CardHeader>
-        <CardTitle>Multi-Factor Authentication Required</CardTitle>
+        <StepIndicator current={1} total={totalSteps} />
+        <CardTitle>Set up your authenticator app</CardTitle>
         <CardDescription>
-          Set up an authenticator app to secure your account
+          {totalSteps > 1 ? "Company admins need an authenticator app and a passkey. Start with the authenticator app." : "Set up an authenticator app to secure your account"}
         </CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit(onVerifySubmit)}>
@@ -324,7 +340,7 @@ function MfaSetupPage() {
 
           <div className="space-y-4">
             <div>
-              <h3 className="font-semibold mb-2">Step 1: Scan QR Code</h3>
+              <h3 className="font-semibold mb-2">Scan the QR code</h3>
               <p className="text-sm text-muted-foreground mb-4">
                 Use an authenticator app like Google Authenticator, Authy, or 1Password to scan this QR code.
               </p>
@@ -338,7 +354,7 @@ function MfaSetupPage() {
             </div>
 
             <div>
-              <h3 className="font-semibold mb-2">Step 2: Enter Verification Code</h3>
+              <h3 className="font-semibold mb-2">Enter the verification code</h3>
               <p className="text-sm text-muted-foreground mb-4">
                 Enter the 6-digit code from your authenticator app to verify the setup.
               </p>
@@ -363,13 +379,17 @@ function MfaSetupPage() {
         </CardContent>
         <CardFooter>
           <Button type="submit" className="w-full" disabled={isVerifying}>
-            {isVerifying ? "Verifying..." : "Verify and Continue"}
+            {isVerifying ? "Verifying..." : "Verify"}
           </Button>
         </CardFooter>
       </form>
     </Card>
-    <p className="text-center text-sm text-muted-foreground">Or use a passkey instead of an authenticator app:</p>
-    <PasskeysCard afterChange={finishIfDone} />
+    {totalSteps < 2 && (
+      <>
+        <p className="text-center text-sm text-muted-foreground">Or use a passkey instead of an authenticator app:</p>
+        <PasskeysCard afterChange={finishIfDone} />
+      </>
+    )}
     </div>
   );
 }
