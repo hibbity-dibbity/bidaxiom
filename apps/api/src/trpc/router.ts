@@ -28,6 +28,7 @@ import { templateRouter } from "./routers/template.js";
 import { notesRouter } from "./routers/notes.js";
 import { takeoffRouter } from "./routers/takeoff.js";
 import { ssoRouter } from "./routers/sso.js";
+import { attentionRouter } from "./routers/attention.js";
 import { signingRouter } from "./routers/signing.js";
 import { passkeyRouter } from "./routers/passkey.js";
 import { platformRouter } from "./routers/platform.js";
@@ -66,6 +67,7 @@ export const appRouter = router({
   proposal: proposalRouter,
   terms: termsRouter,
   order: orderRouter,
+  attention: attentionRouter,
   template: templateRouter,
   notes: notesRouter,
   takeoff: takeoffRouter,

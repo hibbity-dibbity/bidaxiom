@@ -1392,6 +1392,25 @@ export function createTenantSchema(schemaName: string) {
   });
 
   /**
+   * Action prompts: "needs your attention" items with one-click answers. Rows are kept after they are
+   * answered; dedupe_key is unique, so an answered question is not asked again for the same event.
+   */
+  const actionPrompts = schema.table("action_prompts", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id").references(() => projects.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(), // deposit_invoice, mark_active, close_project
+    dedupeKey: text("dedupe_key").notNull().unique(),
+    title: text("title").notNull(),
+    body: text("body"),
+    actions: jsonb("actions").notNull().$type<Array<Record<string, unknown>>>().default([]),
+    status: text("status").notNull().default("open"), // open, done, dismissed
+    resolution: text("resolution"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    resolvedBy: text("resolved_by"),
+  });
+
+  /**
    * Project notes
    * Free-form team notes per project. Hard delete (no soft delete).
    */
@@ -1475,6 +1494,7 @@ export function createTenantSchema(schemaName: string) {
     documentNamingCounters,
     documentTemplates,
     projectNotes,
+    actionPrompts,
   };
 }
 

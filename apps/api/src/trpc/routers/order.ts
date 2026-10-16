@@ -5,6 +5,7 @@ import { ForbiddenError } from "@casl/ability";
 import { router } from "../trpc.js";
 import { protectedProcedure } from "../procedures.js";
 import { defineAbilitiesFor } from "../../auth/abilities.js";
+import { onOrderIssued } from "../../services/projectAutomation.js";
 import { createAuditLog } from "../../audit/logger.js";
 import { companyContactLines } from "../../services/companyContact.js";
 import {
@@ -514,6 +515,7 @@ export const orderRouter = router({
         actorId: c.userId,
         changes: { before: { status: "draft" }, after: { status: "issued", revision: order.revision } },
       });
+      if (order.revision === 0) await onOrderIssued(c.tenant, order.projectId).catch((e) => console.error("[automation] order issued failed", e));
       return { id: order.id, revision: order.revision };
     }),
 

@@ -32,6 +32,7 @@ import { db as publicDb } from "../../db/client.js";
 import { users } from "../../db/schema/public.js";
 import { generateUniqueProjectSlug } from "../../utils/slug.js";
 import { generateJobNumber } from "../../utils/job-number.js";
+import { afterPhaseChange } from "../../services/projectAutomation.js";
 
 /**
  * Load project-level abilities for the current user.
@@ -1095,6 +1096,7 @@ export const projectRouter = router({
         },
         metadata: { triggeredBy: "user", isBackward },
       });
+      await afterPhaseChange(ctx.tenant, input.projectId, input.toPhase).catch((e) => console.error("[automation] prompt cleanup failed", e));
 
       const [updated] = await db
         .select()

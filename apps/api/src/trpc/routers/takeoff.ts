@@ -14,6 +14,7 @@ import {
 import { router } from "../trpc.js";
 import { protectedProcedure } from "../procedures.js";
 import { defineAbilitiesFor } from "../../auth/abilities.js";
+import { autoPhase } from "../../services/projectAutomation.js";
 
 const kindEnum = z.enum(["concrete", "metal_building"]);
 const num = z.number().finite().min(0).max(1e7);
@@ -145,6 +146,8 @@ export const takeoffRouter = router({
           createdBy: ctx.userId,
         })
         .returning({ id: schema.materialTakeoffs.id });
+      // A takeoff means the job is being estimated.
+      await autoPhase(ctx.tenant, input.projectId, "estimating", "takeoff_created", ctx.userId).catch((e) => console.error("[automation] takeoff created failed", e));
       return row;
     }),
 

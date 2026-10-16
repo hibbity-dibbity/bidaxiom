@@ -6,6 +6,7 @@ import { router } from "../trpc.js";
 import { protectedProcedure } from "../procedures.js";
 import { defineAbilitiesFor } from "../../auth/abilities.js";
 import { createAuditLog } from "../../audit/logger.js";
+import { onInvoiceSent, onInvoicesChanged, resolvePrompts } from "../../services/projectAutomation.js";
 import { AuditAction, dueDateFor, invoiceStatusAfterReceipts, isOverdue, isSent } from "@construction/shared";
 
 /**
@@ -350,6 +351,8 @@ export const invoiceRouter = router({
         actorId: c.userId,
         changes: { before: { status: "draft" }, after: { status: credit ? "paid" : "sent", sentOn, dueOn } },
       });
+      await onInvoiceSent(c.tenant, inv.id).catch((e) => console.error("[automation] invoice sent failed", e));
+      if (credit) await onInvoicesChanged(c.tenant, inv.projectId, inv.id).catch((e) => console.error("[automation] invoices changed failed", e));
       return { id: inv.id, sentOn, dueOn };
     }),
 
@@ -381,6 +384,7 @@ export const invoiceRouter = router({
         await tx.update(schema.invoices).set({ status: invoiceStatusAfterReceipts(received + amount, total), updatedAt: new Date() }).where(eq(schema.invoices.id, inv.id));
       });
       await createAuditLog(db, schema, { entityType: "Invoice", entityId: inv.id, action: AuditAction.UPDATE, actorId: c.userId, changes: { after: { payment: amount, receivedAt: input.receivedAt } } });
+      await onInvoicesChanged(c.tenant, inv.projectId, inv.id).catch((e) => console.error("[automation] invoices changed failed", e));
       return { id: inv.id };
     }),
 
@@ -401,6 +405,8 @@ export const invoiceRouter = router({
       }
     });
     await createAuditLog(db, schema, { entityType: "Invoice", entityId: inv.id, action: AuditAction.UPDATE, actorId: c.userId, changes: { before: { payment: Number(pay.amount) } } });
+    // A payment was taken back, so "everything is paid" may no longer be true.
+    await resolvePrompts(c.tenant, { projectId: inv.projectId, kinds: ["close_project"] }, "A payment was removed").catch(() => undefined);
     return { id: inv.id };
   }),
 });

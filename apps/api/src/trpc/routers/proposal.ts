@@ -22,6 +22,7 @@ import { generateSlug } from "../../utils/slug.js";
 import { ForbiddenError } from "@casl/ability";
 import { ensureCurrentTerms, readTermsVersion } from "./terms.js";
 import { createInvoiceDrafts } from "../../services/invoiceDrafts.js";
+import { autoPhase, onProposalAccepted, onProposalSent } from "../../services/projectAutomation.js";
 
 const costLineTypeEnum = z.enum(["labor", "material", "subcontractor", "equipment", "other"]);
 const visibilityEnum = z.enum(["price", "name_only", "hidden"]);
@@ -83,6 +84,11 @@ function lockedMessage(status: string): string {
 type Tenant = NonNullable<
   Awaited<ReturnType<typeof import("../../tenant/context.js").buildTenantContext>>
 >;
+
+/** Automation must never break the action it follows; log and move on. */
+async function safely(what: string, fn: () => Promise<unknown>) {
+  try { await fn(); } catch (e) { console.error(`[automation] ${what} failed`, e); }
+}
 
 /** The company setting that rounds every price, tax and invoice amount to a whole dollar. */
 export async function roundSetting(tenant: Tenant): Promise<boolean> {
@@ -618,6 +624,7 @@ export async function acceptProposal(tenant: Tenant, userId: string, estimateId:
       },
     },
   });
+  await safely("proposal accepted", () => onProposalAccepted(tenant, estimateId, userId));
   return { contractValue: acceptance.contractValue, costBudget: acceptance.costBudget, orders: createdOrders };
 }
 
@@ -960,6 +967,7 @@ export const proposalRouter = router({
           after: { status: "submitted", termsVersion: terms.version, total: c.result.totals.total },
         },
       });
+      await safely("proposal sent", () => onProposalSent(ctx.tenant!, input.estimateId, ctx.userId!));
       return { sentAt, termsVersion: terms.version };
     }),
 
@@ -1042,6 +1050,7 @@ export const proposalRouter = router({
         actorId: ctx.userId,
         changes: { after: { name, revision: next, copiedFrom: copyFromId } },
       });
+      await safely("proposal created", () => autoPhase(ctx.tenant!, input.projectId, "estimating", "proposal_created", ctx.userId!));
       return { id: created.id, slug: created.slug, revision: next };
     }),
 

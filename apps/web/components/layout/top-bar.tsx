@@ -1,11 +1,12 @@
 "use client";
 
-import { Bell, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import Image from "next/image";
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { UserMenu } from "./user-menu";
+import { AttentionBell } from "./attention-bell";
 
 /**
  * Top bar with sidebar trigger, search, and user menu.
@@ -61,11 +62,7 @@ export function TopBar({ onSearchOpen }: { onSearchOpen?: () => void }) {
 
         <Separator orientation="vertical" className="h-4" />
 
-        {/* Notification bell (placeholder) */}
-        <Button variant="ghost" size="icon" className="h-8 w-8">
-          <Bell className="h-4 w-4" />
-          <span className="sr-only">Notifications</span>
-        </Button>
+        <AttentionBell />
 
         <Separator orientation="vertical" className="h-4" />
 
