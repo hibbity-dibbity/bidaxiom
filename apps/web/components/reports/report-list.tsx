@@ -107,7 +107,6 @@ export function ReportList({ reports, loading, onReportClick }: ReportListProps)
         return 'secondary';
       case 'project_status':
       case 'budget_variance':
-      case 'payment_status':
         return 'default';
       default:
         return 'outline';

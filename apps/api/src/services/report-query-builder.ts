@@ -51,10 +51,6 @@ export function buildReportQuery(
     case "change_orders":
       baseTable = schema.changeOrders;
       break;
-    case "payment_apps":
-      // Payment apps not yet in schema - use projects as fallback
-      baseTable = schema.projects;
-      break;
     case "bids":
       baseTable = schema.bids;
       break;

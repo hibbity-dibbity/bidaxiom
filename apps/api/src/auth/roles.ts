@@ -23,7 +23,7 @@ export const ROLES = {
   },
   "org:estimator": {
     label: "Estimator",
-    description: "Manage bids, RFQs, view budgets",
+    description: "Manage bids, view budgets",
     level: 60,
   },
   "org:superintendent": {

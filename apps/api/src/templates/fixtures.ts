@@ -68,21 +68,7 @@ export const PREVIEW_SAMPLE_DATA: Record<string, string> = {
   "doc.costDelta": "$8,500.00",
   "doc.status": "Approved",
 
-  // Payment Application
-  "doc.applicationNumber": "PAY-2026-003",
-  "doc.periodStart": "January 1, 2026",
-  "doc.periodEnd": "January 31, 2026",
-  "doc.contractPrice": "$500,000.00",
-  "doc.retainagePercent": "10.00%",
-  "doc.retainageAmount": "$12,500.00",
-  "doc.currentAmountDue": "$112,500.00",
-  "doc.totalEarnedLessRetainage": "$112,500.00",
-  "doc.previousPayments": "$87,500.00",
 
-  // RFQ
-  "doc.rfqNumber": "RFQ-2026-005",
-  "doc.rfqTitle": "Concrete Flatwork",
-  "doc.submissionDeadline": "March 15, 2026",
   "doc.paymentTerms": "Net 30",
   "doc.scopeOfWork":
     "Provide and install 4,000 sq ft of concrete flatwork per specs.",

@@ -66,7 +66,6 @@ export default function ReportsPage() {
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="project_status">Project Status</TabsTrigger>
           <TabsTrigger value="budget_variance">Budget Variance</TabsTrigger>
-          <TabsTrigger value="payment_status">Payment Status</TabsTrigger>
           <TabsTrigger value="change_order_summary">Change Orders</TabsTrigger>
           <TabsTrigger value="custom">Custom</TabsTrigger>
         </TabsList>

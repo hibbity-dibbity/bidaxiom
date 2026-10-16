@@ -1193,18 +1193,15 @@ export const projectRouter = router({
       }
 
       // Check financial records in parallel
-      const [coCount, paCount, commitCount] = await Promise.all([
+      const [coCount, commitCount] = await Promise.all([
         db.select({ count: count() }).from(schema.changeOrders).where(eq(schema.changeOrders.projectId, input.projectId)),
-        db.select({ count: count() }).from(schema.paymentApps).where(eq(schema.paymentApps.projectId, input.projectId)),
         db.select({ count: count() }).from(schema.commitments).where(eq(schema.commitments.projectId, input.projectId)),
       ]);
 
       const coTotal = Number(coCount[0]?.count ?? 0);
-      const paTotal = Number(paCount[0]?.count ?? 0);
       const commitTotal = Number(commitCount[0]?.count ?? 0);
 
       if (coTotal > 0) reasons.push(`${coTotal} change order${coTotal !== 1 ? "s" : ""}`);
-      if (paTotal > 0) reasons.push(`${paTotal} payment application${paTotal !== 1 ? "s" : ""}`);
       if (commitTotal > 0) reasons.push(`${commitTotal} committed cost record${commitTotal !== 1 ? "s" : ""}`);
 
       return { canDelete: reasons.length === 0, reasons };
@@ -1413,13 +1410,11 @@ export const projectRouter = router({
       });
       ForbiddenError.from(abilities).throwUnlessCan("read", "Project");
 
-      // Run all 9 sub-queries in parallel
+      // Run all sub-queries in parallel
       const [
         acceptedEstimate,
         approvedCOSum,
         projectBudget,
-        billedToDate,
-        retainageHeldSum,
         changeOrdersCount,
         proposalsCount,
         documentsCount,
@@ -1462,18 +1457,6 @@ export const projectRouter = router({
           .where(eq(schema.projects.id, projectId))
           .limit(1),
 
-        // 4. Billed to Date — ALL payment apps, no status filter
-        db
-          .select({ total: sql<string>`COALESCE(SUM(current_payment_due), 0)` })
-          .from(schema.paymentApps)
-          .where(eq(schema.paymentApps.projectId, projectId)),
-
-        // 5. Retainage held
-        db
-          .select({ total: sql<string>`COALESCE(SUM(amount_held - COALESCE(released_amount, 0)), 0)` })
-          .from(schema.retainageHeld)
-          .where(eq(schema.retainageHeld.projectId, projectId)),
-
         // 6. Change orders count (tab badge)
         db
           .select({ count: count() })
@@ -1510,8 +1493,8 @@ export const projectRouter = router({
         contractValue = 0;
       }
 
-      const billedTotal = Number(billedToDate[0]?.total ?? 0);
-      const retainageTotal = Number(retainageHeldSum[0]?.total ?? 0);
+      const billedTotal = 0; // No payment applications any more
+      const retainageTotal = 0;
       const paidToDate = 0; // Placeholder — no payments table yet
 
       // Accepted estimate's total costs (direct + overhead) = cost basis

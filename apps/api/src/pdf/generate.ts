@@ -57,7 +57,7 @@ export interface SavePdfParams {
   projectId: string;
   userId: string;
   fileName: string;    // Already resolved by resolveDocumentFileName()
-  category: string;    // "proposal" | "change_order" | "payment_app" | "rfq"
+  category: string;    // "proposal" | "change_order"
   description: string;
   pdfBuffer: Buffer;
   templateId?: string | null; // Phase 39: FK to document_templates.id (TMPL-06)

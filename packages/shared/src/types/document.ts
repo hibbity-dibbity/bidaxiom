@@ -8,7 +8,6 @@ export const documentCategoryEnum = z.enum([
   "submittal",
   "rfi",
   "change_order",
-  "payment_app",
   "invoice",
   "report",
   "photo",

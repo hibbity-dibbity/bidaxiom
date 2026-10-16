@@ -3,12 +3,6 @@ import { phoneSchema, addressSchema } from "../schemas/common";
 import { tradeValueEnum } from "../constants/trades";
 
 /**
- * RFQ status enum
- */
-export const rfqStatusEnum = z.enum(["draft", "issued", "closed", "awarded", "cancelled"]);
-export type RfqStatus = z.infer<typeof rfqStatusEnum>;
-
-/**
  * Bid status enum
  */
 export const bidStatusEnum = z.enum(["submitted", "under_review", "shortlisted", "awarded", "rejected", "withdrawn"]);
@@ -58,65 +52,6 @@ export const levelingCategoryEnum = z.enum(["scope_gap", "scope_extra", "clarifi
 export type LevelingCategory = z.infer<typeof levelingCategoryEnum>;
 
 /**
- * Create RFQ schema
- */
-export const createRfqSchema = z.object({
-  projectId: z.string().uuid(),
-  title: z.string().min(1).max(200),
-  description: z.string().max(5000).optional(),
-  scopeOfWork: z.string().min(1).max(10000),
-  trades: z.array(z.number().int()),
-  dueDate: z.string().datetime(),
-  attachmentIds: z.array(z.string().uuid()).optional(),
-});
-
-export type CreateRfq = z.infer<typeof createRfqSchema>;
-
-/**
- * Update RFQ schema
- */
-export const updateRfqSchema = z.object({
-  id: z.string().uuid(),
-  title: z.string().min(1).max(200).optional(),
-  description: z.string().max(5000).nullable().optional(),
-  scopeOfWork: z.string().min(1).max(10000).optional(),
-  trades: z.array(z.number().int()).optional(),
-  dueDate: z.string().datetime().optional(),
-  status: rfqStatusEnum.optional(),
-});
-
-export type UpdateRfq = z.infer<typeof updateRfqSchema>;
-
-/**
- * Create amendment schema
- */
-export const createAmendmentSchema = z.object({
-  rfqId: z.string().uuid(),
-  description: z.string().min(1).max(2000),
-  scopeChanges: z.string().optional(),
-  dueDateChange: z.string().datetime().optional(),
-});
-
-export type CreateAmendment = z.infer<typeof createAmendmentSchema>;
-
-/**
- * Create invitation schema
- */
-export const createInvitationSchema = z.object({
-  rfqId: z.string().uuid(),
-  subcontractorId: z.string().uuid().optional(),
-  externalEmail: z.string().email().optional(),
-  externalCompanyName: z.string().optional(),
-}).refine(
-  (data) => data.subcontractorId || (data.externalEmail && data.externalCompanyName),
-  {
-    message: "Must provide either subcontractorId OR (externalEmail AND externalCompanyName)",
-  }
-);
-
-export type CreateInvitation = z.infer<typeof createInvitationSchema>;
-
-/**
  * Bid line item schema
  */
 export const bidLineItemSchema = z.object({
@@ -133,8 +68,6 @@ export type BidLineItem = z.infer<typeof bidLineItemSchema>;
  * Submit bid schema
  */
 export const submitBidSchema = z.object({
-  rfqId: z.string().uuid(),
-  invitationId: z.string().uuid().optional(),
   totalAmount: z.number().positive(),
   lineItems: z.array(bidLineItemSchema).min(1),
   scopeNotes: z.string().optional(),
@@ -235,19 +168,6 @@ export const awardBidSchema = z.object({
 export type AwardBid = z.infer<typeof awardBidSchema>;
 
 /**
- * Create leveling note schema
- */
-export const createLevelingNoteSchema = z.object({
-  rfqId: z.string().uuid(),
-  bidId: z.string().uuid(),
-  category: levelingCategoryEnum,
-  note: z.string().min(1).max(2000),
-  adjustmentAmount: z.number().optional(),
-});
-
-export type CreateLevelingNote = z.infer<typeof createLevelingNoteSchema>;
-
-/**
  * Bid comparison row interface
  */
 export interface BidComparisonRow {
@@ -265,18 +185,4 @@ export interface BidComparisonRow {
     adjustmentAmount?: number;
   }>;
   status: BidStatus;
-}
-
-/**
- * RFQ summary interface
- */
-export interface RfqSummary {
-  id: string;
-  rfqNumber: string;
-  title: string;
-  status: RfqStatus;
-  dueDate: string;
-  bidCount: number;
-  invitationCount: number;
-  projectId: string;
 }

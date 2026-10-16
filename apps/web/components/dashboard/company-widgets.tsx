@@ -80,44 +80,6 @@ export function CompanyOpenBids() {
   );
 }
 
-export function PendingPayApps() {
-  const router = useRouter();
-  const { data, isLoading, error } = trpc.dashboard.pendingPayApps.useQuery(undefined, {
-    retry: false,
-  });
-
-  if (isLoading) {
-    return <KpiCardSkeleton />;
-  }
-
-  if (error || !data) {
-    return (
-      <KpiCard
-        title="Pending Pay Apps"
-        value="--"
-        description="Unable to load"
-        icon={Receipt}
-      />
-    );
-  }
-
-  const description = data.count > 0
-    ? `${currencyFormatter.format(data.totalAmount)} pending`
-    : "None pending";
-  const status = data.count > 0 ? "warning" : "success";
-
-  return (
-    <KpiCard
-      title="Pending Pay Apps"
-      value={data.count}
-      description={description}
-      icon={Receipt}
-      status={status}
-      onClick={() => router.push("/projects")}
-    />
-  );
-}
-
 export function BidOpportunities() {
   const router = useRouter();
   const { data, isLoading, error } = trpc.dashboard.bidOpportunities.useQuery(undefined, {

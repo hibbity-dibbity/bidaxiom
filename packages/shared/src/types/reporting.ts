@@ -17,7 +17,6 @@ import { z } from "zod";
 export const reportTypeEnum = z.enum([
   "project_status",
   "budget_variance",
-  "payment_status",
   "change_order_summary",
   "bid_comparison",
   "cost_performance",
@@ -119,7 +118,6 @@ export const dataSourceEnum = z.enum([
   "projects",
   "budgets",
   "change_orders",
-  "payment_apps",
   "bids",
   "commitments",
 ]);

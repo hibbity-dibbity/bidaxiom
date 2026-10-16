@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { retainageConfigSchema } from "./payment-app";
+import { retainageConfigSchema } from "./retainage-config";
 
 export type RetainageConfig = z.infer<typeof retainageConfigSchema>;
 export { retainageConfigSchema };

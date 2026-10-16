@@ -61,34 +61,6 @@ export async function seedReportTemplates(db: NodePgDatabase<any>) {
       },
     },
     {
-      id: '00000000-0000-0000-0000-000000000003',
-      name: 'Payment Status',
-      description: 'Track payment applications by status',
-      type: 'payment_status',
-      isSystem: true,
-      definition: {
-        type: 'payment_status',
-        dataSource: 'payment_apps',
-        columns: [
-          { field: 'projectId', label: 'Project' },
-          { field: 'applicationNumber', label: 'App #' },
-          { field: 'status', label: 'Status' },
-          { field: 'totalCompletedAndStored', label: 'Total Completed', aggregation: 'sum' },
-          { field: 'currentPaymentDue', label: 'Payment Due', aggregation: 'sum' },
-          { field: 'submittedAt', label: 'Submitted' },
-        ],
-        filters: [
-          {
-            field: 'status',
-            operator: 'in',
-            value: ['submitted', 'under_review', 'approved'],
-            dataType: 'string',
-          },
-        ],
-        chartConfig: null,
-      },
-    },
-    {
       id: '00000000-0000-0000-0000-000000000004',
       name: 'Change Order Summary',
       description: 'Approved change orders by type',
@@ -124,14 +96,14 @@ export async function seedReportTemplates(db: NodePgDatabase<any>) {
     {
       id: '00000000-0000-0000-0000-000000000005',
       name: 'Bid Comparison',
-      description: 'Compare submitted bids for active RFQs',
+      description: 'Compare submitted bids',
       type: 'bid_comparison',
       isSystem: true,
       definition: {
         type: 'bid_comparison',
         dataSource: 'bids',
         columns: [
-          { field: 'rfqId', label: 'RFQ' },
+          { field: 'projectId', label: 'Project' },
           { field: 'bidderCompanyName', label: 'Bidder' },
           { field: 'totalAmount', label: 'Amount', aggregation: 'sum' },
           { field: 'status', label: 'Status' },

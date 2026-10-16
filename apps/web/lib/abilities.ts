@@ -31,7 +31,6 @@ export function defineAbilitiesFor(role: string, userId: string): AppAbility {
       can("manage", "ChangeOrder");
       can("manage", "PayApplication");
       can("read", "Bid");
-      can("read", "RFQ");
       can("read", "AuditLog");
       can("read", "User");
       cannot("manage", "CompanySettings");
@@ -49,7 +48,6 @@ export function defineAbilitiesFor(role: string, userId: string): AppAbility {
 
     case "org:estimator":
       can("manage", "Bid");
-      can("manage", "RFQ");
       can("read", "Project");
       can("read", "Budget");
       can("read", "User");

@@ -14,9 +14,8 @@ import type { BidStatus } from "@construction/shared";
 
 interface BidHistoryItem {
   bidId: string;
-  rfqId: string;
-  rfqNumber: string;
-  rfqTitle: string;
+  projectName: string | null;
+  jobNumber: string | null;
   latestAmount: number | null;
   status: string;
   submittedAt: string;
@@ -63,7 +62,7 @@ export function BidHistoryTable({ bidHistory }: BidHistoryTableProps) {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>RFQ #</TableHead>
+          <TableHead>Project</TableHead>
           <TableHead className="text-right">Amount</TableHead>
           <TableHead>Status</TableHead>
           <TableHead>Date</TableHead>
@@ -73,9 +72,9 @@ export function BidHistoryTable({ bidHistory }: BidHistoryTableProps) {
         {bidHistory.map((bid) => (
           <TableRow key={bid.bidId}>
             <TableCell>
-              <div className="font-medium">{bid.rfqNumber}</div>
+              <div className="font-medium">{bid.jobNumber ?? "—"}</div>
               <div className="text-sm text-muted-foreground mt-1">
-                {bid.rfqTitle}
+                {bid.projectName}
               </div>
             </TableCell>
             <TableCell className="text-right font-medium">

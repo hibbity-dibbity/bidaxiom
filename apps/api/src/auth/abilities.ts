@@ -146,12 +146,10 @@ export function defineAbilitiesFor(
       can("manage", "Commitment");
       can("manage", "ChangeOrder");
       can("manage", "PayApplication");
-      can("manage", "PaymentApp");
       can("manage", "LienWaiver");
       can("manage", "Document", { projectId: { $in: userProjectIds } });
       can("manage", "Folder", { projectId: { $in: userProjectIds } });
       can("manage", "Workflow", { projectId: { $in: userProjectIds } });
-      can("manage", "RFQ");
       can("read", "Bid");
       can("read", "SubcontractorDirectory");
       can("manage", "Calendar");
@@ -168,7 +166,6 @@ export function defineAbilitiesFor(
       can("manage", "Commitment");
       can("read", "Commitment");
       can("manage", "PayApplication");
-      can("manage", "PaymentApp");
       can("manage", "LienWaiver");
       can("manage", "Document", { projectId: { $in: userProjectIds } });
       can("manage", "Folder", { projectId: { $in: userProjectIds } });
@@ -176,7 +173,6 @@ export function defineAbilitiesFor(
       can("approve", "Workflow");
       can("read", "ChangeOrder");
       can("approve", "ChangeOrder");
-      can("read", "RFQ");
       can("read", "Bid");
       can("read", "Calendar");
       can("manage", "Report");
@@ -190,12 +186,10 @@ export function defineAbilitiesFor(
     case "org:estimator":
       can("read", "Project", { id: { $in: userProjectIds } });
       can("manage", "Bid");
-      can("manage", "RFQ");
       can("manage", "SubcontractorDirectory");
       can("read", "Budget");
       can("read", "Commitment");
       can("read", "ChangeOrder");
-      can("read", "PaymentApp");
       can("read", "LienWaiver");
       can("read", "Document", { projectId: { $in: userProjectIds } });
       can("read", "Folder", { projectId: { $in: userProjectIds } });
@@ -221,10 +215,7 @@ export function defineAbilitiesFor(
       can("read", "Commitment");
       can("read", "ChangeOrder");
       can("approve", "ChangeOrder");
-      can("read", "PaymentApp");
-      can("approve", "PaymentApp");
       can("read", "LienWaiver");
-      can("read", "RFQ");
       can("read", "Bid");
       can("manage", "Calendar");
       can("read", "Report");
@@ -238,9 +229,7 @@ export function defineAbilitiesFor(
       can("read", "Budget");
       can("read", "Commitment");
       can("read", "ChangeOrder");
-      can("read", "PaymentApp");
       can("read", "LienWaiver");
-      can("read", "RFQ");
       can("read", "Document", { projectId: { $in: userProjectIds } });
       can("read", "Folder", { projectId: { $in: userProjectIds } });
       can("read", "Workflow", { projectId: { $in: userProjectIds } });
@@ -262,7 +251,6 @@ export function defineAbilitiesFor(
       can("read", "Budget");
       can("read", "Commitment");
       can("read", "ChangeOrder");
-      can("read", "PaymentApp");
       can("read", "LienWaiver");
       can("read", "Bid");
       can("read", "Calendar");

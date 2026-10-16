@@ -112,9 +112,6 @@ export function MyTodo() {
   if (data.breakdown.changeOrders > 0) {
     parts.push(`${data.breakdown.changeOrders} approval${data.breakdown.changeOrders > 1 ? "s" : ""}`);
   }
-  if (data.breakdown.paymentApps > 0) {
-    parts.push(`${data.breakdown.paymentApps} payment${data.breakdown.paymentApps > 1 ? "s" : ""}`);
-  }
   if (data.breakdown.workflows > 0) {
     parts.push(`${data.breakdown.workflows} workflow${data.breakdown.workflows > 1 ? "s" : ""}`);
   }

@@ -6,7 +6,6 @@ export type DataSource =
   | 'projects'
   | 'budgets'
   | 'change_orders'
-  | 'payment_apps'
   | 'bids'
   | 'commitments';
 
@@ -60,17 +59,8 @@ export function getAvailableFields(dataSource: DataSource): FieldDefinition[] {
       { id: 'approvedAt', label: 'Approved At', dataType: 'date', aggregatable: false },
       { id: 'createdAt', label: 'Created At', dataType: 'date', aggregatable: false },
     ],
-    payment_apps: [
-      { id: 'projectId', label: 'Project', dataType: 'number', aggregatable: false },
-      { id: 'applicationNumber', label: 'Application Number', dataType: 'number', aggregatable: false },
-      { id: 'status', label: 'Status', dataType: 'string', aggregatable: false },
-      { id: 'totalCompletedAndStored', label: 'Total Completed & Stored', dataType: 'number', aggregatable: true },
-      { id: 'currentPaymentDue', label: 'Current Payment Due', dataType: 'number', aggregatable: true },
-      { id: 'submittedAt', label: 'Submitted At', dataType: 'date', aggregatable: false },
-      { id: 'createdAt', label: 'Created At', dataType: 'date', aggregatable: false },
-    ],
     bids: [
-      { id: 'rfqId', label: 'RFQ', dataType: 'number', aggregatable: false },
+      { id: 'projectId', label: 'Project', dataType: 'number', aggregatable: false },
       { id: 'bidderCompanyName', label: 'Bidder Company', dataType: 'string', aggregatable: false },
       { id: 'totalAmount', label: 'Total Amount', dataType: 'number', aggregatable: true },
       { id: 'status', label: 'Status', dataType: 'string', aggregatable: false },

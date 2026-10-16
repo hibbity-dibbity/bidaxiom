@@ -10,9 +10,7 @@ import { projectRouter } from "./routers/project.js";
 import { documentRouter } from "./routers/document.js";
 import { pdfRouter } from "./routers/pdf.js";
 import { invoiceRouter } from "./routers/invoice.js";
-import { rfqRouter } from "./routers/rfq.js";
 import { subcontractorRouter } from "./routers/subcontractor.js";
-import { bidRouter } from "./routers/bid.js";
 import { quickbooksRouter } from "./routers/quickbooks.js";
 import { workflowRouter } from "./routers/workflow.js";
 import { reportRouter } from "./routers/report.js";
@@ -56,9 +54,7 @@ export const appRouter = router({
   pdf: pdfRouter,
   email: emailRouter,
   invoice: invoiceRouter,
-  rfq: rfqRouter,
   subcontractor: subcontractorRouter,
-  bid: bidRouter,
   quickbooks: quickbooksRouter,
   workflow: workflowRouter,
   report: reportRouter,

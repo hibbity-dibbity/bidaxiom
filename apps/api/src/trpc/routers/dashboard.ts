@@ -65,16 +65,15 @@ export const dashboardRouter = router({
 
     const { db, schema } = ctx.tenant;
 
-    // Query bids for RFQs on projects where user is a team member
+    // Query bids on projects where user is a team member
     const result = await db
       .select({
         count: sql<number>`COUNT(DISTINCT ${schema.bids.id})`,
       })
       .from(schema.bids)
-      .innerJoin(schema.rfqs, eq(schema.bids.rfqId, schema.rfqs.id))
       .innerJoin(
         schema.projectTeamMembers,
-        eq(schema.rfqs.projectId, schema.projectTeamMembers.projectId)
+        eq(schema.bids.projectId, schema.projectTeamMembers.projectId)
       )
       .where(
         and(
@@ -115,19 +114,6 @@ export const dashboardRouter = router({
         )
       );
 
-    // Count pending payment app approvals
-    const paymentAppResult = await db
-      .select({
-        count: sql<number>`COUNT(*)`,
-      })
-      .from(schema.paymentAppApprovalSteps)
-      .where(
-        and(
-          eq(schema.paymentAppApprovalSteps.approverUserId, ctx.userId),
-          eq(schema.paymentAppApprovalSteps.status, "pending")
-        )
-      );
-
     // Count pending workflow approvals (RFI, Submittal, Transmittal)
     const workflowResult = await db
       .select({
@@ -142,14 +128,12 @@ export const dashboardRouter = router({
       );
 
     const changeOrders = Number(changeOrderResult[0]?.count ?? 0);
-    const paymentApps = Number(paymentAppResult[0]?.count ?? 0);
     const workflows = Number(workflowResult[0]?.count ?? 0);
 
     return {
-      count: changeOrders + paymentApps + workflows,
+      count: changeOrders + workflows,
       breakdown: {
         changeOrders,
-        paymentApps,
         workflows,
       },
     };
@@ -210,38 +194,8 @@ export const dashboardRouter = router({
   }),
 
   /**
-   * Company-scoped: Pending payment applications count and total amount
-   * Count payment apps with submitted/under_review status
-   */
-  pendingPayApps: protectedProcedure.query(async ({ ctx }) => {
-    if (!ctx.tenant) {
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Tenant context missing",
-      });
-    }
-
-    const { db, schema } = ctx.tenant;
-
-    const result = await db
-      .select({
-        count: sql<number>`COUNT(*)`,
-        totalAmount: sql<string>`COALESCE(SUM(${schema.paymentApps.currentPaymentDue}), 0)`,
-      })
-      .from(schema.paymentApps)
-      .where(
-        inArray(schema.paymentApps.status, ["submitted", "under_review"])
-      );
-
-    return {
-      count: Number(result[0]?.count ?? 0),
-      totalAmount: parseFloat(result[0]?.totalAmount ?? "0"),
-    };
-  }),
-
-  /**
    * Company-scoped: Bid opportunities count
-   * Count RFQs with issued status (open RFQs awaiting bids)
+   * Count bids still open (draft or submitted)
    */
   bidOpportunities: protectedProcedure.query(async ({ ctx }) => {
     if (!ctx.tenant) {
@@ -257,8 +211,8 @@ export const dashboardRouter = router({
       .select({
         count: sql<number>`COUNT(*)`,
       })
-      .from(schema.rfqs)
-      .where(eq(schema.rfqs.status, "issued"));
+      .from(schema.bids)
+      .where(inArray(schema.bids.status, ["draft", "submitted"]));
 
     return {
       count: Number(result[0]?.count ?? 0),
@@ -326,20 +280,8 @@ export const dashboardRouter = router({
         )
       );
 
-    // Sum of completed work from payment applications for active projects
-    const completedResult = await db
-      .select({
-        total: sql<string>`COALESCE(SUM(${schema.paymentApps.totalCompletedAndStored}), 0)`,
-      })
-      .from(schema.paymentApps)
-      .innerJoin(
-        schema.projects,
-        eq(schema.paymentApps.projectId, schema.projects.id)
-      )
-      .where(eq(schema.projects.status, "active"));
-
     const committed = parseFloat(commitmentsResult[0]?.total ?? "0");
-    const completed = parseFloat(completedResult[0]?.total ?? "0");
+    const completed = 0;
 
     return {
       total: Math.max(0, committed - completed),

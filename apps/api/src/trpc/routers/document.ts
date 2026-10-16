@@ -631,7 +631,7 @@ export const documentRouter = router({
       }
 
       // Map to final shape with derived fields
-      const RELATED_ENTITY_REGEX = /(RFI|SUB|TX|CO|PAY|RFQ)-[\w-]+/i;
+      const RELATED_ENTITY_REGEX = /(RFI|SUB|TX|CO)-[\w-]+/i;
 
       return filtered.map((row) => {
         const documentType =
@@ -685,8 +685,6 @@ export const documentRouter = router({
             "transmittal",
             "proposal",
             "change_order",
-            "payment_app",
-            "rfq",
             "file",
           ])
           .optional(),

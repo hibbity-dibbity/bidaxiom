@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { MyActiveProjects, MyOpenBids, MyTodo } from "@/components/dashboard/user-widgets";
-import { TotalActiveProjects, CompanyOpenBids, PendingPayApps, BidOpportunities, RevenueInProgress, Backlog, EstimatingPipeline } from "@/components/dashboard/company-widgets";
+import { TotalActiveProjects, CompanyOpenBids, BidOpportunities, RevenueInProgress, Backlog, EstimatingPipeline } from "@/components/dashboard/company-widgets";
 
 /**
  * Company dashboard landing page.
@@ -73,7 +73,6 @@ export default function DashboardPage() {
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           <TotalActiveProjects />
           <CompanyOpenBids />
-          <PendingPayApps />
           <BidOpportunities />
         </div>
       </div>

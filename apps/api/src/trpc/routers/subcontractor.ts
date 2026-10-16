@@ -171,7 +171,7 @@ export const subcontractorRouter = router({
 
   /**
    * Get subcontractor by ID with bid history.
-   * Includes historical bids with RFQ details and latest amounts.
+   * Includes historical bids with project details and latest amounts.
    */
   getById: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
@@ -206,12 +206,11 @@ export const subcontractorRouter = router({
         });
       }
 
-      // Fetch bid history with RFQ details and latest version amounts
+      // Fetch bid history with project details and latest version amounts
       const bidHistory = await db
         .select({
-          rfqId: schema.rfqs.id,
-          rfqNumber: schema.rfqs.rfqNumber,
-          rfqTitle: schema.rfqs.title,
+          projectName: schema.projects.name,
+          jobNumber: schema.projects.jobNumber,
           bidId: schema.bids.id,
           status: schema.bids.status,
           submittedAt: schema.bids.submittedAt,
@@ -224,16 +223,15 @@ export const subcontractorRouter = router({
           )`,
         })
         .from(schema.bids)
-        .innerJoin(schema.rfqs, eq(schema.bids.rfqId, schema.rfqs.id))
+        .leftJoin(schema.projects, eq(schema.bids.projectId, schema.projects.id))
         .where(eq(schema.bids.subcontractorId, input.id))
         .orderBy(desc(schema.bids.submittedAt));
 
       return {
         ...subcontractor,
         bidHistory: bidHistory.map(bid => ({
-          rfqId: bid.rfqId,
-          rfqNumber: bid.rfqNumber,
-          rfqTitle: bid.rfqTitle,
+          projectName: bid.projectName,
+          jobNumber: bid.jobNumber,
           bidId: bid.bidId,
           latestAmount: bid.latestAmount ? Number(bid.latestAmount) : null,
           status: bid.status,
@@ -285,12 +283,11 @@ export const subcontractorRouter = router({
         });
       }
 
-      // Fetch bid history with RFQ details and latest version amounts
+      // Fetch bid history with project details and latest version amounts
       const bidHistory = await db
         .select({
-          rfqId: schema.rfqs.id,
-          rfqNumber: schema.rfqs.rfqNumber,
-          rfqTitle: schema.rfqs.title,
+          projectName: schema.projects.name,
+          jobNumber: schema.projects.jobNumber,
           bidId: schema.bids.id,
           status: schema.bids.status,
           submittedAt: schema.bids.submittedAt,
@@ -303,16 +300,15 @@ export const subcontractorRouter = router({
           )`,
         })
         .from(schema.bids)
-        .innerJoin(schema.rfqs, eq(schema.bids.rfqId, schema.rfqs.id))
+        .leftJoin(schema.projects, eq(schema.bids.projectId, schema.projects.id))
         .where(eq(schema.bids.subcontractorId, subcontractor.id))
         .orderBy(desc(schema.bids.submittedAt));
 
       return {
         ...subcontractor,
         bidHistory: bidHistory.map(bid => ({
-          rfqId: bid.rfqId,
-          rfqNumber: bid.rfqNumber,
-          rfqTitle: bid.rfqTitle,
+          projectName: bid.projectName,
+          jobNumber: bid.jobNumber,
           bidId: bid.bidId,
           latestAmount: bid.latestAmount ? Number(bid.latestAmount) : null,
           status: bid.status,
@@ -539,7 +535,7 @@ export const subcontractorRouter = router({
 
   /**
    * Get subcontractors matching specific trades.
-   * Helper for RFQ invitation - returns only active subcontractors.
+   * Returns only active subcontractors.
    */
   getByTrades: protectedProcedure
     .input(

@@ -45,8 +45,6 @@ export async function generateBidFromEstimate(
     const [bid] = await tx.insert(schema.bids).values({
       estimateId: input.estimateId,
       projectId: estimate.projectId,
-      rfqId: null, // Estimate-based bids don't have RFQ
-      invitationId: null,
       subcontractorId: null,
       bidderCompanyName: input.bidName,
       bidderContactEmail: null,
