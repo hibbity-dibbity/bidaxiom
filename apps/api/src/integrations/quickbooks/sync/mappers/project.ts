@@ -76,6 +76,12 @@ async function ensureQboParentCustomer(p: { db: MapperDb; schema: TenantSchema; 
   return q.Id;
 }
 
+/** Sync one BidAxiom customer to QuickBooks as a top-level customer (linked if one with the same name exists). */
+export async function syncCustomerToQbo(params: { tenantId: string; customerId: string; db: MapperDb; schema: TenantSchema; qboClient: any; accessToken: string; realmId: string }): Promise<void> {
+  const { customerId, db, schema, qboClient, accessToken, realmId } = params;
+  await ensureQboParentCustomer({ db, schema, qboClient, accessToken, realmId, customerId });
+}
+
 /**
  * Sync a BidAxiom project to QuickBooks Online as a sub-customer ("job") under its customer,
  * named "{job number} - {project name}". An existing QuickBooks job with that name is linked, not duplicated.

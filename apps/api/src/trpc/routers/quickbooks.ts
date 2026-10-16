@@ -475,7 +475,7 @@ export const quickbooksRouter = router({
   manualSync: authorizedProcedure
     .input(
       z.object({
-        entityType: z.enum(["project", "invoice", "bill", "all"]),
+        entityType: z.enum(["customer", "project", "invoice", "bill", "all"]),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -516,13 +516,26 @@ export const quickbooksRouter = router({
 
       if (entityType === "all") {
         // Queue sync jobs for all supported entity types
-        const entityTypes = ["project", "invoice", "bill"] as const;
+        const entityTypes = ["customer", "project", "invoice", "bill"] as const;
 
         for (const type of entityTypes) {
           const queuedBefore = jobsQueued;
           // For each entity type, find platform entities without QBO mappings
           let platformEntities: Array<{ id: string }> = [];
 
+          if (type === "customer") {
+            platformEntities = await tenant.db
+              .select({ id: tenant.schema.customers.id })
+              .from(tenant.schema.customers)
+              .leftJoin(
+                tenant.schema.qboEntityMappings,
+                and(
+                  eq(tenant.schema.qboEntityMappings.platformId, tenant.schema.customers.id),
+                  eq(tenant.schema.qboEntityMappings.entityType, "customer")
+                )
+              )
+              .where(sql`${tenant.schema.qboEntityMappings.id} IS NULL`);
+          }
           if (type === "project") {
             platformEntities = await tenant.db
               .select({ id: tenant.schema.projects.id })
@@ -577,6 +590,19 @@ export const quickbooksRouter = router({
         // Specific entity type sync
         let platformEntities: Array<{ id: string }> = [];
 
+        if (entityType === "customer") {
+          platformEntities = await tenant.db
+            .select({ id: tenant.schema.customers.id })
+            .from(tenant.schema.customers)
+            .leftJoin(
+              tenant.schema.qboEntityMappings,
+              and(
+                eq(tenant.schema.qboEntityMappings.platformId, tenant.schema.customers.id),
+                eq(tenant.schema.qboEntityMappings.entityType, "customer")
+              )
+            )
+            .where(sql`${tenant.schema.qboEntityMappings.id} IS NULL`);
+        }
         if (entityType === "project") {
           platformEntities = await tenant.db
             .select({ id: tenant.schema.projects.id })

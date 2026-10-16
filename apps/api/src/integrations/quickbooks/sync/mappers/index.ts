@@ -1,5 +1,5 @@
 import type { TenantSchema } from '../../../../db/schema/tenant.js';
-import { syncProjectToQbo, syncProjectFromQbo } from './project.js';
+import { syncProjectToQbo, syncProjectFromQbo, syncCustomerToQbo } from './project.js';
 import { syncInvoiceToQbo, syncInvoiceFromQbo } from './invoice.js';
 import { syncBillToQbo, syncBillFromQbo } from './bill.js';
 
@@ -44,6 +44,12 @@ export async function dispatchSync(
           ...params,
           projectId: params.platformId,
         });
+
+      case 'customer':
+        if (!params.platformId) {
+          throw new Error('platformId required for to-qbo customer sync');
+        }
+        return syncCustomerToQbo({ ...params, customerId: params.platformId });
 
       case 'invoice':
         if (!params.platformId) {

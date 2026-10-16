@@ -68,7 +68,7 @@ export function QboSyncStatus({ syncStates }: QboSyncStatusProps) {
     onError: (error) => toast.error("Could not stop the sync", { description: error.message }),
   });
 
-  const handleSync = (entityType: "project" | "invoice" | "bill" | "all") => {
+  const handleSync = (entityType: "customer" | "project" | "invoice" | "bill" | "all") => {
     manualSyncMutation.mutate({ entityType });
   };
 
@@ -130,6 +130,9 @@ export function QboSyncStatus({ syncStates }: QboSyncStatusProps) {
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => handleSync("all")}>
               Sync All
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleSync("customer")}>
+              Sync Customers
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleSync("project")}>
               Sync Projects
