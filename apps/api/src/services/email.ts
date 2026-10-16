@@ -228,7 +228,7 @@ export interface DocumentMail {
   attachment?: { filename: string; content: Buffer } | null;
 }
 
-/** "Thomson Enterprises <documents@bidaxiom.com>": the company name in front of the app's sending address. */
+/** "Thomson Enterprises <noreply@bidaxiom.com>": the company name in front of the app's sending address. */
 function fromWithName(name: string): string {
   const addr = getFromEmail().replace(/^.*<([^>]+)>.*$/, "$1");
   return `${name.replace(/["<>\r\n]/g, "").trim() || "BidAxiom"} <${addr}>`;
