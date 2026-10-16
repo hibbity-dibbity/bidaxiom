@@ -51,6 +51,18 @@ services:
       # sending address on your verified domain.
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       EMAIL_FROM: ${EMAIL_FROM:-noreply@bidaxiom.com}
+      # QuickBooks Online. Put these in the .env file next to this one. Leave them blank to keep QuickBooks off.
+      #   QBO_CLIENT_ID / QBO_CLIENT_SECRET: Intuit Developer > your app > Keys & credentials (use the set that matches QBO_ENVIRONMENT).
+      #   QBO_ENVIRONMENT: sandbox or production.
+      #   QBO_ENCRYPTION_KEY: 64 hex characters; encrypts the saved QuickBooks (and calendar) sign-in tokens. Keep a copy: if it is lost, reconnect.
+      #   QBO_WEBHOOK_VERIFIER_TOKEN: from the app's Webhooks page, if you use webhooks.
+      # API_URL is the address Intuit sends people back to; register <API_URL>/api/integrations/quickbooks/callback as a Redirect URI.
+      API_URL: ${PUBLIC_API_URL:-http://localhost:3001}
+      QBO_CLIENT_ID: ${QBO_CLIENT_ID:-}
+      QBO_CLIENT_SECRET: ${QBO_CLIENT_SECRET:-}
+      QBO_ENVIRONMENT: ${QBO_ENVIRONMENT:-sandbox}
+      QBO_ENCRYPTION_KEY: ${QBO_ENCRYPTION_KEY:-}
+      QBO_WEBHOOK_VERIFIER_TOKEN: ${QBO_WEBHOOK_VERIFIER_TOKEN:-}
       # Lets a phone or laptop on the same network use the app (see docs in deploy/README if present).
       ALLOW_LAN_ORIGINS: "true"
       NEXT_PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://localhost:3000}
