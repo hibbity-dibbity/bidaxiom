@@ -86,7 +86,7 @@ export default function SignInSettingsPage() {
 
 function ConnectionDetails({ presets, conn, onSaved }: { presets: Preset[]; conn: Conn | null; onSaved: () => void }) {
   const [preset, setPreset] = React.useState(conn?.provider ?? "microsoft");
-  const [value, setValue] = React.useState(conn?.provider === "oidc" ? conn.issuer : "");
+  const [value, setValue] = React.useState(conn?.provider === "oidc" ? conn.issuer : conn?.provider === "microsoft" ? (conn.issuer.match(/login\.microsoftonline\.com\/([^/]+)/)?.[1] ?? "") : "");
   const [clientId, setClientId] = React.useState(conn?.clientId ?? "");
   const [secret, setSecret] = React.useState("");
   const save = trpc.sso.save.useMutation({
