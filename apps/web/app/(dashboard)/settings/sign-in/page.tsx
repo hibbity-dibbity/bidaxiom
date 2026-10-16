@@ -73,6 +73,7 @@ export default function SignInSettingsPage() {
             </Button>
             {conn.verified && <Options conn={conn} roles={data.roles} onSaved={refresh} />}
             <Status conn={conn} />
+            <Explain />
             <div>
               <Button variant="outline" onClick={() => { if (window.confirm("Disconnect single sign-on? People will sign in with their BidAxiom passwords again.")) disconnect.mutate(); }}>Disconnect</Button>
             </div>
@@ -228,4 +229,32 @@ function Status({ conn }: { conn: Conn }) {
     text = `Active. Anyone who types an email ending in ${verifiedDomains.map((d) => "@" + d).join(", ")} is sent to your provider${conn.enforceSso ? ". Administrators can still use a password (the link under the email box on the sign-in page), so a provider outage cannot lock you out" : ""}.`;
   }
   return <p className={`rounded-md border px-3 py-2 text-sm ${tone}`}>{text}</p>;
+}
+
+/** Admin troubleshooting: type an address and see why the sign-in page does or does not send it to single sign-on. */
+function Explain() {
+  const [email, setEmail] = React.useState("");
+  const [asked, setAsked] = React.useState("");
+  const q = trpc.sso.explain.useQuery({ email: asked }, { enabled: !!asked, retry: false, refetchOnWindowFocus: false });
+  const RESULT: Record<string, string> = {
+    sso_offered: "The sign-in page will offer \"Continue with your company sign-in\" (and a password).",
+    sso_required: "The sign-in page will send this address straight to your provider.",
+    password: "The sign-in page will only ask for a password for this address.",
+  };
+  return (
+    <div className="space-y-2 rounded-md border p-3">
+      <div className="text-sm font-medium">Check an email address</div>
+      <div className="flex gap-2">
+        <Input className="max-w-xs" type="email" placeholder="someone@yourcompany.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Button variant="outline" disabled={!email.includes("@")} onClick={() => setAsked(email.trim())}>Check</Button>
+      </div>
+      {q.error && <p className="text-sm text-destructive">{q.error.message}</p>}
+      {q.data && (
+        <div className="space-y-1 text-sm">
+          {q.data.steps.map((s, i) => (<div key={i} className={s.ok ? "text-green-700" : "text-amber-700"}>{s.ok ? "✓" : "✗"} {s.text}</div>))}
+          <div className="pt-1 font-medium">{RESULT[q.data.result]}</div>
+        </div>
+      )}
+    </div>
+  );
 }

@@ -88,6 +88,34 @@ export const ssoRouter = router({
     };
   }),
 
+  /** Admin: explain what the sign-in page will do for an email address, step by step (for troubleshooting). */
+  explain: protectedProcedure
+    .input(z.object({ email: z.string().email().max(200) }))
+    .query(async ({ ctx, input }) => {
+      const { orgId } = requireAdmin(ctx);
+      const db = getDb();
+      const email = input.email.trim().toLowerCase();
+      const domain = email.split("@")[1] ?? "";
+      const steps: { ok: boolean; text: string }[] = [];
+      const conn = await db.query.ssoConnections.findFirst({ where: eq(ssoConnections.organizationId, orgId) });
+      steps.push({ ok: Boolean(conn), text: conn ? "Your company has a saved connection." : "No connection is saved for your company." });
+      if (!conn) return { steps, result: "password" as const };
+      steps.push({ ok: conn.verified, text: conn.verified ? "The connection was tested successfully." : "The connection has NOT been tested successfully. Use Test connection." });
+      steps.push({ ok: conn.enabled, text: conn.enabled ? "Single sign-on is allowed." : "Single sign-on is switched OFF (Allow single sign-on)." });
+      const row = await db.query.ssoDomains.findFirst({ where: and(eq(ssoDomains.domain, domain), isNotNull(ssoDomains.verifiedAt)) });
+      const mine = row?.connectionId === conn.id;
+      steps.push({
+        ok: Boolean(row) && mine,
+        text: !row ? `@${domain} is not a verified domain.` : mine ? `@${domain} is a verified domain of your company.` : `@${domain} is verified, but for a different company's connection.`,
+      });
+      const user = await db.query.users.findFirst({ where: eq(users.email, email), columns: { id: true } });
+      const identity = user ? await db.query.ssoIdentities.findFirst({ where: and(eq(ssoIdentities.userId, user.id), eq(ssoIdentities.connectionId, conn.id)) }) : null;
+      steps.push({ ok: Boolean(identity), text: identity ? "This person's account is linked to the identity provider." : "This person has not signed in through the identity provider yet (no link)." });
+      const offered = Boolean(conn.verified && conn.enabled && ((row && mine) || identity));
+      const actual = await connectionForEmail(email);
+      return { steps, result: offered && actual ? ((conn.enforceSso ? "sso_required" : "sso_offered") as "sso_required" | "sso_offered") : ("password" as const) };
+    }),
+
   /** Admin: save the identity provider details. Changing them requires testing again. */
   save: protectedProcedure
     .input(z.object({
