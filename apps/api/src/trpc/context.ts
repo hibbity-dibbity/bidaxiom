@@ -14,6 +14,8 @@ export interface Context {
   idp: boolean;
   tenant: RequestTenantContext | null;
   ip?: string;
+  /** The incoming request's headers (Authorization, X-Forwarded-For) for procedures that read them directly. */
+  req?: { headers: Record<string, string | string[] | undefined> };
 }
 
 interface CreateContextOpts {
@@ -57,6 +59,7 @@ export async function createContext(
       idp: false,
       tenant: null,
       ip,
+      req: opts.req,
     };
   }
 
@@ -80,6 +83,7 @@ export async function createContext(
         idp: payload.idp === true,
         tenant: null,
         ip,
+        req: opts.req,
       };
     }
 
@@ -95,6 +99,7 @@ export async function createContext(
         idp: payload.idp === true,
         tenant,
         ip,
+        req: opts.req,
       };
     } catch (err) {
       // Tenant not provisioned yet — return context without tenant
@@ -108,6 +113,7 @@ export async function createContext(
         idp: payload.idp === true,
         tenant: null,
         ip,
+        req: opts.req,
       };
     }
   } catch (err) {
@@ -122,6 +128,7 @@ export async function createContext(
       idp: false,
       tenant: null,
       ip,
+      req: opts.req,
     };
   }
 }

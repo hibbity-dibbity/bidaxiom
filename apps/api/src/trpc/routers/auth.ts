@@ -78,6 +78,23 @@ export const authRouter = router({
       // Rate limit
       await checkRegistrationRateLimit(ip);
 
+      // Companies are set up by the BidAxiom operator and people join by invitation, so open sign-up is closed.
+      const invitation = input.invitationToken
+        ? await getAuthDb().query.organizationInvitations.findFirst({
+            where: and(
+              eq(organizationInvitations.tokenHash, hashToken(input.invitationToken)),
+              eq(organizationInvitations.status, "pending"),
+              sql`${organizationInvitations.expiresAt} > NOW()`
+            ),
+          })
+        : undefined;
+      if (!invitation || invitation.email.toLowerCase() !== input.email.toLowerCase()) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Accounts are created by invitation. Ask your company administrator to invite the email address you are using.",
+        });
+      }
+
       // Check if email already registered
       const existing = await getAuthDb().query.users.findFirst({
         where: eq(users.email, input.email.toLowerCase()),
@@ -118,35 +135,16 @@ export const authRouter = router({
       // Send verification email
       await sendVerificationEmail(user.email, token);
 
-      // If invitation token provided, accept the invitation
-      if (input.invitationToken) {
-        const inviteHash = hashToken(input.invitationToken);
-        const invitation = await getAuthDb().query.organizationInvitations.findFirst({
-          where: and(
-            eq(organizationInvitations.tokenHash, inviteHash),
-            eq(organizationInvitations.status, "pending"),
-            sql`${organizationInvitations.expiresAt} > NOW()`
-          ),
-        });
-
-        if (invitation) {
-          // Create organization membership
-          await getAuthDb().insert(organizationMemberships).values({
-            userId: user.id,
-            organizationId: invitation.organizationId,
-            role: invitation.role,
-          });
-
-          // Mark invitation as accepted
-          await getAuthDb()
-            .update(organizationInvitations)
-            .set({
-              status: "accepted",
-              acceptedAt: new Date(),
-            })
-            .where(eq(organizationInvitations.id, invitation.id));
-        }
-      }
+      // Join the company that invited them
+      await getAuthDb().insert(organizationMemberships).values({
+        userId: user.id,
+        organizationId: invitation.organizationId,
+        role: invitation.role,
+      });
+      await getAuthDb()
+        .update(organizationInvitations)
+        .set({ status: "accepted", acceptedAt: new Date() })
+        .where(eq(organizationInvitations.id, invitation.id));
 
       return {
         userId: user.id,

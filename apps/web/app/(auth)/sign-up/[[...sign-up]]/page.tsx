@@ -35,7 +35,7 @@ type SignupFormData = z.infer<typeof signupSchema>;
 export default function SignUpPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const invitationToken = searchParams.get("token");
+  const invitationToken = searchParams.get("invitation") ?? searchParams.get("token");
 
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -117,15 +117,27 @@ export default function SignUpPage() {
     );
   }
 
+  if (!invitationToken) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Sign-up is by invitation</CardTitle>
+          <CardDescription>
+            BidAxiom accounts are set up for your company by BidAxiom, and your administrator invites everyone else. Use the link in your invitation email, or ask your administrator to invite you.
+          </CardDescription>
+        </CardHeader>
+        <CardFooter>
+          <Button className="w-full" onClick={() => router.push("/sign-in")}>Go to Sign In</Button>
+        </CardFooter>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Create Account</CardTitle>
-        <CardDescription>
-          {invitationToken
-            ? "Complete your profile to join the team"
-            : "Sign up to get started"}
-        </CardDescription>
+        <CardDescription>Complete your profile to join the team</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit(onSubmit)}>
         <CardContent className="space-y-4">
