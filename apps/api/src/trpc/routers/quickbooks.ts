@@ -6,7 +6,7 @@ import { getQboAuthUrl, handleQboCallback } from "../../integrations/quickbooks/
 import { encryptToken } from "../../integrations/quickbooks/crypto.js";
 import { diagnoseQboConnection } from "../../integrations/quickbooks/diagnose.js";
 import { getQboSyncQueue } from "../../integrations/quickbooks/queue.js";
-import { eq, sql, and, inArray } from "drizzle-orm";
+import { eq, sql, and, inArray, isNull } from "drizzle-orm";
 
 /**
  * QuickBooks tRPC Router
@@ -534,7 +534,7 @@ export const quickbooksRouter = router({
                   eq(tenant.schema.qboEntityMappings.entityType, "project")
                 )
               )
-              .where(sql`${tenant.schema.qboEntityMappings.id} IS NULL`);
+              .where(and(sql`${tenant.schema.qboEntityMappings.id} IS NULL`, isNull(tenant.schema.projects.deletedAt)));
           }
           // Add similar logic for invoice and bill when those tables exist
 
@@ -588,7 +588,7 @@ export const quickbooksRouter = router({
                 eq(tenant.schema.qboEntityMappings.entityType, "project")
               )
             )
-            .where(sql`${tenant.schema.qboEntityMappings.id} IS NULL`);
+            .where(and(sql`${tenant.schema.qboEntityMappings.id} IS NULL`, isNull(tenant.schema.projects.deletedAt)));
         }
         // Add similar logic for invoice and bill when those tables exist
 

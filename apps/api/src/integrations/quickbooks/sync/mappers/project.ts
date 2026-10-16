@@ -1,120 +1,197 @@
 import type { TenantSchema } from '../../../../db/schema/tenant.js';
 import { eq, and } from 'drizzle-orm';
-import { promisifyQbo } from '../../client.js';
+import { promisifyQbo, qboQueryRows, qboQuote } from '../../client.js';
 import { isSyncTokenConflict, handleSyncTokenConflict } from '../conflict.js';
 
+/** QuickBooks display names cannot contain a colon (it separates parent from sub-customer) and have a length limit. */
+export function qboName(raw: string): string {
+  return raw.replace(/[:\t\r\n]+/g, ' - ').replace(/\s+/g, ' ').trim().slice(0, 100);
+}
+
+/** "261001 - Riverside Office" (or just the name when there is no job number). */
+export function qboProjectName(p: { jobNumber: string | null; name: string }): string {
+  return qboName([p.jobNumber, p.name].filter(Boolean).join(' - '));
+}
+
+/** Closed, archived and lost jobs are inactive in QuickBooks; everything else (including warranty and on hold) stays active. */
+export function qboActiveFor(phase: string | null | undefined): boolean {
+  return !['closed', 'archived', 'lost'].includes(phase ?? '');
+}
+
+const isNotFound = (err: unknown) => {
+  const f = (err as any)?.Fault?.Error?.[0];
+  return f?.code === '610' || /not found/i.test(String(f?.Message ?? ''));
+};
+
+type MapperDb = ReturnType<typeof import('../../../../db/client.js')['createTenantDb']>['db'];
+
 /**
- * Sync a platform project to QuickBooks Online as a Customer.
- * Platform Project -> QBO Customer mapping.
+ * The QuickBooks customer that represents one BidAxiom customer. Reuses the saved link, then a customer with the
+ * same name already in QuickBooks (so nothing is duplicated), and only then creates one.
+ */
+async function ensureQboParentCustomer(p: { db: MapperDb; schema: TenantSchema; qboClient: any; accessToken: string; realmId: string; customerId: string }): Promise<string> {
+  const { db, schema, qboClient, accessToken, realmId, customerId } = p;
+  const [mapping] = await db
+    .select()
+    .from(schema.qboEntityMappings)
+    .where(and(eq(schema.qboEntityMappings.entityType, 'customer'), eq(schema.qboEntityMappings.platformId, customerId)))
+    .limit(1);
+  if (mapping) {
+    try {
+      await promisifyQbo<any>(qboClient.getCustomer.bind(qboClient), mapping.qboId);
+      return mapping.qboId;
+    } catch (e) {
+      if (!isNotFound(e)) throw e;
+      await db.delete(schema.qboEntityMappings).where(eq(schema.qboEntityMappings.id, mapping.id)); // points at nothing: relink below
+    }
+  }
+
+  const [c] = await db.select().from(schema.customers).where(eq(schema.customers.id, customerId)).limit(1);
+  if (!c) throw new Error(`Customer not found: ${customerId}`);
+  const name = qboName(c.companyName || c.contactName);
+
+  // Top-level customers only (ParentRef is null), matched by name.
+  const found = (await qboQueryRows<any>(accessToken, realmId, 'Customer', `select * from Customer where DisplayName = ${qboQuote(name)}`)).find((x) => !x.ParentRef);
+  let q = found;
+  if (!q) {
+    q = await promisifyQbo<any>(qboClient.createCustomer.bind(qboClient), {
+      DisplayName: name,
+      CompanyName: c.companyName || undefined,
+      GivenName: c.companyName ? undefined : c.contactName.split(' ')[0],
+      FamilyName: c.companyName ? undefined : c.contactName.split(' ').slice(1).join(' ') || undefined,
+      PrimaryEmailAddr: c.email ? { Address: c.email } : undefined,
+      Notes: `BidAxiom customer ${customerId}`,
+    });
+  }
+  await db.insert(schema.qboEntityMappings).values({
+    entityType: 'customer',
+    platformId: customerId,
+    qboId: q.Id,
+    qboSyncToken: q.SyncToken,
+    direction: 'platform_to_qbo',
+    syncStatus: 'synced',
+    lastSyncedAt: new Date(),
+    metadata: { matchedExisting: Boolean(found) },
+  });
+  return q.Id;
+}
+
+/**
+ * Sync a BidAxiom project to QuickBooks Online as a sub-customer ("job") under its customer,
+ * named "{job number} - {project name}". An existing QuickBooks job with that name is linked, not duplicated.
+ * BidAxiom is the source of truth: name and active/inactive flow one way, from here to QuickBooks.
  *
  * @param params - Sync parameters (db and schema from tenant context)
  */
 export async function syncProjectToQbo(params: {
   tenantId: string;
   projectId: string;
-  db: ReturnType<typeof import('../../../../db/client.js')['createTenantDb']>['db'];
+  db: MapperDb;
   schema: TenantSchema;
   qboClient: any;
   accessToken: string;
   realmId: string;
 }): Promise<void> {
-  const { tenantId, projectId, db, schema, qboClient, accessToken, realmId } = params;
+  const { projectId, db, schema, qboClient, accessToken, realmId } = params;
 
   try {
-    // Fetch project from platform
-    const [project] = await db
-      .select()
-      .from(schema.projects)
-      .where(eq(schema.projects.id, projectId))
-      .limit(1);
-
+    const [project] = await db.select().from(schema.projects).where(eq(schema.projects.id, projectId)).limit(1);
     if (!project) {
       console.error(`Project not found: ${projectId}`);
       return;
     }
 
-    // Look up existing mapping
+    const parentId = await ensureQboParentCustomer({ db, schema, qboClient, accessToken, realmId, customerId: project.customerId });
+    const displayName = qboProjectName(project);
+    const active = qboActiveFor(project.lifecyclePhase);
+
     const [mapping] = await db
       .select()
       .from(schema.qboEntityMappings)
-      .where(
-        and(
-          eq(schema.qboEntityMappings.entityType, 'project'),
-          eq(schema.qboEntityMappings.platformId, projectId)
-        )
-      )
+      .where(and(eq(schema.qboEntityMappings.entityType, 'project'), eq(schema.qboEntityMappings.platformId, projectId)))
       .limit(1);
 
-    if (!mapping) {
-      // CREATE new QBO Customer
-      const customerData = {
-        DisplayName: project.name,
-        CompanyName: project.name,
-        Notes: `Platform Project ID: ${projectId}`,
-      };
+    // The saved link, if it still points at something real. Reading it first also refreshes the lock token.
+    let current: any = null;
+    if (mapping) {
+      try {
+        current = await promisifyQbo<any>(qboClient.getCustomer.bind(qboClient), mapping.qboId);
+      } catch (e) {
+        if (!isNotFound(e)) throw e;
+        await db.delete(schema.qboEntityMappings).where(eq(schema.qboEntityMappings.id, mapping.id));
+      }
+    }
 
-      const createdCustomer = await promisifyQbo<any>(
-        qboClient.createCustomer.bind(qboClient),
-        customerData
-      );
+    // No link: look for a job that is already there under this customer with this name.
+    if (!current) {
+      const matches = await qboQueryRows<any>(accessToken, realmId, 'Customer', `select * from Customer where DisplayName = ${qboQuote(displayName)}`);
+      current = matches.find((m) => m.ParentRef?.value === parentId) ?? null;
+    }
 
-      // Store mapping
+    if (!current) {
+      const created = await promisifyQbo<any>(qboClient.createCustomer.bind(qboClient), {
+        DisplayName: displayName,
+        Job: true,
+        ParentRef: { value: parentId },
+        BillWithParent: true,
+        Active: active,
+        Notes: `BidAxiom project ${projectId}`,
+      });
       await db.insert(schema.qboEntityMappings).values({
         entityType: 'project',
         platformId: projectId,
-        qboId: createdCustomer.Id,
-        qboSyncToken: createdCustomer.SyncToken,
-        direction: 'bidirectional',
+        qboId: created.Id,
+        qboSyncToken: created.SyncToken,
+        direction: 'platform_to_qbo',
         syncStatus: 'synced',
         lastSyncedAt: new Date(),
-        metadata: {},
+        metadata: { name: displayName },
       });
+      console.log(`Created QBO sub-customer ${created.Id} "${displayName}" for project ${projectId}`);
+      return;
+    }
 
-      console.log(`Created QBO Customer ${createdCustomer.Id} for project ${projectId}`);
-    } else {
-      // UPDATE existing QBO Customer (sparse update)
-      const updateData = {
-        Id: mapping.qboId,
-        SyncToken: mapping.qboSyncToken,
-        DisplayName: project.name,
-        sparse: true, // Only update provided fields
-      };
+    // Update only what changed.
+    const changes: Record<string, unknown> = {};
+    if (current.DisplayName !== displayName) changes.DisplayName = displayName;
+    if (current.ParentRef?.value !== parentId) {
+      changes.Job = true;
+      changes.ParentRef = { value: parentId };
+    }
+    if ((current.Active ?? true) !== active) changes.Active = active;
 
+    let syncToken = current.SyncToken;
+    if (Object.keys(changes).length > 0) {
       try {
-        const updatedCustomer = await promisifyQbo<any>(
-          qboClient.updateCustomer.bind(qboClient),
-          updateData
-        );
-
-        // Update mapping with new SyncToken
-        await db
-          .update(schema.qboEntityMappings)
-          .set({
-            qboSyncToken: updatedCustomer.SyncToken,
-            lastSyncedAt: new Date(),
-            syncStatus: 'synced',
-          })
-          .where(eq(schema.qboEntityMappings.id, mapping.id));
-
-        console.log(`Updated QBO Customer ${mapping.qboId} for project ${projectId}`);
+        const updated = await promisifyQbo<any>(qboClient.updateCustomer.bind(qboClient), { Id: current.Id, SyncToken: current.SyncToken, sparse: true, ...changes });
+        syncToken = updated.SyncToken;
       } catch (error) {
-        // Check for SyncToken conflict
         if (isSyncTokenConflict(error)) {
-          await handleSyncTokenConflict({
-            tenantId,
-            entityType: 'project',
-            platformId: projectId,
-            qboId: mapping.qboId,
-            db,
-            schema,
-            accessToken,
-            realmId,
-          });
-          return; // Do not retry - user must resolve conflict
+          await handleSyncTokenConflict({ tenantId: params.tenantId, entityType: 'project', platformId: projectId, qboId: current.Id, db, schema, accessToken, realmId });
+          return; // someone changed it in QuickBooks a moment ago; the next sync reads the fresh copy
         }
-        throw error; // Re-throw for other errors
+        throw error;
       }
     }
+
+    if (mapping && mapping.qboId === current.Id) {
+      await db
+        .update(schema.qboEntityMappings)
+        .set({ qboSyncToken: syncToken, lastSyncedAt: new Date(), syncStatus: 'synced', metadata: { name: displayName } })
+        .where(eq(schema.qboEntityMappings.id, mapping.id));
+    } else {
+      await db.insert(schema.qboEntityMappings).values({
+        entityType: 'project',
+        platformId: projectId,
+        qboId: current.Id,
+        qboSyncToken: syncToken,
+        direction: 'platform_to_qbo',
+        syncStatus: 'synced',
+        lastSyncedAt: new Date(),
+        metadata: { name: displayName, matchedExisting: true },
+      });
+    }
+    console.log(`Synced QBO sub-customer ${current.Id} "${displayName}" for project ${projectId}${Object.keys(changes).length ? ` (updated ${Object.keys(changes).join(', ')})` : ' (already up to date)'}`);
   } catch (error) {
     console.error(`Failed to sync project ${projectId} to QBO:`, error);
     throw error;
@@ -135,6 +212,11 @@ export async function syncProjectFromQbo(params: {
   qboClient: any;
   createdBy: string; // User ID for audit trail
 }): Promise<void> {
+  // BidAxiom is the source of truth for projects: nothing in QuickBooks creates or renames one here.
+  if (process.env.QBO_ALLOW_INBOUND_PROJECTS !== 'true') {
+    console.log(`Ignoring QuickBooks Customer ${params.qboId}: projects sync from BidAxiom to QuickBooks only.`);
+    return;
+  }
   const { tenantId, qboId, db, schema, qboClient, createdBy } = params;
 
   try {
