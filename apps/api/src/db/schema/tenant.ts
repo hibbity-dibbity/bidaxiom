@@ -121,6 +121,10 @@ export function createTenantSchema(schemaName: string) {
       .$type<DocumentNamingSettings>(), // Per-doc-type naming templates (null = use default pattern)
     /** Round every price, tax and invoice amount to a whole dollar (company setting). */
     roundToDollar: boolean("round_to_dollar").notNull().default(false),
+    /** QuickBooks automatic project sync: off, on_change (as projects change) or scheduled (every qboSyncIntervalMinutes). */
+    qboAutoSync: text("qbo_auto_sync").notNull().default("off"),
+    qboSyncIntervalMinutes: integer("qbo_sync_interval_minutes").notNull().default(60),
+    qboAutoSyncLastRunAt: timestamp("qbo_auto_sync_last_run_at", { withTimezone: true }),
     validFrom: timestamp("valid_from", { withTimezone: true }).defaultNow().notNull(),
     validTo: timestamp("valid_to", { withTimezone: true }), // NULL = current active version
     createdBy: text("created_by").notNull(), // Clerk user ID

@@ -1,6 +1,7 @@
 import { and, eq, inArray, isNull, lte } from "drizzle-orm";
 import { LIFECYCLE_ORDER, AuditAction, type LifecyclePhase } from "@construction/shared";
 import { createAuditLog } from "../audit/logger.js";
+import { queueProjectSyncOnChange } from "../integrations/quickbooks/autoSync.js";
 import type { buildTenantContext } from "../tenant/context.js";
 
 type Tenant = NonNullable<Awaited<ReturnType<typeof buildTenantContext>>>;
@@ -70,6 +71,7 @@ export async function resolvePrompts(
 
 /** Keep prompts honest after any phase change (automatic, manual, or from a prompt). */
 export async function afterPhaseChange(tenant: Tenant, projectId: string, newPhase: string) {
+  await queueProjectSyncOnChange(tenant, projectId); // QuickBooks job active/inactive follows the phase (only when the company turned auto-sync on)
   const i = idx(newPhase);
   // A paused or lost job is no longer waiting on a "start it?" or "close it?" answer.
   if (newPhase === "on_hold" || newPhase === "lost") {

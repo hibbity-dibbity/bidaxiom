@@ -33,6 +33,7 @@ import { users } from "../../db/schema/public.js";
 import { generateUniqueProjectSlug } from "../../utils/slug.js";
 import { generateJobNumber } from "../../utils/job-number.js";
 import { afterPhaseChange } from "../../services/projectAutomation.js";
+import { queueProjectSyncOnChange } from "../../integrations/quickbooks/autoSync.js";
 
 /**
  * Load project-level abilities for the current user.
@@ -315,6 +316,7 @@ export const projectRouter = router({
           after: project,
         },
       });
+      await queueProjectSyncOnChange(ctx.tenant, project.id);
 
       return project;
     }),
@@ -773,6 +775,7 @@ export const projectRouter = router({
           after: updated,
         },
       });
+      if (updated) await queueProjectSyncOnChange(ctx.tenant, input.id);
 
       return updated;
     }),

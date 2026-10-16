@@ -19,6 +19,7 @@ import { pool } from "./db/client.js";
 import { ensureBucket, getStorageClient, getBucketName } from "./storage/client.js";
 import { provisionAuthTables } from "./tenant/provision.js";
 import { startQboSyncWorker } from "./integrations/quickbooks/sync/workers.js";
+import { startQboAutoSyncScheduler } from "./integrations/quickbooks/autoSync.js";
 import { startScheduledReportsWorker, scheduleNextReports } from "./jobs/scheduled-reports.js";
 import { startRecycleBinPurge } from "./services/recycle-bin.js";
 // TODO: Uncomment when Plan 03 creates workers.ts
@@ -124,6 +125,7 @@ try {
 // Start QBO sync worker (processes background sync jobs)
 try {
   startQboSyncWorker();
+  startQboAutoSyncScheduler();
   console.log("QBO sync worker started");
 } catch (err) {
   console.warn("QBO sync worker failed to start (Redis may not be running):", err);

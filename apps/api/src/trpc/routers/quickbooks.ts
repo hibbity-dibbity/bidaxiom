@@ -6,6 +6,7 @@ import { getQboAuthUrl, handleQboCallback } from "../../integrations/quickbooks/
 import { encryptToken } from "../../integrations/quickbooks/crypto.js";
 import { diagnoseQboConnection } from "../../integrations/quickbooks/diagnose.js";
 import { getQboSyncQueue } from "../../integrations/quickbooks/queue.js";
+import { QBO_AUTO_SYNC_MODES } from "../../integrations/quickbooks/autoSync.js";
 import { eq, sql, and, inArray, isNull } from "drizzle-orm";
 
 /**
@@ -467,6 +468,33 @@ export const quickbooksRouter = router({
 
     return { dismissed: result.length };
   }),
+
+  /** Automatic project sync setting for this company. */
+  getAutoSync: protectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.tenant) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+    const { db, schema } = ctx.tenant;
+    const [p] = await db
+      .select({ mode: schema.companyProfiles.qboAutoSync, intervalMinutes: schema.companyProfiles.qboSyncIntervalMinutes, lastRunAt: schema.companyProfiles.qboAutoSyncLastRunAt })
+      .from(schema.companyProfiles)
+      .where(isNull(schema.companyProfiles.validTo))
+      .limit(1);
+    return { mode: (p?.mode ?? "off") as (typeof QBO_AUTO_SYNC_MODES)[number], intervalMinutes: p?.intervalMinutes ?? 60, lastRunAt: p?.lastRunAt ?? null, hasProfile: Boolean(p) };
+  }),
+
+  setAutoSync: authorizedProcedure
+    .input(z.object({ mode: z.enum(QBO_AUTO_SYNC_MODES), intervalMinutes: z.number().int().min(15).max(10080) }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.abilities) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+      if (!ctx.abilities.can("manage", "QuickBooks")) throw new TRPCError({ code: "FORBIDDEN", message: "Only administrators can change QuickBooks sync settings" });
+      const { db, schema } = ctx.tenant;
+      const done = await db
+        .update(schema.companyProfiles)
+        .set({ qboAutoSync: input.mode, qboSyncIntervalMinutes: input.intervalMinutes })
+        .where(isNull(schema.companyProfiles.validTo))
+        .returning({ id: schema.companyProfiles.id });
+      if (done.length === 0) throw new TRPCError({ code: "BAD_REQUEST", message: "Save the company type in company settings first, then this option." });
+      return { mode: input.mode, intervalMinutes: input.intervalMinutes };
+    }),
 
   /**
    * Trigger manual sync for specific entity types or all entities.
