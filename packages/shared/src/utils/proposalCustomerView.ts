@@ -1,4 +1,5 @@
 import {
+  applyAcceptance,
   computeSchedule,
   type MilestoneInput,
   type ProposalResult,
@@ -54,15 +55,25 @@ export interface CustomerView {
   tax: number;
   total: number;
   options: CustomerGroup[];
+  /** Invoicing schedule. Based on the contract value: the base total plus any accepted options. */
   schedule: CustomerScheduleRow[];
+  /** The option groups included in `schedule` (empty until options are accepted or chosen). */
+  scheduleOptionIds: string[];
+  /** The amount the schedule percentages apply to (cents). */
+  scheduleTotal: number;
 }
 
 export function buildCustomerView(input: {
   lines: CustomerViewLineInput[];
   result: ProposalResult;
   milestones: CustomerViewMilestoneInput[];
+  /** Accepted optional items. Their price (and tax) is added to what the invoicing schedule bills. */
+  acceptedOptionIds?: string[];
+  roundToDollar?: boolean;
 }): CustomerView {
   const { lines, result, milestones } = input;
+  const optionIds = (input.acceptedOptionIds ?? []).filter((id) => result.options.some((o) => o.id === id));
+  const scheduleTotal = applyAcceptance(result, optionIds).contractValue;
 
   const childrenOf = (id: string): CustomerLine[] =>
     lines
@@ -90,7 +101,7 @@ export function buildCustomerView(input: {
     lines: childrenOf(o.id),
   }));
 
-  const schedule = computeSchedule(result.totals.total, milestones).map((row, i) => ({
+  const schedule = computeSchedule(scheduleTotal, milestones, input.roundToDollar === true).map((row, i) => ({
     id: row.id,
     name: milestones[i].name,
     percent: row.percent,
@@ -104,5 +115,7 @@ export function buildCustomerView(input: {
     total: result.totals.total,
     options,
     schedule,
+    scheduleOptionIds: optionIds,
+    scheduleTotal,
   };
 }

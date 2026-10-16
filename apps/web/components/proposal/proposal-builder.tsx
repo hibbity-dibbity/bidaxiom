@@ -159,6 +159,7 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
   }, [data, hydrated, isFetchedAfterMount]);
 
   // ---- calculation (shared module, runs locally for instant totals) ----
+  const roundToDollar = data?.roundToDollar ?? false;
   const result = React.useMemo(() => {
     const input: CostLineInput[] = lines.map((l) => ({
       id: l.id,
@@ -174,12 +175,13 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
       lines: input,
       globals: globals.map((g) => ({ id: g.id, amount: g.amount })),
       taxRatePercent: settings.salesTaxPercent,
+      roundToDollar,
     });
-  }, [lines, globals, settings.salesTaxPercent]);
+  }, [lines, globals, settings.salesTaxPercent, roundToDollar]);
 
   const schedule = React.useMemo(
-    () => computeSchedule(result.totals.total, milestones),
-    [result.totals.total, milestones]
+    () => computeSchedule(result.totals.total, milestones, roundToDollar),
+    [result.totals.total, milestones, roundToDollar]
   );
   const schedOk = milestonesTotal100(milestones);
   const schedDiff = 100 - milestones.reduce((a, m) => a + m.percent, 0);
@@ -859,6 +861,7 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
           lines={data.lines}
           computed={data.computed}
           milestones={data.milestones}
+          roundToDollar={data.roundToDollar}
           changeOrder={isCO}
           onAccepted={() => {
             utils.proposal.get.invalidate({ estimateId });

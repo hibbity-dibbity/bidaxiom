@@ -119,6 +119,8 @@ export function createTenantSchema(schemaName: string) {
     sovGroupingMethod: text("sov_grouping_method"), // Default SOV grouping method: csi, phase, payment_schedule (default: csi if null)
     documentNamingSettings: jsonb("document_naming_settings")
       .$type<DocumentNamingSettings>(), // Per-doc-type naming templates (null = use default pattern)
+    /** Round every price, tax and invoice amount to a whole dollar (company setting). */
+    roundToDollar: boolean("round_to_dollar").notNull().default(false),
     validFrom: timestamp("valid_from", { withTimezone: true }).defaultNow().notNull(),
     validTo: timestamp("valid_to", { withTimezone: true }), // NULL = current active version
     createdBy: text("created_by").notNull(), // Clerk user ID

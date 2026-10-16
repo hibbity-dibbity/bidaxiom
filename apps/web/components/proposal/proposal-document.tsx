@@ -18,18 +18,23 @@ export function ProposalDocument({
   selectedOptionIds,
   onToggleOption,
   optionsTotal,
+  scheduleOverride,
 }: {
   data: ProposalDocData;
   selectedOptionIds?: string[];
   onToggleOption?: (id: string) => void;
   /** Contract total (cents) with the selected options, while choosing. */
   optionsTotal?: number | null;
+  /** Invoicing schedule amounts recomputed for the options being chosen on the signing page. */
+  scheduleOverride?: { id: string; amount: number }[] | null;
 }) {
   const { view } = data;
   const sig = data.signature;
   const signed = !!sig;
   const chosen = new Set(sig ? sig.acceptedOptionIds : selectedOptionIds ?? []);
   const withOptions = sig ? sig.contractValueCents : optionsTotal ?? null;
+  const scheduleAmount = (id: string, fallback: number) => scheduleOverride?.find((r) => r.id === id)?.amount ?? fallback;
+  const scheduleHasOptions = view.scheduleOptionIds.length > 0 || (!!scheduleOverride && chosen.size > 0);
   const noun = data.kind === "change_order" ? "change order" : "proposal";
   const dateLabel = new Date(data.sentAt ?? Date.now()).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
   return (
@@ -146,13 +151,15 @@ export function ProposalDocument({
           <React.Fragment key={m.id}>
             <span className="border-b py-2.5">{m.name}</span>
             <span className="border-b py-2.5 text-right tabular-nums">{m.percent}%</span>
-            <span className="border-b py-2.5 text-right tabular-nums">{money(m.amount)}</span>
+            <span className="border-b py-2.5 text-right tabular-nums">{money(scheduleAmount(m.id, m.amount))}</span>
           </React.Fragment>
         ))}
       </div>
       {view.options.length > 0 && (
         <div className="pt-2 text-xs text-muted-foreground">
-          Amounts shown for the base {noun}. Accepted options are invoiced on the same percentages.
+          {scheduleHasOptions
+            ? `Amounts include the accepted options, billed on the same percentages.`
+            : `Amounts shown for the base ${noun}. Accepted options are invoiced on the same percentages.`}
         </div>
       )}
     </section>

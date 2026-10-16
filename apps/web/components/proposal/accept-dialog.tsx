@@ -39,12 +39,13 @@ interface Props {
   computed: ProposalResult;
   milestones: Array<{ id: string; name: string; percent: number }>;
   onAccepted: () => void;
+  roundToDollar?: boolean;
   /** a change order adds to the contract instead of setting it */
   changeOrder?: boolean;
 }
 
 /** Ask which optional items the customer took, show what that does to the contract, then accept. */
-export function AcceptDialog({ open, onOpenChange, estimateId, lines, computed, milestones, onAccepted, changeOrder = false }: Props) {
+export function AcceptDialog({ open, onOpenChange, estimateId, lines, computed, milestones, onAccepted, roundToDollar = false, changeOrder = false }: Props) {
   const [chosen, setChosen] = React.useState<string[]>([]);
   React.useEffect(() => {
     if (open) setChosen([]);
@@ -61,7 +62,7 @@ export function AcceptDialog({ open, onOpenChange, estimateId, lines, computed, 
 
   const nameOf = new Map(lines.map((l) => [l.id, l.name]));
   const acceptance = applyAcceptance(computed, chosen);
-  const schedule = computeSchedule(acceptance.contractValue, milestones);
+  const schedule = computeSchedule(acceptance.contractValue, milestones, roundToDollar);
   const draftCount = generateDraftOrders(lines, computed, chosen).length;
 
   const toggle = (id: string) =>

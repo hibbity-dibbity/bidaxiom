@@ -118,6 +118,7 @@ export const companyRouter = router({
             allowPersonalTemplates: previous?.allowPersonalTemplates ?? null,
             sovGroupingMethod: previous?.sovGroupingMethod ?? null,
             documentNamingSettings: previous?.documentNamingSettings ?? null,
+            roundToDollar: previous?.roundToDollar ?? false,
             companyType: input.companyType,
             tradesConfig: input.tradesConfig,
             jobNumberSettings: input.jobNumberSettings,
@@ -285,6 +286,29 @@ export const companyRouter = router({
         .where(isNull(schema.companyProfiles.validTo));
 
       return { success: true };
+    }),
+
+  /** Pricing options that apply to every proposal, change order and invoice. */
+  getPricing: protectedProcedure.query(async ({ ctx }) => {
+    const [profile] = await ctx.tenant.db
+      .select({ roundToDollar: ctx.tenant.schema.companyProfiles.roundToDollar })
+      .from(ctx.tenant.schema.companyProfiles)
+      .where(isNull(ctx.tenant.schema.companyProfiles.validTo))
+      .limit(1);
+    return { roundToDollar: profile?.roundToDollar ?? false };
+  }),
+
+  /** Round every dollar amount to the nearest dollar. Applies to proposals, change orders and invoices created from now on. */
+  updatePricing: authorizedProcedure
+    .use(requirePermission("manage", "CompanySettings"))
+    .use(withAuditLog({ entityType: "CompanyProfile", action: AuditAction.UPDATE }))
+    .input(z.object({ roundToDollar: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+      const { db, schema } = ctx.tenant;
+      const done = await db.update(schema.companyProfiles).set({ roundToDollar: input.roundToDollar }).where(isNull(schema.companyProfiles.validTo)).returning({ id: schema.companyProfiles.id });
+      if (done.length === 0) throw new TRPCError({ code: "BAD_REQUEST", message: "Save the company type first, then this option." });
+      return { roundToDollar: input.roundToDollar };
     }),
 
   /**

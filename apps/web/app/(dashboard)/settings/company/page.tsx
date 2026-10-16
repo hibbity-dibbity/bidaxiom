@@ -410,8 +410,36 @@ export default function CompanySettingsPage() {
         )}
       </form>
 
+      <PricingCard canManage={canManage} />
       <CompanyContactCard canManage={canManage} />
       {canManage && <CompanySignatureCard />}
     </div>
+  );
+}
+
+/** Company-wide pricing options. */
+function PricingCard({ canManage }: { canManage: boolean }) {
+  const utils = trpc.useUtils();
+  const { data } = trpc.company.getPricing.useQuery();
+  const save = trpc.company.updatePricing.useMutation({
+    onSuccess: () => {
+      utils.company.getPricing.invalidate();
+      utils.proposal.get.invalidate();
+      toast.success("Saved");
+    },
+    onError: (e) => toast.error(e.message || "Could not save"),
+  });
+  return (
+    <Card className="p-6">
+      <div className="flex items-start justify-between gap-6">
+        <div className="space-y-1">
+          <Label htmlFor="round-to-dollar" className="text-base font-semibold">Round all dollar amounts to the nearest dollar</Label>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            Every line price, sales tax, global cost and invoice amount is a whole dollar. Parent totals are the sum of their lines and the last invoice milestone absorbs any remainder, so the balance always adds up exactly. Costs stay exact; only prices are rounded. Applies to proposals, change orders and invoices from now on; invoices already created are not changed.
+          </p>
+        </div>
+        <Switch id="round-to-dollar" checked={data?.roundToDollar ?? false} disabled={!canManage || !data || save.isPending} onCheckedChange={(v) => save.mutate({ roundToDollar: v })} />
+      </div>
+    </Card>
   );
 }

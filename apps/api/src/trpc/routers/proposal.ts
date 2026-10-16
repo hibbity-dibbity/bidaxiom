@@ -84,6 +84,16 @@ type Tenant = NonNullable<
   Awaited<ReturnType<typeof import("../../tenant/context.js").buildTenantContext>>
 >;
 
+/** The company setting that rounds every price, tax and invoice amount to a whole dollar. */
+export async function roundSetting(tenant: Tenant): Promise<boolean> {
+  const [p] = await tenant.db
+    .select({ r: tenant.schema.companyProfiles.roundToDollar })
+    .from(tenant.schema.companyProfiles)
+    .where(isNull(tenant.schema.companyProfiles.validTo))
+    .limit(1);
+  return p?.r === true;
+}
+
 /** Load a proposal's rows and run the shared calculation. Used by customer view and send. */
 export async function loadComputed(tenant: Tenant, estimateId: string) {
   const { db, schema } = tenant;
@@ -120,12 +130,14 @@ export async function loadComputed(tenant: Tenant, estimateId: string) {
     optionAccepted: l.optionAccepted,
   }));
   const milestones = milestoneRows.map((m) => ({ id: m.id, name: m.name, percent: Number(m.percent) }));
+  const roundToDollar = await roundSetting(tenant);
   const result = computeProposal({
     lines,
     globals: globalRows.map((g) => ({ id: g.id, amount: Number(g.amount) })),
     taxRatePercent: Number(estimate.salesTaxPercent),
+    roundToDollar,
   });
-  return { estimate, lines, milestones, result };
+  return { estimate, lines, milestones, result, roundToDollar };
 }
 
 /** Make a unique estimate slug: base, then base-2, base-3... */
@@ -348,7 +360,9 @@ async function loadAbilities(ctx: {
 export async function buildCustomerViewData(tenant: Tenant, userId: string, estimateId: string) {
   const { db, schema } = tenant;
   const c = await loadComputed(tenant, estimateId);
-  const view = buildCustomerView({ lines: c.lines, result: c.result, milestones: c.milestones });
+  // Once accepted, the invoicing schedule bills the contract value: the base plus the options the customer took.
+  const acceptedIds = c.estimate.acceptedAt ? c.lines.filter((l) => l.isOptional && !l.parentId && l.optionAccepted === true).map((l) => l.id) : [];
+  const view = buildCustomerView({ lines: c.lines, result: c.result, milestones: c.milestones, acceptedOptionIds: acceptedIds, roundToDollar: c.roundToDollar });
 
   const [project] = await db
     .select({
@@ -462,7 +476,8 @@ export async function previewAcceptance(tenant: Tenant, estimateId: string, opti
   const valid = c.lines.filter((l) => l.isOptional && !l.parentId).map((l) => l.id);
   const chosen = [...new Set(optionIds)].filter((id) => valid.includes(id));
   const a = applyAcceptance(c.result, chosen);
-  return { contractValue: a.contractValue, chosen };
+  const schedule = computeSchedule(a.contractValue, c.milestones, c.roundToDollar).map((r) => ({ id: r.id, percent: r.percent, amount: r.amount }));
+  return { contractValue: a.contractValue, chosen, schedule };
 }
 
 /** Mark a sent proposal accepted: records options, locks it, drafts orders and invoices. Callers check permission. */
@@ -580,6 +595,7 @@ export async function acceptProposal(tenant: Tenant, userId: string, estimateId:
       estimateId: estimateId,
       jobNumber: projectNumber,
       contractValueCents: acceptance.contractValue,
+      roundToDollar: c.roundToDollar,
       milestones: c.milestones,
       paymentTerms: c.estimate.paymentTerms ?? null,
       userId,
@@ -674,17 +690,19 @@ export const proposalRouter = router({
       const globals = globalRows.map((g) => ({ id: g.id, name: g.name, amount: Number(g.amount) }));
       const milestones = milestoneRows.map((m) => ({ id: m.id, name: m.name, percent: Number(m.percent) }));
 
+      const roundToDollar = await roundSetting(ctx.tenant);
       const result = computeProposal({
         lines,
         globals,
         taxRatePercent: Number(estimate.salesTaxPercent),
+        roundToDollar,
       });
       const acceptedIds = lines.filter((l) => l.isOptional && l.optionAccepted === true).map((l) => l.id);
       const acceptance = applyAcceptance(result, acceptedIds);
       const valid = milestonesTotal100(milestones);
       // Schedule is based on the contract value once accepted, otherwise the base proposal total.
       const scheduleBase = estimate.acceptedAt ? acceptance.contractValue : result.totals.total;
-      const schedule = computeSchedule(scheduleBase, milestones);
+      const schedule = computeSchedule(scheduleBase, milestones, roundToDollar);
 
       return {
         estimate: {
@@ -712,6 +730,7 @@ export const proposalRouter = router({
         acceptance,
         schedule,
         milestonesTotal100: valid,
+        roundToDollar,
       };
     }),
 
@@ -810,6 +829,7 @@ export const proposalRouter = router({
       })),
       globals: input.globals.map((g) => ({ id: g.id, amount: g.amount })),
       taxRatePercent: Number(existing.salesTaxPercent),
+      roundToDollar: await roundSetting(ctx.tenant),
     }).totals.total;
 
     await db.transaction(async (tx) => {
@@ -1102,7 +1122,7 @@ export const proposalRouter = router({
           name: x.row.name,
           revision: x.row.revision,
           contractValue: x.contractValue,
-          schedule: computeSchedule(x.contractValue, x.c.milestones).map((r) => ({ ...r, name: x.c.milestones.find((m) => m.id === r.id)?.name ?? "" })),
+          schedule: computeSchedule(x.contractValue, x.c.milestones, x.c.roundToDollar).map((r) => ({ ...r, name: x.c.milestones.find((m) => m.id === r.id)?.name ?? "" })),
         })),
         contractValue: contractValue + coValue,
         cost: cost + cos.reduce((a, x) => a + x.cost, 0),
@@ -1110,7 +1130,7 @@ export const proposalRouter = router({
         profit: profit + cos.reduce((a, x) => a + x.profit, 0),
         optionsTotal: c.result.options.reduce((a, o) => a + o.price + o.tax, 0),
         /** cents; milestone amounts follow the contract value */
-        schedule: computeSchedule(contractValue, c.milestones).map((r) => ({ ...r, name: c.milestones.find((m) => m.id === r.id)?.name ?? "" })),
+        schedule: computeSchedule(contractValue, c.milestones, c.roundToDollar).map((r) => ({ ...r, name: c.milestones.find((m) => m.id === r.id)?.name ?? "" })),
         acceptedOptionNames: accepted ? c.lines.filter((l) => !l.parentId && l.isOptional && acceptedIds.includes(l.id)).map((l) => l.name) : [],
         declinedOptionNames: accepted ? c.lines.filter((l) => !l.parentId && l.isOptional && !acceptedIds.includes(l.id)).map((l) => l.name) : [],
       };
@@ -1143,6 +1163,7 @@ export const proposalRouter = router({
         estimateId: input.estimateId,
         jobNumber: proj?.jobNumber ?? null,
         contractValueCents: acceptance.contractValue,
+        roundToDollar: c.roundToDollar,
         milestones: c.milestones,
         paymentTerms: c.estimate.paymentTerms ?? null,
         userId: ctx.userId,

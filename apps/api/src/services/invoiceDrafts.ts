@@ -16,12 +16,13 @@ export async function createInvoiceDrafts(
     estimateId: string;
     jobNumber: string | null;
     contractValueCents: number;
+    roundToDollar?: boolean;
     milestones: Array<{ id: string; name: string; percent: number }>;
     paymentTerms: string | null;
     userId: string;
   }
 ) {
-  const rows = computeSchedule(input.contractValueCents, input.milestones);
+  const rows = computeSchedule(input.contractValueCents, input.milestones, input.roundToDollar === true);
   // Numbers continue from the project's last invoice, so change order invoices follow the proposal's.
   const existing = await db
     .select({ number: schema.invoices.number, sortOrder: schema.invoices.sortOrder })

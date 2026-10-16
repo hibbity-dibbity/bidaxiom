@@ -293,6 +293,7 @@ export {
   priceFromCostCents,
   lineCostCents,
   spreadByWeight,
+  roundCentsToDollar,
   centsToDollars,
   type CostLineType,
   type CostLineInput,

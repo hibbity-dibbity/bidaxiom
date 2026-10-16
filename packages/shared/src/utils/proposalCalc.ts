@@ -11,6 +11,10 @@
  *   each parent's share of total base cost, added to that parent's proposal price.
  * - Sales tax applies to the price of material lines only (not global-cost shares).
  * - All money is computed in whole cents to avoid floating-point drift.
+ * - With `roundToDollar`, every price the customer can see is a whole dollar: each line's price,
+ *   global costs, sales tax and the schedule amounts. Parents are sums of whole-dollar children
+ *   and the schedule's last milestone absorbs the remainder, so everything still adds up exactly.
+ *   Costs (what we pay) stay exact; only prices are rounded, so profit is price minus exact cost.
  */
 
 export type CostLineType = "labor" | "material" | "subcontractor" | "equipment" | "other";
@@ -44,6 +48,8 @@ export interface ProposalInput {
   globals: GlobalCostInput[];
   /** e.g. 7.5 for 7.5% */
   taxRatePercent: number;
+  /** Round every price, tax and global cost to a whole dollar (company setting). */
+  roundToDollar?: boolean;
 }
 
 export interface LineResult {
@@ -107,6 +113,9 @@ export interface ScheduleRow {
 
 const toCents = (dollars: number): number => Math.round((Number(dollars) || 0) * 100);
 
+/** Round cents to the nearest whole dollar (still expressed in cents). */
+export const roundCentsToDollar = (cents: number): number => Math.round(cents / 100) * 100;
+
 /** Convert cents to dollars for display or storage. */
 export const centsToDollars = (cents: number): number => cents / 100;
 
@@ -148,6 +157,8 @@ export function spreadByWeight(totalCents: number, weights: number[]): number[] 
 export function computeProposal(input: ProposalInput): ProposalResult {
   const { lines, globals } = input;
   const taxRate = (Number(input.taxRatePercent) || 0) / 100;
+  const whole = input.roundToDollar === true;
+  const money = (cents: number): number => (whole ? roundCentsToDollar(cents) : cents);
 
   const childrenByParent = new Map<string, CostLineInput[]>();
   for (const l of lines) {
@@ -162,7 +173,7 @@ export function computeProposal(input: ProposalInput): ProposalResult {
   const priceOne = (l: CostLineInput): LineResult => {
     const cost = lineCostCents(l.quantity, l.unitCost, l.contingencyPercent);
     const contingency = cost - lineCostCents(l.quantity, l.unitCost, 0);
-    const price = priceFromCostCents(cost, l.marginPercent);
+    const price = money(priceFromCostCents(cost, l.marginPercent));
     return { id: l.id, cost, price, profit: price - cost, contingency };
   };
 
@@ -184,11 +195,13 @@ export function computeProposal(input: ProposalInput): ProposalResult {
   const baseParents = topLevel.filter((l) => !l.isOptional);
   const optionLines = topLevel.filter((l) => l.isOptional);
 
-  const globalTotal = globals.reduce((a, g) => a + toCents(g.amount), 0);
-  const shares = spreadByWeight(
-    globalTotal,
+  const globalTotal = money(globals.reduce((a, g) => a + toCents(g.amount), 0));
+  const rawShares = spreadByWeight(
+    whole ? globalTotal / 100 : globalTotal,
     baseParents.map((p) => Math.abs(lineResults[p.id].cost))
   );
+  // Whole dollars: spread dollars, not cents, so each parent's share is a whole dollar and the shares still total exactly.
+  const shares = whole ? rawShares.map((x) => x * 100) : rawShares;
 
   const parents: ParentResult[] = baseParents.map((p, i) => {
     const r = lineResults[p.id];
@@ -203,14 +216,14 @@ export function computeProposal(input: ProposalInput): ProposalResult {
 
   const options: OptionResult[] = optionLines.map((o) => ({
     ...lineResults[o.id],
-    tax: Math.round(taxableOf(o) * taxRate),
+    tax: money(Math.round(taxableOf(o) * taxRate)),
   }));
 
   const baseCost = parents.reduce((a, p) => a + p.cost, 0);
   const baseContingency = parents.reduce((a, p) => a + p.contingency, 0);
   const basePrice = parents.reduce((a, p) => a + p.price, 0);
   const taxableBase = baseParents.reduce((a, p) => a + taxableOf(p), 0);
-  const tax = Math.round(taxableBase * taxRate);
+  const tax = money(Math.round(taxableBase * taxRate));
 
   return {
     lines: lineResults,
@@ -244,12 +257,11 @@ export function milestonesTotal100(milestones: MilestoneInput[]): boolean {
 }
 
 /** Dollar amount of each milestone; the last one absorbs the rounding remainder. */
-export function computeSchedule(contractValueCents: number, milestones: MilestoneInput[]): ScheduleRow[] {
-  const rows = milestones.map((m) => ({
-    id: m.id,
-    percent: m.percent,
-    amount: Math.round((contractValueCents * (Number(m.percent) || 0)) / 100),
-  }));
+export function computeSchedule(contractValueCents: number, milestones: MilestoneInput[], roundToDollar = false): ScheduleRow[] {
+  const rows = milestones.map((m) => {
+    const exact = Math.round((contractValueCents * (Number(m.percent) || 0)) / 100);
+    return { id: m.id, percent: m.percent, amount: roundToDollar ? roundCentsToDollar(exact) : exact };
+  });
   if (rows.length > 0 && milestonesTotal100(milestones)) {
     const diff = contractValueCents - rows.reduce((a, r) => a + r.amount, 0);
     rows[rows.length - 1].amount += diff;

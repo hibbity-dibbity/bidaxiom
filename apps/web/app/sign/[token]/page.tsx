@@ -78,7 +78,7 @@ export default function SignPage({ params }: { params: { token: string } }) {
       </div>
       <div className="overflow-x-auto">
         <div className="flex justify-center">
-          <ProposalDocument data={doc} selectedOptionIds={options} onToggleOption={toggle} optionsTotal={preview.data?.contractValue ?? null} />
+          <ProposalDocument data={doc} selectedOptionIds={options} onToggleOption={toggle} optionsTotal={preview.data?.contractValue ?? null} scheduleOverride={preview.data?.schedule ?? null} />
         </div>
       </div>
 
