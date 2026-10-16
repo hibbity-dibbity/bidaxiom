@@ -12,6 +12,8 @@ export interface Context {
   hasMfa: boolean;
   mfaGate: boolean;
   idp: boolean;
+  /** The active company has been disabled by the platform operator. */
+  orgDisabled?: boolean;
   tenant: RequestTenantContext | null;
   ip?: string;
   /** The incoming request's headers (Authorization, X-Forwarded-For) for procedures that read them directly. */
@@ -103,8 +105,10 @@ export async function createContext(
       };
     } catch (err) {
       // Tenant not provisioned yet — return context without tenant
-      console.warn(`Tenant context build failed for org ${orgId}:`, err);
+      const orgDisabled = (err as { code?: string })?.code === "TENANT_DISABLED";
+      if (!orgDisabled) console.warn(`Tenant context build failed for org ${orgId}:`, err);
       return {
+        orgDisabled,
         userId,
         orgId,
         orgRole: orgRole ?? null,

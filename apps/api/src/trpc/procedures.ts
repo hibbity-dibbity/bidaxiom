@@ -46,6 +46,13 @@ const requireTenant = middleware(async ({ ctx, next }) => {
     });
   }
 
+  if (ctx.orgDisabled) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "This company's BidAxiom account is disabled. Contact BidAxiom to restore access.",
+    });
+  }
+
   if (!ctx.tenant) {
     throw new TRPCError({
       code: "FORBIDDEN",

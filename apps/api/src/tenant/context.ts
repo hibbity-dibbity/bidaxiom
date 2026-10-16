@@ -1,4 +1,7 @@
+import { eq } from "drizzle-orm";
 import { resolveTenantByOrgId } from "./resolve.js";
+import { db } from "../db/client.js";
+import { organizations } from "../db/schema/public.js";
 import { createTenantDb } from "../db/client.js";
 import type { TenantSchema } from "../db/schema/tenant.js";
 
@@ -34,6 +37,14 @@ export async function buildTenantContext(
   userId: string
 ): Promise<RequestTenantContext> {
   const tenant = await resolveTenantByOrgId(orgId);
+
+  // The platform operator can switch a company off without touching its data.
+  const [org] = await db.select({ disabledAt: organizations.disabledAt }).from(organizations).where(eq(organizations.id, orgId)).limit(1);
+  if (org?.disabledAt) {
+    const error = new Error(`Company ${orgId} is disabled.`);
+    (error as Error & { code: string }).code = "TENANT_DISABLED";
+    throw error;
+  }
 
   if (!tenant) {
     const error = new Error(

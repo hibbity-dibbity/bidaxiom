@@ -17,7 +17,7 @@ type Member = {
   passkeys: number;
   lastLoginAt: string | null;
 };
-type Company = { id: string; name: string; createdAt: string; members: Member[] };
+type Company = { id: string; name: string; createdAt: string; disabled: boolean; members: Member[] };
 type MailResult = { email: string; emailSent: boolean; emailProblem?: string };
 
 async function rpc<T>(proc: string, input?: unknown): Promise<T> {
@@ -47,6 +47,8 @@ export default function PlatformPage() {
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirmReset, setConfirmReset] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [typedName, setTypedName] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -91,6 +93,36 @@ export default function PlatformPage() {
     try {
       const r = await rpc<MailResult>(proc, { userId });
       setNotice(mailNotice(r, proc === "resetSignIn" ? "Sign-in reset (password, authenticator and passkeys removed)." : "Done."));
+      await load();
+    } catch (err) {
+      setNotice({ ok: false, text: err instanceof Error ? err.message : "Request failed" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function setDisabled(c: Company, disabled: boolean) {
+    setBusy(true);
+    setNotice(null);
+    try {
+      await rpc("setCompanyDisabled", { organizationId: c.id, disabled });
+      setNotice({ ok: true, text: disabled ? `${c.name} is disabled. Its people can't use it; nothing was deleted.` : `${c.name} is enabled again.` });
+      await load();
+    } catch (err) {
+      setNotice({ ok: false, text: err instanceof Error ? err.message : "Request failed" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteCompany(c: Company) {
+    setBusy(true);
+    setNotice(null);
+    try {
+      const r = await rpc<{ filesDeleted: number; accountsDeleted: number }>("deleteCompany", { organizationId: c.id, confirmName: typedName });
+      setNotice({ ok: true, text: `${c.name} was permanently deleted (${r.filesDeleted} files, ${r.accountsDeleted} accounts).` });
+      setDeleting(null);
+      setTypedName("");
       await load();
     } catch (err) {
       setNotice({ ok: false, text: err instanceof Error ? err.message : "Request failed" });
@@ -168,9 +200,35 @@ export default function PlatformPage() {
           {companies?.length === 0 && <p className="text-sm text-muted-foreground">No companies yet.</p>}
           {companies?.map((c) => (
             <div key={c.id} className="rounded-md border">
-              <div className="border-b px-4 py-2 font-medium">
-                {c.name} <span className="ml-2 text-xs font-normal text-muted-foreground">created {new Date(c.createdAt).toLocaleDateString()}</span>
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2">
+                <div className="font-medium">
+                  {c.name} <span className="ml-2 text-xs font-normal text-muted-foreground">created {new Date(c.createdAt).toLocaleDateString()}</span>
+                  {c.disabled && <span className="ml-2 rounded bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">Disabled</span>}
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" disabled={busy} onClick={() => setDisabled(c, !c.disabled)}>
+                    {c.disabled ? "Enable" : "Disable"}
+                  </Button>
+                  {c.disabled && (
+                    <Button size="sm" variant="destructive" disabled={busy} onClick={() => { setDeleting(deleting === c.id ? null : c.id); setTypedName(""); }}>
+                      Delete…
+                    </Button>
+                  )}
+                </div>
               </div>
+              {deleting === c.id && (
+                <div className="space-y-2 border-b bg-destructive/5 px-4 py-3 text-sm">
+                  <p>
+                    This permanently deletes <strong>{c.name}</strong>: all its projects, documents, files and financial records, plus the accounts of people who belong to no other company. It cannot be undone. Type the company name to confirm.
+                  </p>
+                  <div className="flex gap-2">
+                    <Input value={typedName} onChange={(e) => setTypedName(e.target.value)} placeholder={c.name} />
+                    <Button variant="destructive" disabled={busy || typedName.trim() !== c.name} onClick={() => deleteCompany(c)}>
+                      Delete forever
+                    </Button>
+                  </div>
+                </div>
+              )}
               <div className="divide-y">
                 {c.members.map((m) => (
                   <div key={m.userId} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 text-sm">

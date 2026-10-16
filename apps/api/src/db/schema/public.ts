@@ -105,6 +105,8 @@ export const organizations = pgTable("organizations", {
   tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }),
   createdBy: uuid("created_by").references(() => users.id),
   clerkOrgId: text("clerk_org_id"), // For migration tracking, nullable
+  /** Set by the platform operator: members cannot use the company until it is re-enabled. Data is untouched. */
+  disabledAt: timestamp("disabled_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
