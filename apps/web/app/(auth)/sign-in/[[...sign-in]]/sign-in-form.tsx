@@ -82,7 +82,8 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
       setValue("email", email);
       setStep(r.sso ? "choose" : "password");
     } catch {
-      // If routing can't be checked, fall back to the password form.
+      // If routing can't be checked, fall back to the password form, and say so.
+      toast.error("Couldn't check single sign-on for this address. You can still sign in with a password.");
       setValue("email", email);
       setStep("password");
     }

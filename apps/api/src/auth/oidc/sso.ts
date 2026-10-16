@@ -114,7 +114,8 @@ export async function finishSso(input: { code: string; state: string; pendingTok
   if (!conn.enabled || !conn.verified) throw new SsoError("Single sign-on is turned off for this company.");
   // Only addresses at the company's verified domains may come in through this connection.
   const verified = await db.query.ssoDomains.findMany({ where: and(eq(ssoDomains.connectionId, conn.id), isNotNull(ssoDomains.verifiedAt)) });
-  if (!id.email || !verified.some((d) => d.domain === id.email!.split("@")[1])) throw new SsoError("Your email address is not at one of this company's sign-in domains.");
+  // An account already linked to this connection (the admin who tested it, or anyone who signed in before) is trusted by that link.
+  if (!linked && (!id.email || !verified.some((d) => d.domain === id.email!.split("@")[1]))) throw new SsoError("Your email address is not at one of this company's sign-in domains.");
 
   let userId: string;
   if (linked) {

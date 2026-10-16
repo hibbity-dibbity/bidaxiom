@@ -36,8 +36,13 @@ export const ssoRouter = router({
   route: publicProcedure
     .input(z.object({ email: z.string().email().max(200) }))
     .mutation(async ({ input }) => {
-      const conn = await connectionForEmail(input.email);
-      return { sso: Boolean(conn), enforced: Boolean(conn?.enforceSso) };
+      try {
+        const conn = await connectionForEmail(input.email);
+        return { sso: Boolean(conn), enforced: Boolean(conn?.enforceSso) };
+      } catch (e) {
+        console.error("[SSO] route check failed:", e);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Could not check single sign-on for that address." });
+      }
     }),
 
   /** Go to the identity provider for this email address. */
