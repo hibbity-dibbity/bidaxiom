@@ -20,6 +20,7 @@ export function DocumentActions({
   disabledReason,
   size = "sm",
   onSent,
+  emailHighlight = true,
 }: {
   kind: "proposal" | "invoice" | "order";
   id: string;
@@ -28,6 +29,8 @@ export function DocumentActions({
   disabledReason?: string;
   size?: "sm" | "default";
   onSent?: () => void;
+  /** Highlight Email as the main action. Turn off once the document has been sent. */
+  emailHighlight?: boolean;
 }) {
   const pdf = usePdfDownload();
   const [emailOpen, setEmailOpen] = React.useState(false);
@@ -38,7 +41,7 @@ export function DocumentActions({
       <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
         {previewHref && <IconAction icon={Eye} label={why("Preview")} href={previewHref} disabled={disabled} />}
         <IconAction icon={Download} label={why("Download PDF")} disabled={disabled} busy={pdf.pending} onClick={() => pdf.download(kind, id)} />
-        <IconAction icon={Mail} label={why("Email to customer")} tone="primary" disabled={disabled} onClick={() => setEmailOpen(true)} />
+        <IconAction icon={Mail} label={why("Email to customer")} tone={emailHighlight ? "primary" : "default"} disabled={disabled} onClick={() => setEmailOpen(true)} />
         {emailOpen && <EmailDocumentDialog kind={kind} id={id} open={emailOpen} onOpenChange={setEmailOpen} onSent={onSent} />}
       </div>
     );

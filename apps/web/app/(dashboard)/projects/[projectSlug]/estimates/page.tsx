@@ -210,6 +210,7 @@ export default function EstimatesPage({
                     <DocumentActions
                       kind="proposal"
                       id={estimate.id}
+                      emailHighlight={estimate.status === "draft"}
                       previewHref={`/projects/${projectSlug}/estimates/${estimate.slug}/preview`}
                       onSent={() => utils.estimates.list.invalidate()}
                     />

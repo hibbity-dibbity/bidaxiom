@@ -169,10 +169,11 @@ export default function InvoicesPage({ params }: { params: { projectSlug: string
                         </span>
                       ) : r.status === "paid" ? null : (
                         <span className="flex items-center justify-end gap-1.5">
-                          <DocumentActions kind="invoice" id={r.id} previewHref={`/projects/${projectSlug}/invoices/${r.id}`} onSent={() => utils.invoice.list.invalidate()} />
+                          <DocumentActions kind="invoice" id={r.id} emailHighlight={false} previewHref={`/projects/${projectSlug}/invoices/${r.id}`} onSent={() => utils.invoice.list.invalidate()} />
                           <IconAction icon={Coins} label="Record a partial payment" href={`/projects/${projectSlug}/invoices/${r.id}#payments`} />
                           <IconAction
                             icon={CheckCircle2}
+                            tone="primary"
                             label={`Mark paid in full (${dollars(r.outstanding ?? 0)})`}
                             busy={record.isPending}
                             onClick={() => {

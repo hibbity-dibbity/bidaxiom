@@ -131,6 +131,7 @@ export default function ChangeOrdersPage({ params }: { params: { projectSlug: st
                       <DocumentActions
                         kind="proposal"
                         id={r.id}
+                        emailHighlight={r.status === "draft"}
                         previewHref={`/projects/${projectSlug}/change-orders/${r.slug}/preview`}
                         onSent={() => utils.proposal.listChangeOrders.invalidate()}
                       />
