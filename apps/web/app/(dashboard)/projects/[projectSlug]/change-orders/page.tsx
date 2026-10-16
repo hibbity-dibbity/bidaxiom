@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { DocumentActions } from "@/components/shared/document-actions";
+import { IconAction } from "@/components/shared/icon-action";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
@@ -136,14 +137,12 @@ export default function ChangeOrdersPage({ params }: { params: { projectSlug: st
                     </td>
                     <td className="px-3 py-2 text-right">
                       {r.status === "draft" && (
-                        <button
-                          type="button"
-                          aria-label={`Delete ${r.number}`}
-                          className="text-muted-foreground hover:text-destructive"
+                        <IconAction
+                          icon={Trash2}
+                          label={`Delete draft ${r.number}`}
+                          tone="danger"
                           onClick={() => window.confirm(`Delete draft ${r.number}${r.revision > 0 ? ` Rev ${r.revision}` : ""}?`) && remove.mutate({ estimateId: r.id })}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                        />
                       )}
                     </td>
                   </tr>

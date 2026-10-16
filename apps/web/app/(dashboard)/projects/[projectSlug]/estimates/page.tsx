@@ -21,6 +21,8 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { DocumentActions } from "@/components/shared/document-actions";
+import { IconAction } from "@/components/shared/icon-action";
+import { Star } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { Download, FileText, Plus, Search, SearchX } from "lucide-react";
 import { formatCurrency } from "@construction/shared";
@@ -201,14 +203,7 @@ export default function EstimatesPage({
                     {estimate.isActive ? (
                       <StatusBadge variant="approved">Active</StatusBadge>
                     ) : (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={setActive.isPending}
-                        onClick={() => setActive.mutate({ estimateId: estimate.id })}
-                      >
-                        Make active
-                      </Button>
+                      <IconAction icon={Star} label="Make this the active proposal" busy={setActive.isPending} onClick={() => setActive.mutate({ estimateId: estimate.id })} />
                     )}
                   </TableCell>
                   <TableCell>

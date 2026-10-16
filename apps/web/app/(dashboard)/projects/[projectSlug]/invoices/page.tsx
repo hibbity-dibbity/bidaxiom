@@ -7,6 +7,8 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/shared/page-header";
+import { CheckCircle2, Coins, Split } from "lucide-react";
+import { IconAction } from "@/components/shared/icon-action";
 import { DocumentActions } from "@/components/shared/document-actions";
 import { InvoiceStatusBadge, dollars, shortDate } from "@/components/invoices/invoice-ui";
 
@@ -152,38 +154,32 @@ export default function InvoicesPage({ params }: { params: { projectSlug: string
                     <td className="px-3 py-2 text-right tabular-nums">{r.outstanding === null ? "—" : dollars(r.outstanding)}</td>
                     <td className="whitespace-nowrap px-3 py-2 text-right">
                       {r.status === "draft" ? (
-                        <span className="flex justify-end gap-3">
+                        <span className="flex items-center justify-end gap-1.5">
                           {r.itemCount > 1 && (
-                            <button
-                              type="button"
-                              disabled={unmerge.isPending}
-                              className="text-xs text-muted-foreground hover:underline"
+                            <IconAction
+                              icon={Split}
+                              label={`Split back into ${r.itemCount} separate invoices`}
+                              busy={unmerge.isPending}
                               onClick={() => {
                                 if (window.confirm(`Split ${r.number} back into ${r.itemCount} separate invoices?`)) unmerge.mutate({ invoiceId: r.id });
                               }}
-                            >
-                              Split
-                            </button>
+                            />
                           )}
                           <DocumentActions kind="invoice" id={r.id} previewHref={`/projects/${projectSlug}/invoices/${r.id}`} disabled={r.amount === 0} disabledReason="This invoice has no amount to bill." onSent={() => utils.invoice.list.invalidate()} />
                         </span>
                       ) : r.status === "paid" ? null : (
-                        <span className="flex justify-end gap-2">
+                        <span className="flex items-center justify-end gap-1.5">
                           <DocumentActions kind="invoice" id={r.id} previewHref={`/projects/${projectSlug}/invoices/${r.id}`} onSent={() => utils.invoice.list.invalidate()} />
-                          <Button asChild size="sm" variant="outline">
-                            <Link href={`/projects/${projectSlug}/invoices/${r.id}#payments`}>Partial payment</Link>
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            disabled={record.isPending}
+                          <IconAction icon={Coins} label="Record a partial payment" href={`/projects/${projectSlug}/invoices/${r.id}#payments`} />
+                          <IconAction
+                            icon={CheckCircle2}
+                            label={`Mark paid in full (${dollars(r.outstanding ?? 0)})`}
+                            busy={record.isPending}
                             onClick={() => {
                               if (window.confirm(`Mark ${r.number} paid in full (${dollars(r.outstanding ?? 0)}) as of today?`))
                                 record.mutate({ invoiceId: r.id, amount: r.outstanding ?? 0, receivedAt: todayStr, reference: null });
                             }}
-                          >
-                            Mark paid
-                          </Button>
+                          />
                         </span>
                       )}
                     </td>

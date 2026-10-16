@@ -360,3 +360,9 @@ import { NumericFormat, PatternFormat } from "react-number-format";
 // @tanstack/react-virtual v3
 import { useVirtualizer } from "@tanstack/react-virtual";
 ```
+
+## Document lists stay identical
+
+The proposal, change order and invoice lists share their row design. Row actions are icon buttons with hover text,
+built with `components/shared/icon-action.tsx` (and `DocumentActions` for Preview, Download PDF and Email).
+Any design change to one of these lists is made to all of them in the same change, so they never drift apart.
