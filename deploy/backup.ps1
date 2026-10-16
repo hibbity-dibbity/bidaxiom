@@ -44,14 +44,14 @@ try {
     else { Log "database.dump ok: $([math]::Round($size/1MB,1)) MB, $entries objects" }
   }
 
-  # 2. Files (MinIO volume).
-  $vol = docker inspect construction-minio --format '{{ range .Mounts }}{{ if eq .Destination "/data" }}{{ .Name }}{{ end }}{{ end }}' 2>$null
-  if (-not $vol) { $ok = $false; Log "FAILED: could not find the file storage volume" }
+  # 2. Files (MinIO). Borrow whatever storage the MinIO container uses, so the volume's name does not matter.
+  $minio = docker ps -a --format '{{.Names}}' | Where-Object { $_ -match 'minio' } | Select-Object -First 1
+  if (-not $minio) { $ok = $false; Log "FAILED: no MinIO (file storage) container found. Containers: $((docker ps -a --format '{{.Names}}') -join ', ')" }
   else {
-    docker run --rm -v "${vol}:/data:ro" -v "${dir}:/out" alpine tar czf /out/files.tar.gz -C /data . 2>&1 | ForEach-Object { Log "files: $_" }
+    docker run --rm --volumes-from "${minio}:ro" -v "${dir}:/out" alpine tar czf /out/files.tar.gz -C /data . 2>&1 | ForEach-Object { Log "files: $_" }
     $fp = Join-Path $dir "files.tar.gz"
-    if ($LASTEXITCODE -ne 0 -or -not (Test-Path $fp)) { $ok = $false; Log "FAILED: file storage backup" }
-    else { Log "files.tar.gz ok: $([math]::Round((Get-Item $fp).Length/1MB,1)) MB" }
+    if ($LASTEXITCODE -ne 0 -or -not (Test-Path $fp)) { $ok = $false; Log "FAILED: file storage backup (container $minio)" }
+    else { Log "files.tar.gz ok: $([math]::Round((Get-Item $fp).Length/1MB,1)) MB (from $minio)" }
   }
 
   # 3. Keys.

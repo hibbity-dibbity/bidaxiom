@@ -39,10 +39,10 @@ docker exec construction-db psql -U construction -d postgres -c "CREATE DATABASE
 docker exec construction-db sh -c "pg_restore -U construction -d construction_mgmt --no-owner /tmp/restore.dump" 2>&1 | Select-Object -Last 5
 docker exec construction-db rm -f /tmp/restore.dump | Out-Null
 if (Test-Path $files) {
-  $vol = docker inspect construction-minio --format '{{ range .Mounts }}{{ if eq .Destination "/data" }}{{ .Name }}{{ end }}{{ end }}'
+  $minio = docker ps -a --format '{{.Names}}' | Where-Object { $_ -match 'minio' } | Select-Object -First 1
   $dir = Split-Path $files
-  docker run --rm -v "${vol}:/data" -v "${dir}:/in:ro" alpine sh -c "rm -rf /data/* /data/.[!.]* 2>/dev/null; tar xzf /in/files.tar.gz -C /data"
-  docker restart construction-minio | Out-Null
+  docker run --rm --volumes-from $minio -v "${dir}:/in:ro" alpine sh -c "rm -rf /data/* /data/.[!.]* 2>/dev/null; tar xzf /in/files.tar.gz -C /data"
+  docker restart $minio | Out-Null
 }
 docker compose -p $cfg.project -f $compose start api web
 Write-Host "Restore finished. If the keys changed since this backup, copy env.txt over C:\BidAxiomDeploy\repo\.env and restart." -ForegroundColor Green
