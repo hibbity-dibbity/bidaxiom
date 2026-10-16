@@ -12,6 +12,13 @@ export function QboConnectionCheck() {
     onError: (e) => toast.error("Check failed", { description: e.message }),
   });
   const r = check.data;
+  const reset = trpc.quickbooks.resetProjectLinks.useMutation({
+    onSuccess: (d) => {
+      toast.success(`Cleared ${d.removed} project link${d.removed === 1 ? "" : "s"}`, { description: "Run manual sync to create them again." });
+      check.mutate();
+    },
+    onError: (e) => toast.error("Could not reset links", { description: e.message }),
+  });
 
   return (
     <Card>
@@ -38,10 +45,19 @@ export function QboConnectionCheck() {
                   <span className="font-medium">{i.label}</span>
                   {i.value && <span>{i.value}</span>}
                 </div>
-                {i.note && <p className={i.ok ? "text-muted-foreground" : "text-destructive"}>{i.note}</p>}
+                {i.note && <p className={`whitespace-pre-line ${i.ok ? "text-muted-foreground" : "text-destructive"}`}>{i.note}</p>}
               </div>
             </div>
           ))}
+          {r.needsLinkReset && (
+            <div className="rounded-md border p-3">
+              <p className="mb-2">Some saved project links point at records that are not in this QuickBooks company. Clearing them is safe: it changes nothing in QuickBooks, and the next sync creates the projects fresh.</p>
+              <Button size="sm" variant="outline" onClick={() => reset.mutate()} disabled={reset.isPending}>
+                {reset.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Clear project links
+              </Button>
+            </div>
+          )}
           <p className="text-xs text-muted-foreground">
             {r.environment === "production" ? "Production" : "Sandbox"} · checked {new Date(r.checkedAt).toLocaleString()}
           </p>

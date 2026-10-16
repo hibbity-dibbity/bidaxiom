@@ -22,6 +22,8 @@ export interface DiagnoseResult {
   environment: string;
   tokenRefreshed: boolean;
   items: DiagnoseItem[];
+  /** True when a saved project link points at something in QuickBooks that is missing or is not that project. */
+  needsLinkReset?: boolean;
   /** Where it stopped, if it could not even reach QuickBooks. */
   fatal?: string;
 }
@@ -127,6 +129,30 @@ export async function diagnoseQboConnection(tenant: { db: any; schema: any }): P
     const d = await qboGet(base, realm, token!, sel(q));
     return Number(d.QueryResponse?.totalCount ?? 0);
   };
+
+  await run("links", "Projects linked to QuickBooks", async () => {
+    const maps = await db
+      .select({ platformId: schema.qboEntityMappings.platformId, qboId: schema.qboEntityMappings.qboId, syncStatus: schema.qboEntityMappings.syncStatus })
+      .from(schema.qboEntityMappings)
+      .where(eq(schema.qboEntityMappings.entityType, "project"));
+    if (maps.length === 0) return { value: "None yet" };
+    const lines: string[] = [];
+    for (const m of maps.slice(0, 10)) {
+      const [proj] = await db.select({ name: schema.projects.name, jobNumber: schema.projects.jobNumber }).from(schema.projects).where(eq(schema.projects.id, m.platformId)).limit(1);
+      const mine = proj ? [proj.jobNumber, proj.name].filter(Boolean).join(" - ") : "(project deleted)";
+      try {
+        const d = await qboGet(base, realm, token!, `customer/${m.qboId}`);
+        const theirs: string = d.Customer?.DisplayName ?? "(no name)";
+        const same = proj && theirs.trim().toLowerCase() === proj.name.trim().toLowerCase();
+        if (!same) result.needsLinkReset = true;
+        lines.push(`${mine} is linked to QuickBooks customer #${m.qboId} "${theirs}"${same ? "" : " (a different name: this link looks stale)"}`);
+      } catch {
+        result.needsLinkReset = true;
+        lines.push(`${mine} is linked to QuickBooks customer #${m.qboId}, which does not exist in this QuickBooks company (stale link)`);
+      }
+    }
+    return { value: `${maps.length}`, note: lines.join("\n") };
+  });
 
   await run("customers", "Customers", async () => {
     const all = await count("select count(*) from Customer");

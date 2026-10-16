@@ -102,6 +102,16 @@ export const quickbooksRouter = router({
       // Encrypt refresh token
       const encryptedRefreshToken = encryptToken(tokens.refreshToken);
 
+      // Links and sync counters belong to one QuickBooks company. Reconnecting the same company keeps them;
+      // connecting a different one (a new sandbox, say) would leave links pointing at someone else's records.
+      const earlier = await tenant.db.select({ realmId: tenant.schema.qboConnections.realmId }).from(tenant.schema.qboConnections);
+      const sameCompany = earlier.some((c) => c.realmId === realmId);
+      await tenant.db.delete(tenant.schema.qboConnections);
+      if (!sameCompany) {
+        await tenant.db.delete(tenant.schema.qboEntityMappings);
+        await tenant.db.delete(tenant.schema.qboSyncState);
+      }
+
       // Insert connection record
       await tenant.db.insert(tenant.schema.qboConnections).values({
         realmId: realmId, // Use realmId from input (tokens.realmId is optional)
@@ -114,14 +124,17 @@ export const quickbooksRouter = router({
         connectedBy: userId,
       });
 
-      // Initialize sync state rows for each entity type
+      // Initialize sync state rows for each entity type (unless a reconnect to the same company kept them)
       const entityTypes = ["project", "invoice", "bill", "payment", "vendor", "customer"] as const;
-      await tenant.db.insert(tenant.schema.qboSyncState).values(
-        entityTypes.map((entityType) => ({
-          entityType,
-          syncStatus: "pending" as const,
-        }))
-      );
+      const keptState = await tenant.db.select({ id: tenant.schema.qboSyncState.id }).from(tenant.schema.qboSyncState).limit(1);
+      if (keptState.length === 0) {
+        await tenant.db.insert(tenant.schema.qboSyncState).values(
+          entityTypes.map((entityType) => ({
+            entityType,
+            syncStatus: "pending" as const,
+          }))
+        );
+      }
 
       // Audit log
       await tenant.db.insert(tenant.schema.auditLogs).values({
@@ -190,6 +203,23 @@ export const quickbooksRouter = router({
     });
 
     return { success: true };
+  }),
+
+  /**
+   * Forget the saved links between BidAxiom projects and QuickBooks customers (the next sync creates them fresh).
+   * Used when links point at another QuickBooks company. Does not change anything in QuickBooks. Admin-only.
+   */
+  resetProjectLinks: authorizedProcedure.mutation(async ({ ctx }) => {
+    if (!ctx.tenant || !ctx.abilities || !ctx.userId) {
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+    }
+    if (!ctx.abilities.can("manage", "QuickBooks")) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Only administrators can reset QuickBooks links" });
+    }
+    const { db, schema } = ctx.tenant;
+    const gone = await db.delete(schema.qboEntityMappings).where(eq(schema.qboEntityMappings.entityType, "project")).returning({ id: schema.qboEntityMappings.id });
+    await db.insert(schema.auditLogs).values({ entityType: "QuickBooks", entityId: "project-links", action: "quickbooks_links_reset", actorId: ctx.userId, changes: { removed: gone.length } });
+    return { removed: gone.length };
   }),
 
   /**
@@ -262,6 +292,7 @@ export const quickbooksRouter = router({
         refreshTokenExpiresAt: tenant.schema.qboConnections.refreshTokenExpiresAt,
       })
       .from(tenant.schema.qboConnections)
+      .orderBy(sql`(${tenant.schema.qboConnections.status} = 'active') DESC`, sql`${tenant.schema.qboConnections.updatedAt} DESC`)
       .limit(1);
 
     if (connection.length === 0) {
