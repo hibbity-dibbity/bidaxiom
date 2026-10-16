@@ -139,7 +139,7 @@ export function BidOpportunities() {
     );
   }
 
-  const description = data.count > 0 ? "Open RFQs" : "No open RFQs";
+  const description = data.count > 0 ? "Open bids" : "No open bids";
 
   return (
     <KpiCard

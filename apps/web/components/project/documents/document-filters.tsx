@@ -33,8 +33,6 @@ const CATEGORY_OPTIONS = [
   { label: "Transmittal", value: "transmittal" },
   { label: "Proposal", value: "proposal" },
   { label: "Change Order", value: "change_order" },
-  { label: "Payment App", value: "payment_app" },
-  { label: "RFQ", value: "rfq" },
   { label: "File", value: "file" },
 ];
 

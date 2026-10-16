@@ -41,7 +41,7 @@ export function AddressInput({ form, prefix }: AddressInputProps) {
           <FormItem>
             <FormLabel>Street Address</FormLabel>
             <FormControl>
-              <Input placeholder="8400 Kirby Dr" {...field} />
+              <Input placeholder="8400 Kirby Dr" autoComplete="address-line1" {...field} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -55,7 +55,7 @@ export function AddressInput({ form, prefix }: AddressInputProps) {
           <FormItem>
             <FormLabel>Street Address 2 (Optional)</FormLabel>
             <FormControl>
-              <Input placeholder="" {...field} />
+              <Input placeholder="" autoComplete="address-line2" {...field} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -70,7 +70,7 @@ export function AddressInput({ form, prefix }: AddressInputProps) {
             <FormItem className="col-span-3">
               <FormLabel>City</FormLabel>
               <FormControl>
-                <Input placeholder="Houston" {...field} />
+                <Input placeholder="Houston" autoComplete="address-level2" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -115,6 +115,8 @@ export function AddressInput({ form, prefix }: AddressInputProps) {
                 <Input
                   placeholder="77054"
                   maxLength={10}
+                  autoComplete="postal-code"
+                  inputMode="numeric"
                   {...field}
                 />
               </FormControl>

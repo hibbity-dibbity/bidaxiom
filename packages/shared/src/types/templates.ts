@@ -1,4 +1,4 @@
-export const TEMPLATE_DOC_TYPES = ["proposal", "change_order", "payment_app", "rfq"] as const;
+export const TEMPLATE_DOC_TYPES = ["proposal", "change_order"] as const;
 export type TemplateDocType = (typeof TEMPLATE_DOC_TYPES)[number];
 
 export interface DetectedField {

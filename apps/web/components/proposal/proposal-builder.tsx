@@ -87,6 +87,7 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
   const [hydrated, setHydrated] = React.useState(false);
   const [dirty, setDirty] = React.useState(false);
   const [saveState, setSaveState] = React.useState<SaveState>({ kind: "idle" });
+  const [focusTick, setFocusTick] = React.useState(0);
 
   const locked = data?.estimate.isLocked ?? false;
   const isCO = data?.estimate.kind === "change_order";
@@ -255,6 +256,17 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
     return () => window.removeEventListener("beforeunload", handler);
   }, [dirty]);
 
+  React.useEffect(() => {
+    const id = pendingFocus.current;
+    if (!id) return;
+    const el = document.querySelector<HTMLInputElement>(`input[data-line-name="${id}"]`);
+    if (el) {
+      pendingFocus.current = null;
+      el.focus();
+      el.select();
+    }
+  }, [lines, collapsed, focusTick]);
+
   // ---- edit helpers ----
   const patchLine = (id: string, patch: Partial<BuilderLine>) => {
     setLines((ls) => ls.map((l) => (l.id === id ? { ...l, ...patch } : l)));
@@ -295,25 +307,54 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
     vendorId: null,
     ...over,
   });
+  // Where the cursor should land after the next render (a line was just added or jumped to).
+  const pendingFocus = React.useRef<string | null>(null);
   const addParent = () => {
-    const parent = blank({ type: "other", name: "New parent line", quantity: 0, visibility: "price" });
-    setLines((ls) => [...ls, parent, blank({ parentId: parent.id, name: "New line" })]);
+    const parent = blank({ type: "other", name: "", quantity: 0, visibility: "price" });
+    const child = blank({ parentId: parent.id, visibility: "name_only" });
+    pendingFocus.current = parent.id;
+    setLines((ls) => [...ls, parent, child]);
     mark();
   };
+  // A new child takes the view its siblings share. When they differ ("Mixed") or there are none,
+  // it starts as Name only.
   const addChild = (parentId: string) => {
+    const child = blank({ parentId, visibility: "name_only" });
+    pendingFocus.current = child.id;
     setLines((ls) => {
+      const kids = ls.filter((l) => l.parentId === parentId);
+      const same = kids.length > 0 && kids.every((k) => k.visibility === kids[0].visibility);
+      child.visibility = same ? kids[0].visibility : "name_only";
       const lastIdx = ls.reduce((acc, l, i) => (l.id === parentId || l.parentId === parentId ? i : acc), -1);
       const copy = [...ls];
-      copy.splice(lastIdx + 1, 0, blank({ parentId, name: "New line" }));
+      copy.splice(lastIdx + 1, 0, child);
       return copy;
     });
     mark();
   };
   const addOption = () => {
-    const option = blank({ isOptional: true, type: "other", name: "New optional item", quantity: 0, unit: "ls", visibility: "price" });
-    setLines((ls) => [...ls, option, blank({ parentId: option.id, name: "New line" })]);
+    const option = blank({ isOptional: true, type: "other", name: "", quantity: 0, unit: "ls", visibility: "price" });
+    const child = blank({ parentId: option.id, visibility: "name_only" });
+    pendingFocus.current = option.id;
+    setLines((ls) => [...ls, option, child]);
     mark();
   };
+  // Enter in a name box: move to the next line, adding one at the end of the group.
+  const onNameEnter = (line: BuilderLine) => (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "Enter" || e.nativeEvent.isComposing || locked) return;
+    e.preventDefault();
+    const groupId = line.parentId ?? line.id;
+    const kids = lines.filter((l) => l.parentId === groupId);
+    const next = line.parentId ? kids[kids.findIndex((k) => k.id === line.id) + 1] : kids[0];
+    if (next) {
+      pendingFocus.current = next.id;
+      setCollapsed((c) => (c[groupId] ? { ...c, [groupId]: false } : c));
+      focusNow();
+    } else {
+      addChild(groupId);
+    }
+  };
+  const focusNow = () => setFocusTick((t) => t + 1);
   const removeLine = (id: string) => {
     setLines((ls) => ls.filter((l) => l.id !== id && l.parentId !== id));
     mark();
@@ -587,7 +628,8 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
                           <ChevronRight className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-90")} />
                         </button>
                         <input className={cn(cellInput, "font-semibold")} aria-label={isOpt ? "Optional item name" : "Parent line name"} disabled={locked}
-                          value={p.name} onChange={(e) => patchLine(p.id, { name: e.target.value })} />
+                          data-line-name={p.id} placeholder={isOpt ? "New optional item" : "New parent line"} autoComplete="off" enterKeyHint="next"
+                          value={p.name} onChange={(e) => patchLine(p.id, { name: e.target.value })} onKeyDown={onNameEnter(p)} />
                         {isOpt ? (
                           <StatusBadge variant="draft">Optional</StatusBadge>
                         ) : (
@@ -596,7 +638,7 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
                           </span>
                         )}
                       </div>
-                      <div /><div /><div /><div /><div /><div /><div />
+                      <div /><div /><div /><div /><div /><div />
                       <div className="px-2 text-right tabular-nums">{money(pr?.cost ?? 0)}</div>
                       <div className="px-1">
                         <NumField className={cn(cellInput, "text-right")} aria-label="Group margin percent" min={0} max={MAX_MARGIN} step="0.5"
@@ -631,7 +673,8 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
                       <div className={cn("grid min-h-9 items-center border-b text-sm", COLS)}>
                         <div className="sticky left-0 z-[2] flex h-full min-h-9 items-center border-r bg-background pl-10 pr-2">
                           <input className={cellInput} aria-label="Line item name" disabled={locked} value={c.name}
-                            onChange={(e) => patchLine(c.id, { name: e.target.value })} />
+                            data-line-name={c.id} placeholder="New line" autoComplete="off" enterKeyHint="next"
+                            onChange={(e) => patchLine(c.id, { name: e.target.value })} onKeyDown={onNameEnter(c)} />
                         </div>
                         {Cells({ line: c })}
                         <div /><div />

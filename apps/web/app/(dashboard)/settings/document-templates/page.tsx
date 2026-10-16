@@ -15,13 +15,11 @@ import type { TemplateDocType } from "@construction/shared";
 // Constants
 // ---------------------------------------------------------------------------
 
-const DOC_TYPES: TemplateDocType[] = ["proposal", "change_order", "payment_app", "rfq"];
+const DOC_TYPES: TemplateDocType[] = ["proposal", "change_order"];
 
 const DOC_TYPE_LABELS: Record<TemplateDocType, string> = {
   proposal: "Proposal",
   change_order: "Change Order",
-  payment_app: "Payment Application",
-  rfq: "RFQ",
 };
 
 const CONTENT_TYPE_MAP: Record<string, string> = {

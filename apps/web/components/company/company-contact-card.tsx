@@ -71,24 +71,24 @@ export function CompanyContactCard({ canManage }: Props) {
         </div>
         <div className="md:col-span-2">
           <Label htmlFor="company-street1">Street address</Label>
-          <Input id="company-street1" className="mt-2" value={values.street1} onChange={set("street1")} disabled={!canManage} />
+          <Input id="company-street1" autoComplete="address-line1" className="mt-2" value={values.street1} onChange={set("street1")} disabled={!canManage} />
         </div>
         <div className="md:col-span-2">
           <Label htmlFor="company-street2">Suite or unit</Label>
-          <Input id="company-street2" className="mt-2" value={values.street2} onChange={set("street2")} disabled={!canManage} />
+          <Input id="company-street2" autoComplete="address-line2" className="mt-2" value={values.street2} onChange={set("street2")} disabled={!canManage} />
         </div>
         <div>
           <Label htmlFor="company-city">City</Label>
-          <Input id="company-city" className="mt-2" value={values.city} onChange={set("city")} disabled={!canManage} />
+          <Input id="company-city" autoComplete="address-level2" className="mt-2" value={values.city} onChange={set("city")} disabled={!canManage} />
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
             <Label htmlFor="company-state">State</Label>
-            <Input id="company-state" className="mt-2" maxLength={2} value={values.state} onChange={set("state")} disabled={!canManage} placeholder="TX" />
+            <Input id="company-state" autoComplete="address-level1" className="mt-2" maxLength={2} value={values.state} onChange={set("state")} disabled={!canManage} placeholder="TX" />
           </div>
           <div>
             <Label htmlFor="company-zip">ZIP</Label>
-            <Input id="company-zip" className="mt-2" value={values.zip} onChange={set("zip")} disabled={!canManage} />
+            <Input id="company-zip" autoComplete="postal-code" className="mt-2" value={values.zip} onChange={set("zip")} disabled={!canManage} />
           </div>
         </div>
       </div>

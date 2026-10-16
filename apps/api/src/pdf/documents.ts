@@ -1,13 +1,12 @@
-import { eq } from "drizzle-orm";
+import { eq, isNull } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import type { buildTenantContext } from "../tenant/context.js";
+import { resolveDocumentFileName, type DocumentNamingSettings, type PdfDocType } from "@construction/shared";
 import { renderWebPageToPdf, type PdfViewer } from "./render.js";
 
 type Tenant = NonNullable<Awaited<ReturnType<typeof buildTenantContext>>>;
 
 export type PdfKind = "proposal" | "invoice" | "order";
-
-const safe = (s: string) => s.replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, " ").trim();
 
 /**
  * Print one customer-facing document to PDF. Proposals and change orders are the customer view,
@@ -27,6 +26,10 @@ export async function renderDocumentPdf(
     return p as { slug: string; jobNumber: string | null; name: string };
   };
 
+  const [profile] = await db.select({ s: schema.companyProfiles.documentNamingSettings }).from(schema.companyProfiles).where(isNull(schema.companyProfiles.validTo)).limit(1);
+  const naming = (profile?.s as DocumentNamingSettings | null) ?? null;
+  const nameFor = (type: PdfDocType, v: Parameters<typeof resolveDocumentFileName>[2]) => resolveDocumentFileName(naming, type, v);
+
   let path: string;
   let selector: string;
   let filename: string;
@@ -37,23 +40,22 @@ export async function renderDocumentPdf(
     const co = e.kind === "change_order";
     path = `/projects/${p.slug}/${co ? "change-orders" : "estimates"}/${e.slug}/preview`;
     selector = "#proposal-doc";
-    const rev = e.revision > 0 ? ` Rev ${e.revision}` : "";
-    filename = co ? `${e.number ?? "Change Order"}${rev} - ${e.name}` : `${p.jobNumber ? `${p.jobNumber} ` : ""}Proposal${rev} - ${e.name}`;
+    filename = nameFor(co ? "change_order" : "proposal", { jobNumber: p.jobNumber, projectName: p.name, documentName: e.name, number: co ? e.number : p.jobNumber, revision: e.revision });
   } else if (kind === "invoice") {
     const [i] = await db.select().from(schema.invoices).where(eq(schema.invoices.id, id));
     if (!i) throw notFound();
     const p = await projectOf(i.projectId);
     path = `/projects/${p.slug}/invoices/${i.id}`;
     selector = "#invoice-doc";
-    filename = i.number;
+    filename = nameFor("invoice", { jobNumber: p.jobNumber, projectName: p.name, documentName: i.number, number: i.number });
   } else {
     const [o] = await db.select().from(schema.orders).where(eq(schema.orders.id, id));
     if (!o) throw notFound();
     const p = await projectOf(o.projectId);
     path = `/projects/${p.slug}/orders/${o.id}/document`;
     selector = "#order-doc";
-    filename = `${o.number}${o.revision > 0 ? ` Rev ${o.revision}` : ""}`;
+    filename = nameFor("order", { jobNumber: p.jobNumber, projectName: p.name, documentName: o.number, number: o.number, revision: o.revision });
   }
   const buffer = await renderWebPageToPdf(viewer, path, selector);
-  return { filename: `${safe(filename)}.pdf`, buffer };
+  return { filename, buffer };
 }

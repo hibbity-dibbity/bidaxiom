@@ -265,7 +265,7 @@ export const companyRouter = router({
       z.object({
         settings: z.record(
           z.enum(PDF_DOC_TYPES),
-          z.object({ template: z.string().max(200) })
+          z.object({ template: z.string().max(200).optional(), revisionTemplate: z.string().max(200).optional() })
         ),
       })
     )

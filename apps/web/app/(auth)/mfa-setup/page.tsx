@@ -363,6 +363,7 @@ function MfaSetupPage() {
                 <Input
                   id="token"
                   type="text"
+                  autoComplete="one-time-code"
                   inputMode="numeric"
                   pattern="[0-9]*"
                   maxLength={6}

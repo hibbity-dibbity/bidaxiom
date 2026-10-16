@@ -514,8 +514,6 @@ export const documentRouter = router({
           "transmittal",
           "proposal",
           "change_order",
-          "payment_app",
-          "rfq",
           "file",
         ]).optional(),
         status: z.string().optional(),
@@ -605,7 +603,7 @@ export const documentRouter = router({
 
       // Post-query type filter
       const WORKFLOW_TYPES = ["rfi", "submittal", "transmittal"] as const;
-      const CATEGORY_TYPES = ["proposal", "change_order", "payment_app", "rfq"] as const;
+      const CATEGORY_TYPES = ["proposal", "change_order"] as const;
 
       let filtered = rows;
 

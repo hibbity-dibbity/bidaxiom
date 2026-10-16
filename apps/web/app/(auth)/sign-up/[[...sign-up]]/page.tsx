@@ -147,6 +147,7 @@ export default function SignUpPage() {
               <Input
                 id="firstName"
                 type="text"
+                autoComplete="given-name"
                 placeholder="John"
                 {...register("firstName")}
                 disabled={isLoading}
@@ -160,6 +161,7 @@ export default function SignUpPage() {
               <Input
                 id="lastName"
                 type="text"
+                autoComplete="family-name"
                 placeholder="Doe"
                 {...register("lastName")}
                 disabled={isLoading}
@@ -174,6 +176,7 @@ export default function SignUpPage() {
             <Input
               id="email"
               type="email"
+              autoComplete="username"
               placeholder="you@example.com"
               {...register("email")}
               disabled={isLoading}
@@ -187,6 +190,7 @@ export default function SignUpPage() {
             <Input
               id="password"
               type="password"
+              autoComplete="new-password"
               placeholder="••••••••"
               {...register("password")}
               disabled={isLoading}
@@ -212,6 +216,7 @@ export default function SignUpPage() {
             <Input
               id="confirmPassword"
               type="password"
+              autoComplete="new-password"
               placeholder="••••••••"
               {...register("confirmPassword")}
               disabled={isLoading}

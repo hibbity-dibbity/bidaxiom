@@ -25,8 +25,6 @@ type WorkingMapping = FieldMapping;
 const DOC_TYPE_LABELS: Record<TemplateDocType, string> = {
   proposal: "Proposal",
   change_order: "Change Order",
-  payment_app: "Payment Application",
-  rfq: "RFQ",
 };
 
 /** Special sentinel values for the combobox */

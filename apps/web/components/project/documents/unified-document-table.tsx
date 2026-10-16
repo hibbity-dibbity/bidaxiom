@@ -48,8 +48,6 @@ const TYPE_LABELS: Record<string, string> = {
   transmittal: "Transmittal",
   proposal: "Proposal",
   change_order: "Change Order",
-  payment_app: "Pay App",
-  rfq: "RFQ",
   file: "File",
 };
 
@@ -59,8 +57,6 @@ const CATEGORY_OPTIONS = [
   { value: "transmittal", label: "Transmittal" },
   { value: "proposal", label: "Proposal" },
   { value: "change_order", label: "Change Order" },
-  { value: "payment_app", label: "Pay App" },
-  { value: "rfq", label: "RFQ" },
   { value: "file", label: "File" },
 ];
 
@@ -170,7 +166,7 @@ export function UnifiedDocumentTable({
     updateMutation.mutate({
       documentId: doc.id,
       name: editName.trim(),
-      category: editCategory as "rfi" | "submittal" | "transmittal" | "proposal" | "change_order" | "payment_app" | "rfq" | "file",
+      category: editCategory as "rfi" | "submittal" | "transmittal" | "proposal" | "change_order" | "file",
     });
   };
 

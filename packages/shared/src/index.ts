@@ -31,6 +31,12 @@ export {
   type PdfDocType,
   type DocumentNamingConvention,
   type DocumentNamingSettings,
+  PDF_DOC_TYPE_LABELS,
+  REVISABLE_PDF_DOC_TYPES,
+  NAMING_VARIABLES,
+  DEFAULT_NAMING,
+  resolveDocumentFileName,
+  type NamingValues,
 } from "./types/company";
 
 export {

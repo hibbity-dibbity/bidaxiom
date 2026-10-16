@@ -15,7 +15,7 @@ export const createCustomerSchema = z.object({
   street1: z.string().max(200).optional(),
   street2: z.string().max(200).optional(),
   city: z.string().max(100).optional(),
-  state: z.string().length(2).optional(),
+  state: z.string().length(2).or(z.literal("")).optional(),
   zip: z.string().max(10).optional(),
   /** this customer's default payment terms; empty uses the company default */
   paymentTerms: z.enum(PAYMENT_TERMS).nullable().optional(),
@@ -34,7 +34,7 @@ export const updateCustomerSchema = z.object({
   street1: z.string().max(200).nullable().optional(),
   street2: z.string().max(200).nullable().optional(),
   city: z.string().max(100).nullable().optional(),
-  state: z.string().length(2).nullable().optional(),
+  state: z.string().length(2).or(z.literal("")).nullable().optional(),
   zip: z.string().max(10).nullable().optional(),
   paymentTerms: z.enum(PAYMENT_TERMS).nullable().optional(),
 });

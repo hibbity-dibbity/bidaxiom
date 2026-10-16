@@ -63,8 +63,6 @@ export default function ProjectDocumentsPage() {
         | "transmittal"
         | "proposal"
         | "change_order"
-        | "payment_app"
-        | "rfq"
         | "file"
         | undefined,
       authorId: filters.author ?? undefined,

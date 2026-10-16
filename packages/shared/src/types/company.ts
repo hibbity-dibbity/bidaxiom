@@ -340,20 +340,99 @@ export function parseSequenceFromJobNumber(
   return parseInt(extracted, 10);
 }
 
-// Document naming conventions (Phase 38)
-export const PDF_DOC_TYPES = ["proposal", "change_order", "payment_app", "rfq"] as const;
+// Document naming conventions
+export const PDF_DOC_TYPES = ["proposal", "change_order", "invoice", "order"] as const;
 export type PdfDocType = (typeof PDF_DOC_TYPES)[number];
 
+export const PDF_DOC_TYPE_LABELS: Record<PdfDocType, string> = {
+  proposal: "Proposal",
+  change_order: "Change Order",
+  invoice: "Invoice",
+  order: "Purchase / Work Order",
+};
+
+/** Document types that can be revised, and so have a separate pattern for Rev 1 and up. */
+export const REVISABLE_PDF_DOC_TYPES: PdfDocType[] = ["proposal", "change_order", "order"];
+
 /**
- * Per-doc-type naming template.
- * Supported variables: {JOB-NUMBER}, {PROJECT-NAME}, {DOC-TYPE}, {SEQ}, {YEAR}, {MONTH}, {DATE}
- * Default when null: "{DOC-TYPE}-{JOB-NUMBER}-{DATE}"
+ * Per-doc-type file name patterns. `template` names Rev 0 (and documents that are never revised);
+ * `revisionTemplate` names Rev 1 and up. Blank means use the default below.
+ * Variables: {Job Number}, {Project Name}, {Document Name}, {Number}, {Rev #}, {Year}, {Month}, {Date}
  */
 export interface DocumentNamingConvention {
-  template: string;
+  template?: string;
+  revisionTemplate?: string;
 }
 
 export type DocumentNamingSettings = Partial<Record<PdfDocType, DocumentNamingConvention>>;
+
+export const NAMING_VARIABLES = [
+  "{Job Number}",
+  "{Project Name}",
+  "{Document Name}",
+  "{Number}",
+  "{Rev #}",
+  "{Year}",
+  "{Month}",
+  "{Date}",
+] as const;
+
+export const DEFAULT_NAMING: Record<PdfDocType, { template: string; revisionTemplate: string }> = {
+  proposal: { template: "{Job Number}", revisionTemplate: "{Job Number}-Rev {Rev #}" },
+  change_order: { template: "{Number}", revisionTemplate: "{Number}-Rev {Rev #}" },
+  invoice: { template: "{Number}", revisionTemplate: "{Number}" },
+  order: { template: "{Number}", revisionTemplate: "{Number}-Rev {Rev #}" },
+};
+
+export interface NamingValues {
+  jobNumber?: string | null;
+  projectName?: string | null;
+  documentName?: string | null;
+  number?: string | null;
+  revision?: number;
+  date?: Date;
+}
+
+const stripIllegal = (s: string) => s.replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, " ").trim();
+
+/**
+ * Build a PDF file name from the company's pattern. Pure, so the settings page can preview
+ * exactly what the server will produce. Falls back to the default pattern when the saved one is
+ * blank or produces nothing. Always ends in .pdf. A pattern that leaves a variable empty drops
+ * the dangling separators around it.
+ */
+export function resolveDocumentFileName(
+  settings: DocumentNamingSettings | null | undefined,
+  docType: PdfDocType,
+  v: NamingValues
+): string {
+  const rev = v.revision ?? 0;
+  const def = DEFAULT_NAMING[docType];
+  const saved = settings?.[docType];
+  const pick = (custom: string | undefined, fallback: string) => (custom && custom.trim() ? custom.trim() : fallback);
+  const pattern = rev > 0 && REVISABLE_PDF_DOC_TYPES.includes(docType)
+    ? pick(saved?.revisionTemplate, def.revisionTemplate)
+    : pick(saved?.template, def.template);
+  const d = v.date ?? new Date();
+  const year = String(d.getFullYear());
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const vars: Record<string, string> = {
+    "job number": v.jobNumber ?? "",
+    "project name": v.projectName ?? "",
+    "document name": v.documentName ?? "",
+    "number": v.number ?? v.jobNumber ?? "",
+    "rev #": String(rev),
+    "year": year,
+    "month": month,
+    "date": `${year}-${month}-${String(d.getDate()).padStart(2, "0")}`,
+  };
+  const run = (p: string) =>
+    stripIllegal(p.replace(/\{\s*([^{}]+?)\s*\}/g, (_m, k: string) => vars[k.toLowerCase()] ?? "")).replace(/^[-_ .]+|[-_ .]+$/g, "");
+  let name = run(pattern).replace(/\.pdf$/i, "");
+  if (!name) name = run(rev > 0 ? def.revisionTemplate : def.template).replace(/\.pdf$/i, "");
+  if (!name) name = "Document";
+  return `${name}.pdf`;
+}
 
 /**
  * Complete company configuration schema.

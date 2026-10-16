@@ -197,6 +197,7 @@ export default function ResetPasswordPage() {
               <Input
                 id="password"
                 type="password"
+                autoComplete="new-password"
                 placeholder="••••••••"
                 {...registerReset("password")}
                 disabled={isLoading}
@@ -222,6 +223,7 @@ export default function ResetPasswordPage() {
               <Input
                 id="confirmPassword"
                 type="password"
+                autoComplete="new-password"
                 placeholder="••••••••"
                 {...registerReset("confirmPassword")}
                 disabled={isLoading}
@@ -263,6 +265,7 @@ export default function ResetPasswordPage() {
             <Input
               id="email"
               type="email"
+              autoComplete="username"
               placeholder="you@example.com"
               {...registerRequest("email")}
               disabled={isLoading}

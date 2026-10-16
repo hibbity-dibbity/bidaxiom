@@ -36,7 +36,7 @@ import type { FieldMapping } from "@construction/shared";
 // Shared Zod enums
 // ---------------------------------------------------------------------------
 
-const docTypeEnum = z.enum(["proposal", "change_order", "payment_app", "rfq"]);
+const docTypeEnum = z.enum(["proposal", "change_order"]);
 const fileTypeEnum = z.enum(["docx", "xlsx"]);
 
 // ---------------------------------------------------------------------------

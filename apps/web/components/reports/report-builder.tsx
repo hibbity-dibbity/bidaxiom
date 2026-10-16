@@ -59,7 +59,7 @@ import {
 const reportConfigSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   description: z.string().optional(),
-  dataSource: z.enum(['projects', 'budgets', 'change_orders', 'payment_apps', 'bids', 'commitments']),
+  dataSource: z.enum(['projects', 'budgets', 'change_orders', 'bids', 'commitments']),
   columns: z.array(
     z.object({
       field: z.string(),
@@ -353,12 +353,6 @@ export function ReportBuilder({ onSuccess }: ReportBuilderProps) {
                             <RadioGroupItem value="change_orders" />
                           </FormControl>
                           <FormLabel className="font-normal">Change Orders</FormLabel>
-                        </FormItem>
-                        <FormItem className="flex items-center space-x-3 space-y-0">
-                          <FormControl>
-                            <RadioGroupItem value="payment_apps" />
-                          </FormControl>
-                          <FormLabel className="font-normal">Payment Apps</FormLabel>
                         </FormItem>
                         <FormItem className="flex items-center space-x-3 space-y-0">
                           <FormControl>
