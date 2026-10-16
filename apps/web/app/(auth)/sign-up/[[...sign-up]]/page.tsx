@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -45,11 +45,17 @@ export default function SignUpPage() {
     handleSubmit,
     formState: { errors },
     watch,
+    setValue,
   } = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
   });
 
   const password = watch("password");
+
+  // The invitation is for one address: show it fixed so it can't be mistyped or swapped.
+  const invite = trpc.auth.invitationPreview.useQuery({ token: invitationToken ?? "" }, { enabled: !!invitationToken, retry: false });
+  const invitedEmail = invite.data?.email ?? null;
+  useEffect(() => { if (invitedEmail) setValue("email", invitedEmail, { shouldValidate: true }); }, [invitedEmail, setValue]);
 
   // Password requirement checks
   const requirements = [
@@ -179,8 +185,11 @@ export default function SignUpPage() {
               autoComplete="username"
               placeholder="you@example.com"
               {...register("email")}
+              readOnly={!!invitedEmail}
+              className={invitedEmail ? "bg-muted text-muted-foreground" : undefined}
               disabled={isLoading}
             />
+            {invitedEmail && <p className="text-xs text-muted-foreground">This invitation was sent to this address, so it can't be changed.</p>}
             {errors.email && (
               <p className="text-sm text-destructive">{errors.email.message}</p>
             )}

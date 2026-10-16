@@ -119,6 +119,8 @@ export const authRouter = router({
           hashType: "argon2id",
           firstName: input.firstName,
           lastName: input.lastName,
+          // Everyone new sets up a second sign-in step the first time they sign in.
+          requireMfaSetup: true,
         })
         .returning();
 
@@ -560,6 +562,20 @@ export const authRouter = router({
   /**
    * Reset password using token.
    */
+  /** The email address an invitation was sent to, so the sign-up page can show it fixed (the invitation only works for that address). */
+  invitationPreview: publicProcedure
+    .input(z.object({ token: z.string().min(1) }))
+    .query(async ({ input }) => {
+      const inv = await getAuthDb().query.organizationInvitations.findFirst({
+        where: and(
+          eq(organizationInvitations.tokenHash, hashToken(input.token)),
+          eq(organizationInvitations.status, "pending"),
+          sql`${organizationInvitations.expiresAt} > NOW()`
+        ),
+      });
+      return inv ? { valid: true as const, email: inv.email.toLowerCase() } : { valid: false as const, email: null };
+    }),
+
   /** Whether a password setup/reset link can still be used (so the page can refuse a used link up front). */
   checkResetToken: publicProcedure
     .input(z.object({ token: z.string().min(1) }))

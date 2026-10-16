@@ -7,6 +7,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/shared/page-header";
+import { DocumentActions } from "@/components/shared/document-actions";
 import { InvoiceStatusBadge, dollars, shortDate } from "@/components/invoices/invoice-ui";
 
 export default function InvoicesPage({ params }: { params: { projectSlug: string } }) {
@@ -164,12 +165,11 @@ export default function InvoicesPage({ params }: { params: { projectSlug: string
                               Split
                             </button>
                           )}
-                          <Link href={`/projects/${projectSlug}/invoices/${r.id}`} className="text-xs text-muted-foreground hover:underline">
-                            Open to send
-                          </Link>
+                          <DocumentActions kind="invoice" id={r.id} previewHref={`/projects/${projectSlug}/invoices/${r.id}`} disabled={r.amount === 0} disabledReason="This invoice has no amount to bill." onSent={() => utils.invoice.list.invalidate()} />
                         </span>
                       ) : r.status === "paid" ? null : (
                         <span className="flex justify-end gap-2">
+                          <DocumentActions kind="invoice" id={r.id} previewHref={`/projects/${projectSlug}/invoices/${r.id}`} onSent={() => utils.invoice.list.invalidate()} />
                           <Button asChild size="sm" variant="outline">
                             <Link href={`/projects/${projectSlug}/invoices/${r.id}#payments`}>Partial payment</Link>
                           </Button>

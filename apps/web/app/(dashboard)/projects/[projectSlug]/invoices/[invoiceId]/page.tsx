@@ -107,11 +107,11 @@ export default function InvoicePage({ params }: { params: { projectSlug: string;
       {draft && (
         <div className="space-y-3 rounded-md border bg-muted px-4 py-3 text-sm print:hidden">
           <div>
-            <strong>Draft.</strong> Sending is a separate step. It sets the date sent and the due date and locks the invoice. Use Email or Download PDF to send it to {data.customerName ?? "the customer"}.
+            <strong>Not sent yet.</strong> <strong>Email to customer</strong> sends it to {data.customerName ?? "the customer"} and locks it. If you deliver it yourself, use <strong>Download PDF</strong> and then <strong>Mark as sent</strong> so the dates are recorded and it counts as billed.
           </div>
           <div className="flex flex-wrap items-end gap-3">
             <label className="space-y-1">
-              <span className="block text-xs uppercase tracking-wider text-muted-foreground">Date sent</span>
+              <span className="block text-xs uppercase tracking-wider text-muted-foreground">Date sent (for Mark as sent)</span>
               <input type="date" className={field} value={sentOn} onChange={(e) => setSentOn(e.target.value)} />
             </label>
             <label className="space-y-1">
@@ -126,8 +126,11 @@ export default function InvoicePage({ params }: { params: { projectSlug: string;
                 }}
               />
             </label>
-            <Button type="button" disabled={send.isPending || inv.amount === 0} onClick={() => send.mutate({ invoiceId, sentOn, dueOn: effectiveDue })}>
-              Send {inv.number}
+            <Button type="button" disabled={inv.amount === 0} onClick={() => setEmailOpen(true)}>
+              Email to customer
+            </Button>
+            <Button type="button" variant="outline" disabled={send.isPending || inv.amount === 0} onClick={() => send.mutate({ invoiceId, sentOn, dueOn: effectiveDue })}>
+              Mark as sent (delivered myself)
             </Button>
             <Button
               type="button"
@@ -169,14 +172,11 @@ export default function InvoicePage({ params }: { params: { projectSlug: string;
                 </React.Fragment>
               ))}
               <br />
-              {draft ? "Draft" : `Date sent ${shortDate(inv.sentOn)}`}
-              {!draft && (
-                <>
-                  <br />
-                  Due {shortDate(inv.dueOn)}
-                  {inv.paymentTerms ? ` · ${inv.paymentTerms}` : ""}
-                </>
-              )}
+              {/* An unsent invoice shows the dates it will carry when sent, never the word "Draft", so a downloaded copy is ready to hand over. */}
+              Date {shortDate(draft ? sentOn : inv.sentOn)}
+              <br />
+              Due {shortDate(draft ? effectiveDue : inv.dueOn)}
+              {inv.paymentTerms ? ` · ${inv.paymentTerms}` : ""}
             </div>
           </div>
 
