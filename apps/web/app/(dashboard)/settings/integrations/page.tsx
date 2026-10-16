@@ -2,6 +2,7 @@
 
 import { Loader2, AlertCircle } from "lucide-react";
 import { QboConnectionCard } from "@/components/integrations/qbo-connection-card";
+import { QboSetupInfo } from "@/components/integrations/qbo-setup-info";
 import { QboConnectionCheck } from "@/components/integrations/qbo-connection-check";
 import { QboSyncStatus } from "@/components/integrations/qbo-sync-status";
 import { QboSyncNotifications } from "@/components/integrations/qbo-sync-notifications";
@@ -129,6 +130,8 @@ export default function IntegrationsPage() {
                       : { connected: false as const }
                   }
                 />
+
+                {!isQboConnected(qboStatus) && <QboSetupInfo />}
 
                 {/* Sync Notifications (only shown if connected) */}
                 {isQboConnected(qboStatus) && (

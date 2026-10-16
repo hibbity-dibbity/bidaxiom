@@ -193,6 +193,27 @@ export const quickbooksRouter = router({
   }),
 
   /**
+   * What this server is set up to send to Intuit, so the person can match it against the app's Keys page.
+   * Never returns the secret. Admin-only.
+   */
+  setupInfo: authorizedProcedure.query(async ({ ctx }) => {
+    if (!ctx.tenant || !ctx.abilities) {
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+    }
+    if (!ctx.abilities.can("manage", "QuickBooks")) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Only administrators can see the QuickBooks setup details" });
+    }
+    const id = process.env.QBO_CLIENT_ID ?? "";
+    return {
+      redirectUri: `${process.env.API_URL ?? ""}/api/integrations/quickbooks/callback`,
+      environment: process.env.QBO_ENVIRONMENT || "sandbox",
+      clientIdHint: id ? `${id.slice(0, 4)}…${id.slice(-4)}` : null,
+      hasSecret: Boolean(process.env.QBO_CLIENT_SECRET),
+      hasEncryptionKey: (process.env.QBO_ENCRYPTION_KEY ?? "").length === 64,
+    };
+  }),
+
+  /**
    * Read-only health check: signs in to QuickBooks and reads company, plan, features and record counts.
    * Writes nothing to QuickBooks. Admin-only.
    */
