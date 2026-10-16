@@ -60,6 +60,14 @@ export function QboSyncStatus({ syncStates }: QboSyncStatusProps) {
     },
   });
 
+  const cancelMutation = trpc.quickbooks.cancelSync.useMutation({
+    onSuccess: (d) => {
+      toast.success("Sync stopped", { description: `${d.removed} waiting job${d.removed === 1 ? "" : "s"} removed. Status reset.` });
+      utils.quickbooks.getStatus.invalidate();
+    },
+    onError: (error) => toast.error("Could not stop the sync", { description: error.message }),
+  });
+
   const handleSync = (entityType: "project" | "invoice" | "bill" | "all") => {
     manualSyncMutation.mutate({ entityType });
   };
@@ -131,6 +139,9 @@ export function QboSyncStatus({ syncStates }: QboSyncStatusProps) {
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleSync("bill")}>
               Sync Bills
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => cancelMutation.mutate()} disabled={cancelMutation.isPending}>
+              Stop and reset status
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

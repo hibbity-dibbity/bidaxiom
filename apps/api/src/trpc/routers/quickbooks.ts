@@ -6,7 +6,7 @@ import { getQboAuthUrl, handleQboCallback } from "../../integrations/quickbooks/
 import { encryptToken } from "../../integrations/quickbooks/crypto.js";
 import { diagnoseQboConnection } from "../../integrations/quickbooks/diagnose.js";
 import { getQboSyncQueue } from "../../integrations/quickbooks/queue.js";
-import { eq, sql, and } from "drizzle-orm";
+import { eq, sql, and, inArray } from "drizzle-orm";
 
 /**
  * QuickBooks tRPC Router
@@ -203,6 +203,36 @@ export const quickbooksRouter = router({
     });
 
     return { success: true };
+  }),
+
+  /**
+   * Stop sync jobs that have not started and clear any "syncing" labels left behind.
+   * A job already in progress finishes on its own (they take seconds). Admin-only.
+   */
+  cancelSync: authorizedProcedure.mutation(async ({ ctx }) => {
+    if (!ctx.tenant || !ctx.abilities) {
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+    }
+    if (!ctx.abilities.can("manage", "QuickBooks")) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Only administrators can cancel a sync" });
+    }
+    const queue = getQboSyncQueue();
+    const waiting = await queue.getJobs(["waiting", "delayed", "failed", "paused", "prioritized"], 0, 5000);
+    let removed = 0;
+    for (const job of waiting) {
+      if (job.data?.tenantId !== ctx.tenant.tenantId) continue;
+      try {
+        await job.remove();
+        removed++;
+      } catch {
+        // already picked up by a worker; let it finish
+      }
+    }
+    await ctx.tenant.db
+      .update(ctx.tenant.schema.qboSyncState)
+      .set({ syncStatus: "pending", updatedAt: new Date() })
+      .where(inArray(ctx.tenant.schema.qboSyncState.syncStatus, ["syncing", "error"]));
+    return { removed };
   }),
 
   /**
@@ -488,6 +518,7 @@ export const quickbooksRouter = router({
         const entityTypes = ["project", "invoice", "bill"] as const;
 
         for (const type of entityTypes) {
+          const queuedBefore = jobsQueued;
           // For each entity type, find platform entities without QBO mappings
           let platformEntities: Array<{ id: string }> = [];
 
@@ -533,11 +564,13 @@ export const quickbooksRouter = router({
             jobsQueued++;
           }
 
-          // Update sync state to 'syncing'
-          await tenant.db
-            .update(tenant.schema.qboSyncState)
-            .set({ syncStatus: "syncing", updatedAt: new Date() })
-            .where(eq(tenant.schema.qboSyncState.entityType, type));
+          // Only show "syncing" when something was actually queued; otherwise nothing would ever clear it.
+          if (jobsQueued > queuedBefore) {
+            await tenant.db
+              .update(tenant.schema.qboSyncState)
+              .set({ syncStatus: "syncing", updatedAt: new Date() })
+              .where(eq(tenant.schema.qboSyncState.entityType, type));
+          }
         }
       } else {
         // Specific entity type sync
@@ -585,11 +618,13 @@ export const quickbooksRouter = router({
           jobsQueued++;
         }
 
-        // Update sync state to 'syncing'
-        await tenant.db
-          .update(tenant.schema.qboSyncState)
-          .set({ syncStatus: "syncing", updatedAt: new Date() })
-          .where(eq(tenant.schema.qboSyncState.entityType, entityType));
+        // Only show "syncing" when something was actually queued; otherwise nothing would ever clear it.
+        if (jobsQueued > 0) {
+          await tenant.db
+            .update(tenant.schema.qboSyncState)
+            .set({ syncStatus: "syncing", updatedAt: new Date() })
+            .where(eq(tenant.schema.qboSyncState.entityType, entityType));
+        }
       }
 
       return { jobsQueued };
