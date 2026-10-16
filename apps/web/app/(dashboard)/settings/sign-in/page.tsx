@@ -72,6 +72,7 @@ export default function SignInSettingsPage() {
               {conn.verified ? "Test again" : "Test connection"}
             </Button>
             {conn.verified && <Options conn={conn} roles={data.roles} onSaved={refresh} />}
+            <Status conn={conn} />
             <div>
               <Button variant="outline" onClick={() => { if (window.confirm("Disconnect single sign-on? People will sign in with their BidAxiom passwords again.")) disconnect.mutate(); }}>Disconnect</Button>
             </div>
@@ -212,4 +213,19 @@ function DomainRow({ d, onChanged, onRemove }: { d: Conn["domains"][number]; onC
       )}
     </div>
   );
+}
+
+/** Plain statement of what the sign-in page will do right now, so a missing step is obvious. */
+function Status({ conn }: { conn: Conn }) {
+  const verifiedDomains = conn.domains.filter((d) => d.verified).map((d) => d.domain);
+  let tone = "text-amber-700";
+  let text: string;
+  if (!conn.verified) text = "Not active yet: test the connection above first.";
+  else if (!conn.enabled) text = "Not active: tick \"Allow single sign-on\" above and save. Until then the sign-in page only asks for passwords.";
+  else if (verifiedDomains.length === 0) text = "Active for your own account only (you tested the connection, so your email is sent to your provider). To include other people, verify their email domain in step 3: their sign-in is routed by the part after the @.";
+  else {
+    tone = "text-green-700";
+    text = `Active. Anyone who types an email ending in ${verifiedDomains.map((d) => "@" + d).join(", ")} is sent to your provider${conn.enforceSso ? ". Administrators can still use a password (the link under the email box on the sign-in page), so a provider outage cannot lock you out" : ""}.`;
+  }
+  return <p className={`rounded-md border px-3 py-2 text-sm ${tone}`}>{text}</p>;
 }

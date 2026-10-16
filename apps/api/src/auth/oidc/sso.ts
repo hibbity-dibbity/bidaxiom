@@ -37,20 +37,38 @@ async function start(conn: typeof ssoConnections.$inferSelect, input: { purpose:
 
 /** Which company's sign-in (if any) handles this email address, from its verified domain. */
 export async function connectionForEmail(email: string) {
-  const domain = email.trim().toLowerCase().split("@")[1];
+  return (await resolveConnection(email))?.conn ?? null;
+}
+
+/**
+ * Which company connection signs this email address in? First by a verified email domain; failing
+ * that, by an account that has already linked itself to a connection (for example an admin who
+ * tested the connection, whose BidAxiom email is on a public domain such as hotmail.com).
+ */
+async function resolveConnection(email: string) {
+  const clean = email.trim().toLowerCase();
+  const domain = clean.split("@")[1];
   if (!domain) return null;
   const db = getDb();
   const row = await db.query.ssoDomains.findFirst({ where: and(eq(ssoDomains.domain, domain), isNotNull(ssoDomains.verifiedAt)) });
-  if (!row) return null;
-  const conn = await db.query.ssoConnections.findFirst({ where: eq(ssoConnections.id, row.connectionId) });
-  return conn && conn.enabled && conn.verified ? conn : null;
+  if (row) {
+    const conn = await db.query.ssoConnections.findFirst({ where: eq(ssoConnections.id, row.connectionId) });
+    if (conn && conn.enabled && conn.verified) return { conn, viaDomain: true };
+  }
+  const user = await db.query.users.findFirst({ where: eq(users.email, clean), columns: { id: true } });
+  if (!user) return null;
+  const identity = await db.query.ssoIdentities.findFirst({ where: eq(ssoIdentities.userId, user.id) });
+  if (!identity) return null;
+  const conn = await db.query.ssoConnections.findFirst({ where: eq(ssoConnections.id, identity.connectionId) });
+  return conn && conn.enabled && conn.verified ? { conn, viaDomain: false } : null;
 }
 
 /** Sign in: the email address's verified domain says which company's identity provider to use. */
 export async function beginSso(input: { email: string; redirectUri: string }) {
-  const conn = await connectionForEmail(input.email);
-  if (!conn) throw new SsoError("Single sign-on is not set up for that email address.");
-  return start(conn, { purpose: "login", redirectUri: input.redirectUri, loginHint: input.email.trim().toLowerCase() });
+  const found = await resolveConnection(input.email);
+  if (!found) throw new SsoError("Single sign-on is not set up for that email address.");
+  // The email is only a hint to the provider when it is on the company's own domain.
+  return start(found.conn, { purpose: "login", redirectUri: input.redirectUri, ...(found.viaDomain ? { loginHint: input.email.trim().toLowerCase() } : {}) });
 }
 
 /** Admin: test a saved connection by signing in through it once. That also links the admin's own account. */

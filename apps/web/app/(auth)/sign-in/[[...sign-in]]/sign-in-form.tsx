@@ -63,6 +63,9 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
       setIsLoading(false);
     }
   };
+  // Break-glass: company administrators keep a password (with their second factor) even when
+  // single sign-on is required, so a provider outage cannot lock the company out.
+  const [usePassword, setUsePassword] = useState(false);
   const goSso = (email: string) => {
     window.location.href = `/api/auth/sso/start?email=${encodeURIComponent(email)}`;
   };
@@ -75,7 +78,7 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
     }
     try {
       const r = await routeMutation.mutateAsync({ email });
-      if (r.sso && r.enforced) return goSso(email);
+      if (r.sso && r.enforced && !usePassword) return goSso(email);
       setValue("email", email);
       setStep(r.sso ? "choose" : "password");
     } catch {
@@ -352,8 +355,13 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
             <Button type="submit" className="w-full" disabled={routeMutation.isPending || !emailInput.trim()}>
-              {routeMutation.isPending ? "Checking..." : "Continue"}
+              {routeMutation.isPending ? "Checking..." : usePassword ? "Continue with password" : "Continue"}
             </Button>
+            {!usePassword && (
+              <button type="button" className="text-xs text-muted-foreground underline-offset-4 hover:text-primary hover:underline" onClick={() => setUsePassword(true)}>
+                Company administrator? Use your password instead of single sign-on
+              </button>
+            )}
             {canPasskey && (
               <Button type="button" variant="outline" className="w-full" disabled={isLoading} onClick={signInWithPasskey}>
                 Sign in with a passkey
