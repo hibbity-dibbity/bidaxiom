@@ -385,3 +385,19 @@ export {
   type MetalBuildingInputs,
   type MetalBuildingResult,
 } from "./utils/takeoff";
+
+export {
+  CUSTOMER_IMPORT_FIELDS,
+  suggestCustomerMapping,
+  buildCustomerRows,
+  normalizePhone,
+  normalizeState,
+  splitFullAddress,
+  type CustomerImportFieldKey,
+  type CustomerImportMapping,
+  type CustomerImportOptions,
+  type ImportedCustomer,
+  type ImportRowResult,
+  type RowStatus,
+  type ExistingCustomerKey,
+} from "./utils/customer-import";

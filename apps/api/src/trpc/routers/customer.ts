@@ -6,16 +6,153 @@ import {
   createCustomerSchema,
   updateCustomerSchema,
   AuditAction,
+  buildCustomerRows,
+  type CustomerImportMapping,
 } from "@construction/shared";
 import { createAuditLog } from "../../audit/logger.js";
-import { eq, desc, or, like, sql } from "drizzle-orm";
+import { eq, desc, or, like, sql, and } from "drizzle-orm";
 import { generateSlug, generateNameSlug, isValidSlug } from "../../utils/slug.js";
 
 /**
  * Customer management router.
  * Handles customer CRUD operations with audit logging.
  */
+/** Importing customers in bulk (and undoing it) is limited to the roles that can delete a customer. */
+function requireImportRole(role: string | null) {
+  if (role !== "org:admin" && role !== "org:project_manager") {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Only an admin or project manager can import customers." });
+  }
+}
+
+/** Source-row layout the browser sends, so the server can re-check every row with the same rules. */
+const IMPORT_COLUMNS: CustomerImportMapping = {
+  companyName: 0, contactName: 1, email: 2, phone: 3, street1: 4, street2: 5, city: 6, state: 7, zip: 8, paymentTerms: 9,
+};
+
 export const customerRouter = router({
+  /** Existing customers' identifying details, so the import preview can flag duplicates. */
+  importIndex: protectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.tenant) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+    requireImportRole(ctx.orgRole);
+    const { db, schema } = ctx.tenant;
+    return db
+      .select({ email: schema.customers.email, companyName: schema.customers.companyName, contactName: schema.customers.contactName })
+      .from(schema.customers);
+  }),
+
+  /** Add one batch (up to 500 rows) of an import. Every row is re-checked here; nothing from the browser is trusted. */
+  importCommit: protectedProcedure
+    .input(
+      z.object({
+        batchId: z.string().uuid(),
+        fileName: z.string().max(255),
+        importDuplicates: z.boolean(),
+        rows: z.array(z.array(z.string().max(500)).length(10)).min(1).max(500),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+      requireImportRole(ctx.orgRole);
+      const { db, schema } = ctx.tenant;
+
+      const existing = await db
+        .select({ email: schema.customers.email, companyName: schema.customers.companyName, contactName: schema.customers.contactName, slug: schema.customers.slug })
+        .from(schema.customers);
+      const results = buildCustomerRows(input.rows, IMPORT_COLUMNS, { useCompanyAsContact: true }, existing);
+      const taken = new Set(existing.map((e) => e.slug).filter((s): s is string => Boolean(s)));
+
+      const toInsert = results.filter((r) => r.customer && (r.status === "ready" || r.status === "warning" || (input.importDuplicates && r.status === "duplicate")));
+      const values = toInsert.map((r) => {
+        const c = r.customer!;
+        const base = generateNameSlug(c.companyName || c.contactName) || "customer";
+        let slug = base;
+        for (let n = 2; taken.has(slug); n++) slug = `${base}-${n}`;
+        taken.add(slug);
+        return {
+          companyName: c.companyName,
+          contactName: c.contactName,
+          email: c.email,
+          phone: c.phone,
+          street1: c.street1,
+          street2: c.street2,
+          city: c.city,
+          state: c.state,
+          zip: c.zip,
+          paymentTerms: c.paymentTerms,
+          slug,
+          createdBy: ctx.userId!,
+          importBatchId: input.batchId,
+          importSource: input.fileName,
+        };
+      });
+      if (values.length) await db.insert(schema.customers).values(values);
+
+      if (values.length) {
+        await createAuditLog(db, schema, {
+          entityType: "Customer",
+          entityId: input.batchId,
+          action: AuditAction.CREATE,
+          actorId: ctx.userId,
+          changes: { after: { imported: values.length, source: input.fileName } },
+        });
+      }
+      return {
+        imported: values.length,
+        skippedDuplicates: input.importDuplicates ? 0 : results.filter((r) => r.status === "duplicate").length,
+        skippedErrors: results.filter((r) => r.status === "error").length,
+      };
+    }),
+
+  /** Earlier imports, newest first, with how many of their customers still exist. */
+  importBatches: protectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.tenant) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+    requireImportRole(ctx.orgRole);
+    const { db, schema } = ctx.tenant;
+    const rows = await db
+      .select({
+        batchId: schema.customers.importBatchId,
+        source: sql<string>`max(${schema.customers.importSource})`,
+        count: sql<number>`count(*)::int`,
+        at: sql<string>`min(${schema.customers.createdAt})`,
+      })
+      .from(schema.customers)
+      .where(sql`${schema.customers.importBatchId} IS NOT NULL`)
+      .groupBy(schema.customers.importBatchId)
+      .orderBy(sql`min(${schema.customers.createdAt}) desc`)
+      .limit(20);
+    return rows.map((r) => ({ batchId: r.batchId!, source: r.source, count: r.count, at: new Date(r.at).toISOString() }));
+  }),
+
+  /** Remove the customers one import added. Any that already have projects are kept. */
+  importUndo: protectedProcedure
+    .input(z.object({ batchId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+      requireImportRole(ctx.orgRole);
+      const { db, schema } = ctx.tenant;
+      const removed = await db
+        .delete(schema.customers)
+        .where(
+          and(
+            eq(schema.customers.importBatchId, input.batchId),
+            sql`NOT EXISTS (SELECT 1 FROM ${schema.projects} WHERE ${schema.projects.customerId} = ${schema.customers.id})`
+          )
+        )
+        .returning({ id: schema.customers.id });
+      const [left] = await db
+        .select({ n: sql<number>`count(*)::int` })
+        .from(schema.customers)
+        .where(eq(schema.customers.importBatchId, input.batchId));
+      await createAuditLog(db, schema, {
+        entityType: "Customer",
+        entityId: input.batchId,
+        action: AuditAction.DELETE,
+        actorId: ctx.userId,
+        changes: { before: { removedImport: removed.length, keptBecauseTheyHaveProjects: left.n } },
+      });
+      return { removed: removed.length, kept: left.n };
+    }),
+
   /**
    * List all customers with optional search
    */

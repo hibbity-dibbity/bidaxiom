@@ -45,7 +45,7 @@ import {
 import { PhoneInput } from "@/components/ui/phone-input";
 import { AddressInput } from "@/components/ui/address-input";
 import { PaymentTermsField } from "@/components/customers/payment-terms-field";
-import { Plus, ChevronRight, Building2, User, Mail, Phone, MapPin, ChevronsUpDown, ChevronUp, ChevronDown, Search, SearchX } from "lucide-react";
+import { Upload, Plus, ChevronRight, Building2, User, Mail, Phone, MapPin, ChevronsUpDown, ChevronUp, ChevronDown, Search, SearchX } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/shared/empty-state";
 import { customerFormSchema, toCustomerPayload, type CustomerFormData } from "@/lib/customer-form";
@@ -228,10 +228,16 @@ export default function CustomersPage() {
         title="Customers"
         description="Manage your customers and clients"
         actions={
-          <Button onClick={handleAdd}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Customer
-          </Button>
+          <>
+            <Button onClick={handleAdd}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Customer
+            </Button>
+            <Button variant="outline" onClick={() => router.push("/customers/import")}>
+              <Upload className="mr-2 h-4 w-4" />
+              Import
+            </Button>
+          </>
         }
       />
 

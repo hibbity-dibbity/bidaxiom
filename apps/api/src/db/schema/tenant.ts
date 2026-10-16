@@ -145,6 +145,9 @@ export function createTenantSchema(schemaName: string) {
     paymentTerms: text("payment_terms"), // default terms for this customer's proposals; null uses the company default
     slug: text("slug").unique(), // URL-safe slug for routing
     createdBy: text("created_by").notNull(),
+    /** Customers added by one spreadsheet import share a batch id so the import can be undone. */
+    importBatchId: uuid("import_batch_id"),
+    importSource: text("import_source"), // file name of the import
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   });
