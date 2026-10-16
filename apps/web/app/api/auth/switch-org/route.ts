@@ -19,6 +19,16 @@ export async function POST(request: Request) {
 
     const result = await trpc.auth.switchOrganization.mutate({ organizationId });
 
+    // The new token says whether this person still has to set up a second factor in the new company
+    // (admins always do). Keep the web session in step so the app sends them to MFA setup.
+    let mfaGate = false;
+    let hasMfa = currentSession.hasMfa;
+    try {
+      const claims = JSON.parse(Buffer.from(result.accessToken.split(".")[1], "base64").toString());
+      mfaGate = claims.mfaGate === true;
+      if (typeof claims.hasMfa === "boolean") hasMfa = claims.hasMfa;
+    } catch {}
+
     // Build complete updated session data
     const updatedSession = {
       ...currentSession,
@@ -26,10 +36,12 @@ export async function POST(request: Request) {
       orgRole: result.org.role,
       orgName: result.org.name,
       accessToken: result.accessToken,
+      mfaGate,
+      hasMfa,
     };
 
     // Create response and set cookie explicitly
-    const res = NextResponse.json({ org: result.org });
+    const res = NextResponse.json({ org: result.org, mfaGate });
     await setSessionCookie(res, updatedSession);
 
     return res;
