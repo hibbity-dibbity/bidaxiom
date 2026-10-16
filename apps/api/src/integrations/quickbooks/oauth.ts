@@ -62,8 +62,10 @@ export async function handleQboCallback(
 ): Promise<QboTokens> {
   const oauthClient = createOAuthClient();
 
-  // Exchange authorization code for tokens
-  const authResponse = await oauthClient.createToken(code);
+  // Exchange authorization code for tokens. The library reads the code out of a query string, so it has to be
+  // handed one; a bare code gives an empty request and Intuit answers "invalid_request".
+  const params = new URLSearchParams({ code, realmId, state: tenantId });
+  const authResponse = await oauthClient.createToken(`?${params.toString()}`);
   const token = authResponse.getJson();
 
   // Calculate expiration dates
