@@ -5,25 +5,15 @@ import { QboConnectionCard } from "@/components/integrations/qbo-connection-card
 import { QboConnectionCheck } from "@/components/integrations/qbo-connection-check";
 import { QboSyncStatus } from "@/components/integrations/qbo-sync-status";
 import { QboSyncNotifications } from "@/components/integrations/qbo-sync-notifications";
-import { CalendarConnectionCard } from "@/components/integrations/calendar-connection-card";
-import { CalendarProjectSync } from "@/components/integrations/calendar-project-sync";
 import { trpc } from "@/lib/trpc";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
 
 /**
  * Integrations settings page.
- * Shows QuickBooks and Calendar connection management.
+ * Shows QuickBooks connection management.
  */
 export default function IntegrationsPage() {
   const { data: qboStatus, isLoading: qboLoading, error: qboError } = trpc.quickbooks.getStatus.useQuery(
-    undefined,
-    {
-      refetchInterval: 5000, // Poll every 5 seconds for near-real-time updates
-    }
-  );
-
-  const { data: calendarConnections, isLoading: calendarLoading, error: calendarError } = trpc.calendar.getConnections.useQuery(
     undefined,
     {
       refetchInterval: 5000, // Poll every 5 seconds for near-real-time updates
@@ -56,18 +46,13 @@ export default function IntegrationsPage() {
     return s?.connected === true && "connection" in s;
   };
 
-  // Find active calendar connection for project sync section
-  const activeCalendarConnection = calendarConnections?.find(
-    (conn) => conn.status === "active"
-  );
-
-  if (qboLoading || calendarLoading) {
+  if (qboLoading) {
     return (
       <div className="space-y-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Integrations</h1>
           <p className="text-muted-foreground">
-            Connect external services to your account
+            Connect QuickBooks to your account
           </p>
         </div>
         <div className="flex items-center justify-center py-12">
@@ -78,15 +63,15 @@ export default function IntegrationsPage() {
   }
 
   // Show individual errors for each integration
-  const hasError = qboError || calendarError;
+  const hasError = qboError;
 
-  if (hasError && !qboStatus && !calendarConnections) {
+  if (hasError && !qboStatus) {
     return (
       <div className="space-y-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Integrations</h1>
           <p className="text-muted-foreground">
-            Connect external services to your account
+            Connect QuickBooks to your account
           </p>
         </div>
         {qboError && (
@@ -94,13 +79,6 @@ export default function IntegrationsPage() {
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error loading QuickBooks integration</AlertTitle>
             <AlertDescription>{qboError.message}</AlertDescription>
-          </Alert>
-        )}
-        {calendarError && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error loading Calendar integration</AlertTitle>
-            <AlertDescription>{calendarError.message}</AlertDescription>
           </Alert>
         )}
       </div>
@@ -112,7 +90,7 @@ export default function IntegrationsPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Integrations</h1>
         <p className="text-muted-foreground">
-          Connect external services to your account
+          Connect QuickBooks to your account
         </p>
       </div>
 
@@ -182,48 +160,6 @@ export default function IntegrationsPage() {
           </div>
         </section>
 
-        <Separator />
-
-        {/* Calendar Section */}
-        <section>
-          <h2 className="text-xl font-semibold mb-4">Calendar Integration</h2>
-          <p className="text-sm text-muted-foreground mb-4">
-            Connect your Google Calendar or Microsoft Outlook to sync project
-            milestones and deadlines.
-          </p>
-
-          {calendarError ? (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Error loading Calendar connections</AlertTitle>
-              <AlertDescription>{calendarError.message}</AlertDescription>
-            </Alert>
-          ) : (
-            <div className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                {/* Google Calendar card */}
-                <CalendarConnectionCard
-                  provider="google"
-                  connection={calendarConnections?.find(
-                    (c) => c.provider === "google"
-                  )}
-                />
-                {/* Microsoft Outlook card */}
-                <CalendarConnectionCard
-                  provider="microsoft"
-                  connection={calendarConnections?.find(
-                    (c) => c.provider === "microsoft"
-                  )}
-                />
-              </div>
-
-              {/* If any connection is active, show project sync controls */}
-              {activeCalendarConnection && (
-                <CalendarProjectSync connectionId={activeCalendarConnection.id} />
-              )}
-            </div>
-          )}
-        </section>
       </div>
     </div>
   );
