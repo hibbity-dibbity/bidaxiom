@@ -143,7 +143,7 @@ export async function diagnoseQboConnection(tenant: { db: any; schema: any }): P
       try {
         const d = await qboGet(base, realm, token!, `customer/${m.qboId}`);
         const theirs: string = d.Customer?.DisplayName ?? "(no name)";
-        const same = proj && theirs.trim().toLowerCase() === proj.name.trim().toLowerCase();
+        const same = proj && theirs.trim().toLowerCase() === mine.trim().toLowerCase();
         if (!same) result.needsLinkReset = true;
         lines.push(`${mine} is linked to QuickBooks customer #${m.qboId} "${theirs}"${same ? "" : " (a different name: this link looks stale)"}`);
       } catch {
