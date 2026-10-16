@@ -131,7 +131,8 @@ export const ssoRouter = router({
       if (!existing && !input.clientSecret) throw new TRPCError({ code: "BAD_REQUEST", message: "Enter the client secret." });
       let issuer: string;
       try {
-        issuer = issuerFor(input.preset, input.value);
+        // Blank tenant/issuer on an unchanged provider keeps the saved one (the page may not have shown it).
+        issuer = !input.value?.trim() && existing && existing.provider === input.preset && input.preset !== "google" ? existing.issuer : issuerFor(input.preset, input.value);
         await discover(issuer);
       } catch (e) {
         throw new TRPCError({ code: "BAD_REQUEST", message: e instanceof Error ? e.message : "Could not reach the identity provider" });
