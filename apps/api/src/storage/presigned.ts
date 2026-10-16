@@ -1,6 +1,6 @@
 import { PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { getStorageClient, getBucketName, buildStorageKey } from "./client.js";
+import { getPresignClient, getBucketName, buildStorageKey } from "./client.js";
 
 /**
  * Generate a pre-signed URL for client-side file upload.
@@ -15,7 +15,6 @@ export async function generateUploadUrl(
   fileName: string,
   contentType: string
 ): Promise<{ uploadUrl: string; storageKey: string }> {
-  const s3 = getStorageClient();
   const bucket = getBucketName();
   const key = buildStorageKey(tenantId, projectId, fileName);
 
@@ -25,7 +24,7 @@ export async function generateUploadUrl(
     ContentType: contentType,
   });
 
-  const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 900 }); // 15 minutes
+  const uploadUrl = await getSignedUrl(getPresignClient(), command, { expiresIn: 900 }); // 15 minutes
 
   return { uploadUrl, storageKey: key };
 }
@@ -42,7 +41,6 @@ export async function generateDownloadUrl(
   storageKey: string,
   fileName?: string
 ): Promise<string> {
-  const s3 = getStorageClient();
   const bucket = getBucketName();
 
   const command = new GetObjectCommand({
@@ -51,5 +49,5 @@ export async function generateDownloadUrl(
     ...(fileName ? { ResponseContentDisposition: `attachment; filename="${fileName}"` } : {}),
   });
 
-  return await getSignedUrl(s3, command, { expiresIn: 3600 }); // 1 hour
+  return await getSignedUrl(getPresignClient(), command, { expiresIn: 3600 }); // 1 hour
 }

@@ -24,7 +24,7 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { router } from "../trpc.js";
 import { protectedProcedure } from "../procedures.js";
-import { getStorageClient, getBucketName, buildTemplateStorageKey } from "../../storage/client.js";
+import { getPresignClient, getStorageClient, getBucketName, buildTemplateStorageKey } from "../../storage/client.js";
 import { parseDocxFields, parseXlsxFields } from "../../templates/extract.js";
 import { renderTemplate, type RenderResult } from "../../templates/render.js";
 import { buildPreviewData } from "../../templates/fixtures.js";
@@ -103,7 +103,7 @@ export const templateRouter = router({
         ContentType: input.contentType,
       });
 
-      const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 300 }); // 5 minutes
+      const uploadUrl = await getSignedUrl(getPresignClient(), command, { expiresIn: 300 }); // 5 minutes
 
       return { uploadUrl, storageKey, fileType };
     }),
@@ -343,7 +343,7 @@ export const templateRouter = router({
         Bucket: bucket,
         Key: previewKey,
       });
-      const previewUrl = await getSignedUrl(s3, previewGetCmd, { expiresIn: 300 }); // 5 minutes
+      const previewUrl = await getSignedUrl(getPresignClient(), previewGetCmd, { expiresIn: 300 }); // 5 minutes
 
       return { previewUrl };
     }),

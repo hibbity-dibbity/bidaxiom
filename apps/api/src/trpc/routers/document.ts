@@ -20,7 +20,7 @@ import {
 import { generateUploadUrl, generateDownloadUrl } from "../../storage/presigned.js";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
-import { getStorageClient, getBucketName } from "../../storage/client.js";
+import { getPresignClient, getStorageClient, getBucketName } from "../../storage/client.js";
 import { createAuditLog } from "../../audit/logger.js";
 import { defineAbilitiesFor, loadDocumentPermissions } from "../../auth/abilities.js";
 import { eq, desc, and, or, isNull, inArray, like, ilike, gte, lte, sql } from "drizzle-orm";
@@ -855,8 +855,7 @@ export const documentRouter = router({
       // Generate 7-day presigned download URL for email sharing
       const s3 = getStorageClient();
       const bucket = getBucketName();
-      const downloadUrl = await getSignedUrl(
-        s3,
+      const downloadUrl = await getSignedUrl(getPresignClient(),
         new GetObjectCommand({
           Bucket: bucket,
           Key: version.storageKey,

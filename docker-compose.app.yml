@@ -31,6 +31,8 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: "6379"
       S3_ENDPOINT: http://minio:9000
+      # Address the browser uses for file uploads and downloads (set PUBLIC_FILES_URL when using a tunnel or server).
+      S3_PUBLIC_ENDPOINT: ${PUBLIC_FILES_URL:-http://localhost:9000}
       S3_REGION: us-east-1
       S3_ACCESS_KEY_ID: minioadmin
       S3_SECRET_ACCESS_KEY: minioadmin
@@ -40,7 +42,9 @@ services:
       JWT_SECRET: ${JWT_SECRET:-local-dev-jwt-secret-change-me-0123456789}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-local-dev-refresh-secret-change-me-0123}
       SESSION_SECRET: ${SESSION_SECRET:-local-dev-session-secret-change-me-01234}
-      CORS_ORIGIN: http://localhost:3000
+      # Public addresses. Leave unset for local use; set PUBLIC_APP_URL / PUBLIC_API_URL in .env when exposing
+      # BidAxiom through a tunnel or a server (the web image must be rebuilt after changing PUBLIC_API_URL).
+      CORS_ORIGIN: ${PUBLIC_APP_URL:-http://localhost:3000}
       # The PDF renderer opens the web app by its service name.
       WEB_INTERNAL_URL: http://web:3000
       # Email (Resend). Put RESEND_API_KEY in a file named .env next to this one; EMAIL_FROM is the
@@ -49,7 +53,7 @@ services:
       EMAIL_FROM: ${EMAIL_FROM:-documents@bidaxiom.com}
       # Lets a phone or laptop on the same network use the app (see docs in deploy/README if present).
       ALLOW_LAN_ORIGINS: "true"
-      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      NEXT_PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://localhost:3000}
 
   web:
     build:
@@ -57,7 +61,7 @@ services:
       dockerfile: apps/web/Dockerfile
       # Built into the browser bundle, so it must be the address your browser uses.
       args:
-        NEXT_PUBLIC_API_URL: http://localhost:3001
+        NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:3001}
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -66,8 +70,8 @@ services:
     environment:
       PORT: "3000"
       SESSION_SECRET: ${SESSION_SECRET:-local-dev-session-secret-change-me-01234}
-      NEXT_PUBLIC_API_URL: http://localhost:3001
+      NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:3001}
       # Server-side calls from inside the web container reach the API by its service name.
       API_INTERNAL_URL: http://api:3001
       # The local setup runs over plain http, so the session cookie cannot be "secure".
-      COOKIE_SECURE: "false"
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}

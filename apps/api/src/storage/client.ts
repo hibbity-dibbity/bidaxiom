@@ -22,9 +22,34 @@ export function getStorageClient(): S3Client {
   return _s3Client;
 }
 
+let _presignClient: S3Client | null = null;
+
+/**
+ * Client used only to sign links that the browser opens (uploads and downloads). The API reaches
+ * storage by its internal address (S3_ENDPOINT, e.g. http://minio:9000), which a browser cannot
+ * reach, so signed links use S3_PUBLIC_ENDPOINT when it is set. Unset means the same address.
+ */
+export function getPresignClient(): S3Client {
+  const publicEndpoint = process.env.S3_PUBLIC_ENDPOINT;
+  if (!publicEndpoint) return getStorageClient();
+  if (!_presignClient) {
+    _presignClient = new S3Client({
+      endpoint: publicEndpoint,
+      region: process.env.S3_REGION ?? "us-east-1",
+      credentials: {
+        accessKeyId: process.env.S3_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
+      },
+      forcePathStyle: true,
+    });
+  }
+  return _presignClient;
+}
+
 /** Reset the client (for testing). */
 export function resetStorageClient(): void {
   _s3Client = null;
+  _presignClient = null;
 }
 
 /**
