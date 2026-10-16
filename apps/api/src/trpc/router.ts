@@ -32,6 +32,7 @@ import { takeoffRouter } from "./routers/takeoff.js";
 import { ssoRouter } from "./routers/sso.js";
 import { signingRouter } from "./routers/signing.js";
 import { passkeyRouter } from "./routers/passkey.js";
+import { platformRouter } from "./routers/platform.js";
 
 /**
  * Root application router.
@@ -42,6 +43,7 @@ import { passkeyRouter } from "./routers/passkey.js";
  */
 export const appRouter = router({
   auth: authRouter,
+  platform: platformRouter,
   health: healthRouter,
   audit: auditRouter,
   company: companyRouter,

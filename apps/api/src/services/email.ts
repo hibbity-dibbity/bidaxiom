@@ -120,6 +120,45 @@ export async function sendPasswordResetEmail(email: string, token: string): Prom
 }
 
 /**
+ * Welcome email for an account the platform operator created (new company admin) or reset.
+ * The link opens the normal "set your password" page; after that the person signs in and sets up
+ * their authenticator app and passkey. Returns false (and logs the link in dev) when no email service key is configured.
+ */
+export async function sendAccountSetupEmail(
+  email: string,
+  token: string,
+  opts: { firstName?: string | null; companyName?: string; reset?: boolean }
+): Promise<boolean> {
+  const url = `${getAppUrl()}/reset-password?token=${token}`;
+  const hello = opts.firstName ? `Hi ${opts.firstName},` : "Hello,";
+  const subject = opts.reset ? "Set a new password for BidAxiom" : "Your BidAxiom account is ready";
+  const intro = opts.reset
+    ? "Your BidAxiom sign-in was reset. Choose a new password with the link below, then sign in and set up your authenticator app and passkey again."
+    : `Your BidAxiom account${opts.companyName ? ` for ${opts.companyName}` : ""} is ready. Choose your password with the link below, then sign in and set up your authenticator app and a passkey.`;
+  const html = `
+    <p>${hello}</p>
+    <p>${intro}</p>
+    <p><a href="${url}">Choose your password</a></p>
+    <p><strong>This link expires in 7 days and works once.</strong></p>
+    <p>If you weren't expecting this email, you can ignore it.</p>
+  `;
+
+  const client = getResendClient();
+  if (!client) {
+    console.log(`[EMAIL DEV] Account setup email to ${email}: ${url}`);
+    return false;
+  }
+  try {
+    await client.emails.send({ from: getFromEmail(), to: email, subject, html });
+    console.log(`[EMAIL] Account setup email sent to ${email}`);
+    return true;
+  } catch (err) {
+    console.error(`[EMAIL] Failed to send account setup email to ${email}:`, err);
+    throw new Error("The email service refused the message");
+  }
+}
+
+/**
  * Send document share email with a download link.
  *
  * @param recipientEmail - Recipient email address

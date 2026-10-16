@@ -268,3 +268,26 @@ export const signingLinks = pgTable("signing_links", {
 }, (table) => ({
   estimateIdx: index("idx_signing_links_estimate").on(table.estimateId),
 }));
+
+/**
+ * Platform operators (the people who run BidAxiom itself). Completely separate from `users`:
+ * no company membership, no email address, signs in with a username, password and authenticator code.
+ */
+export const platformAdmins = pgTable("platform_admins", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  username: text("username").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  mfaSecret: text("mfa_secret").notNull(),
+  disabled: boolean("disabled").notNull().default(false),
+  lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/** What platform operators did (account-level actions only; never company data). */
+export const platformAuditLog = pgTable("platform_audit_log", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  adminId: uuid("admin_id").references(() => platformAdmins.id, { onDelete: "set null" }),
+  action: text("action").notNull(),
+  detail: jsonb("detail").$type<Record<string, unknown>>(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
