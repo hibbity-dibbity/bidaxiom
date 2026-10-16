@@ -26,6 +26,8 @@ export const lifecyclePhaseEnum = z.enum([
   "closed",
   "warranty",
   "archived",
+  "on_hold",
+  "lost",
 ]);
 export type LifecyclePhase = z.infer<typeof lifecyclePhaseEnum>;
 
@@ -50,6 +52,12 @@ export const LIFECYCLE_ORDER: LifecyclePhase[] = [
   "archived",
 ];
 
+// Side phases sit outside the forward order: a job can be paused or lost from anywhere and be moved back by hand.
+export const LIFECYCLE_SIDE_PHASES: LifecyclePhase[] = ["on_hold", "lost"];
+
+// Every phase, in the order menus and filters list them.
+export const LIFECYCLE_MENU_ORDER: LifecyclePhase[] = [...LIFECYCLE_ORDER, ...LIFECYCLE_SIDE_PHASES];
+
 // Human-readable labels for the lifecycle phases
 export const LIFECYCLE_PHASE_LABELS: Record<LifecyclePhase, string> = {
   opportunity: "Opportunity",
@@ -61,6 +69,8 @@ export const LIFECYCLE_PHASE_LABELS: Record<LifecyclePhase, string> = {
   closed: "Closed",
   warranty: "Warranty",
   archived: "Archived",
+  on_hold: "On Hold",
+  lost: "Lost",
 };
 
 // Simple mode billing categories (replaces CSI trade classification)
@@ -203,7 +213,7 @@ export const setProjectModeSchema = z.object({
 // Phase-feature gate definitions
 // feature -> list of lifecyclePhase values where the feature IS available
 export const PHASE_FEATURE_GATES: Record<string, LifecyclePhase[]> = {
-  change_orders: ["awarded", "active", "substantial_completion", "closed", "warranty", "archived"],
+  change_orders: ["awarded", "active", "substantial_completion", "closed", "warranty", "archived", "on_hold"],
   estimate_editing: ["opportunity", "estimating"],
 };
 
@@ -227,6 +237,7 @@ export const BLOCKED_DELETION_PHASES: LifecyclePhase[] = [
   "substantial_completion",
   "closed",
   "warranty",
+  "on_hold",
 ];
 
 // Return type from project.checkDeletable

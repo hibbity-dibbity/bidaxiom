@@ -93,6 +93,8 @@ export function ProjectsFilters({ customers, users, filters, setFilters }: Proje
     closed: "Closed",
     warranty: "Warranty",
     archived: "Archived",
+    on_hold: "On Hold",
+    lost: "Lost",
   };
 
   const activeChips: FilterChip[] = [
@@ -172,6 +174,8 @@ export function ProjectsFilters({ customers, users, filters, setFilters }: Proje
             <SelectItem value="closed">Closed</SelectItem>
             <SelectItem value="warranty">Warranty</SelectItem>
             <SelectItem value="archived">Archived</SelectItem>
+            <SelectItem value="on_hold">On Hold</SelectItem>
+            <SelectItem value="lost">Lost</SelectItem>
           </SelectContent>
         </Select>
 

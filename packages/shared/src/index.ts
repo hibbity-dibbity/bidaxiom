@@ -51,6 +51,8 @@ export {
   projectRoleEnum,
   type ProjectRole,
   LIFECYCLE_ORDER,
+  LIFECYCLE_SIDE_PHASES,
+  LIFECYCLE_MENU_ORDER,
   LIFECYCLE_PHASE_LABELS,
   BILLING_CATEGORIES,
   type BillingCategory,

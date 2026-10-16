@@ -15,7 +15,7 @@ export default function ProjectsPage() {
   const [filters, setFilters] = useQueryStates({
     search: parseAsString,
     customer: parseAsString,
-    lifecyclePhase: parseAsStringEnum<LifecyclePhase>(['opportunity', 'estimating', 'submitted', 'awarded', 'active', 'substantial_completion', 'closed', 'warranty', 'archived']),
+    lifecyclePhase: parseAsStringEnum<LifecyclePhase>(['opportunity', 'estimating', 'submitted', 'awarded', 'active', 'substantial_completion', 'closed', 'warranty', 'archived', 'on_hold', 'lost']),
     assignedUser: parseAsString,
     startDateFrom: parseAsString,
     startDateTo: parseAsString,

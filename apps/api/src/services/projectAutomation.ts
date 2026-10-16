@@ -71,6 +71,11 @@ export async function resolvePrompts(
 /** Keep prompts honest after any phase change (automatic, manual, or from a prompt). */
 export async function afterPhaseChange(tenant: Tenant, projectId: string, newPhase: string) {
   const i = idx(newPhase);
+  // A paused or lost job is no longer waiting on a "start it?" or "close it?" answer.
+  if (newPhase === "on_hold" || newPhase === "lost") {
+    await resolvePrompts(tenant, { projectId, kinds: ["mark_active", "close_project"] }, `Project is now ${newPhase === "lost" ? "Lost" : "On Hold"}`);
+    return;
+  }
   if (i >= ACTIVE_IDX) await resolvePrompts(tenant, { projectId, kinds: ["mark_active"] }, `Project is now ${newPhase}`);
   if (i >= CLOSED_IDX) await resolvePrompts(tenant, { projectId, kinds: ["close_project"] }, `Project is now ${newPhase}`);
   if (i < ACTIVE_IDX) await resolvePrompts(tenant, { projectId, kinds: ["close_project"] }, `Project is now ${newPhase}`);

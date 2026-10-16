@@ -6,7 +6,7 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { LIFECYCLE_ORDER, LIFECYCLE_PHASE_LABELS, type LifecyclePhase } from "@construction/shared";
+import { LIFECYCLE_MENU_ORDER, LIFECYCLE_SIDE_PHASES, LIFECYCLE_PHASE_LABELS, type LifecyclePhase } from "@construction/shared";
 
 const phaseToVariant = (phase: LifecyclePhase) => {
   switch (phase) {
@@ -19,6 +19,8 @@ const phaseToVariant = (phase: LifecyclePhase) => {
     case "closed": return "completed" as const;
     case "warranty": return "warning" as const;
     case "archived": return "cancelled" as const;
+    case "on_hold": return "warning" as const;
+    case "lost": return "cancelled" as const;
     default: return "draft" as const;
   }
 };
@@ -85,15 +87,17 @@ export function LifecyclePhaseBadge({
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>{badge}</PopoverTrigger>
           <PopoverContent className="w-52 p-1">
-            {LIFECYCLE_ORDER.map((phase) => (
-              <button
-                key={phase}
-                disabled={phase === currentPhase}
-                onClick={() => handlePhaseClick(phase)}
-                className="w-full text-left px-2 py-1.5 text-sm rounded hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {LIFECYCLE_PHASE_LABELS[phase]}
-              </button>
+            {LIFECYCLE_MENU_ORDER.map((phase) => (
+              <div key={phase}>
+                {phase === LIFECYCLE_SIDE_PHASES[0] && <div className="my-1 border-t" />}
+                <button
+                  disabled={phase === currentPhase}
+                  onClick={() => handlePhaseClick(phase)}
+                  className="w-full text-left px-2 py-1.5 text-sm rounded hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {LIFECYCLE_PHASE_LABELS[phase]}
+                </button>
+              </div>
             ))}
           </PopoverContent>
         </Popover>

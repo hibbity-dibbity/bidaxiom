@@ -30,6 +30,8 @@ const phaseToVariant = (phase: LifecyclePhase) => {
     case "closed": return "completed" as const;
     case "warranty": return "warning" as const;
     case "archived": return "cancelled" as const;
+    case "on_hold": return "warning" as const;
+    case "lost": return "cancelled" as const;
     default: return "draft" as const;
   }
 };
