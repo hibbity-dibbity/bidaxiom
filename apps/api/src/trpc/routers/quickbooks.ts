@@ -325,7 +325,8 @@ export const quickbooksRouter = router({
       .orderBy(sql`(${tenant.schema.qboConnections.status} = 'active') DESC`, sql`${tenant.schema.qboConnections.updatedAt} DESC`)
       .limit(1);
 
-    if (connection.length === 0) {
+    // A disconnected company counts as not connected, so the page offers Connect instead of Disconnect.
+    if (connection.length === 0 || connection[0].status === "disconnected") {
       return { connected: false };
     }
 

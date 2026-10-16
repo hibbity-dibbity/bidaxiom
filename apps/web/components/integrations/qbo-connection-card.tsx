@@ -196,7 +196,7 @@ export function QboConnectionCard({ connection }: QboConnectionCardProps) {
         </CardContent>
 
         <CardFooter>
-          {!connection.connected || connection.status === "expired" ? (
+          {!connection.connected || connection.status === "expired" || connection.status === "disconnected" ? (
             <Button
               onClick={handleConnect}
               disabled={getAuthUrlMutation.isPending}
