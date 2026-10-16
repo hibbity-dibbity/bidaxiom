@@ -14,7 +14,11 @@ export async function GET(request: Request) {
   const jar = await cookies();
   const pending = jar.get(PENDING_COOKIE)?.value;
   jar.delete({ name: PENDING_COOKIE, path: "/api/auth/sso" });
-  const fail = (msg: string, to = "/sign-in") => NextResponse.redirect(`${origin}${to}${to.includes("?") ? "&" : "?"}${to.startsWith("/settings") ? "error" : "sso_error"}=${encodeURIComponent(msg)}`);
+  // A connection test started from Settings must come back to Settings with the reason, never to the sign-in page.
+  // (Read only to route the message; the API verifies the token properly in "complete".)
+  let isSetup = false;
+  try { isSetup = JSON.parse(Buffer.from(pending?.split(".")[1] ?? "", "base64url").toString()).purpose === "setup"; } catch { /* not a token */ }
+  const fail = (msg: string, to = isSetup ? "/settings/sign-in" : "/sign-in") => NextResponse.redirect(`${origin}${to}${to.includes("?") ? "&" : "?"}${to.startsWith("/settings") ? "error" : "sso_error"}=${encodeURIComponent(msg)}`);
 
   const providerError = url.searchParams.get("error_description") ?? url.searchParams.get("error");
   if (providerError) return fail(providerError.split("\n")[0].slice(0, 200));

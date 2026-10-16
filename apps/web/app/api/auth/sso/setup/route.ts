@@ -6,7 +6,7 @@ import { callSso, publicOrigin, setPending } from "@/lib/sso-api";
 export async function GET(request: Request) {
   const origin = publicOrigin(request);
   const token = await getAccessToken();
-  if (!token) return NextResponse.redirect(`${origin}/sign-in`);
+  if (!token) return NextResponse.redirect(`${origin}/sign-in?sso_error=${encodeURIComponent("Your session expired. Sign in, then test the connection again.")}`);
   try {
     const r = await callSso<{ authUrl: string; pendingToken: string }>("setupStart", { redirectUri: `${origin}/api/auth/sso/callback` }, token);
     await setPending(r.pendingToken);
