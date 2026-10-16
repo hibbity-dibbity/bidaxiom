@@ -39,8 +39,8 @@ export async function buildTenantContext(
   const tenant = await resolveTenantByOrgId(orgId);
 
   // The platform operator can switch a company off without touching its data.
-  const [org] = await db.select({ disabledAt: organizations.disabledAt }).from(organizations).where(eq(organizations.id, orgId)).limit(1);
-  if (org?.disabledAt) {
+  const [org] = await db.select({ disabledAt: organizations.disabledAt, deletedAt: organizations.deletedAt }).from(organizations).where(eq(organizations.id, orgId)).limit(1);
+  if (org?.disabledAt || org?.deletedAt) {
     const error = new Error(`Company ${orgId} is disabled.`);
     (error as Error & { code: string }).code = "TENANT_DISABLED";
     throw error;

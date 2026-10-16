@@ -134,98 +134,6 @@ async function sendInvitationEmail(
 
 export const organizationRouter = router({
   /**
-   * Create a new organization with automatic tenant provisioning.
-   */
-  create: authProcedure
-    .input(
-      z.object({
-        name: z.string().min(1),
-        slug: z.string().optional(),
-      })
-    )
-    .mutation(async ({ ctx, input }) => {
-      // authProcedure guarantees ctx.userId is not null
-      const userId = ctx.userId!;
-
-      // Generate slug if not provided
-      const slug = input.slug || generateSlug(input.name);
-
-      // Check if slug is already taken
-      const existing = await db
-        .select()
-        .from(organizations)
-        .where(eq(organizations.slug, slug))
-        .limit(1);
-
-      if (existing.length > 0) {
-        throw new TRPCError({
-          code: "CONFLICT",
-          message: "Organization slug already exists",
-        });
-      }
-
-      // Generate a clerkOrgId-compatible identifier for backward compatibility
-      const clerkOrgId = `org_${nanoid(24)}`;
-
-      // Provision tenant schema
-      const pool = getPool();
-      const tenant = await provisionTenantSchema(clerkOrgId, input.name, pool);
-
-      // Create organization record
-      const [org] = await db
-        .insert(organizations)
-        .values({
-          name: input.name,
-          slug,
-          tenantId: tenant.id,
-          createdBy: userId,
-          clerkOrgId,
-        })
-        .returning();
-
-      // Create admin membership for creating user
-      await db.insert(organizationMemberships).values({
-        userId,
-        organizationId: org.id,
-        role: "org:admin",
-      });
-
-      // Backward compatibility: insert into legacy userCompanyMappings
-      await db.insert(userCompanyMappings).values({
-        clerkUserId: userId,
-        tenantId: tenant.id,
-        role: "org:admin",
-      });
-
-      // Create user_profile in tenant schema
-      const tenantDb = createTenantDb(tenant.schemaName);
-
-      // Get user details from public users table
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(eq(users.id, userId))
-        .limit(1);
-
-      if (user) {
-        await tenantDb.db.execute(sql`
-          INSERT INTO "${sql.raw(tenant.schemaName)}".user_profiles (
-            clerk_user_id, email, first_name, last_name, role
-          ) VALUES (
-            ${userId}, ${user.email}, ${user.firstName || ""}, ${user.lastName || ""}, ${"org:admin"}
-          )
-        `);
-      }
-
-      return {
-        id: org.id,
-        name: org.name,
-        slug: org.slug,
-        tenantId: tenant.id,
-      };
-    }),
-
-  /**
    * List all organizations the current user belongs to.
    */
   list: authProcedure.query(async ({ ctx }) => {
@@ -377,9 +285,6 @@ export const organizationRouter = router({
       const memberships = await db.select().from(organizationMemberships).where(eq(organizationMemberships.userId, input.userId));
       if (!memberships.some((m) => m.organizationId === input.organizationId)) {
         throw new TRPCError({ code: "NOT_FOUND", message: "That person is not a member of this company." });
-      }
-      if (memberships.some((m) => m.organizationId !== input.organizationId)) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "That person also belongs to other companies, so their sign-in can only be reset by themselves (Forgot password)." });
       }
       const [target] = await db.select().from(users).where(eq(users.id, input.userId)).limit(1);
       if (!target) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
@@ -546,6 +451,7 @@ export const organizationRouter = router({
         .limit(1);
 
       if (existingUser.length > 0) {
+        // One company per account: an email that already has an account cannot be invited anywhere else.
         const existingMembership = await db
           .select()
           .from(organizationMemberships)
@@ -557,12 +463,12 @@ export const organizationRouter = router({
           )
           .limit(1);
 
-        if (existingMembership.length > 0) {
-          throw new TRPCError({
-            code: "CONFLICT",
-            message: "User is already a member of this organization",
-          });
-        }
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: existingMembership.length > 0
+            ? "User is already a member of this organization"
+            : "That email already has a BidAxiom account. Each account belongs to one company, so use a different email address.",
+        });
       }
 
       // Check if there's already a pending invitation

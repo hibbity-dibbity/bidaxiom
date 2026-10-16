@@ -17,7 +17,7 @@ type Member = {
   passkeys: number;
   lastLoginAt: string | null;
 };
-type Company = { id: string; name: string; createdAt: string; disabled: boolean; members: Member[] };
+type Company = { id: string; name: string; createdAt: string; disabled: boolean; deletedAt: string | null; daysLeft: number | null; members: Member[] };
 type MailResult = { email: string; emailSent: boolean; emailProblem?: string };
 
 async function rpc<T>(proc: string, input?: unknown): Promise<T> {
@@ -47,6 +47,7 @@ export default function PlatformPage() {
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirmReset, setConfirmReset] = useState<string | null>(null);
+  const [binning, setBinning] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [typedName, setTypedName] = useState("");
 
@@ -115,11 +116,40 @@ export default function PlatformPage() {
     }
   }
 
-  async function deleteCompany(c: Company) {
+  async function moveToBin(c: Company) {
+    setBusy(true);
+    setNotice(null);
+    setBinning(null);
+    try {
+      const r = await rpc<{ retentionDays: number }>("moveCompanyToBin", { organizationId: c.id });
+      setNotice({ ok: true, text: `${c.name} is in the recycle bin. Its people are locked out, and you can restore it for ${r.retentionDays} days before it is removed for good.` });
+      await load();
+    } catch (err) {
+      setNotice({ ok: false, text: err instanceof Error ? err.message : "Request failed" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function restore(c: Company) {
     setBusy(true);
     setNotice(null);
     try {
-      const r = await rpc<{ filesDeleted: number; accountsDeleted: number }>("deleteCompany", { organizationId: c.id, confirmName: typedName });
+      await rpc("restoreCompany", { organizationId: c.id });
+      setNotice({ ok: true, text: `${c.name} was restored. It is still disabled; click Enable when you want its people back in.` });
+      await load();
+    } catch (err) {
+      setNotice({ ok: false, text: err instanceof Error ? err.message : "Request failed" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteForever(c: Company) {
+    setBusy(true);
+    setNotice(null);
+    try {
+      const r = await rpc<{ filesDeleted: number; accountsDeleted: number }>("deleteCompanyForever", { organizationId: c.id, confirmName: typedName });
       setNotice({ ok: true, text: `${c.name} was permanently deleted (${r.filesDeleted} files, ${r.accountsDeleted} accounts).` });
       setDeleting(null);
       setTypedName("");
@@ -197,8 +227,8 @@ export default function PlatformPage() {
         <CardContent className="space-y-6">
           {loadError && <p className="text-sm text-destructive">{loadError}</p>}
           {!companies && !loadError && <Loader2 className="h-4 w-4 animate-spin" />}
-          {companies?.length === 0 && <p className="text-sm text-muted-foreground">No companies yet.</p>}
-          {companies?.map((c) => (
+          {companies && companies.filter((c) => !c.deletedAt).length === 0 && <p className="text-sm text-muted-foreground">No companies yet.</p>}
+          {companies?.filter((c) => !c.deletedAt).map((c) => (
             <div key={c.id} className="rounded-md border">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2">
                 <div className="font-medium">
@@ -209,26 +239,17 @@ export default function PlatformPage() {
                   <Button size="sm" variant="outline" disabled={busy} onClick={() => setDisabled(c, !c.disabled)}>
                     {c.disabled ? "Enable" : "Disable"}
                   </Button>
-                  {c.disabled && (
-                    <Button size="sm" variant="destructive" disabled={busy} onClick={() => { setDeleting(deleting === c.id ? null : c.id); setTypedName(""); }}>
+                  {binning === c.id ? (
+                    <Button size="sm" variant="destructive" disabled={busy} onClick={() => moveToBin(c)}>
+                      Confirm: move to recycle bin
+                    </Button>
+                  ) : (
+                    <Button size="sm" variant="outline" disabled={busy} onClick={() => setBinning(c.id)}>
                       Delete…
                     </Button>
                   )}
                 </div>
               </div>
-              {deleting === c.id && (
-                <div className="space-y-2 border-b bg-destructive/5 px-4 py-3 text-sm">
-                  <p>
-                    This permanently deletes <strong>{c.name}</strong>: all its projects, documents, files and financial records, plus the accounts of people who belong to no other company. It cannot be undone. Type the company name to confirm.
-                  </p>
-                  <div className="flex gap-2">
-                    <Input value={typedName} onChange={(e) => setTypedName(e.target.value)} placeholder={c.name} />
-                    <Button variant="destructive" disabled={busy || typedName.trim() !== c.name} onClick={() => deleteCompany(c)}>
-                      Delete forever
-                    </Button>
-                  </div>
-                </div>
-              )}
               <div className="divide-y">
                 {c.members.map((m) => (
                   <div key={m.userId} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 text-sm">
@@ -262,6 +283,50 @@ export default function PlatformPage() {
           ))}
         </CardContent>
       </Card>
+
+      {companies && companies.some((c) => c.deletedAt) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Recycle bin</CardTitle>
+            <CardDescription>
+              Deleted companies stay here, locked out but complete, until their time runs out and they are removed for good. Restore brings one back (disabled).
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {companies.filter((c) => c.deletedAt).map((c) => (
+              <div key={c.id} className="rounded-md border px-4 py-3 text-sm">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <span className="font-medium">{c.name}</span>
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      deleted {new Date(c.deletedAt!).toLocaleDateString()} · {c.daysLeft} day{c.daysLeft === 1 ? "" : "s"} left
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" disabled={busy} onClick={() => restore(c)}>Restore</Button>
+                    <Button size="sm" variant="destructive" disabled={busy} onClick={() => { setDeleting(deleting === c.id ? null : c.id); setTypedName(""); }}>
+                      Delete forever…
+                    </Button>
+                  </div>
+                </div>
+                {deleting === c.id && (
+                  <div className="mt-3 space-y-2">
+                    <p>
+                      This permanently deletes <strong>{c.name}</strong>: all projects, documents, files and financial records, and its people&apos;s accounts. It cannot be undone. Type the company name to confirm.
+                    </p>
+                    <div className="flex gap-2">
+                      <Input value={typedName} onChange={(e) => setTypedName(e.target.value)} placeholder={c.name} />
+                      <Button variant="destructive" disabled={busy || typedName.trim() !== c.name} onClick={() => deleteForever(c)}>
+                        Delete forever
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

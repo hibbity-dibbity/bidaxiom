@@ -14,7 +14,6 @@ import {
   platformAdmins,
   platformAuditLog,
   passwordResetTokens,
-  tenants,
 } from "../../db/schema/public.js";
 import { hashPassword, verifyPassword } from "../../auth/password.js";
 import { verifyMfaToken } from "../../auth/mfa.js";
@@ -23,8 +22,7 @@ import { signPlatformToken, verifyPlatformToken } from "../../auth/platform.js";
 import { generateToken } from "../../auth/tokens.js";
 import { sendAccountSetupEmail } from "../../services/email.js";
 import { randomBytes } from "node:crypto";
-import { ListObjectsV2Command, DeleteObjectsCommand } from "@aws-sdk/client-s3";
-import { getStorageClient, getBucketName } from "../../storage/client.js";
+import { permanentlyDeleteCompany, RETENTION_DAYS } from "../../services/recycle-bin.js";
 import { provisionTenantSchema } from "../../tenant/provision.js";
 
 /**
@@ -114,6 +112,8 @@ export const platformRouter = router({
       name: o.name,
       createdAt: o.createdAt.toISOString(),
       disabled: Boolean(o.disabledAt),
+      deletedAt: o.deletedAt?.toISOString() ?? null,
+      daysLeft: o.deletedAt ? Math.max(0, Math.ceil((o.deletedAt.getTime() + RETENTION_DAYS * 86400000 - Date.now()) / 86400000)) : null,
       members: memberships
         .filter((m) => m.organizationId === o.id)
         .map((m) => {
@@ -239,55 +239,40 @@ export const platformRouter = router({
       return { ok: true as const };
     }),
 
-  /**
-   * Permanently delete a company: its database schema, its stored files, and the accounts of people who belong
-   * to no other company. Only a disabled company can be deleted, and the operator must retype its name.
-   */
-  deleteCompany: platformProcedure
+  /** Move a company to the recycle bin: locked out like a disabled company, everything kept, recoverable. */
+  moveCompanyToBin: platformProcedure
+    .input(z.object({ organizationId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const [org] = await db.select().from(organizations).where(eq(organizations.id, input.organizationId)).limit(1);
+      if (!org) throw new TRPCError({ code: "NOT_FOUND", message: "Company not found" });
+      const now = new Date();
+      await db.update(organizations).set({ deletedAt: now, disabledAt: org.disabledAt ?? now }).where(eq(organizations.id, org.id));
+      await audit(ctx.platformAdminId, "moveCompanyToBin", { company: org.name });
+      return { ok: true as const, retentionDays: RETENTION_DAYS };
+    }),
+
+  /** Bring a company back from the recycle bin. It returns disabled; enable it when you are ready. */
+  restoreCompany: platformProcedure
+    .input(z.object({ organizationId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const [org] = await db.select().from(organizations).where(eq(organizations.id, input.organizationId)).limit(1);
+      if (!org || !org.deletedAt) throw new TRPCError({ code: "NOT_FOUND", message: "That company is not in the recycle bin" });
+      await db.update(organizations).set({ deletedAt: null }).where(eq(organizations.id, org.id));
+      await audit(ctx.platformAdminId, "restoreCompany", { company: org.name });
+      return { ok: true as const };
+    }),
+
+  /** Delete a company in the recycle bin for good, before its retention period ends. Retype the name to confirm. */
+  deleteCompanyForever: platformProcedure
     .input(z.object({ organizationId: z.string().uuid(), confirmName: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const [org] = await db.select().from(organizations).where(eq(organizations.id, input.organizationId)).limit(1);
       if (!org) throw new TRPCError({ code: "NOT_FOUND", message: "Company not found" });
-      if (!org.disabledAt) throw new TRPCError({ code: "BAD_REQUEST", message: "Disable the company first. Only a disabled company can be deleted." });
+      if (!org.deletedAt) throw new TRPCError({ code: "BAD_REQUEST", message: "Move the company to the recycle bin first." });
       if (input.confirmName.trim() !== org.name) throw new TRPCError({ code: "BAD_REQUEST", message: "The name you typed doesn't match the company name." });
-
-      const [tenant] = org.tenantId ? await db.select().from(tenants).where(eq(tenants.id, org.tenantId)).limit(1) : [];
-      const members = await db.select({ userId: organizationMemberships.userId }).from(organizationMemberships).where(eq(organizationMemberships.organizationId, org.id));
-
-      // Stored files first (they are keyed by tenant id), then the database schema.
-      let filesDeleted = 0;
-      if (tenant) {
-        const s3 = getStorageClient();
-        const Bucket = getBucketName();
-        let ContinuationToken: string | undefined;
-        do {
-          const page = await s3.send(new ListObjectsV2Command({ Bucket, Prefix: `tenants/${tenant.id}/`, ContinuationToken }));
-          const keys = (page.Contents ?? []).map((o) => ({ Key: o.Key! }));
-          if (keys.length) {
-            await s3.send(new DeleteObjectsCommand({ Bucket, Delete: { Objects: keys, Quiet: true } }));
-            filesDeleted += keys.length;
-          }
-          ContinuationToken = page.IsTruncated ? page.NextContinuationToken : undefined;
-        } while (ContinuationToken);
-
-        if (!/^tenant_[a-z0-9_]+$/.test(tenant.schemaName)) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Unexpected schema name; nothing was deleted." });
-        await getPool().query(`DROP SCHEMA IF EXISTS "${tenant.schemaName}" CASCADE`);
-        await db.delete(userCompanyMappings).where(eq(userCompanyMappings.tenantId, tenant.id)).catch(() => {});
-        await db.delete(tenants).where(eq(tenants.id, tenant.id)); // cascades to the company, memberships, invitations, signing links
-      }
-      await db.delete(organizations).where(eq(organizations.id, org.id));
-
-      // Accounts that now belong to no company go too (people in other companies keep theirs).
-      let accountsDeleted = 0;
-      for (const m of members) {
-        const [left] = await db.select({ id: organizationMemberships.id }).from(organizationMemberships).where(eq(organizationMemberships.userId, m.userId)).limit(1);
-        if (!left) {
-          await db.delete(users).where(eq(users.id, m.userId));
-          accountsDeleted++;
-        }
-      }
-      await audit(ctx.platformAdminId, "deleteCompany", { company: org.name, filesDeleted, accountsDeleted });
-      return { ok: true as const, filesDeleted, accountsDeleted };
+      const r = await permanentlyDeleteCompany(org.id);
+      await audit(ctx.platformAdminId, "deleteCompanyForever", { company: r.name, filesDeleted: r.filesDeleted, accountsDeleted: r.accountsDeleted });
+      return { ok: true as const, filesDeleted: r.filesDeleted, accountsDeleted: r.accountsDeleted };
     }),
 
   activity: platformProcedure.query(async () => {

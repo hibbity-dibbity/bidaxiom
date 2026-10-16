@@ -107,6 +107,8 @@ export const organizations = pgTable("organizations", {
   clerkOrgId: text("clerk_org_id"), // For migration tracking, nullable
   /** Set by the platform operator: members cannot use the company until it is re-enabled. Data is untouched. */
   disabledAt: timestamp("disabled_at", { withTimezone: true }),
+  /** In the operator's recycle bin: locked out like a disabled company, recoverable until the retention period ends. */
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({

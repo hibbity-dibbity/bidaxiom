@@ -1,150 +1,41 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
 
 /**
- * Onboarding Page
- *
- * Custom organization creation flow replacing Clerk CreateOrganization.
- *
- * Handles two signup paths:
- * 1. Direct signup -> user has no org -> show create organization form
- * 2. Invited signup -> user already has org -> redirect to dashboard
+ * Companies are set up by BidAxiom and people join by invitation, so there is nothing to fill in here.
+ * Anyone who already belongs to a company is sent straight to the dashboard.
  */
 export default function OnboardingPage() {
   const router = useRouter();
   const { isLoaded } = useAuth();
-  const [companyName, setCompanyName] = useState("");
-
-  const { data: organizations, isLoading: orgsLoading } = trpc.organization.list.useQuery(
-    undefined,
-    { enabled: isLoaded }
-  );
-
-  const createOrgMutation = trpc.organization.create.useMutation({
-    onSuccess: async (data) => {
-      toast.success("Company created successfully!");
-
-      // Update session with newly created org before redirecting
-      try {
-        const response = await fetch("/api/auth/switch-org", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ organizationId: data.id }),
-        });
-
-        if (response.ok) {
-          // Session updated successfully, redirect to dashboard
-          window.location.href = "/";
-        } else {
-          // Session update failed, but redirect anyway (safety net in dashboard will catch it)
-          console.error("Failed to update session, but redirecting anyway");
-          window.location.href = "/";
-        }
-      } catch (error) {
-        // Network error, but redirect anyway (safety net in dashboard will catch it)
-        console.error("Error updating session:", error);
-        window.location.href = "/";
-      }
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to create company");
-    },
-  });
+  const { data: organizations, isLoading } = trpc.organization.list.useQuery(undefined, { enabled: isLoaded });
 
   useEffect(() => {
-    if (isLoaded && !orgsLoading && organizations && organizations.length > 0) {
-      // User already has an organization, redirect to dashboard
-      router.push("/");
-    }
-  }, [isLoaded, orgsLoading, organizations, router]);
+    if (isLoaded && !isLoading && organizations && organizations.length > 0) router.push("/");
+  }, [isLoaded, isLoading, organizations, router]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!companyName.trim()) {
-      toast.error("Company name is required");
-      return;
-    }
-
-    if (companyName.length < 3 || companyName.length > 100) {
-      toast.error("Company name must be between 3 and 100 characters");
-      return;
-    }
-
-    createOrgMutation.mutate({ name: companyName.trim() });
-  };
-
-  // Loading state while checking organizations
-  if (!isLoaded || orgsLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
-    );
+  async function signOut() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/sign-in");
   }
 
-  // User has an org already (invited) -- will redirect via useEffect
-  if (organizations && organizations.length > 0) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-muted-foreground">Redirecting to dashboard...</div>
-      </div>
-    );
-  }
-
-  // Direct signup path: user needs to create their first organization
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/50 p-4">
-      <div className="mb-8 max-w-md text-center">
-        <h1 className="text-2xl font-bold tracking-tight">
-          Create Your Company
-        </h1>
-        <p className="mt-2 text-muted-foreground">
-          Set up your company to start managing projects, bids, and financials.
-        </p>
-      </div>
-
+    <div className="flex min-h-screen items-center justify-center bg-muted/50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Company Information</CardTitle>
+          <CardTitle>No company on this account</CardTitle>
           <CardDescription>
-            Enter your company details to get started
+            Your account isn&apos;t linked to a company. BidAxiom sets up each company, and your administrator invites everyone else. Contact BidAxiom or your administrator.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="companyName">Company Name</Label>
-              <Input
-                id="companyName"
-                type="text"
-                placeholder="Acme Construction"
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-                required
-                minLength={3}
-                maxLength={100}
-                disabled={createOrgMutation.isPending}
-              />
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={createOrgMutation.isPending}
-            >
-              {createOrgMutation.isPending ? "Creating..." : "Create Company"}
-            </Button>
-          </form>
+          <Button variant="outline" onClick={signOut}>Sign out</Button>
         </CardContent>
       </Card>
     </div>

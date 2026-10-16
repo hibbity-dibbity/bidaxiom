@@ -20,6 +20,7 @@ import { ensureBucket, getStorageClient, getBucketName } from "./storage/client.
 import { provisionAuthTables } from "./tenant/provision.js";
 import { startQboSyncWorker } from "./integrations/quickbooks/sync/workers.js";
 import { startScheduledReportsWorker, scheduleNextReports } from "./jobs/scheduled-reports.js";
+import { startRecycleBinPurge } from "./services/recycle-bin.js";
 // TODO: Uncomment when Plan 03 creates workers.ts
 // import { startCalendarSyncWorker, queueDailyCalendarSync } from "./integrations/calendar/shared/workers.js";
 import fs from "fs";
@@ -136,6 +137,9 @@ try {
 // } catch (err) {
 //   console.warn("Calendar sync worker failed to start (Redis may not be running):", err);
 // }
+
+// Companies in the operator's recycle bin are removed for good after the retention period
+startRecycleBinPurge();
 
 // Start scheduled reports worker
 try {

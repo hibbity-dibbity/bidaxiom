@@ -23,9 +23,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
  * Uses custom auth context for user data and logout functionality.
  */
 export function UserMenu() {
-  const { user, orgId, switchOrg } = useAuth();
+  const { user, orgName } = useAuth();
   const router = useRouter();
-  const { data: organizations } = trpc.organization.list.useQuery();
 
   // Generate initials from user name or email
   const getInitials = () => {
@@ -49,12 +48,6 @@ export function UserMenu() {
       }
     } catch (error) {
       console.error("Sign out failed:", error);
-    }
-  };
-
-  const handleSwitch = async (newOrgId: string) => {
-    if (newOrgId !== orgId) {
-      await switchOrg(newOrgId);
     }
   };
 
@@ -90,26 +83,12 @@ export function UserMenu() {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        {/* Company selector group */}
-        <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-2 py-1.5">
-          Company
-        </DropdownMenuLabel>
-        {organizations?.map((org) => (
-          <DropdownMenuItem
-            key={org.id}
-            onClick={() => handleSwitch(org.id)}
-            className="cursor-pointer"
-          >
-            <Check className={`mr-2 h-4 w-4 text-primary ${org.id === orgId ? "opacity-100" : "opacity-0"}`} />
-            <span className="truncate">{org.name}</span>
-          </DropdownMenuItem>
-        ))}
-        <DropdownMenuItem asChild>
-          <Link href="/onboarding" className="cursor-pointer">
-            <Plus className="mr-2 h-4 w-4" />
-            <span>Create new company</span>
-          </Link>
-        </DropdownMenuItem>
+        {orgName && (
+          <>
+            <DropdownMenuLabel className="px-2 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Company</DropdownMenuLabel>
+            <div className="truncate px-2 pb-1.5 text-sm">{orgName}</div>
+          </>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
           <LogOut className="mr-2 h-4 w-4" />
