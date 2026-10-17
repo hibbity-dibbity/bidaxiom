@@ -2,6 +2,7 @@
  * Proposal calculation rules (single source of truth for API and builder UI).
  *
  * - Cost includes contingency: cost = qty x unit cost x (1 + contingency%).
+ * - A credit (negative line on a change order) reduces the price only. Its cost counts as zero.
  * - Margin is a percent of PRICE: price = cost / (1 - margin). Profit = price - cost.
  * - Cost lines are two levels: a parent's cost and price are the sum of its children.
  *   A parent with no children prices its own quantity x unit cost.
@@ -171,9 +172,12 @@ export function computeProposal(input: ProposalInput): ProposalResult {
 
   const lineResults: Record<string, LineResult> = {};
   const priceOne = (l: CostLineInput): LineResult => {
-    const cost = lineCostCents(l.quantity, l.unitCost, l.contingencyPercent);
-    const contingency = cost - lineCostCents(l.quantity, l.unitCost, 0);
-    const price = money(priceFromCostCents(cost, l.marginPercent));
+    const entered = lineCostCents(l.quantity, l.unitCost, l.contingencyPercent);
+    // A credit (negative line, change orders only) lowers what the customer is charged. It does not lower what we
+    // pay: the orders already placed stand, so a credit carries no cost and the profit absorbs it.
+    const cost = Math.max(entered, 0);
+    const contingency = cost === 0 ? 0 : cost - lineCostCents(l.quantity, l.unitCost, 0);
+    const price = money(priceFromCostCents(entered, l.marginPercent));
     return { id: l.id, cost, price, profit: price - cost, contingency };
   };
 

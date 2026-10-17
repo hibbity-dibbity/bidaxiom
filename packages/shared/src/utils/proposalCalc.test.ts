@@ -176,3 +176,21 @@ test("a deductive change order (negative unit cost) totals negative and schedule
   const sched = computeSchedule(r.totals.total, [{ id: "m", percent: 100 }]);
   assert.equal(sched[0].amount, -125000);
 });
+
+test("a credit lowers the price only: its cost counts as zero and the profit absorbs it", () => {
+  const r = computeProposal({
+    lines: [
+      L("p1", null, "other", 0, 0),
+      L("c1", "p1", "material", 2, -500, { marginPercent: 20 }), // credit: price -1250, cost 0
+      L("c2", "p1", "labor", 1, 400, { marginPercent: 20 }), // normal: cost 400, price 500
+    ],
+    globals: [],
+    taxRatePercent: 0,
+  });
+  assert.equal(r.lines.c1.cost, 0);
+  assert.equal(r.lines.c1.price, -125000);
+  assert.equal(r.lines.c1.profit, -125000);
+  assert.equal(r.totals.baseCost, 40000);
+  assert.equal(r.totals.basePrice, -125000 + 50000);
+  assert.equal(r.parents[0].profit, -75000 - 40000);
+});
