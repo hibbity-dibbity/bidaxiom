@@ -55,6 +55,7 @@ export default function EditProjectPage({ params }: EditProjectPageProps) {
   const utils = trpc.useUtils();
 
   const hasReset = useRef(false);
+  const openedAt = useRef<string | undefined>(undefined); // the project's updatedAt when the form opened, not as refetched since
   const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
   const [duplicateProject, setDuplicateProject] = useState<{
     name: string;
@@ -94,6 +95,7 @@ export default function EditProjectPage({ params }: EditProjectPageProps) {
   useEffect(() => {
     if (project && customersData && !hasReset.current) {
       hasReset.current = true;
+      openedAt.current = project.updatedAt ? new Date(project.updatedAt).toISOString() : undefined;
       form.reset({
         name: project.name,
         jobNumber: project.jobNumber ?? undefined,
@@ -199,7 +201,7 @@ export default function EditProjectPage({ params }: EditProjectPageProps) {
     // Status is deliberately not sent: closing, reopening and holding go through the project's own status controls,
     // so an edit can never reopen a closed project.
     const { status: _status, ...rest } = values;
-    updateMutation.mutate({ id: project.id, ...rest });
+    updateMutation.mutate({ id: project.id, expectedUpdatedAt: openedAt.current, ...rest });
   };
 
   // Loading state

@@ -1,7 +1,7 @@
 import { queueOrderSyncOnIssue } from "../../integrations/quickbooks/autoSync.js";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
 import { ForbiddenError } from "@casl/ability";
 import { router } from "../trpc.js";
 import { protectedProcedure } from "../procedures.js";
@@ -705,6 +705,32 @@ export const orderRouter = router({
     });
     await createAuditLog(db, schema, { entityType: "Order", entityId: order.id, action: AuditAction.UPDATE, actorId: c.userId, changes: { before: { payment: Number(pay.amount) } } });
     return { id: order.id };
+  }),
+
+  /** Every purchase and work order in the company, for the Purchase & Work Orders page. */
+  listAll: protectedProcedure.query(async ({ ctx }) => {
+    const c = need(ctx);
+    if (!["org:admin", "org:project_manager", "org:accountant", "org:estimator"].includes(c.orgRole ?? "")) throw new TRPCError({ code: "FORBIDDEN", message: "Not allowed." });
+    const { db, schema } = c.tenant;
+    const orders = await db
+      .select({ o: schema.orders, slug: schema.projects.slug, jobNumber: schema.projects.jobNumber, projectName: schema.projects.name })
+      .from(schema.orders)
+      .innerJoin(schema.projects, eq(schema.orders.projectId, schema.projects.id))
+      .where(isNull(schema.projects.deletedAt))
+      .orderBy(desc(schema.orders.createdAt));
+    if (orders.length === 0) return [];
+    const lines = await db.select().from(schema.orderLines);
+    const pays = await db.select().from(schema.orderPayments);
+    const vendors = await vendorInfo(c, [...new Set(orders.map((r) => r.o.vendorId).filter((v): v is string => !!v))]);
+    return orders.map(({ o, slug, jobNumber, projectName }) => {
+      const cost = lines.filter((l) => l.orderId === o.id).reduce((a, l) => a + Number(l.projectedCost), 0);
+      const paid = pays.filter((p) => p.orderId === o.id).reduce((a, p) => a + Number(p.amount), 0);
+      return {
+        id: o.id, number: o.number, kind: o.kind, status: o.status, revision: o.revision, projectSlug: slug ?? "", jobNumber, projectName,
+        vendorName: o.vendorId ? (vendors.get(o.vendorId)?.name ?? "Unknown vendor") : null,
+        cost, paid, outstanding: countsAsIssued(o.status) ? Math.max(cost - paid, 0) : null,
+      };
+    });
   }),
 
   /** Purchase orders or work orders for a project, with cost, paid and outstanding (dollars). */

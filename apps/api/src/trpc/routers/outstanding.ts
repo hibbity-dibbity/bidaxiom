@@ -22,7 +22,95 @@ function todayText() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+type CostLine = { job: string | null; amount: number; account: string | null };
+/** What a transaction cost this job: its lines naming the job, or the whole total when no line names any job. */
+function costForJob(lines: CostLine[] | null | undefined, jobId: string, total: number): number {
+  const mine = (lines ?? []).filter((l) => l.job === jobId);
+  if (mine.length) return r2(mine.reduce((a, l) => a + l.amount, 0));
+  return (lines ?? []).some((l) => l.job) ? 0 : total;
+}
+
 export const outstandingRouter = router({
+  /**
+   * Projected cost against what QuickBooks says was spent on this project (its job): per order, plus every QuickBooks bill
+   * and expense on the job that is not tied to a BidAxiom order yet. Read-only except for setting items aside.
+   */
+  projectCosts: protectedProcedure.input(z.object({ projectId: z.string().uuid() })).query(async ({ ctx, input }) => {
+    if (!ctx.tenant || !ctx.userId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+    if (!VIEW_ROLES.has(ctx.orgRole ?? "")) throw new TRPCError({ code: "FORBIDDEN", message: "Only owners, administrators, project managers and accountants can see project costs." });
+    const { db, schema } = ctx.tenant;
+    const [prof] = await db.select({ on: schema.companyProfiles.qboReadPayments, last: schema.companyProfiles.qboBillsLastCheckAt }).from(schema.companyProfiles).where(isNull(schema.companyProfiles.validTo)).limit(1);
+    const [job] = await db.select({ qboId: schema.qboEntityMappings.qboId }).from(schema.qboEntityMappings).where(and(eq(schema.qboEntityMappings.entityType, "project"), eq(schema.qboEntityMappings.platformId, input.projectId))).limit(1);
+
+    const orders = await db.select().from(schema.orders).where(eq(schema.orders.projectId, input.projectId)).orderBy(schema.orders.kind, schema.orders.number);
+    const ids = orders.map((o) => o.id);
+    const lines = ids.length ? await db.select().from(schema.orderLines).where(inArray(schema.orderLines.orderId, ids)) : [];
+    const pays = ids.length ? await db.select().from(schema.orderPayments).where(inArray(schema.orderPayments.orderId, ids)) : [];
+    const vendorIds = [...new Set(orders.map((o) => o.vendorId).filter((v): v is string => !!v))];
+    const vendors = vendorIds.length ? await db.select({ id: schema.subcontractorDirectory.id, name: schema.subcontractorDirectory.companyName }).from(schema.subcontractorDirectory).where(inArray(schema.subcontractorDirectory.id, vendorIds)) : [];
+    const vname = new Map(vendors.map((v) => [v.id, v.name]));
+
+    const jobId = job?.qboId ?? null;
+    const allBills = jobId || ids.length ? await db.select().from(schema.qboBills) : [];
+    const billsOnJob = allBills.filter((b) => (b.orderId && ids.includes(b.orderId)) || (jobId && ((b.qboCustomerIds as string[]).includes(jobId) || ((b.lines as CostLine[] | null) ?? []).some((l) => l.job === jobId))));
+    const billedByOrder = new Map<string, number>();
+    const unaccountedBills: Array<{ kind: "bill"; id: string; date: string; vendor: string | null; docNumber: string | null; amount: number; memo: string | null; account: string | null }> = [];
+    let setAside = 0;
+    for (const b of billsOnJob) {
+      const amt = jobId ? costForJob(b.lines as CostLine[] | null, jobId, Number(b.total)) : Number(b.total);
+      if (b.orderId && ids.includes(b.orderId)) billedByOrder.set(b.orderId, r2((billedByOrder.get(b.orderId) ?? 0) + amt));
+      else if (b.status === "ignored") setAside += amt;
+      else if (!b.orderId) {
+        const acct = ((b.lines as CostLine[] | null) ?? []).find((l) => l.job === jobId)?.account ?? null;
+        unaccountedBills.push({ kind: "bill", id: b.id, date: b.txnDate, vendor: b.vendorName, docNumber: b.docNumber, amount: amt, memo: b.memo, account: acct });
+      }
+    }
+    const expenses = jobId ? (await db.select().from(schema.qboExpenses)).filter((e) => (e.lines as CostLine[]).some((l) => l.job === jobId)) : [];
+    const unaccountedExpenses: Array<{ kind: "expense"; id: string; date: string; vendor: string | null; docNumber: string | null; amount: number; memo: string | null; account: string | null }> = [];
+    for (const e of expenses) {
+      const amt = costForJob(e.lines as CostLine[], jobId!, Number(e.total));
+      if (e.ignored) setAside += amt;
+      else unaccountedExpenses.push({ kind: "expense", id: e.id, date: e.txnDate, vendor: e.vendorName, docNumber: e.docNumber, amount: amt, memo: e.memo, account: ((e.lines as CostLine[]).find((l) => l.job === jobId)?.account) ?? null });
+    }
+    const unaccounted = [...unaccountedBills, ...unaccountedExpenses].sort((a, b) => b.date.localeCompare(a.date));
+
+    const rows = orders.map((o) => {
+      const ol = lines.filter((l) => l.orderId === o.id);
+      return {
+        id: o.id, number: o.number, kind: o.kind as "purchase" | "work", status: o.status, vendorName: o.vendorId ? vname.get(o.vendorId) ?? "Unknown vendor" : null,
+        budget: r2(ol.reduce((a, l) => a + Number(l.budgetCost), 0)),
+        projected: r2(ol.reduce((a, l) => a + Number(l.projectedCost), 0)),
+        billed: billedByOrder.get(o.id) ?? 0,
+        paid: r2(pays.filter((p) => p.orderId === o.id).reduce((a, p) => a + Number(p.amount), 0)),
+      };
+    });
+    const sum = (f: (r: (typeof rows)[number]) => number) => r2(rows.reduce((a, r) => a + f(r), 0));
+    const unaccountedTotal = r2(unaccounted.reduce((a, x) => a + x.amount, 0));
+    const billedOnOrders = sum((r) => r.billed);
+    return {
+      connected: Boolean(prof?.on) && Boolean(jobId),
+      readingOn: Boolean(prof?.on),
+      inQuickBooks: Boolean(jobId),
+      lastCheckAt: prof?.last ?? null,
+      budget: sum((r) => r.budget),
+      projected: sum((r) => r.projected),
+      billedOnOrders,
+      unaccountedTotal,
+      actual: r2(billedOnOrders + unaccountedTotal),
+      setAside: r2(setAside),
+      rows,
+      unaccounted,
+    };
+  }),
+
+  ignoreExpense: protectedProcedure.input(z.object({ expenseId: z.string().uuid(), ignored: z.boolean() })).mutation(async ({ ctx, input }) => {
+    if (!ctx.tenant || !ctx.userId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+    if (!ALLOCATE_ROLES.has(ctx.orgRole ?? "")) throw new TRPCError({ code: "FORBIDDEN", message: "Only owners, administrators and project managers can do this." });
+    const { db, schema } = ctx.tenant;
+    await db.update(schema.qboExpenses).set({ ignored: input.ignored, updatedAt: new Date() }).where(eq(schema.qboExpenses.id, input.expenseId));
+    return { ok: true };
+  }),
+
   /**
    * Money QuickBooks says was received that still needs a person: open deposits (with the invoices each could pay)
    * and recent ones already applied (so an automatic match can be undone).

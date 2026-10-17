@@ -21,11 +21,14 @@ export function QboInvoiceSyncCard() {
   const [startDate, setStartDate] = useState("");
   const [item, setItem] = useState<{ id: string; name: string } | null>(null);
   const [items, setItems] = useState<Item[]>([]);
+  const [taxCode, setTaxCode] = useState<{ id: string; name: string } | null>(null);
+  const [taxCodes, setTaxCodes] = useState<Array<{ id: string; name: string }>>([]);
 
   useEffect(() => {
     if (data) {
       setEnabled(data.enabled);
       setStartDate(data.startDate ?? "");
+      setTaxCode(data.taxCodeId ? { id: data.taxCodeId, name: data.taxCodeName ?? data.taxCodeId } : null);
       setItem(data.itemId ? { id: data.itemId, name: data.itemName ?? data.itemId } : null);
     }
   }, [data]);
@@ -37,6 +40,13 @@ export function QboInvoiceSyncCard() {
     },
     onError: (e) => toast.error("Could not read QuickBooks", { description: e.message }),
   });
+  const loadTax = trpc.quickbooks.listSalesTaxCodes.useMutation({
+    onSuccess: (rows) => {
+      setTaxCodes(rows);
+      if (rows.length === 0) toast.message("QuickBooks has no taxable sales tax codes. Turn on sales tax in QuickBooks first, then load again.");
+    },
+    onError: (e) => toast.error("Could not read QuickBooks", { description: e.message }),
+  });
   const save = trpc.quickbooks.setInvoiceSync.useMutation({
     onSuccess: () => {
       toast.success("Invoice sync saved");
@@ -45,7 +55,9 @@ export function QboInvoiceSyncCard() {
     onError: (e) => toast.error("Could not save", { description: e.message }),
   });
 
-  const dirty = data ? enabled !== data.enabled || startDate !== (data.startDate ?? "") || (item?.id ?? null) !== data.itemId : false;
+  const dirty = data ? enabled !== data.enabled || startDate !== (data.startDate ?? "") || (item?.id ?? null) !== data.itemId || (taxCode?.id ?? null) !== data.taxCodeId : false;
+  const taxOptions = [...taxCodes];
+  if (taxCode && !taxOptions.some((o) => o.id === taxCode.id)) taxOptions.unshift(taxCode);
   const options: Array<{ id: string; label: string }> = items.map((i) => ({ id: i.id, label: i.incomeAccount ? `${i.name} (${i.incomeAccount})` : i.name }));
   if (item && !options.some((o) => o.id === item.id)) options.unshift({ id: item.id, label: item.name });
 
@@ -93,10 +105,34 @@ export function QboInvoiceSyncCard() {
                 Load items
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground">Pick the service item tied to your contract income account. Invoices go out non-taxable.</p>
+            <p className="text-xs text-muted-foreground">Pick the service item tied to your contract income account. Invoices with no sales tax go out non-taxable.</p>
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label>Sales tax code (only used when an invoice has sales tax)</Label>
+            <div className="flex gap-2">
+              <Select value={taxCode?.id ?? ""} onValueChange={(v) => setTaxCode({ id: v, name: taxOptions.find((o) => o.id === v)?.name ?? v })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a QuickBooks sales tax code" />
+                </SelectTrigger>
+                <SelectContent>
+                  {taxOptions.map((o) => (
+                    <SelectItem key={o.id} value={o.id}>
+                      {o.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button type="button" variant="outline" onClick={() => loadTax.mutate()} disabled={loadTax.isPending}>
+                {loadTax.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Load tax codes
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              When a BidAxiom invoice includes sales tax, the taxable part goes to QuickBooks on this code so the tax is recorded as a sales tax liability. The code&apos;s rate in QuickBooks must match the proposal&apos;s rate; if the totals differ you get a warning. An invoice with tax will not send until a code is chosen.
+            </p>
           </div>
         </div>
-        <Button onClick={() => save.mutate({ enabled, startDate: startDate || null, itemId: item?.id ?? null, itemName: item?.name ?? null })} disabled={!dirty || save.isPending}>
+        <Button onClick={() => save.mutate({ enabled, startDate: startDate || null, itemId: item?.id ?? null, itemName: item?.name ?? null, taxCodeId: taxCode?.id ?? null, taxCodeName: taxCode?.name ?? null })} disabled={!dirty || save.isPending}>
           {save.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Save
         </Button>

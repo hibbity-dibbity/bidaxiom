@@ -128,6 +128,8 @@ export const companyRouter = router({
             qboInvoicePushFrom: previous?.qboInvoicePushFrom ?? null,
             qboIncomeItemId: previous?.qboIncomeItemId ?? null,
             qboIncomeItemName: previous?.qboIncomeItemName ?? null,
+            qboSalesTaxCodeId: previous?.qboSalesTaxCodeId ?? null,
+            qboSalesTaxCodeName: previous?.qboSalesTaxCodeName ?? null,
             qboBillsLastCheckAt: previous?.qboBillsLastCheckAt ?? null,
             qboOrderPush: previous?.qboOrderPush ?? false,
             qboOrderPushFrom: previous?.qboOrderPushFrom ?? null,

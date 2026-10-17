@@ -2,6 +2,7 @@ import type { TenantSchema } from '../../../../db/schema/tenant.js';
 import { and, eq, isNull } from 'drizzle-orm';
 import { promisifyQbo, qboQueryRows, qboQuote, qboIsNotFound, qboFaultText, QboUserError } from '../../client.js';
 import { syncProjectToQbo, qboTermRef } from './project.js';
+import { splitInvoiceAmount } from '../invoiceTax.js';
 
 type MapperDb = ReturnType<typeof import('../../../../db/client.js')['createTenantDb']>['db'];
 
@@ -13,7 +14,7 @@ const cents = (n: number) => Math.round(n * 100);
  *
  * Only when the company turned "send invoices to QuickBooks" on, only for invoices sent on or after the chosen start
  * date, and never for drafts or credits. The invoice goes under the project's job (sub-customer), numbered with the
- * BidAxiom invoice number, one line on the company's chosen income item, non-taxable, and QuickBooks is not asked to
+ * BidAxiom invoice number, lines on the company's chosen income item (sales tax, when the invoice has any, on the company's chosen tax code; otherwise non-taxable), and QuickBooks is not asked to
  * email it. A QuickBooks invoice that already has a payment on it is left alone.
  */
 export async function syncInvoiceToQbo(params: {
@@ -28,7 +29,7 @@ export async function syncInvoiceToQbo(params: {
   const { invoiceId, db, schema, qboClient, accessToken, realmId, tenantId } = params;
 
   const [settings] = await db
-    .select({ on: schema.companyProfiles.qboInvoicePush, from: schema.companyProfiles.qboInvoicePushFrom, itemId: schema.companyProfiles.qboIncomeItemId })
+    .select({ on: schema.companyProfiles.qboInvoicePush, from: schema.companyProfiles.qboInvoicePushFrom, itemId: schema.companyProfiles.qboIncomeItemId, taxCodeId: schema.companyProfiles.qboSalesTaxCodeId })
     .from(schema.companyProfiles)
     .where(isNull(schema.companyProfiles.validTo))
     .limit(1);
@@ -93,10 +94,28 @@ export async function syncInvoiceToQbo(params: {
   const amount = Math.abs(Number(inv.amount));
   // A combined invoice goes over with one line per original milestone, so QuickBooks shows what each amount was for.
   const parts = await db.select().from(schema.invoiceItems).where(eq(schema.invoiceItems.invoiceId, invoiceId));
-  const lineItems =
+  const pieces =
     parts.length > 1
-      ? parts.sort((a, b) => a.sortOrder - b.sortOrder).map((x) => ({ amount: Math.abs(Number(x.amount)), description: [x.sourceLabel, x.label].filter(Boolean).join(': ') }))
-      : [{ amount, description: inv.milestoneName }];
+      ? parts.sort((a, b) => a.sortOrder - b.sortOrder).map((x) => ({ estimateId: x.estimateId, amount: Math.abs(Number(x.amount)), description: [x.sourceLabel, x.label].filter(Boolean).join(': ') }))
+      : [{ estimateId: inv.estimateId, amount, description: inv.milestoneName }];
+  // Sales tax: the taxable part of each piece is sent on the company's QuickBooks tax code, the rest as non-taxable.
+  const tenantLike: any = { tenantId, db, schema };
+  const lineItems: Array<{ amount: number; description: string; taxable: boolean }> = [];
+  let totalTax = 0;
+  for (const piece of pieces) {
+    const sp = await splitInvoiceAmount(tenantLike, piece.estimateId, piece.amount);
+    if (sp.tax > 0) {
+      totalTax += sp.tax;
+      if (sp.taxable > 0) lineItems.push({ amount: sp.taxable, description: `${piece.description} (taxable)`, taxable: true });
+      if (sp.rest > 0) lineItems.push({ amount: sp.rest, description: `${piece.description} (not taxed)`, taxable: false });
+    } else {
+      lineItems.push({ amount: piece.amount, description: piece.description, taxable: false });
+    }
+  }
+  totalTax = Math.round(totalTax * 100) / 100;
+  if (totalTax > 0 && !settings.taxCodeId) {
+    throw new QboUserError(`${inv.number} includes ${totalTax.toLocaleString('en-US', { style: 'currency', currency: 'USD' })} of sales tax. Choose the QuickBooks sales tax code in Settings > Integrations, then press Sync again.`);
+  }
   const term = credit ? undefined : await qboTermRef(accessToken, realmId, inv.paymentTerms);
   const body = (withTaxCode: boolean) => ({
     CustomerRef: { value: job!.qboId },
@@ -105,22 +124,33 @@ export async function syncInvoiceToQbo(params: {
     TxnDate: inv.sentOn,
     ...(credit ? {} : { DueDate: inv.dueOn ?? undefined, ...(term ? { SalesTermRef: term } : {}) }),
     PrivateNote: `BidAxiom invoice ${inv.id}`,
+    ...(totalTax > 0 ? { TxnTaxDetail: { TxnTaxCodeRef: { value: settings.taxCodeId! }, TotalTax: totalTax } } : {}),
     Line: lineItems.map((l) => ({
       Amount: l.amount,
       DetailType: 'SalesItemLineDetail',
       Description: l.description,
-      SalesItemLineDetail: { ItemRef: { value: settings.itemId }, Qty: 1, UnitPrice: l.amount, ...(withTaxCode ? { TaxCodeRef: { value: 'NON' } } : {}) },
+      SalesItemLineDetail: { ItemRef: { value: settings.itemId }, Qty: 1, UnitPrice: l.amount, ...(l.taxable ? { TaxCodeRef: { value: settings.taxCodeId! } } : withTaxCode ? { TaxCodeRef: { value: 'NON' } } : {}) },
     })),
   });
   const attempt = async (fn: (b: any) => Promise<any>, make: (t: boolean) => any) => {
     try {
       return await fn(make(true));
     } catch (e) {
+      if (totalTax > 0 && /tax/i.test(JSON.stringify((e as any)?.Fault ?? e))) throw new QboUserError(`QuickBooks would not accept the sales tax on ${inv.number} (${qboFaultText(e) ?? 'tax code rejected'}). Check the sales tax code chosen in Settings > Integrations.`);
       if (/tax/i.test(JSON.stringify((e as any)?.Fault ?? e))) return fn(make(false)); // a company with sales tax switched off rejects the tax code
       const fault = qboFaultText(e);
       if (fault && (e as any)?.statusCode !== 429 && (e as any)?.statusCode !== 401) throw new QboUserError(`QuickBooks would not accept ${inv.number} (${fault}).`);
       throw e;
     }
+  };
+
+  // QuickBooks works the tax out itself from the code's rate. If that is not BidAxiom's total, say so: the books would be off.
+  const checkTotal = async (qbo: any) => {
+    if (totalTax <= 0 || qbo?.TotalAmt == null || cents(Number(qbo.TotalAmt)) === cents(amount)) return;
+    await db
+      .insert(schema.qboSyncNotifications)
+      .values({ entityType: 'invoice', entityId: invoiceId, message: `${inv.number} is ${Number(qbo.TotalAmt).toLocaleString('en-US', { style: 'currency', currency: 'USD' })} in QuickBooks but ${amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })} in BidAxiom. QuickBooks worked out the sales tax from the rate on the tax code you chose. Make sure that tax code's rate matches the proposal's.`, severity: 'warning', dismissed: false })
+      .catch(() => undefined);
   };
 
   if (!current) {
@@ -136,6 +166,7 @@ export async function syncInvoiceToQbo(params: {
       metadata: { number: inv.number },
     });
     console.log(`Created QBO invoice ${created.Id} ${inv.number}`);
+    await checkTotal(created);
     return;
   }
 
@@ -149,6 +180,7 @@ export async function syncInvoiceToQbo(params: {
       body
     );
     syncToken = updated.SyncToken;
+    await checkTotal(updated);
   }
   if (mapping && mapping.qboId === current.Id) {
     await db.update(schema.qboEntityMappings).set({ qboSyncToken: syncToken, lastSyncedAt: new Date(), syncStatus: 'synced' }).where(eq(schema.qboEntityMappings.id, mapping.id));

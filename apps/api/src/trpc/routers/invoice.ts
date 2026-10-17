@@ -75,7 +75,38 @@ async function sourceLabels(c: Ctx, estimateIds: string[]) {
 /** Natural order of invoice numbers (INV26-014-02 before INV26-014-10). */
 const byNumber = (a: { number: string }, b: { number: string }) => a.number.localeCompare(b.number, undefined, { numeric: true });
 
+const ALL_ROLES = new Set(["org:admin", "org:project_manager", "org:accountant", "org:estimator"]);
+
 export const invoiceRouter = router({
+  /** Every invoice in the company, for the Invoices page: find one by number, project, job number or customer. */
+  listAll: protectedProcedure.query(async ({ ctx }) => {
+    const c = need(ctx);
+    if (!ALL_ROLES.has(c.orgRole ?? "")) throw new TRPCError({ code: "FORBIDDEN", message: "Not allowed." });
+    const { db, schema } = c.tenant;
+    const invoices = await db
+      .select({ i: schema.invoices, slug: schema.projects.slug, jobNumber: schema.projects.jobNumber, projectName: schema.projects.name, customerId: schema.projects.customerId })
+      .from(schema.invoices)
+      .innerJoin(schema.projects, eq(schema.invoices.projectId, schema.projects.id))
+      .where(isNull(schema.projects.deletedAt))
+      .orderBy(desc(schema.invoices.createdAt));
+    const customers = await db.select({ id: schema.customers.id, companyName: schema.customers.companyName, contactName: schema.customers.contactName }).from(schema.customers);
+    const cname = new Map(customers.map((x) => [x.id, x.companyName || x.contactName || ""]));
+    const pays = invoices.length ? await db.select().from(schema.invoicePayments) : [];
+    const received = new Map<string, number>();
+    for (const p of pays) received.set(p.invoiceId, (received.get(p.invoiceId) ?? 0) + Number(p.amount));
+    const today = todayText();
+    return invoices.map(({ i, slug, jobNumber, projectName, customerId }) => {
+      const amount = Number(i.amount);
+      const rec = r2(received.get(i.id) ?? 0);
+      return {
+        id: i.id, number: i.number, projectSlug: slug ?? "", jobNumber, projectName, customerName: cname.get(customerId) ?? "",
+        milestoneName: i.milestoneName, amount, status: i.status, sentOn: i.sentOn, dueOn: i.dueOn, received: rec,
+        outstanding: isSent(i.status) ? r2(Math.max(amount - rec, 0)) : null,
+        overdue: isOverdue(i.status, i.dueOn, today),
+      };
+    });
+  }),
+
   /** Invoices for a project with received/outstanding per invoice and the totals the header uses. */
   list: protectedProcedure.input(z.object({ projectId: z.string().uuid() })).query(async ({ ctx, input }) => {
     const c = need(ctx);

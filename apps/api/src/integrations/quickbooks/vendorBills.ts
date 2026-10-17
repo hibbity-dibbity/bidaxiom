@@ -47,7 +47,19 @@ export interface BillRow {
   balance: number;
   qboCustomerIds: string[];
   qboPoIds: string[];
+  lines: Array<{ job: string | null; amount: number; account: string | null }>;
   memo: string | null;
+}
+
+/** What each expense line cost, which job it names and which account it posts to. */
+export function expenseLines(rec: any): Array<{ job: string | null; amount: number; account: string | null }> {
+  const out: Array<{ job: string | null; amount: number; account: string | null }> = [];
+  for (const ln of rec.Line ?? []) {
+    const d = ln.AccountBasedExpenseLineDetail ?? ln.ItemBasedExpenseLineDetail;
+    if (!d) continue;
+    out.push({ job: d.CustomerRef?.value ? String(d.CustomerRef.value) : null, amount: r2(Number(ln.Amount ?? 0)), account: d.AccountRef?.name ?? d.ItemRef?.name ?? null });
+  }
+  return out;
 }
 
 export function billFrom(rec: any): BillRow {
@@ -72,6 +84,7 @@ export function billFrom(rec: any): BillRow {
     balance: r2(Number(rec.Balance ?? 0)),
     qboCustomerIds: [...jobs],
     qboPoIds: [...pos],
+    lines: expenseLines(rec),
     memo: rec.PrivateNote ?? null,
   };
 }
@@ -109,19 +122,39 @@ export async function pullVendorBills(t: Tenant, now = new Date()): Promise<numb
   if (!access) return 0;
   const [p] = await db.select({ last: schema.companyProfiles.qboBillsLastCheckAt }).from(schema.companyProfiles).where(isNull(schema.companyProfiles.validTo)).limit(1);
   const from = p?.last ? new Date(new Date(p.last).getTime() - OVERLAP_DAYS * 86400000) : new Date(now.getTime() - FIRST_LOOKBACK_DAYS * 86400000);
-  const where = p?.last ? `MetaData.LastUpdatedTime >= '${from.toISOString()}'` : `TxnDate >= '${from.toISOString().slice(0, 10)}'`;
+  // Bills read before lines were kept have none yet: look back the full first-time window once to fill them in.
+  const [missing] = await db.select({ n: sql<number>`count(*)` }).from(schema.qboBills).where(isNull(schema.qboBills.lines));
+  const backfill = Number(missing?.n ?? 0) > 0;
+  const where = p?.last && !backfill ? `MetaData.LastUpdatedTime >= '${from.toISOString()}'` : `TxnDate >= '${from.toISOString().slice(0, 10)}'`;
 
   let changed = 0;
   for (const rec of await queryAll(access.accessToken, access.realmId, 'Bill', where)) {
     const b = billFrom(rec);
     if (!(b.total > 0)) continue;
     const [existing] = await db.select().from(schema.qboBills).where(eq(schema.qboBills.qboId, b.qboId)).limit(1);
-    const vals = { docNumber: b.docNumber, txnDate: b.txnDate, dueDate: b.dueDate, qboVendorId: b.qboVendorId, vendorName: b.vendorName, total: String(b.total), balance: String(b.balance), qboCustomerIds: b.qboCustomerIds, qboPoIds: b.qboPoIds, memo: b.memo };
+    const vals = { docNumber: b.docNumber, txnDate: b.txnDate, dueDate: b.dueDate, qboVendorId: b.qboVendorId, vendorName: b.vendorName, total: String(b.total), balance: String(b.balance), qboCustomerIds: b.qboCustomerIds, qboPoIds: b.qboPoIds, lines: b.lines, memo: b.memo };
     if (!existing) {
       await db.insert(schema.qboBills).values({ qboId: b.qboId, ...vals });
       changed++;
-    } else if (cents(Number(existing.total)) !== cents(b.total) || cents(Number(existing.balance)) !== cents(b.balance) || existing.docNumber !== b.docNumber || existing.vendorName !== b.vendorName || JSON.stringify(existing.qboCustomerIds) !== JSON.stringify(b.qboCustomerIds) || JSON.stringify(existing.qboPoIds ?? []) !== JSON.stringify(b.qboPoIds)) {
+    } else if (cents(Number(existing.total)) !== cents(b.total) || cents(Number(existing.balance)) !== cents(b.balance) || existing.docNumber !== b.docNumber || existing.vendorName !== b.vendorName || JSON.stringify(existing.qboCustomerIds) !== JSON.stringify(b.qboCustomerIds) || JSON.stringify(existing.qboPoIds ?? []) !== JSON.stringify(b.qboPoIds) || JSON.stringify(existing.lines ?? null) !== JSON.stringify(b.lines)) {
       await db.update(schema.qboBills).set({ ...vals, updatedAt: new Date() }).where(eq(schema.qboBills.id, existing.id));
+      changed++;
+    }
+  }
+  if (backfill) await db.update(schema.qboBills).set({ lines: [] }).where(isNull(schema.qboBills.lines)); // gone from QuickBooks: stop looking
+  // Checks, card and cash purchases: money already spent. Only the ones that name a job matter to a project.
+  for (const rec of await queryAll(access.accessToken, access.realmId, 'Purchase', where)) {
+    const lines = expenseLines(rec);
+    if (!lines.some((l) => l.job)) continue;
+    const total = r2(Number(rec.TotalAmt ?? 0));
+    if (!(total > 0)) continue;
+    const vals = { paymentType: rec.PaymentType ?? null, docNumber: rec.DocNumber ?? null, txnDate: rec.TxnDate ?? new Date().toISOString().slice(0, 10), vendorName: rec.EntityRef?.name ?? null, total: String(total), lines, memo: rec.PrivateNote ?? null };
+    const [existing] = await db.select().from(schema.qboExpenses).where(eq(schema.qboExpenses.qboId, String(rec.Id))).limit(1);
+    if (!existing) {
+      await db.insert(schema.qboExpenses).values({ qboId: String(rec.Id), ...vals });
+      changed++;
+    } else if (cents(Number(existing.total)) !== cents(total) || JSON.stringify(existing.lines) !== JSON.stringify(lines) || existing.vendorName !== vals.vendorName) {
+      await db.update(schema.qboExpenses).set({ ...vals, updatedAt: new Date() }).where(eq(schema.qboExpenses.id, existing.id));
       changed++;
     }
   }

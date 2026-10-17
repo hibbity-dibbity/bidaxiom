@@ -134,6 +134,9 @@ export function createTenantSchema(schemaName: string) {
     qboInvoicePushFrom: text("qbo_invoice_push_from"), // YYYY-MM-DD
     qboIncomeItemId: text("qbo_income_item_id"), // the QuickBooks product/service invoice lines post to
     qboIncomeItemName: text("qbo_income_item_name"),
+    /** The QuickBooks sales tax code (the taxable one) used when a BidAxiom invoice carries sales tax. */
+    qboSalesTaxCodeId: text("qbo_sales_tax_code_id"),
+    qboSalesTaxCodeName: text("qbo_sales_tax_code_name"),
     /** Create each issued purchase order and work order in QuickBooks as a Purchase Order (off by default). */
     qboOrderPush: boolean("qbo_order_push").notNull().default(false),
     qboOrderPushFrom: text("qbo_order_push_from"), // YYYY-MM-DD; only orders issued on or after this date go over
@@ -1124,6 +1127,23 @@ export function createTenantSchema(schemaName: string) {
     noAuto: boolean("no_auto").notNull().default(false), // true after an unlink: never auto-link again
     relevant: boolean("relevant").notNull().default(false), // names a BidAxiom job, vendor or order number
     qboPoIds: jsonb("qbo_po_ids").notNull().default([]).$type<string[]>(), // QuickBooks purchase orders this bill was made from
+    lines: jsonb("lines").$type<Array<{ job: string | null; amount: number; account: string | null }>>(), // what each line cost and which job it names; null until read once
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /** Expenses paid at once in QuickBooks (checks, card and cash purchases) that name a job. Read-only. */
+  const qboExpenses = schema.table("qbo_expenses", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    qboId: text("qbo_id").notNull().unique(),
+    paymentType: text("payment_type"), // Cash, Check, CreditCard
+    docNumber: text("doc_number"),
+    txnDate: text("txn_date").notNull(),
+    vendorName: text("vendor_name"),
+    total: numeric("total", { precision: 15, scale: 2 }).notNull(),
+    lines: jsonb("lines").notNull().default([]).$type<Array<{ job: string | null; amount: number; account: string | null }>>(),
+    memo: text("memo"),
+    ignored: boolean("ignored").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   });
@@ -1595,6 +1615,7 @@ export function createTenantSchema(schemaName: string) {
     qboReceiptAllocations,
     qboBills,
     qboBillPayments,
+    qboExpenses,
     proposalTemplates,
     proposalTemplateLines,
     reportDefinitions,

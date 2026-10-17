@@ -1,0 +1,99 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import Link from "next/link";
+import { FileText, Search } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { PageHeader } from "@/components/shared/page-header";
+import { EmptyState } from "@/components/shared/empty-state";
+import { InvoiceStatusBadge, dollars, shortDate } from "@/components/invoices/invoice-ui";
+
+type Filter = "all" | "draft" | "open" | "overdue" | "paid";
+
+/** Every invoice in the company in one place: type a number, project, job number or customer to jump to it. */
+export default function InvoicesPage() {
+  const { data, isLoading, error } = trpc.invoice.listAll.useQuery(undefined, { refetchOnWindowFocus: true });
+  const [filter, setFilter] = useState<Filter>("all");
+  const [search, setSearch] = useState("");
+
+  const rows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return (data ?? []).filter((r) => {
+      if (filter === "draft" && r.status !== "draft") return false;
+      if (filter === "open" && !(r.status === "sent" || r.status === "partially_paid")) return false;
+      if (filter === "overdue" && !r.overdue) return false;
+      if (filter === "paid" && r.status !== "paid") return false;
+      if (!q) return true;
+      return [r.number, r.projectName, r.jobNumber, r.customerName, r.milestoneName].some((v) => (v ?? "").toLowerCase().includes(q));
+    });
+  }, [data, filter, search]);
+
+  const open = rows.reduce((a, r) => a + (r.outstanding ?? 0), 0);
+
+  return (
+    <div className="space-y-6">
+      <PageHeader title="Invoices" description="All invoices across your projects." />
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative w-full max-w-sm">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input autoFocus className="pl-8" placeholder="Search number, project, job or customer" value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+        <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)}>
+          <TabsList>
+            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="draft">Draft</TabsTrigger>
+            <TabsTrigger value="open">Open</TabsTrigger>
+            <TabsTrigger value="overdue">Overdue</TabsTrigger>
+            <TabsTrigger value="paid">Paid</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        {data && <span className="text-sm text-muted-foreground">{rows.length} shown · {dollars(open)} outstanding</span>}
+      </div>
+      {isLoading ? (
+        <Skeleton className="h-64 w-full" />
+      ) : error ? (
+        <p className="text-sm text-destructive">{error.message}</p>
+      ) : rows.length === 0 ? (
+        <EmptyState icon={FileText} heading="No invoices found" description={search || filter !== "all" ? "Try a different search or filter." : "Invoices appear here once a proposal is accepted."} />
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Invoice</TableHead>
+              <TableHead>Project</TableHead>
+              <TableHead>Customer</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Sent</TableHead>
+              <TableHead>Due</TableHead>
+              <TableHead className="text-right">Amount</TableHead>
+              <TableHead className="text-right">Outstanding</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((r) => (
+              <TableRow key={r.id}>
+                <TableCell className="font-medium">
+                  <Link href={`/projects/${r.projectSlug}/invoices/${r.id}`} className="hover:underline">{r.number}</Link>
+                  <div className="text-xs font-normal text-muted-foreground">{r.milestoneName}</div>
+                </TableCell>
+                <TableCell>
+                  <Link href={`/projects/${r.projectSlug}/invoices`} className="hover:underline">{[r.jobNumber, r.projectName].filter(Boolean).join(" - ")}</Link>
+                </TableCell>
+                <TableCell>{r.customerName}</TableCell>
+                <TableCell><InvoiceStatusBadge status={r.status} overdue={r.overdue} amount={r.amount} /></TableCell>
+                <TableCell>{r.status === "draft" ? "—" : shortDate(r.sentOn)}</TableCell>
+                <TableCell>{r.status === "draft" ? "—" : shortDate(r.dueOn)}</TableCell>
+                <TableCell className="text-right">{dollars(r.amount)}</TableCell>
+                <TableCell className="text-right">{r.outstanding == null ? "—" : dollars(r.outstanding)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </div>
+  );
+}

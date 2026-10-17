@@ -392,6 +392,18 @@ export async function syncReceiptPrompt(t: Tenant, receiptId: string): Promise<v
   if (existing) return; // already raised (answered ones are not raised again)
   const scopes = await resolveScopes(t, [rc.qboCustomerId]);
   if (!scopes.has(rc.qboCustomerId)) return; // not a customer or job BidAxiom knows about
+  // A payment applied in QuickBooks to an invoice BidAxiom already shows as paid (say by a bank deposit) is held, not counted twice.
+  let why = 'It did not match one invoice exactly. Choose which invoices it pays.';
+  for (const link of Array.isArray(rc.links) ? (rc.links as Array<{ qboInvoiceId: string }>) : []) {
+    const [m] = await db.select({ platformId: schema.qboEntityMappings.platformId }).from(schema.qboEntityMappings)
+      .where(and(eq(schema.qboEntityMappings.entityType, 'invoice'), eq(schema.qboEntityMappings.qboId, link.qboInvoiceId))).limit(1);
+    if (!m) continue;
+    const [inv] = await db.select({ number: schema.invoices.number, status: schema.invoices.status }).from(schema.invoices).where(eq(schema.invoices.id, m.platformId)).limit(1);
+    if (inv?.status === 'paid') {
+      why = `QuickBooks applied it to ${inv.number}, which BidAxiom already shows as paid, so it was not counted a second time. Allocate it to another invoice, or set it aside.`;
+      break;
+    }
+  }
   await db
     .insert(schema.actionPrompts)
     .values({
@@ -399,7 +411,7 @@ export async function syncReceiptPrompt(t: Tenant, receiptId: string): Promise<v
       kind: 'qbo_deposit',
       dedupeKey: key,
       title: `${money(Number(rc.amount))} received${rc.qboCustomerName ? ` from ${rc.qboCustomerName}` : ''}`,
-      body: `QuickBooks shows this on ${rc.txnDate}. It did not match one invoice exactly. Choose which invoices it pays.`,
+      body: `QuickBooks shows this on ${rc.txnDate}. ${why}`,
       actions: [
         { kind: 'link', label: 'Allocate', href: '/outstanding' },
         { kind: 'dismiss', label: 'Not now' },

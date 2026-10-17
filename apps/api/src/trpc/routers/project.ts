@@ -83,6 +83,21 @@ async function loadProjectAbilities(ctx: {
  * Project management router.
  * Handles project CRUD, team management, phase management with CASL enforcement and audit logging.
  */
+/** What on a project makes it real work: accepted proposals or change orders, invoices that were sent, orders that were issued. */
+async function realWorkReasons(db: any, schema: any, projectId: string): Promise<string[]> {
+  const n = async (q: any) => Number((await q)[0]?.count ?? 0);
+  const [acc, inv, ord] = await Promise.all([
+    n(db.select({ count: count() }).from(schema.estimates).where(and(eq(schema.estimates.projectId, projectId), inArray(schema.estimates.status, ["accepted", "under_contract"])))),
+    n(db.select({ count: count() }).from(schema.invoices).where(and(eq(schema.invoices.projectId, projectId), ne(schema.invoices.status, "draft")))),
+    n(db.select({ count: count() }).from(schema.orders).where(and(eq(schema.orders.projectId, projectId), ne(schema.orders.status, "draft")))),
+  ]);
+  const out: string[] = [];
+  if (acc) out.push(`${acc} accepted proposal${acc === 1 ? "" : "s"} or change order${acc === 1 ? "" : "s"}`);
+  if (inv) out.push(`${inv} sent invoice${inv === 1 ? "" : "s"}`);
+  if (ord) out.push(`${ord} issued purchase or work order${ord === 1 ? "" : "s"}`);
+  return out;
+}
+
 export const projectRouter = router({
   /**
    * Create a new project with team, folders, and phases.
@@ -622,7 +637,7 @@ export const projectRouter = router({
    * Update project fields.
    */
   update: protectedProcedure
-    .input(updateProjectSchema)
+    .input(updateProjectSchema.extend({ expectedUpdatedAt: z.string().optional() }))
     .mutation(async ({ ctx, input }) => {
       if (!ctx.tenant || !ctx.userId) {
         throw new TRPCError({
@@ -655,6 +670,9 @@ export const projectRouter = router({
 
       // Check permission
       ForbiddenError.from(abilities).throwUnlessCan("update", "Project");
+      if (input.expectedUpdatedAt && new Date(existingProject.updatedAt).getTime() !== new Date(input.expectedUpdatedAt).getTime()) {
+        throw new TRPCError({ code: "CONFLICT", message: "Someone else changed this project after you opened the form. Reload to see their changes, then make your edit again." });
+      }
 
       // Build update values (only include defined fields)
       const updateValues: Record<string, unknown> = {
@@ -1077,6 +1095,12 @@ export const projectRouter = router({
       const fromIdx = LIFECYCLE_ORDER.indexOf(project.lifecyclePhase as LifecyclePhase);
       const isBackward = toIdx < fromIdx;
 
+      // Moving back before Awarded would reopen deleting and hide real work (accepted proposals, sent invoices, issued orders).
+      if (isBackward && toIdx < LIFECYCLE_ORDER.indexOf("awarded") && input.toPhase !== "lost") {
+        const work = await realWorkReasons(db, schema, input.projectId);
+        if (work.length) throw new TRPCError({ code: "BAD_REQUEST", message: `This project has ${work.join(", ")}, so it cannot go back to ${input.toPhase === "opportunity" ? "Opportunity" : "an earlier phase"}.` });
+      }
+
       // Execute transition in transaction
       await db.transaction(async (tx: any) => {
         await tx
@@ -1210,6 +1234,7 @@ export const projectRouter = router({
         db.select({ count: count() }).from(schema.commitments).where(eq(schema.commitments.projectId, input.projectId)),
       ]);
 
+      reasons.push(...(await realWorkReasons(db, schema, input.projectId)));
       const coTotal = Number(coCount[0]?.count ?? 0);
       const commitTotal = Number(commitCount[0]?.count ?? 0);
 
@@ -1237,6 +1262,8 @@ export const projectRouter = router({
 
       if (!project) throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
       if (project.deletedAt) throw new TRPCError({ code: "BAD_REQUEST", message: "Project already deleted" });
+      const work = await realWorkReasons(db, schema, input.projectId);
+      if (work.length) throw new TRPCError({ code: "BAD_REQUEST", message: `Cannot delete: this project has ${work.join(", ")}.` });
 
       await db.update(schema.projects)
         .set({ deletedAt: now, deletedBy: ctx.userId, deletionReason: input.reason })

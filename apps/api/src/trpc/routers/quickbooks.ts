@@ -503,11 +503,11 @@ export const quickbooksRouter = router({
     if (!ctx.tenant) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
     const { db, schema } = ctx.tenant;
     const [p] = await db
-      .select({ on: schema.companyProfiles.qboInvoicePush, from: schema.companyProfiles.qboInvoicePushFrom, itemId: schema.companyProfiles.qboIncomeItemId, itemName: schema.companyProfiles.qboIncomeItemName })
+      .select({ on: schema.companyProfiles.qboInvoicePush, from: schema.companyProfiles.qboInvoicePushFrom, itemId: schema.companyProfiles.qboIncomeItemId, itemName: schema.companyProfiles.qboIncomeItemName, taxId: schema.companyProfiles.qboSalesTaxCodeId, taxName: schema.companyProfiles.qboSalesTaxCodeName })
       .from(schema.companyProfiles)
       .where(isNull(schema.companyProfiles.validTo))
       .limit(1);
-    return { enabled: p?.on ?? false, startDate: p?.from ?? null, itemId: p?.itemId ?? null, itemName: p?.itemName ?? null };
+    return { enabled: p?.on ?? false, startDate: p?.from ?? null, itemId: p?.itemId ?? null, itemName: p?.itemName ?? null, taxCodeId: p?.taxId ?? null, taxCodeName: p?.taxName ?? null };
   }),
 
   /** The company's own QuickBooks products/services, so an admin can pick where invoice lines post. Read-only. */
@@ -522,8 +522,23 @@ export const quickbooksRouter = router({
     return rows.map((r) => ({ id: String(r.Id), name: String(r.FullyQualifiedName ?? r.Name), incomeAccount: (r.IncomeAccountRef?.name as string | undefined) ?? null })).sort((a, b) => a.name.localeCompare(b.name));
   }),
 
+  /** The company's taxable sales tax codes in QuickBooks, so an admin can pick the one invoices with tax use. Read-only. */
+  listSalesTaxCodes: authorizedProcedure.mutation(async ({ ctx }) => {
+    if (!ctx.tenant || !ctx.abilities) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+    if (!ctx.abilities.can("manage", "QuickBooks")) throw new TRPCError({ code: "FORBIDDEN", message: "Only administrators can change QuickBooks sync settings" });
+    const access = await getQboAccess(ctx.tenant).catch((e) => {
+      throw new TRPCError({ code: "BAD_REQUEST", message: e instanceof Error ? e.message : "Could not reach QuickBooks." });
+    });
+    if (!access) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "No active QuickBooks connection. Please connect first." });
+    const rows = await qboQueryRows<any>(access.accessToken, access.realmId, "TaxCode", "select * from TaxCode where Active = true MAXRESULTS 200");
+    return rows
+      .filter((r) => r.Taxable !== false && String(r.Name).toUpperCase() !== "NON" && String(r.Name).toUpperCase() !== "EXEMPT")
+      .map((r) => ({ id: String(r.Id), name: String(r.Name) }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }),
+
   setInvoiceSync: authorizedProcedure
-    .input(z.object({ enabled: z.boolean(), startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(), itemId: z.string().max(50).nullable(), itemName: z.string().max(200).nullable() }))
+    .input(z.object({ enabled: z.boolean(), startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(), itemId: z.string().max(50).nullable(), itemName: z.string().max(200).nullable(), taxCodeId: z.string().max(50).nullable().optional(), taxCodeName: z.string().max(200).nullable().optional() }))
     .mutation(async ({ ctx, input }) => {
       if (!ctx.tenant || !ctx.abilities) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
       if (!ctx.abilities.can("manage", "QuickBooks")) throw new TRPCError({ code: "FORBIDDEN", message: "Only administrators can change QuickBooks sync settings" });
@@ -531,7 +546,7 @@ export const quickbooksRouter = router({
       const { db, schema } = ctx.tenant;
       const done = await db
         .update(schema.companyProfiles)
-        .set({ qboInvoicePush: input.enabled, qboInvoicePushFrom: input.startDate, qboIncomeItemId: input.itemId, qboIncomeItemName: input.itemName })
+        .set({ qboInvoicePush: input.enabled, qboInvoicePushFrom: input.startDate, qboIncomeItemId: input.itemId, qboIncomeItemName: input.itemName, qboSalesTaxCodeId: input.taxCodeId ?? null, qboSalesTaxCodeName: input.taxCodeName ?? null })
         .where(isNull(schema.companyProfiles.validTo))
         .returning({ id: schema.companyProfiles.id });
       if (done.length === 0) throw new TRPCError({ code: "BAD_REQUEST", message: "Save the company type in company settings first, then this option." });

@@ -156,6 +156,7 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
     });
     const firstChild = data.lines.find((l) => l.parentId);
     if (firstChild) setBlanket(firstChild.marginPercent);
+    version.current = data.estimate.updatedAt;
     setHydrated(true);
   }, [data, hydrated, isFetchedAfterMount]);
 
@@ -190,6 +191,8 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
   // ---- autosave ----
   const saveContent = trpc.proposal.saveContent.useMutation();
   const saveSettings = trpc.proposal.updateSettings.useMutation();
+  const version = React.useRef<string | undefined>(undefined); // the updatedAt this editor last saw, so a save by someone else is noticed
+  const [conflict, setConflict] = React.useState<string | null>(null);
   const latest = React.useRef({ lines, globals, milestones, settings });
   latest.current = { lines, globals, milestones, settings };
 
@@ -202,7 +205,7 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
   }, []);
 
   React.useEffect(() => {
-    if (!dirty || !hydrated || locked) return;
+    if (!dirty || !hydrated || locked || conflict) return;
     const timer = setTimeout(async () => {
       const cur = latest.current;
       const savingVersion = editVersion.current;
@@ -213,15 +216,18 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
       }
       setSaveState({ kind: "saving" });
       try {
-        await saveSettings.mutateAsync({
+        const savedSettings = await saveSettings.mutateAsync({
           estimateId,
+          expectedUpdatedAt: version.current,
           name: cur.settings.name,
           salesTaxPercent: cur.settings.salesTaxPercent,
           paymentTerms: cur.settings.paymentTerms as (typeof PAYMENT_TERMS)[number],
           validDays: cur.settings.validDays,
         });
-        await saveContent.mutateAsync({
+        version.current = savedSettings.updatedAt;
+        const savedContent = await saveContent.mutateAsync({
           estimateId,
+          expectedUpdatedAt: version.current,
           lines: cur.lines.map((l) => ({
             id: l.id,
             parentId: l.parentId,
@@ -240,15 +246,20 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
           globals: cur.globals,
           milestones: cur.milestones,
         });
+        if (savedContent.updatedAt) version.current = savedContent.updatedAt;
         if (editVersion.current === savingVersion) setDirty(false);
         setSaveState({ kind: "saved" });
       } catch (err) {
+        if ((err as { data?: { code?: string } })?.data?.code === "CONFLICT") {
+          setConflict(err instanceof Error ? err.message : "Someone else changed this.");
+          return;
+        }
         setSaveState({ kind: "error", message: err instanceof Error ? err.message : "Could not save" });
       }
     }, 800);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lines, globals, milestones, settings, dirty, hydrated, locked, estimateId]);
+  }, [lines, globals, milestones, settings, dirty, hydrated, locked, estimateId, conflict]);
 
   React.useEffect(() => {
     if (!dirty) return;
@@ -540,6 +551,14 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
 
   return (
     <div className="space-y-6">
+      {conflict && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-destructive bg-destructive/10 px-4 py-3 text-sm">
+          <div>
+            <strong>Not saved.</strong> {conflict} Your last edits here were not saved, so nothing of theirs was overwritten.
+          </div>
+          <Button type="button" onClick={() => window.location.reload()}>Reload</Button>
+        </div>
+      )}
       {locked && (status === "submitted" || status === "declined") && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border bg-muted px-4 py-3 text-sm">
           <div>

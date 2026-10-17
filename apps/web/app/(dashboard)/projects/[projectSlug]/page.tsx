@@ -19,6 +19,7 @@ import type { ProjectRole } from "@construction/shared";
 import { toast } from "sonner";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { CashFlow } from "@/components/orders/cash-flow";
+import { ProjectCosts } from "@/components/orders/project-costs";
 
 const NOTE_MAX = 500;
 
@@ -145,6 +146,8 @@ export default function ProjectOverviewPage({
       )}
 
       <CashFlow projectId={project.id} projectSlug={projectSlug} />
+
+      <ProjectCosts projectId={project.id} projectSlug={projectSlug} />
 
       {/* Dimensions */}
       <div className="space-y-3">

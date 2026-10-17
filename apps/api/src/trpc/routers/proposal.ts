@@ -50,6 +50,7 @@ const costLineInputSchema = z.object({
 
 const saveContentSchema = z.object({
   estimateId: z.string().uuid(),
+  expectedUpdatedAt: z.string().optional(),
   lines: z.array(costLineInputSchema).max(2000),
   globals: z
     .array(
@@ -78,6 +79,14 @@ function lockedMessage(status: string): string {
   return status === "submitted" || status === "declined"
     ? "This proposal has been sent to the customer and is locked. Create a revision to make changes."
     : "This proposal is accepted and locked. Use a change order for scope changes.";
+}
+
+/** Someone else saved this since the editor opened it: refuse, so their work is not silently overwritten. */
+export function assertFresh(current: Date | string | null | undefined, expected: string | undefined, what = "proposal") {
+  if (!expected || !current) return;
+  if (new Date(current).getTime() !== new Date(expected).getTime()) {
+    throw new TRPCError({ code: "CONFLICT", message: `Someone else changed this ${what} after you opened it. Reload to see their changes before editing.` });
+  }
 }
 
 /** Structural rules the database cannot express: two levels, optional items stand alone. */
@@ -731,6 +740,7 @@ export const proposalRouter = router({
           kind: estimate.kind,
           number: estimate.number,
           isLocked: LOCKED_STATUSES.includes(estimate.status),
+          updatedAt: estimate.updatedAt.toISOString(),
         },
         lines,
         globals,
@@ -753,6 +763,7 @@ export const proposalRouter = router({
         salesTaxPercent: z.number().min(0).max(100).optional(),
         paymentTerms: z.enum(PAYMENT_TERMS).optional(),
         validDays: z.number().int().min(1).max(365).optional(),
+        expectedUpdatedAt: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -772,6 +783,7 @@ export const proposalRouter = router({
       if (LOCKED_STATUSES.includes(existing.status)) {
         throw new TRPCError({ code: "BAD_REQUEST", message: lockedMessage(existing.status) });
       }
+      assertFresh(existing.updatedAt, input.expectedUpdatedAt);
 
       const values: Record<string, unknown> = { updatedAt: new Date() };
       if (input.name !== undefined) values.name = input.name;
@@ -793,7 +805,7 @@ export const proposalRouter = router({
         actorId: ctx.userId,
         changes: { before: existing, after: updated },
       });
-      return { id: updated.id };
+      return { id: updated.id, updatedAt: updated.updatedAt.toISOString() };
     }),
 
   /**
@@ -818,6 +830,7 @@ export const proposalRouter = router({
     if (LOCKED_STATUSES.includes(existing.status)) {
       throw new TRPCError({ code: "BAD_REQUEST", message: lockedMessage(existing.status) });
     }
+    assertFresh(existing.updatedAt, input.expectedUpdatedAt);
 
     const structureError = validateLineStructure(input.lines);
     if (structureError) throw new TRPCError({ code: "BAD_REQUEST", message: structureError });
@@ -915,7 +928,8 @@ export const proposalRouter = router({
       },
     });
 
-    return { ok: true as const };
+    const [after] = await db.select({ updatedAt: schema.estimates.updatedAt }).from(schema.estimates).where(eq(schema.estimates.id, input.estimateId)).limit(1);
+    return { ok: true as const, updatedAt: after?.updatedAt.toISOString() ?? null };
   }),
 
   /**
