@@ -1,7 +1,7 @@
 import { and, eq, inArray, isNull, lte } from "drizzle-orm";
 import { LIFECYCLE_ORDER, AuditAction, type LifecyclePhase } from "@construction/shared";
 import { createAuditLog } from "../audit/logger.js";
-import { queueProjectSyncOnChange } from "../integrations/quickbooks/autoSync.js";
+import { queueProjectSyncOnChange, queueInvoiceSyncOnSend } from "../integrations/quickbooks/autoSync.js";
 import type { buildTenantContext } from "../tenant/context.js";
 
 type Tenant = NonNullable<Awaited<ReturnType<typeof buildTenantContext>>>;
@@ -155,6 +155,7 @@ export async function onProposalAccepted(tenant: Tenant, estimateId: string, act
 export async function onInvoiceSent(tenant: Tenant, invoiceId: string) {
   const { db, schema } = tenant;
   await resolvePrompts(tenant, { dedupeKey: `deposit:${invoiceId}` }, "Invoice sent");
+  await queueInvoiceSyncOnSend(tenant, invoiceId); // creates it in QuickBooks when the company turned that on
   const [inv] = await db.select({ projectId: schema.invoices.projectId, name: schema.invoices.milestoneName, amount: schema.invoices.amount }).from(schema.invoices).where(eq(schema.invoices.id, invoiceId)).limit(1);
   if (!inv || isDepositName(inv.name) || Number(inv.amount) <= 0) return;
   await suggestActive(tenant, inv.projectId, "an invoice was sent");

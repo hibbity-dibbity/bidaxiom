@@ -30,7 +30,7 @@ export const RECEIPT_ACTOR = 'quickbooks-sync';
 // Access token
 // ---------------------------------------------------------------------------------------------------------------
 
-async function getAccess(t: Tenant): Promise<{ accessToken: string; realmId: string } | null> {
+export async function getQboAccess(t: Tenant): Promise<{ accessToken: string; realmId: string } | null> {
   const { db, schema } = t;
   const [conn] = await db.select().from(schema.qboConnections).where(eq(schema.qboConnections.status, 'active')).limit(1);
   if (!conn) return null;
@@ -66,6 +66,7 @@ export interface ReceiptLine {
   qboCustomerName: string | null;
   memo: string | null;
   reference: string | null;
+  links?: Array<{ qboInvoiceId: string; amount: number }> | null;
 }
 
 /** Turn QuickBooks records into one row per receipt line. Lines that only repeat another record are dropped. */
@@ -108,6 +109,12 @@ export function receiptLinesFrom(type: ReceiptLine['qboType'], rec: any): Receip
       qboCustomerName: rec.CustomerRef.name ?? null,
       memo: rec.PrivateNote ?? null,
       reference: rec.PaymentRefNum ?? null,
+      links:
+        type === 'Payment'
+          ? (rec.Line ?? []).flatMap((ln: any) =>
+              (ln.LinkedTxn ?? []).filter((x: any) => x.TxnType === 'Invoice').map((x: any) => ({ qboInvoiceId: String(x.TxnId), amount: r2(Number(ln.Amount ?? 0)) }))
+            )
+          : null,
     },
   ];
 }
@@ -125,7 +132,7 @@ async function queryAll(accessToken: string, realmId: string, entity: string, wh
 /** Bring new and changed QuickBooks receipts into BidAxiom. Returns how many receipt lines were added or updated. */
 export async function pullReceipts(t: Tenant, now = new Date()): Promise<number> {
   const { db, schema } = t;
-  const access = await getAccess(t);
+  const access = await getQboAccess(t);
   if (!access) return 0;
 
   const [p] = await db.select({ last: schema.companyProfiles.qboReceiptsLastCheckAt }).from(schema.companyProfiles).where(isNull(schema.companyProfiles.validTo)).limit(1);
@@ -143,12 +150,12 @@ export async function pullReceipts(t: Tenant, now = new Date()): Promise<number>
           .where(and(eq(schema.qboReceipts.qboType, ln.qboType), eq(schema.qboReceipts.qboId, ln.qboId), eq(schema.qboReceipts.lineNo, ln.lineNo)))
           .limit(1);
         if (!existing) {
-          await db.insert(schema.qboReceipts).values({ ...ln, amount: String(ln.amount) });
+          await db.insert(schema.qboReceipts).values({ ...ln, amount: String(ln.amount), links: ln.links?.length ? ln.links : null });
           changed++;
-        } else if (existing.status === 'open' && (cents(Number(existing.amount)) !== cents(ln.amount) || existing.qboCustomerId !== ln.qboCustomerId || existing.txnDate !== ln.txnDate)) {
+        } else if (existing.status === 'open' && (cents(Number(existing.amount)) !== cents(ln.amount) || existing.qboCustomerId !== ln.qboCustomerId || JSON.stringify(existing.links ?? null) !== JSON.stringify(ln.links?.length ? ln.links : null) || existing.txnDate !== ln.txnDate)) {
           await db
             .update(schema.qboReceipts)
-            .set({ amount: String(ln.amount), qboCustomerId: ln.qboCustomerId, qboCustomerName: ln.qboCustomerName, txnDate: ln.txnDate, memo: ln.memo, reference: ln.reference, updatedAt: new Date() })
+            .set({ amount: String(ln.amount), links: ln.links?.length ? ln.links : null, qboCustomerId: ln.qboCustomerId, qboCustomerName: ln.qboCustomerName, txnDate: ln.txnDate, memo: ln.memo, reference: ln.reference, updatedAt: new Date() })
             .where(eq(schema.qboReceipts.id, existing.id));
           changed++;
         }
@@ -309,13 +316,35 @@ export async function candidateInvoices(t: Tenant, scope: ReceiptScope, txnDate:
 export async function autoApplyReceipts(t: Tenant): Promise<number> {
   const { db, schema } = t;
   const open = await db.select().from(schema.qboReceipts).where(eq(schema.qboReceipts.status, 'open')).orderBy(schema.qboReceipts.txnDate);
-  const fresh = open.filter((r: any) => !r.noAuto && r.qboCustomerId);
-  if (fresh.length === 0) return 0;
+  let applied = 0;
+
+  // A payment the bookkeeper applied to an invoice that BidAxiom sent to QuickBooks says exactly which invoice it pays.
+  for (const r of open.filter((x: any) => !x.noAuto && Array.isArray(x.links) && x.links.length > 0)) {
+    for (const link of r.links as Array<{ qboInvoiceId: string; amount: number }>) {
+      const [m] = await db
+        .select({ platformId: schema.qboEntityMappings.platformId })
+        .from(schema.qboEntityMappings)
+        .where(and(eq(schema.qboEntityMappings.entityType, 'invoice'), eq(schema.qboEntityMappings.qboId, link.qboInvoiceId)))
+        .limit(1);
+      if (!m) continue; // an invoice BidAxiom did not send
+      const done = await db.select({ id: schema.qboReceiptAllocations.id }).from(schema.qboReceiptAllocations).where(and(eq(schema.qboReceiptAllocations.receiptId, r.id), eq(schema.qboReceiptAllocations.invoiceId, m.platformId))).limit(1);
+      if (done.length > 0) continue;
+      try {
+        await applyReceiptToInvoice(t, { receiptId: r.id, invoiceId: m.platformId, amount: link.amount, source: 'auto', actorId: RECEIPT_ACTOR });
+        applied++;
+      } catch (e) {
+        console.error('[qbo-receipts] linked apply failed', r.id, e instanceof Error ? e.message : e);
+      }
+    }
+  }
+
+  const stillOpen = await db.select().from(schema.qboReceipts).where(eq(schema.qboReceipts.status, 'open')).orderBy(schema.qboReceipts.txnDate);
+  const fresh = stillOpen.filter((r: any) => !r.noAuto && r.qboCustomerId && !(Array.isArray(r.links) && r.links.length > 0));
+  if (fresh.length === 0) return applied;
   const scopes = await resolveScopes(t, [...new Set(fresh.map((r: any) => r.qboCustomerId as string))] as string[]);
-  const allOpen = open.filter((r: any) => r.qboCustomerId);
+  const allOpen = stillOpen.filter((r: any) => r.qboCustomerId);
   const allScopes = await resolveScopes(t, [...new Set(allOpen.map((r: any) => r.qboCustomerId as string))] as string[]);
 
-  let applied = 0;
   for (const r of fresh) {
     const scope = scopes.get(r.qboCustomerId);
     if (!scope) continue;

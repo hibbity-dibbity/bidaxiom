@@ -47,6 +47,22 @@ export async function queueProjectSyncOnChange(tenant: TenantLike, projectId: st
   }
 }
 
+/** Called when an invoice is sent. Creates it in QuickBooks when the company turned that on. */
+export async function queueInvoiceSyncOnSend(tenant: TenantLike, invoiceId: string): Promise<void> {
+  try {
+    const [p] = await tenant.db
+      .select({ on: tenant.schema.companyProfiles.qboInvoicePush })
+      .from(tenant.schema.companyProfiles)
+      .where(isNull(tenant.schema.companyProfiles.validTo))
+      .limit(1);
+    if (!p?.on) return;
+    if (!(await hasActiveConnection(tenant))) return;
+    await getQboSyncQueue().add('sync-to-qbo', { tenantId: tenant.tenantId, entityType: 'invoice', platformId: invoiceId, syncReason: 'auto' }, { delay: 3000 });
+  } catch (e) {
+    console.error('[qbo-auto-sync] could not queue invoice', invoiceId, e);
+  }
+}
+
 /** One pass of the timed mode for one company. Returns how many projects were queued. */
 export async function runScheduledSyncForTenant(tenant: TenantLike, now = new Date()): Promise<number> {
   const s = await readSettings(tenant);

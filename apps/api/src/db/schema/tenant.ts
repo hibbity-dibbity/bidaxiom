@@ -128,6 +128,11 @@ export function createTenantSchema(schemaName: string) {
     /** Read deposits and payments back from QuickBooks and mark matching invoices paid. */
     qboReadPayments: boolean("qbo_read_payments").notNull().default(false),
     qboReceiptsLastCheckAt: timestamp("qbo_receipts_last_check_at", { withTimezone: true }),
+    /** Create each sent invoice in QuickBooks (off by default). Only invoices sent on or after qboInvoicePushFrom go over. */
+    qboInvoicePush: boolean("qbo_invoice_push").notNull().default(false),
+    qboInvoicePushFrom: text("qbo_invoice_push_from"), // YYYY-MM-DD
+    qboIncomeItemId: text("qbo_income_item_id"), // the QuickBooks product/service invoice lines post to
+    qboIncomeItemName: text("qbo_income_item_name"),
     validFrom: timestamp("valid_from", { withTimezone: true }).defaultNow().notNull(),
     validTo: timestamp("valid_to", { withTimezone: true }), // NULL = current active version
     createdBy: text("created_by").notNull(), // Clerk user ID
@@ -1433,6 +1438,8 @@ export function createTenantSchema(schemaName: string) {
       amount: numeric("amount", { precision: 15, scale: 2 }).notNull(),
       qboCustomerId: text("qbo_customer_id"), // customer or job in QuickBooks; null when the line names none
       qboCustomerName: text("qbo_customer_name"),
+      /** For a customer payment: the QuickBooks invoices it was applied to and how much to each. */
+      links: jsonb("links").$type<Array<{ qboInvoiceId: string; amount: number }>>(),
       memo: text("memo"),
       reference: text("reference"), // check number / payment reference
       status: text("status").notNull().default("open"), // open, applied, ignored

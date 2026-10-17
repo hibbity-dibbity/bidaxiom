@@ -6,6 +6,8 @@ import { getQboAuthUrl, handleQboCallback } from "../../integrations/quickbooks/
 import { encryptToken } from "../../integrations/quickbooks/crypto.js";
 import { diagnoseQboConnection } from "../../integrations/quickbooks/diagnose.js";
 import { getQboSyncQueue } from "../../integrations/quickbooks/queue.js";
+import { getQboAccess } from "../../integrations/quickbooks/receipts.js";
+import { qboQueryRows } from "../../integrations/quickbooks/client.js";
 import { QBO_AUTO_SYNC_MODES } from "../../integrations/quickbooks/autoSync.js";
 import { eq, sql, and, inArray, isNull } from "drizzle-orm";
 
@@ -496,6 +498,46 @@ export const quickbooksRouter = router({
       return { mode: input.mode, intervalMinutes: input.intervalMinutes };
     }),
 
+  /** Whether sent invoices are created in QuickBooks, from which date, and onto which income item. */
+  getInvoiceSync: protectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.tenant) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+    const { db, schema } = ctx.tenant;
+    const [p] = await db
+      .select({ on: schema.companyProfiles.qboInvoicePush, from: schema.companyProfiles.qboInvoicePushFrom, itemId: schema.companyProfiles.qboIncomeItemId, itemName: schema.companyProfiles.qboIncomeItemName })
+      .from(schema.companyProfiles)
+      .where(isNull(schema.companyProfiles.validTo))
+      .limit(1);
+    return { enabled: p?.on ?? false, startDate: p?.from ?? null, itemId: p?.itemId ?? null, itemName: p?.itemName ?? null };
+  }),
+
+  /** The company's own QuickBooks products/services, so an admin can pick where invoice lines post. Read-only. */
+  listIncomeItems: authorizedProcedure.mutation(async ({ ctx }) => {
+    if (!ctx.tenant || !ctx.abilities) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+    if (!ctx.abilities.can("manage", "QuickBooks")) throw new TRPCError({ code: "FORBIDDEN", message: "Only administrators can change QuickBooks sync settings" });
+    const access = await getQboAccess(ctx.tenant).catch((e) => {
+      throw new TRPCError({ code: "BAD_REQUEST", message: e instanceof Error ? e.message : "Could not reach QuickBooks." });
+    });
+    if (!access) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "No active QuickBooks connection. Please connect first." });
+    const rows = await qboQueryRows<any>(access.accessToken, access.realmId, "Item", "select * from Item where Type = 'Service' and Active = true MAXRESULTS 200");
+    return rows.map((r) => ({ id: String(r.Id), name: String(r.FullyQualifiedName ?? r.Name), incomeAccount: (r.IncomeAccountRef?.name as string | undefined) ?? null })).sort((a, b) => a.name.localeCompare(b.name));
+  }),
+
+  setInvoiceSync: authorizedProcedure
+    .input(z.object({ enabled: z.boolean(), startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(), itemId: z.string().max(50).nullable(), itemName: z.string().max(200).nullable() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.abilities) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+      if (!ctx.abilities.can("manage", "QuickBooks")) throw new TRPCError({ code: "FORBIDDEN", message: "Only administrators can change QuickBooks sync settings" });
+      if (input.enabled && (!input.itemId || !input.startDate)) throw new TRPCError({ code: "BAD_REQUEST", message: "Choose the income item and the first date to send from before turning this on." });
+      const { db, schema } = ctx.tenant;
+      const done = await db
+        .update(schema.companyProfiles)
+        .set({ qboInvoicePush: input.enabled, qboInvoicePushFrom: input.startDate, qboIncomeItemId: input.itemId, qboIncomeItemName: input.itemName })
+        .where(isNull(schema.companyProfiles.validTo))
+        .returning({ id: schema.companyProfiles.id });
+      if (done.length === 0) throw new TRPCError({ code: "BAD_REQUEST", message: "Save the company type in company settings first, then this option." });
+      return input;
+    }),
+
   /**
    * Trigger manual sync for specific entity types or all entities.
    * Admin-only.
@@ -564,6 +606,16 @@ export const quickbooksRouter = router({
               )
               .where(sql`${tenant.schema.qboEntityMappings.id} IS NULL`);
           }
+          if (type === "invoice") {
+            platformEntities = await tenant.db
+              .select({ id: tenant.schema.invoices.id })
+              .from(tenant.schema.invoices)
+              .leftJoin(
+                tenant.schema.qboEntityMappings,
+                and(eq(tenant.schema.qboEntityMappings.platformId, tenant.schema.invoices.id), eq(tenant.schema.qboEntityMappings.entityType, "invoice"))
+              )
+              .where(and(sql`${tenant.schema.qboEntityMappings.id} IS NULL`, inArray(tenant.schema.invoices.status, ["sent", "partially_paid", "paid"]), sql`${tenant.schema.invoices.sentOn} IS NOT NULL`));
+          }
           if (type === "project") {
             platformEntities = await tenant.db
               .select({ id: tenant.schema.projects.id })
@@ -630,6 +682,16 @@ export const quickbooksRouter = router({
               )
             )
             .where(sql`${tenant.schema.qboEntityMappings.id} IS NULL`);
+        }
+        if (entityType === "invoice") {
+          platformEntities = await tenant.db
+            .select({ id: tenant.schema.invoices.id })
+            .from(tenant.schema.invoices)
+            .leftJoin(
+              tenant.schema.qboEntityMappings,
+              and(eq(tenant.schema.qboEntityMappings.platformId, tenant.schema.invoices.id), eq(tenant.schema.qboEntityMappings.entityType, "invoice"))
+            )
+            .where(and(sql`${tenant.schema.qboEntityMappings.id} IS NULL`, inArray(tenant.schema.invoices.status, ["sent", "partially_paid", "paid"]), sql`${tenant.schema.invoices.sentOn} IS NOT NULL`));
         }
         if (entityType === "project") {
           platformEntities = await tenant.db
