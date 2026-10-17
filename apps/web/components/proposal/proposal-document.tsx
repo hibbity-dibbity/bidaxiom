@@ -50,6 +50,7 @@ export function ProposalDocument({
         {data.kind === "change_order" && <div className="text-base font-semibold">{data.title}</div>}
         {data.revision > 0 && <div className="text-sm text-muted-foreground">Rev {data.revision}</div>}
         <div className="text-sm text-muted-foreground">Prepared for {data.customerName ?? "[Customer]"}</div>
+        {data.poNumber && <div className="text-sm font-semibold">Customer PO: {data.poNumber}</div>}
         {data.projectAddress && <div className="text-sm text-muted-foreground">{data.projectAddress}</div>}
       </div>
       <div className="text-[13px] leading-relaxed text-muted-foreground sm:text-right">

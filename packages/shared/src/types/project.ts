@@ -120,6 +120,7 @@ export const createProjectSchema = z.object({
   teamMembers: z.array(teamMemberSchema).default([]),
   phases: z.array(projectPhaseSchema).default([]),
   projectMode: projectModeEnum.optional(), // defaults server-side from user preference
+  poNumber: z.string().trim().max(100).optional(), // customer PO, printed on documents
   customerBudget: z.number().nonnegative().optional(),
   buildingWidth: z.number().nonnegative().optional(),
   buildingLength: z.number().nonnegative().optional(),
@@ -144,6 +145,7 @@ export const updateProjectSchema = z.object({
   startDate: z.string().datetime().nullable().optional(),
   endDate: z.string().datetime().nullable().optional(),
   costCodes: z.array(z.number().int().min(0).max(49)).optional(),
+  poNumber: z.string().trim().max(100).nullable().optional(),
   customerBudget: z.number().nonnegative().nullable().optional(),
   buildingWidth: z.number().nonnegative().nullable().optional(),
   buildingLength: z.number().nonnegative().nullable().optional(),

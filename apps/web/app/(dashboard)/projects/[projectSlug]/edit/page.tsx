@@ -91,6 +91,7 @@ export default function EditProjectPage({ params }: EditProjectPageProps) {
         jobNumber: project.jobNumber ?? undefined,
         customerId: project.customerId,
         description: project.description ?? "",
+        poNumber: project.poNumber ?? "",
         status: project.status as "active" | "on_hold" | "completed" | "archived",
         projectType: project.projectType as "commercial" | "residential" | "infrastructure" | "industrial",
         startDate: project.startDate
@@ -292,6 +293,21 @@ export default function EditProjectPage({ params }: EditProjectPageProps) {
                           value={field.value ?? ""}
                         />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="poNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Customer PO number</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Leave blank if the customer has no PO" {...field} value={field.value ?? ""} />
+                      </FormControl>
+                      <p className="text-xs text-muted-foreground">Printed on every proposal, change order and invoice for this project.</p>
                       <FormMessage />
                     </FormItem>
                   )}

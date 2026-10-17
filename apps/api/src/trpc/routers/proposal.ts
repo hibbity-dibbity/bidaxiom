@@ -374,6 +374,7 @@ export async function buildCustomerViewData(tenant: Tenant, userId: string, esti
     .select({
       name: schema.projects.name,
       jobNumber: schema.projects.jobNumber,
+      poNumber: schema.projects.poNumber,
       customerId: schema.projects.customerId,
       street1: schema.projects.street1,
       street2: schema.projects.street2,
@@ -446,6 +447,7 @@ export async function buildCustomerViewData(tenant: Tenant, userId: string, esti
     validDays: c.estimate.validDays,
     paymentTerms: c.estimate.paymentTerms,
     projectNumber: project?.jobNumber ?? null,
+    poNumber: project?.poNumber ?? null,
     companyContact,
     companyName: tenant.companyName,
     customerName: customer ? (customer.companyName || customer.contactName) : null,

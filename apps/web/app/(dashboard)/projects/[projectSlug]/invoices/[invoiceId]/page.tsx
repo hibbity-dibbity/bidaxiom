@@ -161,6 +161,7 @@ export default function InvoicePage({ params }: { params: { projectSlug: string;
               <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Invoice {inv.number}</div>
               <div className="text-[28px] font-bold leading-tight tracking-tight">{heading}</div>
               <div className="text-sm text-muted-foreground">Bill to {data.customerName ?? "[Customer]"}</div>
+              {data.poNumber && <div className="text-sm font-semibold">Customer PO: {data.poNumber}</div>}
               {data.projectAddress && <div className="text-sm text-muted-foreground">{data.projectAddress}</div>}
             </div>
             <div className="text-right text-[13px] leading-relaxed text-muted-foreground">

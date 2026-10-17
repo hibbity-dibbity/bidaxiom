@@ -145,6 +145,7 @@ export const invoiceRouter = router({
       .select({
         name: schema.projects.name,
         jobNumber: schema.projects.jobNumber,
+        poNumber: schema.projects.poNumber,
         customerId: schema.projects.customerId,
         street1: schema.projects.street1,
         street2: schema.projects.street2,
@@ -215,6 +216,7 @@ export const invoiceRouter = router({
       customerName: customer ? customer.companyName || customer.contactName : null,
       projectName: project?.name ?? null,
       projectNumber: project?.jobNumber ?? null,
+      poNumber: project?.poNumber ?? null,
       projectAddress: addressParts.join(", ") || null,
       contractValue,
       billedThroughThis: throughThis,

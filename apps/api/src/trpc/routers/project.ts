@@ -242,6 +242,7 @@ export const projectRouter = router({
             costCodes: input.costCodes,
             createdBy: userId,
             projectMode: projectMode as "simple" | "gc_advanced",
+            poNumber: input.poNumber?.trim() || null,
             customerBudget: input.customerBudget != null ? String(input.customerBudget) : null,
             buildingWidth: input.buildingWidth != null ? String(input.buildingWidth) : null,
             buildingLength: input.buildingLength != null ? String(input.buildingLength) : null,
@@ -684,6 +685,7 @@ export const projectRouter = router({
       if (input.endDate !== undefined)
         updateValues.endDate = input.endDate ? new Date(input.endDate) : null;
       if (input.costCodes !== undefined) updateValues.costCodes = input.costCodes;
+      if (input.poNumber !== undefined) updateValues.poNumber = input.poNumber?.trim() || null;
       if (input.customerBudget !== undefined)
         updateValues.customerBudget =
           input.customerBudget !== null ? String(input.customerBudget) : null;

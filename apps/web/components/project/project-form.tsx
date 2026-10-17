@@ -96,6 +96,7 @@ export function ProjectForm() {
       jobNumber: undefined,
       customerId: "",
       description: "",
+      poNumber: undefined,
       location: { street1: "", street2: "", city: "", state: "", zipCode: "" },
       projectType: "commercial",
       projectMode: "simple",
@@ -319,6 +320,21 @@ export function ProjectForm() {
             </FormItem>
           )}
         />
+
+                <FormField
+                  control={form.control}
+                  name="poNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Customer PO number</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Leave blank if the customer has no PO" {...field} value={field.value ?? ""} />
+                      </FormControl>
+                      <p className="text-xs text-muted-foreground">Printed on every proposal, change order and invoice for this project.</p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
         {/* LOCATION — AddressInput, no heading above it */}
         <AddressInput form={form} prefix="location" />
