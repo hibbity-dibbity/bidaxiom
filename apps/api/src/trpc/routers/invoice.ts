@@ -319,6 +319,56 @@ export const invoiceRouter = router({
     return { id: inv.id, number: inv.number, created };
   }),
 
+  /** Save the date sent and due date on a draft without sending it. They are used when the invoice is sent. */
+  updateDates: protectedProcedure
+    .input(z.object({ invoiceId: z.string().uuid(), sentOn: dateText, dueOn: dateText }))
+    .mutation(async ({ ctx, input }) => {
+      const c = need(ctx);
+      await can(c, "update");
+      const inv = await loadInvoice(c, input.invoiceId);
+      if (inv.status !== "draft") throw new TRPCError({ code: "BAD_REQUEST", message: "A sent invoice cannot be changed." });
+      if (input.dueOn < input.sentOn) throw new TRPCError({ code: "BAD_REQUEST", message: "The due date is before the date sent." });
+      await c.tenant.db.update(c.tenant.schema.invoices).set({ sentOn: input.sentOn, dueOn: input.dueOn, updatedAt: new Date() }).where(eq(c.tenant.schema.invoices.id, inv.id));
+      return { id: inv.id };
+    }),
+
+  /**
+   * Split an unsent invoice in two by amount: this invoice keeps the amount you give and a new draft,
+   * numbered after the project's last invoice, takes the rest.
+   */
+  splitAmount: protectedProcedure
+    .input(z.object({ invoiceId: z.string().uuid(), amount: z.number().positive() }))
+    .mutation(async ({ ctx, input }) => {
+      const c = need(ctx);
+      await can(c, "update");
+      const { db, schema } = c.tenant;
+      const inv = await loadInvoice(c, input.invoiceId);
+      if (inv.status !== "draft") throw new TRPCError({ code: "BAD_REQUEST", message: "Only invoices that have not been sent can be split." });
+      const items = await db.select({ id: schema.invoiceItems.id }).from(schema.invoiceItems).where(eq(schema.invoiceItems.invoiceId, inv.id));
+      if (items.length > 1) throw new TRPCError({ code: "BAD_REQUEST", message: "Split this combined invoice back into its parts first." });
+      const total = Number(inv.amount);
+      const first = r2(input.amount);
+      const rest = r2(total - first);
+      if (total <= 0 || first <= 0 || rest <= 0) throw new TRPCError({ code: "BAD_REQUEST", message: "Enter an amount smaller than the invoice total." });
+      const all = await db.select({ number: schema.invoices.number, sortOrder: schema.invoices.sortOrder }).from(schema.invoices).where(eq(schema.invoices.projectId, inv.projectId));
+      const prefix = inv.number.replace(/-\d+$/, "");
+      const seq = (await lastInvoiceSeq(db, schema, inv.projectId, all.map((r) => r.number))) + 1;
+      const sort = all.reduce((a, r) => Math.max(a, r.sortOrder), -1) + 1;
+      const number = `${prefix}-${String(seq).padStart(2, "0")}`;
+      const pct = Number(inv.percent);
+      await db.transaction(async (tx) => {
+        await tx.update(schema.invoices).set({ amount: String(first), percent: String(r2((pct * first) / total)), updatedAt: new Date() }).where(eq(schema.invoices.id, inv.id));
+        await tx.insert(schema.invoices).values({
+          projectId: inv.projectId, estimateId: inv.estimateId, milestoneId: inv.milestoneId, number,
+          milestoneName: inv.milestoneName, percent: String(r2(pct - (pct * first) / total)), amount: String(rest), status: "draft",
+          paymentTerms: inv.paymentTerms, notes: inv.notes, sortOrder: sort, createdBy: c.userId,
+        });
+        await rememberInvoiceSeq(tx, schema, inv.projectId, seq);
+      });
+      await createAuditLog(db, schema, { entityType: "Invoice", entityId: inv.id, action: AuditAction.UPDATE, actorId: c.userId, changes: { after: { splitInto: [inv.number, number], amounts: [first, rest] } } });
+      return { id: inv.id, number: inv.number, created: number };
+    }),
+
   /** Internal note printed on the invoice. Drafts only. */
   updateNotes: protectedProcedure
     .input(z.object({ invoiceId: z.string().uuid(), notes: z.string().max(5000).nullable() }))
@@ -346,8 +396,9 @@ export const invoiceRouter = router({
       if (inv.status !== "draft") throw new TRPCError({ code: "BAD_REQUEST", message: "This invoice was already sent." });
       const credit = Number(inv.amount) < 0;
       if (Number(inv.amount) === 0) throw new TRPCError({ code: "BAD_REQUEST", message: "This invoice has no amount to bill." });
-      const sentOn = input.sentOn ?? todayText();
-      const dueOn = input.dueOn ?? dueDateFor(sentOn, inv.paymentTerms);
+      // Dates saved on the draft are used when none are given (emailing the invoice sends without any).
+      const sentOn = input.sentOn ?? inv.sentOn ?? todayText();
+      const dueOn = input.dueOn ?? (input.sentOn ? null : inv.dueOn) ?? dueDateFor(sentOn, inv.paymentTerms);
       if (dueOn < sentOn) throw new TRPCError({ code: "BAD_REQUEST", message: "The due date is before the date sent." });
       // A credit (negative amount) has nothing to collect, so it is settled when sent.
       await db.update(schema.invoices).set({ status: credit ? "paid" : "sent", sentOn, dueOn, updatedAt: new Date() }).where(eq(schema.invoices.id, inv.id));

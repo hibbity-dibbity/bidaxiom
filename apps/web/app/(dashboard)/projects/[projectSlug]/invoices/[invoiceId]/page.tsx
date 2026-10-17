@@ -51,6 +51,22 @@ export default function InvoicePage({ params }: { params: { projectSlug: string;
     },
     onError: fail("Could not send"),
   });
+  const saveDates = trpc.invoice.updateDates.useMutation({
+    onSuccess: () => {
+      toast.success("Dates saved");
+      refresh();
+    },
+    onError: fail("Could not save the dates"),
+  });
+  const [splitAmt, setSplitAmt] = React.useState("");
+  const split = trpc.invoice.splitAmount.useMutation({
+    onSuccess: (r) => {
+      toast.success(`Split off ${r.created}`);
+      setSplitAmt("");
+      refresh();
+    },
+    onError: fail("Could not split the invoice"),
+  });
   const notes = trpc.invoice.updateNotes.useMutation({ onSuccess: refresh, onError: fail("Could not save the note") });
   const record = trpc.invoice.recordPayment.useMutation({
     onSuccess: () => {
@@ -62,6 +78,17 @@ export default function InvoicePage({ params }: { params: { projectSlug: string;
   });
   const [sendingPaid, setSendingPaid] = React.useState(false);
   const remove = trpc.invoice.deletePayment.useMutation({ onSuccess: refresh, onError: fail("Could not delete the payment") });
+
+  // Dates saved on the draft come back into the fields.
+  const savedSent = data?.invoice.status === "draft" ? data.invoice.sentOn : null;
+  const savedDue = data?.invoice.status === "draft" ? data.invoice.dueOn : null;
+  React.useEffect(() => {
+    if (savedSent) setSentOn(savedSent);
+    if (savedDue) {
+      setDueOn(savedDue);
+      setDueTouched(true);
+    }
+  }, [savedSent, savedDue]);
 
   if (isLoading || !data) return <Skeleton className="h-96 w-full" />;
   const inv = data.invoice;
@@ -126,6 +153,9 @@ export default function InvoicePage({ params }: { params: { projectSlug: string;
                 }}
               />
             </label>
+            <Button type="button" variant="outline" disabled={saveDates.isPending || !sentOn || !effectiveDue} onClick={() => saveDates.mutate({ invoiceId, sentOn, dueOn: effectiveDue })}>
+              Save dates
+            </Button>
             <Button type="button" disabled={inv.amount === 0} onClick={() => setEmailOpen(true)}>
               Email to customer
             </Button>
@@ -141,6 +171,18 @@ export default function InvoicePage({ params }: { params: { projectSlug: string;
               Send and mark paid in full
             </Button>
           </div>
+          {inv.amount > 0 && (
+            <div className="flex flex-wrap items-end gap-2">
+              <label className="space-y-1">
+                <span className="block text-xs uppercase tracking-wider text-muted-foreground">Split: amount to keep on this invoice</span>
+                <input type="number" min="0" step="0.01" className={`${field} w-40`} value={splitAmt} onChange={(e) => setSplitAmt(e.target.value)} placeholder={`less than ${inv.amount}`} />
+              </label>
+              <Button type="button" variant="outline" disabled={split.isPending || !(Number(splitAmt) > 0) || Number(splitAmt) >= inv.amount} onClick={() => split.mutate({ invoiceId, amount: Number(splitAmt) })}>
+                Split by amount
+              </Button>
+              <span className="text-xs text-muted-foreground">The rest becomes a new draft invoice.</span>
+            </div>
+          )}
           <label className="block space-y-1">
             <span className="block text-xs uppercase tracking-wider text-muted-foreground">Note printed on the invoice (optional)</span>
             <textarea

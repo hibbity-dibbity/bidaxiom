@@ -148,7 +148,7 @@ export default function InvoicesPage({ params }: { params: { projectSlug: string
                     <td className="px-3 py-2">
                       <InvoiceStatusBadge status={r.status} overdue={r.overdue} amount={r.amount} />
                     </td>
-                    <td className="px-3 py-2">{shortDate(r.sentOn)}</td>
+                    <td className="px-3 py-2">{r.status === "draft" ? "" : shortDate(r.sentOn)}</td>
                     <td className="px-3 py-2">{shortDate(r.dueOn)}</td>
                     <td className="px-3 py-2 text-right tabular-nums">{r.status === "draft" ? "—" : dollars(r.received)}</td>
                     <td className="px-3 py-2 text-right tabular-nums">{r.outstanding === null ? "—" : dollars(r.outstanding)}</td>
