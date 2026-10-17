@@ -6,7 +6,7 @@ import { Queue, ConnectionOptions } from 'bullmq';
  */
 export interface QboSyncJobData {
   tenantId: string;
-  entityType: 'project' | 'invoice' | 'bill' | 'payment' | 'vendor' | 'customer';
+  entityType: 'project' | 'invoice' | 'order' | 'bill' | 'payment' | 'vendor' | 'customer';
   platformId?: string;    // For platform-to-QBO sync
   qboId?: string;         // For QBO-to-platform sync
   operation?: 'Create' | 'Update' | 'Delete' | 'Void';

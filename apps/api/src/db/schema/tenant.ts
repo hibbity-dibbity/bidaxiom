@@ -134,6 +134,10 @@ export function createTenantSchema(schemaName: string) {
     qboInvoicePushFrom: text("qbo_invoice_push_from"), // YYYY-MM-DD
     qboIncomeItemId: text("qbo_income_item_id"), // the QuickBooks product/service invoice lines post to
     qboIncomeItemName: text("qbo_income_item_name"),
+    /** Create each issued purchase order and work order in QuickBooks as a Purchase Order (off by default). */
+    qboOrderPush: boolean("qbo_order_push").notNull().default(false),
+    qboOrderPushFrom: text("qbo_order_push_from"), // YYYY-MM-DD; only orders issued on or after this date go over
+    qboOrderAccounts: jsonb("qbo_order_accounts").notNull().default({}).$type<Record<string, { id: string; name: string }>>(), // material, equipment, labor -> QuickBooks expense account
     validFrom: timestamp("valid_from", { withTimezone: true }).defaultNow().notNull(),
     validTo: timestamp("valid_to", { withTimezone: true }), // NULL = current active version
     createdBy: text("created_by").notNull(), // Clerk user ID
@@ -1119,6 +1123,7 @@ export function createTenantSchema(schemaName: string) {
     linkSource: text("link_source"), // auto, manual
     noAuto: boolean("no_auto").notNull().default(false), // true after an unlink: never auto-link again
     relevant: boolean("relevant").notNull().default(false), // names a BidAxiom job, vendor or order number
+    qboPoIds: jsonb("qbo_po_ids").notNull().default([]).$type<string[]>(), // QuickBooks purchase orders this bill was made from
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   });

@@ -1,3 +1,4 @@
+import { queueOrderSyncOnIssue } from "../../integrations/quickbooks/autoSync.js";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
@@ -521,6 +522,7 @@ export const orderRouter = router({
         actorId: c.userId,
         changes: { before: { status: "draft" }, after: { status: "issued", revision: order.revision } },
       });
+      await queueOrderSyncOnIssue(c.tenant, order.id);
       if (order.revision === 0) await onOrderIssued(c.tenant, order.projectId).catch((e) => console.error("[automation] order issued failed", e));
       return { id: order.id, revision: order.revision };
     }),

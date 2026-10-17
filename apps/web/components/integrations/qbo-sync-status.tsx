@@ -68,7 +68,7 @@ export function QboSyncStatus({ syncStates }: QboSyncStatusProps) {
     onError: (error) => toast.error("Could not stop the sync", { description: error.message }),
   });
 
-  const handleSync = (entityType: "customer" | "project" | "invoice" | "bill" | "all") => {
+  const handleSync = (entityType: "customer" | "project" | "invoice" | "order" | "bill" | "all") => {
     manualSyncMutation.mutate({ entityType });
   };
 
@@ -95,12 +95,13 @@ export function QboSyncStatus({ syncStates }: QboSyncStatusProps) {
   };
 
   // Only what actually syncs is listed; rows for vendors, bills and payments would sit at "Pending" forever.
-  const shown = syncStates.filter((s) => ["customer", "project", "invoice"].includes(s.entityType));
+  const shown = syncStates.filter((s) => ["customer", "project", "invoice", "order"].includes(s.entityType));
 
   const formatEntityType = (entityType: string) => {
     const mapping: Record<string, string> = {
       project: "Projects",
       invoice: "Invoices",
+      order: "Purchase & work orders",
       bill: "Bills",
       payment: "Payments",
       vendor: "Vendors",
@@ -115,7 +116,7 @@ export function QboSyncStatus({ syncStates }: QboSyncStatusProps) {
         <div>
           <h3 className="text-lg font-semibold">Sync Status</h3>
           <p className="text-sm text-muted-foreground">
-            Customers, projects and invoices go from BidAxiom to QuickBooks. Vendor bills and what you pay on them are read back from QuickBooks (see Outstanding); BidAxiom does not send them.
+            Customers, projects, invoices and (when turned on) purchase and work orders go from BidAxiom to QuickBooks. Vendor bills and what you pay on them are read back from QuickBooks (see Outstanding); BidAxiom does not send them.
           </p>
         </div>
 
@@ -142,6 +143,9 @@ export function QboSyncStatus({ syncStates }: QboSyncStatusProps) {
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleSync("invoice")}>
               Sync Invoices
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleSync("order")}>
+              Sync Purchase &amp; Work Orders
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => cancelMutation.mutate()} disabled={cancelMutation.isPending}>
               Stop and reset status

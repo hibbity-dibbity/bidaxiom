@@ -63,6 +63,22 @@ export async function queueInvoiceSyncOnSend(tenant: TenantLike, invoiceId: stri
   }
 }
 
+/** Called when a purchase or work order is issued. Creates or updates its Purchase Order in QuickBooks when the company turned that on. */
+export async function queueOrderSyncOnIssue(tenant: TenantLike, orderId: string): Promise<void> {
+  try {
+    const [p] = await tenant.db
+      .select({ on: tenant.schema.companyProfiles.qboOrderPush })
+      .from(tenant.schema.companyProfiles)
+      .where(isNull(tenant.schema.companyProfiles.validTo))
+      .limit(1);
+    if (!p?.on) return;
+    if (!(await hasActiveConnection(tenant))) return;
+    await getQboSyncQueue().add('sync-to-qbo', { tenantId: tenant.tenantId, entityType: 'order', platformId: orderId, syncReason: 'auto' }, { delay: 3000 });
+  } catch (e) {
+    console.error('[qbo-auto-sync] could not queue order', orderId, e);
+  }
+}
+
 /** One pass of the timed mode for one company. Returns how many projects were queued. */
 export async function runScheduledSyncForTenant(tenant: TenantLike, now = new Date()): Promise<number> {
   const s = await readSettings(tenant);

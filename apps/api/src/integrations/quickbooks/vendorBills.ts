@@ -46,11 +46,17 @@ export interface BillRow {
   total: number;
   balance: number;
   qboCustomerIds: string[];
+  qboPoIds: string[];
   memo: string | null;
 }
 
 export function billFrom(rec: any): BillRow {
   const jobs = new Set<string>();
+  // "Copy to bill" in QuickBooks leaves a link to the purchase order on the bill (and on its lines).
+  const pos = new Set<string>();
+  for (const x of [...(rec.LinkedTxn ?? []), ...(rec.Line ?? []).flatMap((l: any) => l.LinkedTxn ?? [])]) {
+    if (x.TxnType === 'PurchaseOrder' && x.TxnId) pos.add(String(x.TxnId));
+  }
   for (const ln of rec.Line ?? []) {
     const d = ln.AccountBasedExpenseLineDetail ?? ln.ItemBasedExpenseLineDetail;
     if (d?.CustomerRef?.value) jobs.add(String(d.CustomerRef.value));
@@ -65,6 +71,7 @@ export function billFrom(rec: any): BillRow {
     total: r2(Number(rec.TotalAmt ?? 0)),
     balance: r2(Number(rec.Balance ?? 0)),
     qboCustomerIds: [...jobs],
+    qboPoIds: [...pos],
     memo: rec.PrivateNote ?? null,
   };
 }
@@ -109,11 +116,11 @@ export async function pullVendorBills(t: Tenant, now = new Date()): Promise<numb
     const b = billFrom(rec);
     if (!(b.total > 0)) continue;
     const [existing] = await db.select().from(schema.qboBills).where(eq(schema.qboBills.qboId, b.qboId)).limit(1);
-    const vals = { docNumber: b.docNumber, txnDate: b.txnDate, dueDate: b.dueDate, qboVendorId: b.qboVendorId, vendorName: b.vendorName, total: String(b.total), balance: String(b.balance), qboCustomerIds: b.qboCustomerIds, memo: b.memo };
+    const vals = { docNumber: b.docNumber, txnDate: b.txnDate, dueDate: b.dueDate, qboVendorId: b.qboVendorId, vendorName: b.vendorName, total: String(b.total), balance: String(b.balance), qboCustomerIds: b.qboCustomerIds, qboPoIds: b.qboPoIds, memo: b.memo };
     if (!existing) {
       await db.insert(schema.qboBills).values({ qboId: b.qboId, ...vals });
       changed++;
-    } else if (cents(Number(existing.total)) !== cents(b.total) || cents(Number(existing.balance)) !== cents(b.balance) || existing.docNumber !== b.docNumber || existing.vendorName !== b.vendorName || JSON.stringify(existing.qboCustomerIds) !== JSON.stringify(b.qboCustomerIds)) {
+    } else if (cents(Number(existing.total)) !== cents(b.total) || cents(Number(existing.balance)) !== cents(b.balance) || existing.docNumber !== b.docNumber || existing.vendorName !== b.vendorName || JSON.stringify(existing.qboCustomerIds) !== JSON.stringify(b.qboCustomerIds) || JSON.stringify(existing.qboPoIds ?? []) !== JSON.stringify(b.qboPoIds)) {
       await db.update(schema.qboBills).set({ ...vals, updatedAt: new Date() }).where(eq(schema.qboBills.id, existing.id));
       changed++;
     }
@@ -165,8 +172,21 @@ export async function billContext(t: Tenant, bill: any, vendors?: Map<string, st
   const scopes = ids.length ? await resolveScopes(t, ids) : new Map();
   const projectIds = [...new Set([...scopes.values()].map((s: any) => s.projectId).filter(Boolean) as string[])];
   let orderByNumber: any = null;
+  // The purchase order BidAxiom sent to QuickBooks and the bookkeeper turned into this bill: an exact link.
+  const poIds: string[] = bill.qboPoIds ?? [];
+  if (poIds.length) {
+    const maps = await db
+      .select({ platformId: schema.qboEntityMappings.platformId })
+      .from(schema.qboEntityMappings)
+      .where(and(eq(schema.qboEntityMappings.entityType, 'order'), inArray(schema.qboEntityMappings.qboId, poIds)));
+    const ids = [...new Set(maps.map((m: any) => m.platformId))];
+    if (ids.length === 1) {
+      const [o] = await db.select().from(schema.orders).where(eq(schema.orders.id, ids[0] as string)).limit(1);
+      orderByNumber = o ?? null;
+    }
+  }
   const dk = docKey(bill.docNumber);
-  if (dk) {
+  if (dk && !orderByNumber) {
     if (orderNumbers) orderByNumber = orderNumbers.get(dk) ?? null;
     else {
       const all = await db.select().from(schema.orders);
@@ -288,7 +308,7 @@ export async function autoLinkBills(t: Tenant): Promise<number> {
   let linked = 0;
   for (const bill of open) {
     const ctx = await billContext(t, bill, vendors, orderNumbers);
-    const relevant = Boolean(ctx.orderByNumber || ctx.projectIds.length || ctx.vendorId);
+    const relevant = Boolean(ctx.orderByNumber || ctx.projectIds.length || ctx.vendorId || (bill.qboPoIds ?? []).length > 0);
     if (relevant !== bill.relevant) await db.update(schema.qboBills).set({ relevant }).where(eq(schema.qboBills.id, bill.id));
     if (bill.noAuto) continue;
     let target: string | null = null;

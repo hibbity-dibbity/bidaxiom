@@ -538,6 +538,54 @@ export const quickbooksRouter = router({
       return input;
     }),
 
+  /** Whether issued purchase and work orders are created in QuickBooks, from which date, and onto which expense accounts. */
+  getOrderSync: protectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.tenant) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+    const { db, schema } = ctx.tenant;
+    const [p] = await db
+      .select({ on: schema.companyProfiles.qboOrderPush, from: schema.companyProfiles.qboOrderPushFrom, accounts: schema.companyProfiles.qboOrderAccounts })
+      .from(schema.companyProfiles)
+      .where(isNull(schema.companyProfiles.validTo))
+      .limit(1);
+    return { enabled: p?.on ?? false, startDate: p?.from ?? null, accounts: (p?.accounts ?? {}) as Record<string, { id: string; name: string }> };
+  }),
+
+  /** The company's own QuickBooks expense and cost of goods sold accounts, so an admin can pick where order lines post. Read-only. */
+  listExpenseAccounts: authorizedProcedure.mutation(async ({ ctx }) => {
+    if (!ctx.tenant || !ctx.abilities) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+    if (!ctx.abilities.can("manage", "QuickBooks")) throw new TRPCError({ code: "FORBIDDEN", message: "Only administrators can change QuickBooks sync settings" });
+    const access = await getQboAccess(ctx.tenant).catch((e) => {
+      throw new TRPCError({ code: "BAD_REQUEST", message: e instanceof Error ? e.message : "Could not reach QuickBooks." });
+    });
+    if (!access) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "No active QuickBooks connection. Please connect first." });
+    const rows = await qboQueryRows<any>(access.accessToken, access.realmId, "Account", "select * from Account where Classification = 'Expense' and Active = true MAXRESULTS 500");
+    return rows.map((r) => ({ id: String(r.Id), name: String(r.FullyQualifiedName ?? r.Name), type: String(r.AccountType ?? "") })).sort((a, b) => a.name.localeCompare(b.name));
+  }),
+
+  setOrderSync: authorizedProcedure
+    .input(
+      z.object({
+        enabled: z.boolean(),
+        startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
+        accounts: z.record(z.enum(["material", "equipment", "labor"]), z.object({ id: z.string().max(50), name: z.string().max(200) })),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.abilities) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+      if (!ctx.abilities.can("manage", "QuickBooks")) throw new TRPCError({ code: "FORBIDDEN", message: "Only administrators can change QuickBooks sync settings" });
+      if (input.enabled && (!input.startDate || !input.accounts.material?.id || !input.accounts.equipment?.id || !input.accounts.labor?.id)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Choose the three expense accounts and the first date to send from before turning this on." });
+      }
+      const { db, schema } = ctx.tenant;
+      const done = await db
+        .update(schema.companyProfiles)
+        .set({ qboOrderPush: input.enabled, qboOrderPushFrom: input.startDate, qboOrderAccounts: input.accounts as Record<string, { id: string; name: string }> })
+        .where(isNull(schema.companyProfiles.validTo))
+        .returning({ id: schema.companyProfiles.id });
+      if (done.length === 0) throw new TRPCError({ code: "BAD_REQUEST", message: "Save the company type in company settings first, then this option." });
+      return input;
+    }),
+
   /**
    * Trigger manual sync for specific entity types or all entities.
    * Admin-only.
@@ -545,7 +593,7 @@ export const quickbooksRouter = router({
   manualSync: authorizedProcedure
     .input(
       z.object({
-        entityType: z.enum(["customer", "project", "invoice", "bill", "all"]),
+        entityType: z.enum(["customer", "project", "invoice", "order", "bill", "all"]),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -586,7 +634,7 @@ export const quickbooksRouter = router({
 
       if (entityType === "all") {
         // Queue sync jobs for all supported entity types
-        const entityTypes = ["customer", "project", "invoice", "bill"] as const;
+        const entityTypes = ["customer", "project", "invoice", "order", "bill"] as const;
 
         for (const type of entityTypes) {
           const queuedBefore = jobsQueued;
@@ -615,6 +663,16 @@ export const quickbooksRouter = router({
                 and(eq(tenant.schema.qboEntityMappings.platformId, tenant.schema.invoices.id), eq(tenant.schema.qboEntityMappings.entityType, "invoice"))
               )
               .where(and(sql`${tenant.schema.qboEntityMappings.id} IS NULL`, inArray(tenant.schema.invoices.status, ["sent", "partially_paid", "paid"]), sql`${tenant.schema.invoices.sentOn} IS NOT NULL`));
+          }
+          if (type === "order") {
+            platformEntities = await tenant.db
+              .select({ id: tenant.schema.orders.id })
+              .from(tenant.schema.orders)
+              .leftJoin(
+                tenant.schema.qboEntityMappings,
+                and(eq(tenant.schema.qboEntityMappings.platformId, tenant.schema.orders.id), eq(tenant.schema.qboEntityMappings.entityType, "order"))
+              )
+              .where(and(sql`${tenant.schema.qboEntityMappings.id} IS NULL`, inArray(tenant.schema.orders.status, ["issued", "partially_paid", "paid", "closed"])));
           }
           if (type === "project") {
             platformEntities = await tenant.db
@@ -692,6 +750,16 @@ export const quickbooksRouter = router({
               and(eq(tenant.schema.qboEntityMappings.platformId, tenant.schema.invoices.id), eq(tenant.schema.qboEntityMappings.entityType, "invoice"))
             )
             .where(and(sql`${tenant.schema.qboEntityMappings.id} IS NULL`, inArray(tenant.schema.invoices.status, ["sent", "partially_paid", "paid"]), sql`${tenant.schema.invoices.sentOn} IS NOT NULL`));
+        }
+        if (entityType === "order") {
+          platformEntities = await tenant.db
+            .select({ id: tenant.schema.orders.id })
+            .from(tenant.schema.orders)
+            .leftJoin(
+                tenant.schema.qboEntityMappings,
+                and(eq(tenant.schema.qboEntityMappings.platformId, tenant.schema.orders.id), eq(tenant.schema.qboEntityMappings.entityType, "order"))
+              )
+              .where(and(sql`${tenant.schema.qboEntityMappings.id} IS NULL`, inArray(tenant.schema.orders.status, ["issued", "partially_paid", "paid", "closed"])));
         }
         if (entityType === "project") {
           platformEntities = await tenant.db
