@@ -663,6 +663,11 @@ export const projectRouter = router({
       if (input.name !== undefined) updateValues.name = input.name;
       if (input.jobNumber !== undefined) updateValues.jobNumber = input.jobNumber;
       if (input.description !== undefined) updateValues.description = input.description;
+      if (input.customerId !== undefined && input.customerId !== existingProject.customerId) {
+        const [cust] = await db.select({ id: schema.customers.id }).from(schema.customers).where(eq(schema.customers.id, input.customerId)).limit(1);
+        if (!cust) throw new TRPCError({ code: "BAD_REQUEST", message: "That customer no longer exists." });
+        updateValues.customerId = input.customerId;
+      }
       if (input.location !== undefined) {
         // Map structured location to DB columns
         updateValues.location = null; // Legacy column - no longer used
