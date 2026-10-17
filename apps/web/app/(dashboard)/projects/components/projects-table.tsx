@@ -47,6 +47,7 @@ interface ProjectsTableProps {
   pageSize: number;
   /** True when any filter or search is active — selects EmptyState variant */
   isFiltered: boolean;
+  canCreate?: boolean;
 }
 
 export function ProjectsTable({
@@ -57,6 +58,7 @@ export function ProjectsTable({
   onPageChange,
   pageSize,
   isFiltered,
+  canCreate = true,
 }: ProjectsTableProps) {
   const router = useRouter();
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -150,13 +152,13 @@ export function ProjectsTable({
     return (
       <EmptyState
         icon={isFiltered ? SearchX : FolderOpen}
-        heading={isFiltered ? "No projects match your filters" : "No projects yet"}
+        heading={isFiltered ? "No projects match your filters" : canCreate ? "No projects yet" : "No projects assigned to you"}
         description={
           isFiltered
             ? "Try adjusting your search or filter criteria."
-            : "Create your first project to get started."
+            : canCreate ? "Create your first project to get started." : "Ask an administrator or project manager to add you to a project."
         }
-        action={!isFiltered ? { label: "Create Project", href: "/projects/new" } : undefined}
+        action={!isFiltered && canCreate ? { label: "Create Project", href: "/projects/new" } : undefined}
       />
     );
   }

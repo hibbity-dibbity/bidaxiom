@@ -145,7 +145,14 @@ export async function syncOrderToQbo(params: {
 
   const fail = (e: unknown) => {
     const fault = qboFaultText(e);
-    if (fault) throw new QboUserError(`QuickBooks would not accept ${order.number} (${fault}). Check that Purchase Orders are turned on in QuickBooks (Settings > Account and settings > Expenses).`);
+    if (fault) {
+      const hint = /deleted|inactive|restore/i.test(fault)
+        ? 'The project\'s job is inactive in QuickBooks (the project is closed, lost or deleted). Reopen or restore the project in BidAxiom, press Sync projects, then sync this order again.'
+        : /purchase order|not (enabled|available|supported)|feature/i.test(fault)
+          ? 'Check that Purchase Orders are turned on in QuickBooks (Settings > Account and settings > Expenses).'
+          : '';
+      throw new QboUserError(`QuickBooks would not accept ${order.number} (${fault}).${hint ? ' ' + hint : ''}`);
+    }
     throw e;
   };
 

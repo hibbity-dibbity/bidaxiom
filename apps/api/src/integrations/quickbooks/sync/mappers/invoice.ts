@@ -129,7 +129,7 @@ export async function syncInvoiceToQbo(params: {
       Amount: l.amount,
       DetailType: 'SalesItemLineDetail',
       Description: l.description,
-      SalesItemLineDetail: { ItemRef: { value: settings.itemId }, Qty: 1, UnitPrice: l.amount, ...(l.taxable ? { TaxCodeRef: { value: settings.taxCodeId! } } : withTaxCode ? { TaxCodeRef: { value: 'NON' } } : {}) },
+      SalesItemLineDetail: { ItemRef: { value: settings.itemId }, Qty: 1, UnitPrice: l.amount, ...(l.taxable ? { TaxCodeRef: { value: 'TAX' } } : withTaxCode ? { TaxCodeRef: { value: 'NON' } } : {}) },
     })),
   });
   const attempt = async (fn: (b: any) => Promise<any>, make: (t: boolean) => any) => {

@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuth } from "@/lib/auth-context";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -54,6 +55,19 @@ import type { z } from "zod";
 
 
 export default function CustomersPage() {
+  const { orgRole } = useAuth();
+  if (orgRole && !["org:admin", "org:project_manager", "org:accountant", "org:estimator"].includes(orgRole)) {
+    return (
+      <div className="space-y-2">
+        <h1 className="text-2xl font-bold">Customers</h1>
+        <p className="text-sm text-muted-foreground">Your role cannot view customers.</p>
+      </div>
+    );
+  }
+  return <CustomersList />;
+}
+
+function CustomersList() {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [addDialogOpen, setAddDialogOpen] = useState(false);

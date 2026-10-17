@@ -39,10 +39,10 @@ export function getQboSyncQueue(): Queue<QboSyncJobData> {
     _qboSyncQueue = new Queue<QboSyncJobData>('qbo-sync', {
       connection: redisConnection,
       defaultJobOptions: {
-        attempts: 5,
+        attempts: 6,
         backoff: {
           type: 'exponential',
-          delay: 2000, // Start at 2 seconds, doubles each retry
+          delay: 5000, // Start at 5 seconds, doubles each retry (QuickBooks rate limits clear within a minute)
         },
         removeOnComplete: { count: 100, age: 86400 },  // Keep 100 or 1 day (in seconds)
         removeOnFail: { count: 500, age: 604800 },      // Keep 500 or 1 week (in seconds)

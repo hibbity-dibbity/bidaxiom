@@ -18,16 +18,16 @@ type Schema = any;
 
 const inflight = new Map<string, Promise<{ accessToken: string; realmId: string }>>();
 
-export const RECONNECT_MESSAGE = 'QuickBooks needs to be reconnected. Open Settings > Integrations and press Connect to QuickBooks.';
+export const RECONNECT_MESSAGE = 'QuickBooks needs to be reconnected. Open Settings > Integrations and press Reconnect QuickBooks.';
 
 const looksRevoked = (e: unknown) => /refresh token is invalid|invalid_grant|authorize again|token.*(revoked|expired)/i.test(String((e as any)?.message ?? e) + JSON.stringify((e as any)?.intuit_tid ?? ''));
 
-async function markNeedsReconnect(db: Db, schema: Schema, connId: string): Promise<void> {
+async function markNeedsReconnect(db: Db, schema: Schema, connId: string, detail?: string): Promise<void> {
   const changed = await db.update(schema.qboConnections).set({ status: 'expired', updatedAt: new Date() }).where(eq(schema.qboConnections.id, connId)).returning({ id: schema.qboConnections.id });
   if (changed.length > 0) {
     await db
       .insert(schema.qboSyncNotifications)
-      .values({ entityType: 'connection', entityId: connId, message: RECONNECT_MESSAGE, severity: 'error', dismissed: false })
+      .values({ entityType: 'connection', entityId: connId, message: detail ?? RECONNECT_MESSAGE, severity: 'error', dismissed: false })
       .catch(() => undefined);
   }
 }
@@ -47,7 +47,9 @@ export async function getFreshAccess(db: Db, schema: Schema, connId: string): Pr
       }
       try {
         const fresh = await refreshQboToken(conn.encryptedRefreshToken);
-        await tx
+        // QuickBooks has already retired the old refresh token. Save the new one on its own connection, at once, so that
+        // nothing later in this transaction (or a restart right now) can roll it back and lose it.
+        await db
           .update(schema.qboConnections)
           .set({
             accessToken: fresh.accessToken,
@@ -59,8 +61,9 @@ export async function getFreshAccess(db: Db, schema: Schema, connId: string): Pr
           .where(eq(schema.qboConnections.id, conn.id));
         return { accessToken: fresh.accessToken, realmId: conn.realmId as string };
       } catch (e) {
+        console.error('[qbo-token] refresh failed:', String((e as any)?.message ?? e), 'tid=', (e as any)?.intuit_tid ?? '-', 'body=', JSON.stringify((e as any)?.authResponse?.json ?? (e as any)?.originalMessage ?? '').slice(0, 300));
         if (looksRevoked(e)) {
-          const err = new QboUserError(RECONNECT_MESSAGE);
+          const err = new QboUserError(`${RECONNECT_MESSAGE} (QuickBooks said: ${String((e as any)?.originalMessage ?? (e as any)?.message ?? 'refresh token invalid').slice(0, 160)})`);
           (err as any).revoked = true;
           throw err;
         }
@@ -73,7 +76,7 @@ export async function getFreshAccess(db: Db, schema: Schema, connId: string): Pr
     return await p;
   } catch (e) {
     // The failed transaction rolled back; record the dead connection outside it.
-    if ((e as any)?.revoked) await markNeedsReconnect(db, schema, connId);
+    if ((e as any)?.revoked) await markNeedsReconnect(db, schema, connId, (e as Error).message);
     throw e;
   } finally {
     inflight.delete(connId);

@@ -351,6 +351,11 @@ export async function autoLinkBills(t: Tenant): Promise<number> {
       if (mine.length === 1) target = mine[0].id;
     }
     if (!target) continue;
+    // An order that is already billed up to its cost cannot take another bill on its own: a person decides (it may be extra work).
+    const { projected } = await orderTotals(db, schema, target);
+    const already = await db.select({ total: schema.qboBills.total }).from(schema.qboBills).where(and(eq(schema.qboBills.orderId, target), eq(schema.qboBills.status, 'linked')));
+    const billed = already.reduce((a: number, x: any) => a + Number(x.total), 0);
+    if (billed + Number(bill.total) > projected + 0.005) continue;
     try {
       await linkBill(t, { billId: bill.id, orderId: target, source: 'auto', actorId: BILL_ACTOR });
       linked++;

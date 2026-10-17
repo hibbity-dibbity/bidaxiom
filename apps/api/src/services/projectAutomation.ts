@@ -169,8 +169,22 @@ export async function onOrderIssued(tenant: Tenant, projectId: string) {
 /** The customer declined a proposal: ask whether the whole project is lost. Change orders only record the decline. */
 export async function onProposalDeclined(tenant: Tenant, estimateId: string, signerName: string, reason: string | null) {
   const { db, schema } = tenant;
-  const [e] = await db.select({ projectId: schema.estimates.projectId, kind: schema.estimates.kind, revision: schema.estimates.revision }).from(schema.estimates).where(eq(schema.estimates.id, estimateId)).limit(1);
-  if (!e || e.kind === "change_order") return;
+  const [e] = await db.select({ projectId: schema.estimates.projectId, kind: schema.estimates.kind, revision: schema.estimates.revision, number: schema.estimates.number }).from(schema.estimates).where(eq(schema.estimates.id, estimateId)).limit(1);
+  if (!e) return;
+  if (e.kind === "change_order") {
+    // A declined change order does not put the project at risk; the team just needs to know and can revise it.
+    const proj = await projectInfo(tenant, e.projectId);
+    if (!proj) return;
+    await raisePrompt(tenant, {
+      projectId: e.projectId,
+      kind: "proposal_declined",
+      dedupeKey: `declined:${estimateId}`,
+      title: `${label(proj)}: ${e.number ?? "change order"} declined`,
+      body: `${signerName} declined the change order${reason ? ` ("${reason}")` : ""}. Open it to create a revision and send it again.`,
+      actions: [{ kind: "dismiss", label: "OK" }],
+    });
+    return;
+  }
   const project = await projectInfo(tenant, e.projectId);
   if (!project || idx(project.phase) >= ACTIVE_IDX || project.phase === "lost") return;
   await raisePrompt(tenant, {

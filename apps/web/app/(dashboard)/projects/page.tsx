@@ -13,6 +13,7 @@ import { PageHeader } from "@/components/shared/page-header";
 
 export default function ProjectsPage() {
   const { orgRole } = useAuth();
+  const canFilterLists = !orgRole || ["org:admin", "org:project_manager", "org:accountant", "org:estimator"].includes(orgRole);
   const canCreate = !orgRole || orgRole === "org:admin" || orgRole === "org:project_manager";
   // Set up filter state using nuqs
   const [filters, setFilters] = useQueryStates({
@@ -40,8 +41,8 @@ export default function ProjectsPage() {
   });
 
   // Fetch customer list and user list for filter dropdowns
-  const { data: customersData } = trpc.customer.list.useQuery({ limit: 100, offset: 0 });
-  const { data: usersData } = trpc.user.list.useQuery({ limit: 100, offset: 0 });
+  const { data: customersData } = trpc.customer.list.useQuery({ limit: 100, offset: 0 }, { enabled: canFilterLists, retry: false });
+  const { data: usersData } = trpc.user.list.useQuery({ limit: 100, offset: 0 }, { enabled: canFilterLists, retry: false });
 
   // Compute isFiltered — any secondary filter or search active
   const isFiltered = !!(
@@ -92,6 +93,7 @@ export default function ProjectsPage() {
         pageSize={pageSize}
         onPageChange={handlePageChange}
         isFiltered={isFiltered}
+        canCreate={canCreate}
       />
     </div>
   );

@@ -161,7 +161,7 @@ export function QboConnectionCard({ connection }: QboConnectionCardProps) {
                   </span>
                 </div>
               )}
-              {connection.refreshTokenExpiresAt && (
+              {connection.refreshTokenExpiresAt && connection.status !== "expired" && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Token Expires:</span>
                   <span>

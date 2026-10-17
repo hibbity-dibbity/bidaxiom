@@ -148,9 +148,9 @@ export function startQboSyncWorker(): Worker {
     },
     {
       connection: redisConnection,
-      concurrency: 10, // Match QBO concurrent request limit
+      concurrency: 3, // QuickBooks allows 500 requests a minute per company and a job makes several, so few at a time
       limiter: {
-        max: 400, // 400 jobs per minute (buffer under QBO's 500/min)
+        max: 60, // jobs per minute (about 6 requests each, under QuickBooks' 500/min)
         duration: 60000, // 60 seconds
       },
     }
@@ -209,7 +209,7 @@ export function startQboSyncWorker(): Worker {
         await db.insert(schema.qboSyncNotifications).values({
           entityType,
           entityId: platformId || qboId || 'unknown',
-          message: err.name === 'UnrecoverableError' ? err.message : `Sync failed after ${job.attemptsMade} attempts: ${err.message}`,
+          message: err.name === 'UnrecoverableError' ? err.message : /status code 429|rate limit|throttl/i.test(err.message) ? 'QuickBooks was busy and asked us to slow down, so this was not sent. Press Sync again in a minute.' : `Sync failed after ${job.attemptsMade} attempts: ${err.message}`,
           severity: 'error',
           dismissed: false,
         });
@@ -225,6 +225,6 @@ export function startQboSyncWorker(): Worker {
     console.error('Worker error:', err);
   });
 
-  console.log('QuickBooks sync worker started with concurrency 10, rate limit 400/min');
+  console.log('QuickBooks sync worker started with concurrency 3, rate limit 60 jobs/min');
   return worker;
 }

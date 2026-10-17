@@ -531,9 +531,15 @@ export const quickbooksRouter = router({
     });
     if (!access) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "No active QuickBooks connection. Please connect first." });
     const rows = await qboQueryRows<any>(access.accessToken, access.realmId, "TaxCode", "select * from TaxCode where Active = true MAXRESULTS 200");
+    const rates = await qboQueryRows<any>(access.accessToken, access.realmId, "TaxRate", "select * from TaxRate MAXRESULTS 500").catch(() => [] as any[]);
+    const rateOf = new Map(rates.map((r) => [String(r.Id), Number(r.RateValue ?? 0)]));
     return rows
       .filter((r) => r.Taxable !== false && String(r.Name).toUpperCase() !== "NON" && String(r.Name).toUpperCase() !== "EXEMPT")
-      .map((r) => ({ id: String(r.Id), name: String(r.Name) }))
+      .map((r) => {
+        const list = (r.SalesTaxRateList?.TaxRateDetail ?? []) as any[];
+        const total = list.reduce((a, d) => a + (rateOf.get(String(d.TaxRateRef?.value)) ?? 0), 0);
+        return { id: String(r.Id), name: total > 0 ? `${r.Name} (${Math.round(total * 1000) / 1000}%)` : String(r.Name) };
+      })
       .sort((a, b) => a.name.localeCompare(b.name));
   }),
 

@@ -193,6 +193,7 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
   const saveSettings = trpc.proposal.updateSettings.useMutation();
   const version = React.useRef<string | undefined>(undefined); // the updatedAt this editor last saw, so a save by someone else is noticed
   const [conflict, setConflict] = React.useState<string | null>(null);
+  const inFlight = React.useRef(false);
   const latest = React.useRef({ lines, globals, milestones, settings });
   latest.current = { lines, globals, milestones, settings };
 
@@ -206,7 +207,8 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
 
   React.useEffect(() => {
     if (!dirty || !hydrated || locked || conflict) return;
-    const timer = setTimeout(async () => {
+    const run = async () => {
+      if (inFlight.current) return;
       const cur = latest.current;
       const savingVersion = editVersion.current;
       const problem = validate(cur.lines, cur.globals, cur.milestones, cur.settings);
@@ -215,6 +217,7 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
         return;
       }
       setSaveState({ kind: "saving" });
+      inFlight.current = true;
       try {
         const savedSettings = await saveSettings.mutateAsync({
           estimateId,
@@ -255,9 +258,24 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
           return;
         }
         setSaveState({ kind: "error", message: err instanceof Error ? err.message : "Could not save" });
+      } finally {
+        inFlight.current = false;
       }
-    }, 800);
-    return () => clearTimeout(timer);
+    };
+    const timer = setTimeout(run, 800);
+    // A hidden tab's timers are slowed by the browser, which would let an edit made here be saved after a later edit in
+    // another tab. Save as soon as this tab is left instead.
+    const leave = () => {
+      if (document.visibilityState === "hidden") {
+        clearTimeout(timer);
+        void run();
+      }
+    };
+    document.addEventListener("visibilitychange", leave);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("visibilitychange", leave);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lines, globals, milestones, settings, dirty, hydrated, locked, estimateId, conflict]);
 

@@ -49,77 +49,68 @@ function normalizeState(raw: string | null | undefined): string {
   return hit ? hit.abbr : v.toUpperCase();
 }
 
+type LoadedProject = any; // the project row from project.getBySlug
+
+/** Loads the project and customers, then mounts the form with its values already in place (no reset after mount). */
 export default function EditProjectPage({ params }: EditProjectPageProps) {
+  const { data: project } = trpc.project.getBySlug.useQuery({ slug: params.projectSlug });
+  const { data: customersData } = trpc.customer.list.useQuery({ limit: 100, offset: 0 });
+  if (!project || !customersData) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Link href="/projects" className="hover:text-foreground">
+            Projects
+          </Link>
+          <ChevronRight className="h-4 w-4" />
+          <span>Loading...</span>
+        </div>
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span>Loading project...</span>
+        </div>
+      </div>
+    );
+  }
+  return <EditProjectForm key={project.id} params={params} project={project} customers={customersData.items} />;
+}
+
+function EditProjectForm({ params, project, customers }: EditProjectPageProps & { project: LoadedProject; customers: any[] }) {
   const { projectSlug } = params;
   const router = useRouter();
   const utils = trpc.useUtils();
 
-  const hasReset = useRef(false);
-  const openedAt = useRef<string | undefined>(undefined); // the project's updatedAt when the form opened, not as refetched since
+  const openedAt = useRef<string | undefined>(project.updatedAt ? new Date(project.updatedAt).toISOString() : undefined); // the project's updatedAt when the form opened, not as refetched since
   const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
   const [duplicateProject, setDuplicateProject] = useState<{
     name: string;
     slug: string;
   } | null>(null);
 
-  // Data loading
-  const { data: projectData, isLoading: projectLoading } = trpc.project.getBySlug.useQuery({
-    slug: projectSlug,
-  });
-  const project = projectData;
-
   const { data: companyProfile } = trpc.company.getCurrent.useQuery();
   const jobNumberSettings = companyProfile?.jobNumberSettings;
-
-  const { data: customersData } = trpc.customer.list.useQuery({ limit: 100, offset: 0 });
-  const customers = customersData?.items || [];
 
   const form = useForm<EditFormValues>({
     resolver: zodResolver(editFormSchema) as any,
     defaultValues: {
-      name: "",
-      jobNumber: undefined,
-      customerId: "",
-      description: "",
-      status: "active",
-      projectType: "commercial",
-      startDate: undefined,
-      endDate: undefined,
-      location: { street1: "", street2: "", city: "", state: "", zipCode: "" },
+      name: project.name,
+      jobNumber: project.jobNumber ?? undefined,
+      customerId: project.customerId,
+      description: project.description ?? "",
+      poNumber: project.poNumber ?? "",
+      status: project.status as "active" | "on_hold" | "completed" | "archived",
+      projectType: project.projectType as "commercial" | "residential" | "infrastructure" | "industrial",
+      startDate: project.startDate ? new Date(project.startDate).toISOString() : undefined,
+      endDate: project.endDate ? new Date(project.endDate).toISOString() : undefined,
+      location: {
+        street1: project.street1 ?? "",
+        street2: project.street2 ?? "",
+        city: project.city ?? "",
+        state: normalizeState(project.state),
+        zipCode: project.zip ?? "",
+      },
     },
   });
-
-  // Pre-fill form once BOTH project data AND customers are loaded.
-  // Waiting for customersData ensures the Customer Select has its options in the DOM
-  // before form.reset() sets the value — otherwise Radix shows a blank trigger.
-  useEffect(() => {
-    if (project && customersData && !hasReset.current) {
-      hasReset.current = true;
-      openedAt.current = project.updatedAt ? new Date(project.updatedAt).toISOString() : undefined;
-      form.reset({
-        name: project.name,
-        jobNumber: project.jobNumber ?? undefined,
-        customerId: project.customerId,
-        description: project.description ?? "",
-        poNumber: project.poNumber ?? "",
-        status: project.status as "active" | "on_hold" | "completed" | "archived",
-        projectType: project.projectType as "commercial" | "residential" | "infrastructure" | "industrial",
-        startDate: project.startDate
-          ? new Date(project.startDate).toISOString()
-          : undefined,
-        endDate: project.endDate
-          ? new Date(project.endDate).toISOString()
-          : undefined,
-        location: {
-          street1: project.street1 ?? "",
-          street2: project.street2 ?? "",
-          city: project.city ?? "",
-          state: normalizeState(project.state),
-          zipCode: project.zip ?? "",
-        },
-      });
-    }
-  }, [project, customersData]);
 
   // Save mutation
   const updateMutation = trpc.project.update.useMutation({
@@ -203,25 +194,6 @@ export default function EditProjectPage({ params }: EditProjectPageProps) {
     const { status: _status, ...rest } = values;
     updateMutation.mutate({ id: project.id, expectedUpdatedAt: openedAt.current, ...rest });
   };
-
-  // Loading state
-  if (projectLoading || !project || !customersData) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Link href="/projects" className="hover:text-foreground">
-            Projects
-          </Link>
-          <ChevronRight className="h-4 w-4" />
-          <span>Loading...</span>
-        </div>
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          <span>Loading project...</span>
-        </div>
-      </div>
-    );
-  }
 
   const isSubmitDisabled =
     updateMutation.isPending || isCheckingDuplicate || !!duplicateProject;

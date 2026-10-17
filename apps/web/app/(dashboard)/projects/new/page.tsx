@@ -3,12 +3,23 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { ProjectForm } from "@/components/project/project-form";
+import { useAuth } from "@/lib/auth-context";
 
 /**
  * Project creation page.
  * Wraps the ProjectForm component with page layout and breadcrumbs.
  */
 export default function NewProjectPage() {
+  const { orgRole } = useAuth();
+  if (orgRole && orgRole !== "org:admin" && orgRole !== "org:project_manager") {
+    return (
+      <div className="space-y-2">
+        <h1 className="text-2xl font-bold">New Project</h1>
+        <p className="text-sm text-muted-foreground">Only administrators and project managers can create projects.</p>
+        <Link href="/projects" className="text-sm underline">Back to Projects</Link>
+      </div>
+    );
+  }
   return (
     <div className="space-y-6">
       {/* Breadcrumb */}
