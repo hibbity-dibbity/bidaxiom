@@ -1462,6 +1462,37 @@ export function createTenantSchema(schemaName: string) {
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   });
 
+
+  /**
+   * Proposal templates: a reusable parent line with its child lines (labor, material, inclusions, exclusions).
+   * Several can be added to one proposal, each arriving as its own parent group.
+   */
+  const proposalTemplates = schema.table("proposal_templates", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    description: text("description"),
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /** The lines of a proposal template. Same shape as proposal_cost_lines, two levels (parent_id null = the group's parent). */
+  const proposalTemplateLines = schema.table("proposal_template_lines", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    templateId: uuid("template_id").notNull().references(() => proposalTemplates.id, { onDelete: "cascade" }),
+    parentId: uuid("parent_id"),
+    type: text("type").notNull(), // labor, material, subcontractor, equipment, other
+    name: text("name").notNull(),
+    quantity: numeric("quantity", { precision: 15, scale: 4 }).notNull().default("1"),
+    unit: text("unit").notNull().default("ea"),
+    unitCost: numeric("unit_cost", { precision: 15, scale: 4 }).notNull().default("0"),
+    marginPercent: numeric("margin_percent", { precision: 5, scale: 2 }).notNull().default("0"),
+    contingencyPercent: numeric("contingency_percent", { precision: 6, scale: 2 }).notNull().default("0"),
+    notes: text("notes"),
+    visibility: text("visibility").notNull().default("price"), // price, name_only, hidden
+    sortOrder: integer("sort_order").notNull().default(0),
+  });
+
   /**
    * Project notes
    * Free-form team notes per project. Hard delete (no soft delete).
@@ -1512,6 +1543,8 @@ export function createTenantSchema(schemaName: string) {
     qboSyncNotifications,
     qboReceipts,
     qboReceiptAllocations,
+    proposalTemplates,
+    proposalTemplateLines,
     reportDefinitions,
     reportTemplates,
     reportSchedules,

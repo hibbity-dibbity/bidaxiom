@@ -21,6 +21,7 @@ import { organizationRouter } from "./routers/organization.js";
 import { searchRouter } from "./routers/search.js";
 import { estimatesRouter } from "./routers/estimates.js";
 import { proposalRouter } from "./routers/proposal.js";
+import { proposalTemplateRouter } from "./routers/proposalTemplate.js";
 import { emailRouter } from "./routers/email.js";
 import { termsRouter } from "./routers/terms.js";
 import { orderRouter } from "./routers/order.js";
@@ -66,6 +67,7 @@ export const appRouter = router({
   search: searchRouter,
   estimates: estimatesRouter,
   proposal: proposalRouter,
+  proposalTemplate: proposalTemplateRouter,
   terms: termsRouter,
   order: orderRouter,
   attention: attentionRouter,

@@ -149,6 +149,19 @@ export default function SettingsPage() {
         </Link>
 
         <Link
+          href="/settings/proposal-templates"
+          className="bg-card p-6 hover:bg-muted/50 transition-colors"
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <LayoutTemplate className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold">Proposal Templates</h2>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Reusable groups of proposal lines (slab, metal building, insulation) you can stack on any proposal
+          </p>
+        </Link>
+
+        <Link
           href="/settings/document-templates"
           className="bg-card p-6 hover:bg-muted/50 transition-colors"
         >

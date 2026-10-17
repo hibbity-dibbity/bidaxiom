@@ -21,6 +21,7 @@ import { NumField } from "./num-field";
 import { DocumentActions } from "@/components/shared/document-actions";
 import { AcceptDialog } from "./accept-dialog";
 import { SigningStatus } from "./signing-status";
+import { AddFromTemplateDialog, SaveAsTemplateDialog, templateToBuilderLines } from "./template-dialogs";
 import {
   COST_TYPES,
   MAX_MARGIN,
@@ -345,6 +346,21 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
     pendingFocus.current = option.id;
     setLines((ls) => [...ls, option, child]);
     mark();
+  };
+  // Templates: stack saved groups onto this proposal, or save one of its groups for reuse.
+  const [templatePicker, setTemplatePicker] = React.useState(false);
+  const [saveGroupId, setSaveGroupId] = React.useState<string | null>(null);
+  const trpcUtils = trpc.useUtils();
+  const addTemplates = async (ids: string[]) => {
+    const fetched = await trpcUtils.proposalTemplate.getMany.fetch({ ids });
+    const ordered = ids.map((id) => fetched.find((t) => t.id === id)).filter((t): t is NonNullable<typeof t> => Boolean(t));
+    const added = templateToBuilderLines(ordered, blanket);
+    if (added.length === 0) return;
+    const firstParent = added.find((l) => !l.parentId);
+    if (firstParent) pendingFocus.current = firstParent.id;
+    setLines((ls) => [...ls, ...added]);
+    mark();
+    toast.success(ordered.length > 1 ? `Added ${ordered.length} templates` : `Added "${ordered[0]!.name}"`);
   };
   // Enter in a name box: move to the next line, adding one at the end of the group.
   const onNameEnter = (line: BuilderLine) => (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -674,6 +690,14 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
                             {isOpt ? "Make base item" : "Make optional"}
                           </button>
                         )}
+                        {!locked && kids.length > 0 && (
+                          <button type="button"
+                            className="whitespace-nowrap text-[11px] font-medium text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                            title="Save this group, with its lines, so it can be added to other proposals"
+                            onClick={() => setSaveGroupId(p.id)}>
+                            Save as template
+                          </button>
+                        )}
                       </div>
                       <div className="flex justify-center">{NotesButton(p)}</div>
                       <div className="flex justify-center">
@@ -725,6 +749,7 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
 
               {!locked && (
                 <div className="sticky left-0 flex w-fit gap-2 px-4 py-2.5">
+                  <Button type="button" variant="outline" onClick={() => setTemplatePicker(true)}>+ Add from template</Button>
                   <Button type="button" variant="outline" onClick={addParent}>+ Add parent line</Button>
                   <Button type="button" variant="outline" onClick={addOption}>+ Add optional item</Button>
                 </div>
@@ -889,7 +914,9 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
           }}
         />
       )}
-    </div>
+        {templatePicker && <AddFromTemplateDialog onClose={() => setTemplatePicker(false)} onAdd={addTemplates} />}
+    {saveGroupId && <SaveAsTemplateDialog group={lines.filter((l) => l.id === saveGroupId || l.parentId === saveGroupId)} onClose={() => setSaveGroupId(null)} />}
+</div>
   );
 }
 
