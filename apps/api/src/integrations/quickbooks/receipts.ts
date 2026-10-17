@@ -88,7 +88,7 @@ export function receiptLinesFrom(type: ReceiptLine['qboType'], rec: any): Receip
         lineNo: i,
         txnDate: date,
         amount: r2(amount),
-        qboCustomerId: d.Entity?.value && (!d.Entity.type || d.Entity.type === 'Customer') ? String(d.Entity.value) : null,
+        qboCustomerId: d.Entity?.value && (!d.Entity.type || /^customer$/i.test(String(d.Entity.type))) ? String(d.Entity.value) : null, // QuickBooks writes the type as CUSTOMER
         qboCustomerName: d.Entity?.name ?? null,
         memo: ln.Description ?? rec.PrivateNote ?? null,
         reference: d.CheckNum ?? null,
