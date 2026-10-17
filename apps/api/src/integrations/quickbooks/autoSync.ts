@@ -110,9 +110,13 @@ export async function runScheduledSyncForTenant(tenant: TenantLike, now = new Da
 let timer: NodeJS.Timeout | null = null;
 
 /** Checks every 5 minutes which companies are due for a timed sync. Started once with the API server. */
+let autoSyncBusy = false;
+
 export function startQboAutoSyncScheduler(): void {
   if (timer) return;
   const tick = async () => {
+    if (autoSyncBusy) return;
+    autoSyncBusy = true;
     try {
       const all = await publicDb.select().from(tenants).where(eq(tenants.status, 'active'));
       for (const t of all) {
@@ -125,8 +129,13 @@ export function startQboAutoSyncScheduler(): void {
       }
     } catch (e) {
       console.error('[qbo-auto-sync] scheduler pass failed', e instanceof Error ? e.message : e);
+    } finally {
+      autoSyncBusy = false;
     }
   };
-  timer = setInterval(tick, 5 * 60_000);
+  // Every minute (each company is only worked on when its own interval is due) and once soon after a start, so a restart
+  // for a new version never leaves a gap, and a 15-minute interval is not stretched to 20 by a 5-minute tick.
+  timer = setInterval(tick, 60_000);
   timer.unref?.();
+  setTimeout(tick, 30_000).unref?.();
 }

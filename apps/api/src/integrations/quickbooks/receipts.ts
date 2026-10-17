@@ -455,9 +455,14 @@ const CHECK_EVERY_MINUTES = 15;
 let timer: NodeJS.Timeout | null = null;
 
 /** Every 5 minutes, companies with "read payments" turned on that are due get a pass. */
+let receiptsBusy = false;
+const lastAttempt = new Map<string, number>();
+
 export function startQboReceiptsScheduler(): void {
   if (timer) return;
   const tick = async () => {
+    if (receiptsBusy) return;
+    receiptsBusy = true;
     try {
       const all = await publicDb.select().from(tenants).where(eq(tenants.status, 'active'));
       for (const row of all) {
@@ -471,6 +476,8 @@ export function startQboReceiptsScheduler(): void {
             .limit(1);
           if (!s?.on) continue;
           if (s.last && Date.now() - new Date(s.last).getTime() < CHECK_EVERY_MINUTES * 60_000) continue;
+          if (Date.now() - (lastAttempt.get(row.id) ?? 0) < 5 * 60_000) continue; // a failing pass is not retried every minute
+          lastAttempt.set(row.id, Date.now());
           await runReceiptPass(t);
         } catch (e) {
           console.error('[qbo-receipts] pass failed', row.id, e instanceof Error ? e.message : e);
@@ -478,9 +485,12 @@ export function startQboReceiptsScheduler(): void {
       }
     } catch (e) {
       console.error('[qbo-receipts] scheduler failed', e instanceof Error ? e.message : e);
+    } finally {
+      receiptsBusy = false;
     }
   };
-  timer = setInterval(tick, 5 * 60_000);
+  timer = setInterval(tick, 60_000);
   timer.unref?.();
+  setTimeout(tick, 45_000).unref?.();
 }
 

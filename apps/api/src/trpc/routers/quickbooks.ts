@@ -6,7 +6,7 @@ import { getQboAuthUrl, handleQboCallback } from "../../integrations/quickbooks/
 import { encryptToken } from "../../integrations/quickbooks/crypto.js";
 import { diagnoseQboConnection } from "../../integrations/quickbooks/diagnose.js";
 import { getQboSyncQueue } from "../../integrations/quickbooks/queue.js";
-import { getQboAccess } from "../../integrations/quickbooks/receipts.js";
+import { getQboAccess, runReceiptPass } from "../../integrations/quickbooks/receipts.js";
 import { qboQueryRows } from "../../integrations/quickbooks/client.js";
 import { QBO_AUTO_SYNC_MODES } from "../../integrations/quickbooks/autoSync.js";
 import { eq, sql, and, inArray, isNull } from "drizzle-orm";
@@ -114,6 +114,9 @@ export const quickbooksRouter = router({
         await tenant.db.delete(tenant.schema.qboEntityMappings);
         await tenant.db.delete(tenant.schema.qboSyncState);
       }
+
+      // A fresh connection settles the earlier "reconnect" complaints.
+      await tenant.db.update(tenant.schema.qboSyncNotifications).set({ dismissed: true }).where(eq(tenant.schema.qboSyncNotifications.entityType, "connection")).catch(() => undefined);
 
       // Insert connection record
       await tenant.db.insert(tenant.schema.qboConnections).values({
@@ -403,7 +406,13 @@ export const quickbooksRouter = router({
             .orderBy(sql`${tenant.schema.qboSyncNotifications.createdAt} DESC`)
             .limit(50);
 
-      return { notifications };
+      const [activeConn] = await tenant.db.select({ id: tenant.schema.qboConnections.id }).from(tenant.schema.qboConnections).where(eq(tenant.schema.qboConnections.status, "active")).limit(1);
+      return {
+        notifications: notifications
+          // A "reconnect" complaint is out of date while the connection is working.
+          .filter((n) => !(activeConn && n.entityType === "connection" && !includeDismissed))
+          .map((n) => (/status code 429/i.test(n.message) ? { ...n, message: "QuickBooks was busy and asked us to slow down, so this was not sent. Press Sync again in a minute." } : n)),
+      };
     }),
 
   /**
@@ -833,6 +842,20 @@ export const quickbooksRouter = router({
         }
       }
 
-      return { jobsQueued };
+      // Sync All / Sync Bills also read payments, vendor bills and expenses from QuickBooks now (when the company reads payments).
+      let read: { billsRead: number; billsLinked: number; read: number } | null = null;
+      if (entityType === "all" || entityType === "bill") {
+        const [prof] = await tenant.db.select({ on: tenant.schema.companyProfiles.qboReadPayments }).from(tenant.schema.companyProfiles).where(isNull(tenant.schema.companyProfiles.validTo)).limit(1);
+        if (prof?.on) {
+          try {
+            const r = await runReceiptPass(tenant);
+            read = { billsRead: r.billsRead, billsLinked: r.billsLinked, read: r.read };
+          } catch (e) {
+            console.error("[qbo] read pass from manual sync failed", e instanceof Error ? e.message : e);
+          }
+        }
+      }
+
+      return { jobsQueued, read };
     }),
 });

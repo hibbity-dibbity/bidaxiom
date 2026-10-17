@@ -255,6 +255,7 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
       } catch (err) {
         if ((err as { data?: { code?: string } })?.data?.code === "CONFLICT") {
           setConflict(err instanceof Error ? err.message : "Someone else changed this.");
+          setSaveState({ kind: "idle" });
           return;
         }
         setSaveState({ kind: "error", message: err instanceof Error ? err.message : "Could not save" });

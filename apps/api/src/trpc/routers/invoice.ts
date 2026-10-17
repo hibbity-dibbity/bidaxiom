@@ -7,6 +7,7 @@ import { protectedProcedure } from "../procedures.js";
 import { defineAbilitiesFor } from "../../auth/abilities.js";
 import { createAuditLog } from "../../audit/logger.js";
 import { lastInvoiceSeq, rememberInvoiceSeq } from "../../services/invoiceDrafts.js";
+import { queueInvoiceSyncOnSend } from "../../integrations/quickbooks/autoSync.js";
 import { onInvoiceSent, onInvoicesChanged, resolvePrompts } from "../../services/projectAutomation.js";
 import { AuditAction, dueDateFor, invoiceStatusAfterReceipts, isOverdue, isSent } from "@construction/shared";
 
@@ -74,6 +75,29 @@ async function sourceLabels(c: Ctx, estimateIds: string[]) {
 
 /** Natural order of invoice numbers (INV26-014-02 before INV26-014-10). */
 const byNumber = (a: { number: string }, b: { number: string }) => a.number.localeCompare(b.number, undefined, { numeric: true });
+
+/** Where this invoice stands in QuickBooks: not turned on, not there yet (with the last problem), or there (with a link). */
+async function qboStatus(c: Ctx, invoiceId: string) {
+  const { db, schema } = c.tenant;
+  const [prof] = await db.select({ on: schema.companyProfiles.qboInvoicePush }).from(schema.companyProfiles).where(isNull(schema.companyProfiles.validTo)).limit(1);
+  if (!prof?.on) return { enabled: false as const };
+  const [m] = await db.select().from(schema.qboEntityMappings).where(and(eq(schema.qboEntityMappings.entityType, "invoice"), eq(schema.qboEntityMappings.platformId, invoiceId))).limit(1);
+  const [conn] = await db.select({ env: schema.qboConnections.environment }).from(schema.qboConnections).limit(1);
+  const [problem] = await db
+    .select({ message: schema.qboSyncNotifications.message, severity: schema.qboSyncNotifications.severity })
+    .from(schema.qboSyncNotifications)
+    .where(and(eq(schema.qboSyncNotifications.entityId, invoiceId), eq(schema.qboSyncNotifications.dismissed, false)))
+    .orderBy(desc(schema.qboSyncNotifications.createdAt))
+    .limit(1);
+  const host = conn?.env === "production" ? "app.qbo.intuit.com" : "app.sandbox.qbo.intuit.com";
+  return {
+    enabled: true as const,
+    synced: Boolean(m),
+    qboId: m?.qboId ?? null,
+    url: m ? `https://${host}/app/invoice?txnId=${m.qboId}` : null,
+    problem: problem ? { message: problem.message, severity: problem.severity } : null,
+  };
+}
 
 const ALL_ROLES = new Set(["org:admin", "org:project_manager", "org:accountant", "org:estimator"]);
 
@@ -258,7 +282,18 @@ export const invoiceRouter = router({
       received,
       outstanding: isSent(inv.status) ? r2(Math.max(amount - received, 0)) : null,
       canSend: inv.status === "draft",
+      qbo: await qboStatus(c, inv.id),
     };
+  }),
+
+  /** Send (or resend) one invoice to QuickBooks now. */
+  syncToQbo: protectedProcedure.input(z.object({ invoiceId: z.string().uuid() })).mutation(async ({ ctx, input }) => {
+    const c = need(ctx);
+    await can(c, "update");
+    const inv = await loadInvoice(c, input.invoiceId);
+    if (inv.status === "draft") throw new TRPCError({ code: "BAD_REQUEST", message: "Send the invoice first. Drafts stay in BidAxiom." });
+    await queueInvoiceSyncOnSend(c.tenant, inv.id);
+    return { queued: true };
   }),
 
   /**

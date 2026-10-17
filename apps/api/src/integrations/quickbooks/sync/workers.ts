@@ -113,6 +113,14 @@ export function startQboSyncWorker(): Worker {
           });
         }
 
+        // A later success settles earlier failures for the same record: they should not keep reading as current problems.
+        if (platformId) {
+          await db
+            .update(schema.qboSyncNotifications)
+            .set({ dismissed: true })
+            .where(and(eq(schema.qboSyncNotifications.entityId, platformId), eq(schema.qboSyncNotifications.severity, 'error'), eq(schema.qboSyncNotifications.dismissed, false)))
+            .catch(() => undefined);
+        }
         console.log(`Successfully synced ${entityType} (${direction}) for tenant ${tenantId}`);
       } catch (error) {
         console.error(`Sync job failed for tenant ${tenantId}, entity ${entityType}:`, error);

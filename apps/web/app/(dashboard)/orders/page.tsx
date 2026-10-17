@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Search, ShoppingCart } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/lib/auth-context";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,7 +17,9 @@ type Filter = "all" | "purchase" | "work" | "draft" | "owed";
 
 /** Every purchase and work order in the company: type a number, vendor, project or job to jump to it. */
 export default function OrdersPage() {
-  const { data, isLoading, error } = trpc.order.listAll.useQuery(undefined, { refetchOnWindowFocus: true });
+  const { orgRole } = useAuth();
+  const allowed = !orgRole || ["org:admin", "org:project_manager", "org:accountant", "org:estimator"].includes(orgRole);
+  const { data, isLoading, error } = trpc.order.listAll.useQuery(undefined, { refetchOnWindowFocus: true, enabled: allowed, retry: false });
   const [filter, setFilter] = useState<Filter>("all");
   const [search, setSearch] = useState("");
 
@@ -33,6 +36,15 @@ export default function OrdersPage() {
   }, [data, filter, search]);
 
   const owed = rows.reduce((a, r) => a + (r.outstanding ?? 0), 0);
+
+  if (!allowed) {
+    return (
+      <div className="space-y-2">
+        <h1 className="text-2xl font-bold">Purchase & Work Orders</h1>
+        <p className="text-sm text-muted-foreground">Your role cannot view this page.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

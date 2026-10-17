@@ -44,6 +44,13 @@ export default function InvoicePage({ params }: { params: { projectSlug: string;
     utils.invoice.list.invalidate();
   };
   const fail = (title: string) => (e: { message: string }) => toast.error(title, { description: e.message });
+  const syncQbo = trpc.invoice.syncToQbo.useMutation({
+    onSuccess: () => {
+      toast.success("Sending to QuickBooks", { description: "Reload in a few seconds to see the result." });
+      setTimeout(() => utils.invoice.get.invalidate({ invoiceId }), 6000);
+    },
+    onError: (e) => toast.error("Could not send", { description: e.message }),
+  });
   const send = trpc.invoice.send.useMutation({
     onSuccess: () => {
       toast.success("Invoice marked as sent");
@@ -130,6 +137,32 @@ export default function InvoicePage({ params }: { params: { projectSlug: string;
           </Button>
         </div>
       </div>
+
+      {data.qbo?.enabled && !draft && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border px-4 py-3 text-sm print:hidden">
+          <div className="space-y-1">
+            <div>
+              <strong>QuickBooks:</strong>{" "}
+              {data.qbo.synced ? (
+                <>
+                  In QuickBooks (transaction {data.qbo.qboId}).{" "}
+                  {data.qbo.url && (
+                    <a href={data.qbo.url} target="_blank" rel="noreferrer" className="underline">
+                      Open in QuickBooks
+                    </a>
+                  )}
+                </>
+              ) : (
+                "Not in QuickBooks yet."
+              )}
+            </div>
+            {data.qbo.problem && <div className={data.qbo.problem.severity === "error" ? "text-destructive" : "text-amber-600"}>{data.qbo.problem.message}</div>}
+          </div>
+          <Button type="button" variant="outline" size="sm" disabled={syncQbo.isPending} onClick={() => syncQbo.mutate({ invoiceId })}>
+            {syncQbo.isPending ? "Sending..." : data.qbo.synced ? "Sync again" : "Send to QuickBooks"}
+          </Button>
+        </div>
+      )}
 
       {draft && (
         <div className="space-y-3 rounded-md border bg-muted px-4 py-3 text-sm print:hidden">

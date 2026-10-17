@@ -2,7 +2,7 @@ import type { TenantSchema } from '../../../../db/schema/tenant.js';
 import { and, eq, isNull } from 'drizzle-orm';
 import { promisifyQbo, qboQueryRows, qboQuote, qboIsNotFound, qboFaultText, QboUserError } from '../../client.js';
 import { syncProjectToQbo, qboTermRef } from './project.js';
-import { splitInvoiceAmount } from '../invoiceTax.js';
+import { splitInvoiceAmount, qboTaxCodeRate } from '../invoiceTax.js';
 
 type MapperDb = ReturnType<typeof import('../../../../db/client.js')['createTenantDb']>['db'];
 
@@ -102,10 +102,12 @@ export async function syncInvoiceToQbo(params: {
   const tenantLike: any = { tenantId, db, schema };
   const lineItems: Array<{ amount: number; description: string; taxable: boolean }> = [];
   let totalTax = 0;
+  let proposalRate = 0;
   for (const piece of pieces) {
     const sp = await splitInvoiceAmount(tenantLike, piece.estimateId, piece.amount);
     if (sp.tax > 0) {
       totalTax += sp.tax;
+      proposalRate = Math.max(proposalRate, sp.ratePct);
       if (sp.taxable > 0) lineItems.push({ amount: sp.taxable, description: `${piece.description} (taxable)`, taxable: true });
       if (sp.rest > 0) lineItems.push({ amount: sp.rest, description: `${piece.description} (not taxed)`, taxable: false });
     } else {
@@ -146,6 +148,15 @@ export async function syncInvoiceToQbo(params: {
 
   // QuickBooks works the tax out itself from the code's rate. If that is not BidAxiom's total, say so: the books would be off.
   const checkTotal = async (qbo: any) => {
+    if (totalTax > 0 && settings.taxCodeId) {
+      // The tax code's rate in QuickBooks against the proposal's rate: QuickBooks accepted our tax amount, but its books show the code's rate.
+      const qboRate = await qboTaxCodeRate(accessToken, realmId, settings.taxCodeId);
+      if (qboRate != null && Math.abs(qboRate - proposalRate) > 0.005) {
+        const msg = `${inv.number}: the proposal charges ${proposalRate}% sales tax but the QuickBooks tax code you chose is ${qboRate}%. The tax amount was sent as BidAxiom worked it out, so QuickBooks shows a rate that does not match the tax. Choose a code with ${proposalRate}% in Settings > Integrations (or add one in QuickBooks).`;
+        const dup = await db.select({ id: schema.qboSyncNotifications.id }).from(schema.qboSyncNotifications).where(and(eq(schema.qboSyncNotifications.entityId, invoiceId), eq(schema.qboSyncNotifications.message, msg), eq(schema.qboSyncNotifications.dismissed, false))).limit(1);
+        if (dup.length === 0) await db.insert(schema.qboSyncNotifications).values({ entityType: 'invoice', entityId: invoiceId, message: msg, severity: 'warning', dismissed: false }).catch(() => undefined);
+      }
+    }
     if (totalTax <= 0 || qbo?.TotalAmt == null || cents(Number(qbo.TotalAmt)) === cents(amount)) return;
     await db
       .insert(schema.qboSyncNotifications)
@@ -181,6 +192,8 @@ export async function syncInvoiceToQbo(params: {
     );
     syncToken = updated.SyncToken;
     await checkTotal(updated);
+  } else {
+    await checkTotal(current);
   }
   if (mapping && mapping.qboId === current.Id) {
     await db.update(schema.qboEntityMappings).set({ qboSyncToken: syncToken, lastSyncedAt: new Date(), syncStatus: 'synced' }).where(eq(schema.qboEntityMappings.id, mapping.id));
