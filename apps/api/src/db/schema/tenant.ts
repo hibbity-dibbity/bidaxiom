@@ -128,6 +128,7 @@ export function createTenantSchema(schemaName: string) {
     /** Read deposits and payments back from QuickBooks and mark matching invoices paid. */
     qboReadPayments: boolean("qbo_read_payments").notNull().default(false),
     qboReceiptsLastCheckAt: timestamp("qbo_receipts_last_check_at", { withTimezone: true }),
+    qboBillsLastCheckAt: timestamp("qbo_bills_last_check_at", { withTimezone: true }),
     /** Create each sent invoice in QuickBooks (off by default). Only invoices sent on or after qboInvoicePushFrom go over. */
     qboInvoicePush: boolean("qbo_invoice_push").notNull().default(false),
     qboInvoicePushFrom: text("qbo_invoice_push_from"), // YYYY-MM-DD
@@ -1092,8 +1093,45 @@ export function createTenantSchema(schemaName: string) {
     amount: numeric("amount", { precision: 15, scale: 2 }).notNull(),
     paidAt: text("paid_at").notNull(), // YYYY-MM-DD
     reference: text("reference"), // check number, ACH id
+    qboKey: text("qbo_key"), // "{QuickBooks bill payment id}:{bill id}" when this payment was read from QuickBooks
     createdBy: text("created_by").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /**
+   * Vendor bills read from QuickBooks (it stays the book of record). A bill is linked to the purchase or work order
+   * it pays for, either automatically (PO number on the bill, or job plus vendor) or by a person.
+   */
+  const qboBills = schema.table("qbo_bills", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    qboId: text("qbo_id").notNull().unique(),
+    docNumber: text("doc_number"),
+    txnDate: text("txn_date").notNull(),
+    dueDate: text("due_date"),
+    qboVendorId: text("qbo_vendor_id"),
+    vendorName: text("vendor_name"),
+    total: numeric("total", { precision: 15, scale: 2 }).notNull(),
+    balance: numeric("balance", { precision: 15, scale: 2 }).notNull().default("0"),
+    qboCustomerIds: jsonb("qbo_customer_ids").notNull().default([]).$type<string[]>(), // jobs named on the bill's lines
+    memo: text("memo"),
+    orderId: uuid("order_id").references(() => orders.id, { onDelete: "set null" }),
+    status: text("status").notNull().default("open"), // open, linked, ignored
+    linkSource: text("link_source"), // auto, manual
+    noAuto: boolean("no_auto").notNull().default(false), // true after an unlink: never auto-link again
+    relevant: boolean("relevant").notNull().default(false), // names a BidAxiom job, vendor or order number
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
+  /** Payments QuickBooks recorded against vendor bills. */
+  const qboBillPayments = schema.table("qbo_bill_payments", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    qboId: text("qbo_id").notNull().unique(),
+    txnDate: text("txn_date").notNull(),
+    reference: text("reference"),
+    total: numeric("total", { precision: 15, scale: 2 }).notNull(),
+    links: jsonb("links").notNull().default([]).$type<Array<{ qboBillId: string; amount: number }>>(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   });
 
   /**
@@ -1550,6 +1588,8 @@ export function createTenantSchema(schemaName: string) {
     qboSyncNotifications,
     qboReceipts,
     qboReceiptAllocations,
+    qboBills,
+    qboBillPayments,
     proposalTemplates,
     proposalTemplateLines,
     reportDefinitions,

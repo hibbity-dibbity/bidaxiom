@@ -115,7 +115,7 @@ export function QboSyncStatus({ syncStates }: QboSyncStatusProps) {
         <div>
           <h3 className="text-lg font-semibold">Sync Status</h3>
           <p className="text-sm text-muted-foreground">
-            Customers, projects and invoices go from BidAxiom to QuickBooks. Vendors, bills and vendor payments are not sent yet.
+            Customers, projects and invoices go from BidAxiom to QuickBooks. Vendor bills and what you pay on them are read back from QuickBooks (see Outstanding); BidAxiom does not send them.
           </p>
         </div>
 

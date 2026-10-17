@@ -12,6 +12,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { formatCurrency } from "@/lib/utils/format";
 import { QboReceiptsPanel } from "@/components/outstanding/qbo-receipts-panel";
+import { QboBillsPanel } from "@/components/outstanding/qbo-bills-panel";
 
 type Item = { id: string; outstanding: number };
 
@@ -94,6 +95,7 @@ export default function OutstandingPage() {
       </div>
 
       <QboReceiptsPanel />
+      <QboBillsPanel />
 
       <div className="flex flex-wrap items-center gap-3">
         <Tabs value={tab} onValueChange={(v) => setTab(v as "invoices" | "expenses")}>

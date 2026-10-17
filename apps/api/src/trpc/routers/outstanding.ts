@@ -4,6 +4,7 @@ import { and, desc, eq, gte, inArray, isNull } from "drizzle-orm";
 import { router } from "../trpc.js";
 import { protectedProcedure } from "../procedures.js";
 import { applyReceiptToInvoice, candidateInvoices, resolveScopes, runReceiptPass, setReceiptIgnored, undoReceipt } from "../../integrations/quickbooks/receipts.js";
+import { billContext, candidateOrders, linkBill, setBillIgnored, unlinkBill } from "../../integrations/quickbooks/vendorBills.js";
 import { countsAsIssued, isOverdue, isSent } from "@construction/shared";
 
 /**
@@ -107,6 +108,76 @@ export const outstandingRouter = router({
     if (!ctx.tenant || !ctx.userId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
     if (!ALLOCATE_ROLES.has(ctx.orgRole ?? "")) throw new TRPCError({ code: "FORBIDDEN", message: "Only owners, administrators and project managers can do this." });
     await setReceiptIgnored(ctx.tenant, input.receiptId, input.ignored);
+    return { ok: true };
+  }),
+
+  /**
+   * Vendor bills QuickBooks holds that concern BidAxiom (they name a job, a vendor or an order number). Open ones need
+   * a person to choose the order; linked ones show where they went and can be taken back.
+   */
+  bills: protectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.tenant || !ctx.userId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+    if (!VIEW_ROLES.has(ctx.orgRole ?? "")) throw new TRPCError({ code: "FORBIDDEN", message: "Not allowed." });
+    const { db, schema } = ctx.tenant;
+    const [prof] = await db.select({ on: schema.companyProfiles.qboReadPayments }).from(schema.companyProfiles).where(isNull(schema.companyProfiles.validTo)).limit(1);
+    const since = new Date(Date.now() - 30 * 86400000);
+    const rows = await db
+      .select()
+      .from(schema.qboBills)
+      .where(and(eq(schema.qboBills.relevant, true), inArray(schema.qboBills.status, ["open", "linked", "ignored"]), gte(schema.qboBills.updatedAt, since)))
+      .orderBy(desc(schema.qboBills.txnDate));
+    const orderRows = await db.select({ id: schema.orders.id, number: schema.orders.number, projectId: schema.orders.projectId, vendorId: schema.orders.vendorId }).from(schema.orders);
+    const projects = await db.select({ id: schema.projects.id, name: schema.projects.name, jobNumber: schema.projects.jobNumber }).from(schema.projects);
+    const vendors = await db.select({ id: schema.subcontractorDirectory.id, name: schema.subcontractorDirectory.companyName }).from(schema.subcontractorDirectory);
+    const pname = new Map(projects.map((p) => [p.id, [p.jobNumber, p.name].filter(Boolean).join(" - ")]));
+    const vname = new Map(vendors.map((v) => [v.id, v.name]));
+    const oById = new Map(orderRows.map((o) => [o.id, o]));
+    const out = [];
+    for (const b of rows) {
+      const o = b.orderId ? oById.get(b.orderId) : null;
+      let candidates: Array<{ id: string; label: string }> = [];
+      if (b.status === "open") {
+        const bc = await billContext(ctx.tenant, b);
+        candidates = (await candidateOrders(ctx.tenant, bc)).map((c: any) => ({ id: c.id, label: `${c.number} · ${vname.get(c.vendorId) ?? "No vendor"} · ${pname.get(c.projectId) ?? ""}` }));
+      }
+      out.push({
+        id: b.id,
+        status: b.status,
+        docNumber: b.docNumber,
+        txnDate: b.txnDate,
+        dueDate: b.dueDate,
+        vendorName: b.vendorName,
+        total: Number(b.total),
+        balance: Number(b.balance),
+        memo: b.memo,
+        auto: b.linkSource === "auto",
+        orderId: b.orderId,
+        orderNumber: o?.number ?? null,
+        projectName: o ? pname.get(o.projectId) ?? null : null,
+        candidates,
+      });
+    }
+    return { enabled: Boolean(prof?.on), bills: out };
+  }),
+
+  linkBill: protectedProcedure.input(z.object({ billId: z.string().uuid(), orderId: z.string().uuid() })).mutation(async ({ ctx, input }) => {
+    if (!ctx.tenant || !ctx.userId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+    if (!ALLOCATE_ROLES.has(ctx.orgRole ?? "")) throw new TRPCError({ code: "FORBIDDEN", message: "Only owners, administrators and project managers can link bills." });
+    await linkBill(ctx.tenant, { billId: input.billId, orderId: input.orderId, source: "manual", actorId: ctx.userId });
+    return { ok: true };
+  }),
+
+  unlinkBill: protectedProcedure.input(z.object({ billId: z.string().uuid() })).mutation(async ({ ctx, input }) => {
+    if (!ctx.tenant || !ctx.userId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+    if (!ALLOCATE_ROLES.has(ctx.orgRole ?? "")) throw new TRPCError({ code: "FORBIDDEN", message: "Only owners, administrators and project managers can unlink bills." });
+    await unlinkBill(ctx.tenant, input.billId, ctx.userId);
+    return { ok: true };
+  }),
+
+  ignoreBill: protectedProcedure.input(z.object({ billId: z.string().uuid(), ignored: z.boolean() })).mutation(async ({ ctx, input }) => {
+    if (!ctx.tenant || !ctx.userId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+    if (!ALLOCATE_ROLES.has(ctx.orgRole ?? "")) throw new TRPCError({ code: "FORBIDDEN", message: "Only owners, administrators and project managers can do this." });
+    await setBillIgnored(ctx.tenant, input.billId, input.ignored, ctx.userId);
     return { ok: true };
   }),
 

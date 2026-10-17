@@ -110,8 +110,9 @@ export function QboReceiptsPanel() {
   };
   const check = trpc.outstanding.checkReceiptsNow.useMutation({
     onSuccess: (r) => {
-      toast.success("Checked QuickBooks", { description: `${r.read} new or changed, ${r.applied} applied automatically.` });
+      toast.success("Checked QuickBooks", { description: `${r.read} new or changed, ${r.applied} applied automatically. Vendor bills: ${r.billsRead} new or changed, ${r.billsLinked} linked.` });
       refresh();
+      utils.outstanding.bills.invalidate();
     },
     onError: (e) => toast.error("Could not check", { description: e.message }),
   });

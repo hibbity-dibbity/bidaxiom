@@ -8,6 +8,7 @@ import { createAuditLog } from '../../audit/logger.js';
 import { onInvoicesChanged, resolvePrompts } from '../../services/projectAutomation.js';
 import { db as publicDb, createTenantDb } from '../../db/client.js';
 import { tenants } from '../../db/schema/public.js';
+import { runVendorBillPass } from './vendorBills.js';
 
 /**
  * Reads the money QuickBooks says was received (deposits, customer payments, sales receipts) and applies it to
@@ -436,13 +437,22 @@ async function syncAllPrompts(t: Tenant): Promise<void> {
 export interface ReceiptPassResult {
   read: number;
   applied: number;
+  billsRead: number;
+  billsLinked: number;
 }
 
 export async function runReceiptPass(t: Tenant): Promise<ReceiptPassResult> {
   const read = await pullReceipts(t);
   const applied = await autoApplyReceipts(t);
   await syncAllPrompts(t);
-  return { read, applied };
+  // Vendor bills and what was paid on them. A problem here never hides what was read on the customer side.
+  let bills = { read: 0, linked: 0 };
+  try {
+    bills = await runVendorBillPass(t);
+  } catch (e) {
+    console.error('[qbo-bills] pass failed', e instanceof Error ? e.message : e);
+  }
+  return { read, applied, billsRead: bills.read, billsLinked: bills.linked };
 }
 
 const CHECK_EVERY_MINUTES = 15;
