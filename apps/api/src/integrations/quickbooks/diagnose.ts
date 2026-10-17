@@ -1,6 +1,8 @@
 import { eq } from "drizzle-orm";
 import { refreshQboToken } from "./oauth.js";
 import { encryptToken } from "./crypto.js";
+import { explainReceipt } from "./receipts.js";
+import { isNull, desc } from "drizzle-orm";
 
 /**
  * Read-only health check of a company's QuickBooks connection.
@@ -171,6 +173,23 @@ export async function diagnoseQboConnection(tenant: { db: any; schema: any }): P
     ["purchaseOrders", "Purchase orders (last 12 months)", `select count(*) from PurchaseOrder where TxnDate >= '${since}'`],
   ];
   for (const [key, label, q] of kinds) await run(key, label, async () => ({ value: String(await count(q)) }));
+
+  // What BidAxiom has read from QuickBooks as money received, and what it did with each.
+  await run("receipts", "Deposits read by BidAxiom", async () => {
+    const [prof] = await db
+      .select({ on: schema.companyProfiles.qboReadPayments, last: schema.companyProfiles.qboReceiptsLastCheckAt })
+      .from(schema.companyProfiles)
+      .where(isNull(schema.companyProfiles.validTo))
+      .limit(1);
+    const rows = await db.select().from(schema.qboReceipts).orderBy(desc(schema.qboReceipts.txnDate)).limit(8);
+    const head = prof?.on
+      ? `Reading is on${prof.last ? `, last checked ${new Date(prof.last).toLocaleString()}` : ", but it has not run yet (press Check now on the Outstanding page)"}`
+      : "Reading is OFF (turn on \"Read deposits and payments from QuickBooks\" in Automatic sync)";
+    if (rows.length === 0) return { value: "None read yet", note: head };
+    const lines: string[] = [];
+    for (const r of rows) lines.push(`${r.txnDate}  $${Number(r.amount).toFixed(2)}  ${r.qboCustomerName ?? "(no customer)"}: ${await explainReceipt({ tenantId: "", db, schema }, r)}`);
+    return { value: `${rows.length} most recent`, note: `${head}\n${lines.join("\n")}` };
+  });
 
   return result;
 }

@@ -312,6 +312,27 @@ export async function candidateInvoices(t: Tenant, scope: ReceiptScope, txnDate:
     .filter((i: CandidateInvoice) => i.outstanding > 0.004);
 }
 
+
+/** Plain-language reason a QuickBooks receipt is (or is not) applied. Used by the connection check. */
+export async function explainReceipt(t: Tenant, rc: any): Promise<string> {
+  const { db, schema } = t;
+  if (rc.status === 'applied') {
+    const a = await db.select({ n: schema.invoices.number }).from(schema.qboReceiptAllocations).innerJoin(schema.invoices, eq(schema.invoices.id, schema.qboReceiptAllocations.invoiceId)).where(eq(schema.qboReceiptAllocations.receiptId, rc.id));
+    return `applied to ${a.map((x: any) => x.n).join(', ') || 'an invoice'}`;
+  }
+  if (rc.status === 'ignored') return 'set aside by a person';
+  if (!rc.qboCustomerId) return 'the deposit line has no customer ("Received from" is blank), so it cannot be tied to a project';
+  const scope = (await resolveScopes(t, [rc.qboCustomerId])).get(rc.qboCustomerId);
+  if (!scope) return `QuickBooks customer "${rc.qboCustomerName ?? rc.qboCustomerId}" is not linked to a BidAxiom customer or project (run Sync Customers and Sync Projects)`;
+  if (rc.noAuto) return 'waiting for a person (it was undone or set aside before)';
+  const cands = await candidateInvoices(t, scope, rc.txnDate);
+  if (cands.length === 0) return `no sent invoice is waiting on this ${scope.projectId ? 'job' : 'customer'} (or every one was sent more than a week after the deposit date ${rc.txnDate})`;
+  const exact = cands.filter((i) => cents(i.outstanding) === cents(Number(rc.amount)));
+  if (exact.length === 0) return `no waiting invoice has exactly ${Number(rc.amount).toFixed(2)} outstanding (waiting: ${cands.map((i) => `${i.number} ${i.outstanding.toFixed(2)}`).join(', ')})`;
+  if (exact.length > 1) return `more than one invoice matches ${Number(rc.amount).toFixed(2)} (${exact.map((i) => i.number).join(', ')}), so a person has to choose`;
+  return `matches ${exact[0]!.number} but another open deposit for the same customer has the same amount, so a person has to choose`;
+}
+
 /** Auto-apply the unambiguous matches. Returns how many deposits were applied. */
 export async function autoApplyReceipts(t: Tenant): Promise<number> {
   const { db, schema } = t;
