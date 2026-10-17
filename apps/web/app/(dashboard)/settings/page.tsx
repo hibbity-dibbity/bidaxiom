@@ -160,19 +160,6 @@ export default function SettingsPage() {
             Reusable groups of lines (slab, metal building and its add-ons, insulation) for proposals and change orders, personal or shared
           </p>
         </Link>
-
-        <Link
-          href="/settings/document-templates"
-          className="bg-card p-6 hover:bg-muted/50 transition-colors"
-        >
-          <div className="flex items-center gap-3 mb-2">
-            <LayoutTemplate className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold">Document Templates</h2>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Upload branded Word or Excel templates to replace built-in PDF layouts
-          </p>
-        </Link>
       </div>
     </div>
   );
