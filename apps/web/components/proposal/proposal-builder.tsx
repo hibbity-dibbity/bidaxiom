@@ -21,7 +21,7 @@ import { NumField } from "./num-field";
 import { DocumentActions } from "@/components/shared/document-actions";
 import { AcceptDialog } from "./accept-dialog";
 import { SigningStatus } from "./signing-status";
-import { AddFromTemplateDialog, SaveAsTemplateDialog, templateToBuilderLines } from "./template-dialogs";
+import { AddAddonsDialog, AddFromTemplateDialog, SaveAsTemplateDialog, attachAddonLines, templateToBuilderLines, type TemplateSelection } from "./template-dialogs";
 import {
   COST_TYPES,
   MAX_MARGIN,
@@ -351,9 +351,17 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
   const [templatePicker, setTemplatePicker] = React.useState(false);
   const [saveGroupId, setSaveGroupId] = React.useState<string | null>(null);
   const trpcUtils = trpc.useUtils();
-  const addTemplates = async (ids: string[]) => {
+  const [addonGroupId, setAddonGroupId] = React.useState<string | null>(null);
+  const addTemplates = async (picked: TemplateSelection) => {
+    const ids = [...new Set(picked.flatMap((p) => [p.id, ...p.addonIds]))];
     const fetched = await trpcUtils.proposalTemplate.getMany.fetch({ ids });
-    const ordered = ids.map((id) => fetched.find((t) => t.id === id)).filter((t): t is NonNullable<typeof t> => Boolean(t));
+    const byId = (id: string) => fetched.find((t) => t.id === id);
+    const ordered = picked
+      .map((p) => {
+        const t = byId(p.id);
+        return t ? { ...t, addons: p.addonIds.map(byId).filter((a): a is NonNullable<typeof a> => Boolean(a)) } : null;
+      })
+      .filter((t): t is NonNullable<typeof t> => Boolean(t));
     const added = templateToBuilderLines(ordered, blanket);
     if (added.length === 0) return;
     const firstParent = added.find((l) => !l.parentId);
@@ -361,6 +369,16 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
     setLines((ls) => [...ls, ...added]);
     mark();
     toast.success(ordered.length > 1 ? `Added ${ordered.length} templates` : `Added "${ordered[0]!.name}"`);
+  };
+  // Add-ons go inside a group already on the proposal, as extra child lines.
+  const addAddons = async (parentId: string, addonIds: string[]) => {
+    const fetched = await trpcUtils.proposalTemplate.getMany.fetch({ ids: addonIds });
+    const ordered = addonIds.map((id) => fetched.find((t) => t.id === id)).filter((t): t is NonNullable<typeof t> => Boolean(t));
+    if (ordered.length === 0) return;
+    setLines((ls) => attachAddonLines(ls, parentId, ordered, blanket));
+    setCollapsed((c) => (c[parentId] ? { ...c, [parentId]: false } : c));
+    mark();
+    toast.success(ordered.length > 1 ? `Added ${ordered.length} options` : `Added "${ordered[0]!.name}"`);
   };
   // Enter in a name box: move to the next line, adding one at the end of the group.
   const onNameEnter = (line: BuilderLine) => (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -735,10 +753,15 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
 
                     {open && !locked && (
                       <div className="flex border-b">
-                        <div className="sticky left-0 z-[2] w-[300px] bg-background py-0.5 pl-10 pr-2">
+                        <div className="sticky left-0 z-[2] w-[360px] whitespace-nowrap bg-background py-0.5 pl-10 pr-2">
                           <button type="button" className="text-[13px] font-medium underline underline-offset-4 hover:text-primary"
                             onClick={() => addChild(p.id)}>
                             + Add child line
+                          </button>
+                          <button type="button" className="ml-4 text-[13px] font-medium underline underline-offset-4 hover:text-primary"
+                            title="Add saved options (such as a roll-up door) inside this group"
+                            onClick={() => setAddonGroupId(p.id)}>
+                            + Add-on
                           </button>
                         </div>
                       </div>
@@ -915,6 +938,7 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
         />
       )}
         {templatePicker && <AddFromTemplateDialog onClose={() => setTemplatePicker(false)} onAdd={addTemplates} />}
+    {addonGroupId && <AddAddonsDialog parentName={lines.find((l) => l.id === addonGroupId)?.name ?? ""} onClose={() => setAddonGroupId(null)} onAdd={(ids) => addAddons(addonGroupId, ids)} />}
     {saveGroupId && <SaveAsTemplateDialog group={lines.filter((l) => l.id === saveGroupId || l.parentId === saveGroupId)} onClose={() => setSaveGroupId(null)} />}
 </div>
   );

@@ -1472,6 +1472,12 @@ export function createTenantSchema(schemaName: string) {
     name: text("name").notNull(),
     description: text("description"),
     createdBy: text("created_by").notNull(),
+    /** personal = only the creator sees it; global = everyone who builds proposals and change orders. */
+    scope: text("scope").notNull().default("global"),
+    /** group = a parent with its child lines; addon = child lines only, attached inside a group already on the proposal. */
+    kind: text("kind").notNull().default("group"),
+    /** For an add-on: the name of the group it belongs with (used to suggest it). */
+    appliesTo: text("applies_to"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   });

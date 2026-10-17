@@ -15,6 +15,9 @@ export interface StarterLine {
 export interface StarterTemplate {
   name: string;
   description: string;
+  /** group (default): a parent with children. addon: child lines only, attached inside the group named in appliesTo. */
+  kind?: "group" | "addon";
+  appliesTo?: string;
   parent: { name: string };
   children: StarterLine[];
 }
@@ -56,7 +59,7 @@ export const STARTER_TEMPLATES: StarterTemplate[] = [
       note("Includes: Erection of the frame, roof and wall panels and trim"),
       note("Excludes: Concrete foundation and slab (priced separately)"),
       note("Excludes: Insulation (priced separately)"),
-      note("Excludes: Doors, overhead doors and windows unless listed"),
+      note("Excludes: Doors, roll-up doors, awnings and windows unless listed"),
       note("Excludes: Gutters, downspouts and special trim unless listed"),
       note("Excludes: Electrical, plumbing, mechanical and fire protection"),
       note("Excludes: Site work, permits, impact fees and inspections"),
@@ -75,6 +78,61 @@ export const STARTER_TEMPLATES: StarterTemplate[] = [
       note("Excludes: Spray foam, rigid board or higher R-value insulation unless listed"),
       note("Excludes: Fire-rated assemblies and special vapor barriers beyond the vinyl facing"),
       note("Excludes: Permits and inspections"),
+    ],
+  },
+
+  // Add-ons: common variations that sit inside the metal building group as extra child lines.
+  {
+    name: "Roll-up Door",
+    description: "Add inside a metal building. Set the quantity on the hidden lines for the number of doors.",
+    kind: "addon",
+    appliesTo: "Pre-Engineered Metal Building",
+    parent: { name: "Roll-up Door" },
+    children: [
+      { ...hidden("labor", "ea"), name: "Labor: roll-up door" },
+      { ...hidden("material", "ea"), name: "Material: roll-up door" },
+      note("Includes: Roll-up door furnished and installed, with jamb framing, hardware and standard finish"),
+      note("Excludes: Electric operator and controls unless listed"),
+    ],
+  },
+  {
+    name: "Walk Door",
+    description: "Add inside a metal building.",
+    kind: "addon",
+    appliesTo: "Pre-Engineered Metal Building",
+    parent: { name: "Walk Door" },
+    children: [
+      { ...hidden("labor", "ea"), name: "Labor: walk door" },
+      { ...hidden("material", "ea"), name: "Material: walk door" },
+      note("Includes: Walk door with frame and standard hardware, furnished and installed"),
+      note("Excludes: Access control, keypads and special locksets"),
+    ],
+  },
+  {
+    name: "Awning",
+    description: "Add inside a metal building.",
+    kind: "addon",
+    appliesTo: "Pre-Engineered Metal Building",
+    parent: { name: "Awning" },
+    children: [
+      { ...hidden("labor", "ls"), name: "Labor: awning" },
+      { ...hidden("material", "ls"), name: "Material: awning" },
+      note("Includes: Metal awning furnished and installed, attached to the building"),
+      note("Excludes: Separate footings for awning posts unless listed"),
+      note("Excludes: Lighting and electrical at the awning"),
+    ],
+  },
+  {
+    name: "Gutters and Downspouts",
+    description: "Add inside a metal building.",
+    kind: "addon",
+    appliesTo: "Pre-Engineered Metal Building",
+    parent: { name: "Gutters and Downspouts" },
+    children: [
+      { ...hidden("labor", "lf"), name: "Labor: gutters and downspouts" },
+      { ...hidden("material", "lf"), name: "Material: gutters and downspouts" },
+      note("Includes: Gutters and downspouts furnished and installed"),
+      note("Excludes: Underground drain piping and tie-in to storm systems"),
     ],
   },
 ];

@@ -157,7 +157,7 @@ export default function SettingsPage() {
             <h2 className="text-lg font-semibold">Proposal Templates</h2>
           </div>
           <p className="text-sm text-muted-foreground">
-            Reusable groups of proposal lines (slab, metal building, insulation) you can stack on any proposal
+            Reusable groups of lines (slab, metal building and its add-ons, insulation) for proposals and change orders, personal or shared
           </p>
         </Link>
 
