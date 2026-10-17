@@ -11,6 +11,7 @@ import { BlurNumber, BlurText, InsuranceWarning, OrderStatusBadge, dollars, fiel
 import { revisionLabel } from "@construction/shared";
 import { ChevronRight } from "lucide-react";
 import { OrderAttachments } from "./order-attachments";
+import { ConfirmIssueButton } from "./confirm-issue";
 import { format } from "date-fns";
 import { Trash2 } from "lucide-react";
 
@@ -133,14 +134,15 @@ export function OrderDetail({ projectSlug, orderId }: { projectSlug: string; ord
                 </Button>
               )
             ) : (
-              <Button
-                type="button"
+              <ConfirmIssueButton
+                number={o.number}
+                isWork={isWork}
+                vendorName={data.vendor?.name ?? null}
+                total={dollars(data.projectedTotal)}
                 disabled={data.blockers.length > 0 || issue.isPending}
                 title={data.blockers[0]}
-                onClick={() => issue.mutate({ orderId, reason: reason.trim() || undefined })}
-              >
-                Issue {o.number}
-              </Button>
+                onConfirm={() => issue.mutate({ orderId, reason: reason.trim() || undefined })}
+              />
             )}
           </>
         }

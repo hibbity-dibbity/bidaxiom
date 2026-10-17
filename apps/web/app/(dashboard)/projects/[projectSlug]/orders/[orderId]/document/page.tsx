@@ -68,6 +68,7 @@ export default function OrderDocumentPage({ params }: { params: { projectSlug: s
               <div className="text-[28px] font-bold leading-tight tracking-tight">{data.project?.name ?? title}</div>
               <div className="text-sm text-muted-foreground">To {data.vendor?.name ?? "[Vendor]"}</div>
               {data.project?.jobNumber && <div className="text-sm text-muted-foreground">Project {data.project.jobNumber}</div>}
+              {data.project?.address && <div className="text-sm text-muted-foreground">Job site: {data.project.address}</div>}
             </div>
             <div className="text-right text-[13px] leading-relaxed text-muted-foreground">
               <span className="font-semibold text-foreground">{data.companyName}</span>

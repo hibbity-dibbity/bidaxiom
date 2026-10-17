@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { BlurNumber, BlurText, InsuranceWarning, OrderStatusBadge, dollars, fieldCls, signed } from "./order-ui";
 import { cn } from "@/lib/utils";
 import type { inferRouterOutputs } from "@trpc/server";
+import { ConfirmIssueButton } from "./confirm-issue";
 import type { AppRouter } from "@construction/api/src/trpc/router";
 
 export type CardOrder = inferRouterOutputs<AppRouter>["order"]["listCards"][number];
@@ -158,9 +159,15 @@ export function OrderCard(props: {
               Revise
             </Button>
           ) : (
-            <Button type="button" size="sm" disabled={!o.vendorId || o.lines.length === 0 || props.busy} onClick={props.onIssue} title={!o.vendorId ? "Assign a vendor first" : undefined}>
-              Issue {o.number}
-            </Button>
+            <ConfirmIssueButton
+              size="sm"
+              number={o.number}
+              isWork={isWork}
+              vendorName={props.vendors.find((v) => v.id === o.vendorId)?.name ?? null}
+              disabled={!o.vendorId || o.lines.length === 0 || props.busy}
+              title={!o.vendorId ? "Assign a vendor first" : undefined}
+              onConfirm={props.onIssue}
+            />
           )}
         </div>
       </div>

@@ -59,18 +59,9 @@ export function TradeCombobox({ value, onChange, disabled }: TradeComboboxProps)
               className="flex items-center gap-2 rounded px-2 py-1.5 hover:bg-accent cursor-pointer"
               onClick={() => toggleTrade(trade)}
             >
-              <Checkbox
-                id={`trade-cb-${trade}`}
-                checked={value.includes(trade)}
-                onCheckedChange={() => toggleTrade(trade)}
-                onClick={(e) => e.stopPropagation()}
-              />
-              <label
-                htmlFor={`trade-cb-${trade}`}
-                className="text-sm cursor-pointer flex-1"
-              >
-                {trade}
-              </label>
+              {/* The whole row is the click target; the box only shows the state, so one click toggles once. */}
+              <Checkbox checked={value.includes(trade)} className="pointer-events-none" tabIndex={-1} aria-hidden />
+              <span className="text-sm cursor-pointer flex-1">{trade}</span>
               {value.includes(trade) && (
                 <Check className="h-3.5 w-3.5 text-primary" />
               )}

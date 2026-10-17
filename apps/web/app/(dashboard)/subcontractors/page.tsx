@@ -89,13 +89,13 @@ export default function SubcontractorsPage() {
       enableSorting: true,
     },
     {
-      accessorKey: "contactName",
-      header: "Contact",
+      accessorKey: "kind",
+      header: "Type",
       enableSorting: true,
     },
     {
-      accessorKey: "kind",
-      header: "Type",
+      accessorKey: "contactName",
+      header: "Contact",
       enableSorting: true,
     },
     {

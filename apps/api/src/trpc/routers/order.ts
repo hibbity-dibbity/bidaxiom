@@ -213,7 +213,7 @@ export const orderRouter = router({
     const vendors = await vendorInfo(c, order.vendorId ? [order.vendorId] : []);
     const v = order.vendorId ? vendors.get(order.vendorId) : undefined;
     const [proj] = await db
-      .select({ name: schema.projects.name, jobNumber: schema.projects.jobNumber })
+      .select({ name: schema.projects.name, jobNumber: schema.projects.jobNumber, street1: schema.projects.street1, street2: schema.projects.street2, city: schema.projects.city, state: schema.projects.state, zip: schema.projects.zip })
       .from(schema.projects)
       .where(eq(schema.projects.id, order.projectId));
     const [est] = order.estimateId
@@ -261,7 +261,13 @@ export const orderRouter = router({
         lienWaiverRequired: order.lienWaiverRequired,
         notes: order.notes,
       },
-      project: proj ?? null,
+      project: proj
+        ? {
+            name: proj.name,
+            jobNumber: proj.jobNumber,
+            address: [proj.street1, proj.street2, [proj.city, proj.state].filter(Boolean).join(", "), proj.zip].filter(Boolean).join(", ") || null,
+          }
+        : null,
       companyName: c.tenant.companyName,
       companyContact: await companyContactLines(c.tenant),
       estimate: est ?? null,
