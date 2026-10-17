@@ -6,6 +6,7 @@ import { router } from "../trpc.js";
 import { protectedProcedure } from "../procedures.js";
 import { defineAbilitiesFor } from "../../auth/abilities.js";
 import { createAuditLog } from "../../audit/logger.js";
+import { lastInvoiceSeq, rememberInvoiceSeq } from "../../services/invoiceDrafts.js";
 import { onInvoiceSent, onInvoicesChanged, resolvePrompts } from "../../services/projectAutomation.js";
 import { AuditAction, dueDateFor, invoiceStatusAfterReceipts, isOverdue, isSent } from "@construction/shared";
 
@@ -191,7 +192,8 @@ export const invoiceRouter = router({
     const received = r2(payments.reduce((a, p) => a + Number(p.amount), 0));
     const contractValue = r2(all.reduce((a, i) => a + Number(i.amount), 0));
     const idx = all.findIndex((i) => i.id === inv.id);
-    const throughThis = r2(all.slice(0, idx + 1).reduce((a, i) => a + Number(i.amount), 0));
+    // Billed so far counts invoices that have actually gone out, plus this one; drafts ahead of it have not been billed.
+    const throughThis = r2(all.slice(0, idx + 1).reduce((a, i) => a + (i.id === inv.id || isSent(i.status) ? Number(i.amount) : 0), 0));
     const hasChangeOrders = (await db.select({ k: schema.estimates.kind }).from(schema.estimates).where(and(eq(schema.estimates.projectId, inv.projectId), eq(schema.estimates.kind, "change_order"), inArray(schema.estimates.status, ["accepted", "under_contract"]))).limit(1)).length > 0;
     return {
       invoice: {
@@ -255,7 +257,9 @@ export const invoiceRouter = router({
       }
       const keep = rows[0];
       const total = r2(parts.reduce((a, p) => a + Number(p.amount), 0));
+      const used = await lastInvoiceSeq(db, schema, keep.projectId);
       await db.transaction(async (tx) => {
+        await rememberInvoiceSeq(tx, schema, keep.projectId, used); // the numbers removed here are never handed out again
         await tx.delete(schema.invoiceItems).where(eq(schema.invoiceItems.invoiceId, keep.id));
         await tx.insert(schema.invoiceItems).values(parts.map((p, i) => ({ invoiceId: keep.id, ...p, sortOrder: i })));
         await tx.delete(schema.invoices).where(inArray(schema.invoices.id, rows.slice(1).map((r) => r.id)));
@@ -288,7 +292,7 @@ export const invoiceRouter = router({
     if (items.length < 2) throw new TRPCError({ code: "BAD_REQUEST", message: "This invoice is not a combined invoice." });
     const all = await db.select({ number: schema.invoices.number, sortOrder: schema.invoices.sortOrder }).from(schema.invoices).where(eq(schema.invoices.projectId, inv.projectId));
     const prefix = inv.number.replace(/-\d+$/, "");
-    let seq = all.reduce((a, r) => Math.max(a, Number(/-(\d+)$/.exec(r.number)?.[1] ?? 0)), 0);
+    let seq = await lastInvoiceSeq(db, schema, inv.projectId, all.map((r) => r.number));
     let sort = all.reduce((a, r) => Math.max(a, r.sortOrder), -1);
     const created: string[] = [];
     await db.transaction(async (tx) => {
@@ -309,6 +313,7 @@ export const invoiceRouter = router({
         created.push(number);
       }
       await tx.delete(schema.invoiceItems).where(eq(schema.invoiceItems.invoiceId, inv.id));
+      await rememberInvoiceSeq(tx, schema, inv.projectId, seq);
     });
     await createAuditLog(db, schema, { entityType: "Invoice", entityId: inv.id, action: AuditAction.UPDATE, actorId: c.userId, changes: { after: { unmerged: [inv.number, ...created] } } });
     return { id: inv.id, number: inv.number, created };

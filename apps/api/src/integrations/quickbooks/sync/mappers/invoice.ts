@@ -70,9 +70,25 @@ export async function syncInvoiceToQbo(params: {
     current = same.find((x) => x.CustomerRef?.value === job!.qboId) ?? null;
   }
 
+  // Bill-to is the customer (name and address), never the job's name: QuickBooks copies the job's name onto an invoice when it
+  // is created, so a later project rename would leave the old name on the invoice.
+  const [proj] = await db.select({ customerId: schema.projects.customerId }).from(schema.projects).where(eq(schema.projects.id, inv.projectId)).limit(1);
+  const [cust] = proj ? await db.select().from(schema.customers).where(eq(schema.customers.id, proj.customerId)).limit(1) : [];
+  const billTo = cust
+    ? {
+        Line1: (cust.companyName || cust.contactName || '').trim(),
+        ...(cust.street1 ? { Line2: cust.street1 } : {}),
+        ...(cust.street2 ? { Line3: cust.street2 } : {}),
+        ...(cust.city ? { City: cust.city } : {}),
+        ...(cust.state ? { CountrySubDivisionCode: cust.state } : {}),
+        ...(cust.zip ? { PostalCode: cust.zip } : {}),
+      }
+    : null;
+
   const amount = Number(inv.amount);
   const body = (withTaxCode: boolean) => ({
     CustomerRef: { value: job!.qboId },
+    ...(billTo && billTo.Line1 ? { BillAddr: billTo } : {}),
     DocNumber: inv.number,
     TxnDate: inv.sentOn,
     DueDate: inv.dueOn ?? undefined,
@@ -113,7 +129,7 @@ export async function syncInvoiceToQbo(params: {
 
   // Already in QuickBooks. Change it only while nothing has been paid on it and something actually differs.
   const untouched = cents(Number(current.Balance ?? current.TotalAmt)) === cents(Number(current.TotalAmt));
-  const differs = cents(Number(current.TotalAmt)) !== cents(amount) || (inv.dueOn ?? null) !== (current.DueDate ?? null) || inv.sentOn !== current.TxnDate;
+  const differs = (billTo?.Line1 ? String(current.BillAddr?.Line1 ?? '') !== billTo.Line1 : false) || cents(Number(current.TotalAmt)) !== cents(amount) || (inv.dueOn ?? null) !== (current.DueDate ?? null) || inv.sentOn !== current.TxnDate;
   let syncToken = current.SyncToken;
   if (untouched && differs) {
     const updated = await attempt(
