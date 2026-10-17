@@ -1,7 +1,9 @@
 import { TRPCError } from "@trpc/server";
-import { and, inArray, isNull } from "drizzle-orm";
+import { z } from "zod";
+import { and, desc, eq, gte, inArray, isNull } from "drizzle-orm";
 import { router } from "../trpc.js";
 import { protectedProcedure } from "../procedures.js";
+import { applyReceiptToInvoice, candidateInvoices, resolveScopes, runReceiptPass, setReceiptIgnored, undoReceipt } from "../../integrations/quickbooks/receipts.js";
 import { countsAsIssued, isOverdue, isSent } from "@construction/shared";
 
 /**
@@ -11,6 +13,7 @@ import { countsAsIssued, isOverdue, isSent } from "@construction/shared";
  */
 
 const VIEW_ROLES = new Set(["org:admin", "org:project_manager", "org:accountant"]);
+const ALLOCATE_ROLES = new Set(["org:admin", "org:project_manager"]);
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
 function todayText() {
@@ -19,6 +22,94 @@ function todayText() {
 }
 
 export const outstandingRouter = router({
+  /**
+   * Money QuickBooks says was received that still needs a person: open deposits (with the invoices each could pay)
+   * and recent ones already applied (so an automatic match can be undone).
+   */
+  receipts: protectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.tenant || !ctx.userId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+    if (!VIEW_ROLES.has(ctx.orgRole ?? "")) throw new TRPCError({ code: "FORBIDDEN", message: "Not allowed." });
+    const { db, schema } = ctx.tenant;
+    const [prof] = await db.select({ on: schema.companyProfiles.qboReadPayments, last: schema.companyProfiles.qboReceiptsLastCheckAt }).from(schema.companyProfiles).where(isNull(schema.companyProfiles.validTo)).limit(1);
+    const since = new Date(Date.now() - 30 * 86400000);
+    const rows = await db
+      .select()
+      .from(schema.qboReceipts)
+      .where(and(inArray(schema.qboReceipts.status, ["open", "applied", "ignored"]), gte(schema.qboReceipts.updatedAt, since)))
+      .orderBy(desc(schema.qboReceipts.txnDate));
+    const relevant = rows.filter((r) => r.qboCustomerId);
+    const scopes = await resolveScopes(ctx.tenant, [...new Set(relevant.map((r) => r.qboCustomerId as string))]);
+    const customerRows = await db.select({ id: schema.customers.id, companyName: schema.customers.companyName, contactName: schema.customers.contactName }).from(schema.customers);
+    const cname = new Map(customerRows.map((c) => [c.id, c.companyName || c.contactName]));
+    const allocs = relevant.length ? await db.select().from(schema.qboReceiptAllocations).where(inArray(schema.qboReceiptAllocations.receiptId, relevant.map((r) => r.id))) : [];
+    const invIds = [...new Set(allocs.map((a) => a.invoiceId))];
+    const invRows = invIds.length ? await db.select({ id: schema.invoices.id, number: schema.invoices.number, projectId: schema.invoices.projectId }).from(schema.invoices).where(inArray(schema.invoices.id, invIds)) : [];
+    const invById = new Map(invRows.map((i) => [i.id, i]));
+
+    const out = [];
+    for (const r of relevant) {
+      const scope = scopes.get(r.qboCustomerId as string);
+      if (!scope) continue;
+      const mine = allocs.filter((a) => a.receiptId === r.id);
+      const applied = r2(mine.reduce((a, x) => a + Number(x.amount), 0));
+      out.push({
+        id: r.id,
+        status: r.status,
+        txnDate: r.txnDate,
+        amount: Number(r.amount),
+        remaining: r2(Number(r.amount) - applied),
+        qboType: r.qboType,
+        qboCustomerName: r.qboCustomerName,
+        customerName: scope.customerId ? cname.get(scope.customerId) ?? null : null,
+        customerId: scope.customerId,
+        memo: r.memo,
+        reference: r.reference,
+        auto: mine.length > 0 && mine.every((a) => a.source === "auto"),
+        applications: mine.map((a) => ({ invoiceId: a.invoiceId, number: invById.get(a.invoiceId)?.number ?? "", amount: Number(a.amount), source: a.source })),
+        candidates: r.status === "open" ? await candidateInvoices(ctx.tenant, scope, r.txnDate) : [],
+      });
+    }
+    return { enabled: Boolean(prof?.on), lastCheckAt: prof?.last ?? null, receipts: out };
+  }),
+
+  /** Look in QuickBooks now instead of waiting for the next scheduled check. */
+  checkReceiptsNow: protectedProcedure.mutation(async ({ ctx }) => {
+    if (!ctx.tenant || !ctx.userId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+    if (!ALLOCATE_ROLES.has(ctx.orgRole ?? "")) throw new TRPCError({ code: "FORBIDDEN", message: "Only owners, administrators and project managers can do this." });
+    try {
+      return await runReceiptPass(ctx.tenant);
+    } catch (e) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: e instanceof Error ? e.message : "Could not read from QuickBooks." });
+    }
+  }),
+
+  /** Apply part or all of a QuickBooks deposit to one or more invoices. */
+  allocateReceipt: protectedProcedure
+    .input(z.object({ receiptId: z.string().uuid(), allocations: z.array(z.object({ invoiceId: z.string().uuid(), amount: z.number().gt(0).max(1e10) })).min(1).max(50) }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+      if (!ALLOCATE_ROLES.has(ctx.orgRole ?? "")) throw new TRPCError({ code: "FORBIDDEN", message: "Only owners, administrators and project managers can allocate deposits." });
+      for (const a of input.allocations) {
+        await applyReceiptToInvoice(ctx.tenant, { receiptId: input.receiptId, invoiceId: a.invoiceId, amount: a.amount, source: "manual", actorId: ctx.userId });
+      }
+      return { ok: true };
+    }),
+
+  undoReceipt: protectedProcedure.input(z.object({ receiptId: z.string().uuid() })).mutation(async ({ ctx, input }) => {
+    if (!ctx.tenant || !ctx.userId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+    if (!ALLOCATE_ROLES.has(ctx.orgRole ?? "")) throw new TRPCError({ code: "FORBIDDEN", message: "Only owners, administrators and project managers can undo this." });
+    await undoReceipt(ctx.tenant, input.receiptId, ctx.userId);
+    return { ok: true };
+  }),
+
+  /** Set a deposit aside (it is not income for any invoice) or bring it back. */
+  ignoreReceipt: protectedProcedure.input(z.object({ receiptId: z.string().uuid(), ignored: z.boolean() })).mutation(async ({ ctx, input }) => {
+    if (!ctx.tenant || !ctx.userId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+    if (!ALLOCATE_ROLES.has(ctx.orgRole ?? "")) throw new TRPCError({ code: "FORBIDDEN", message: "Only owners, administrators and project managers can do this." });
+    await setReceiptIgnored(ctx.tenant, input.receiptId, input.ignored);
+    return { ok: true };
+  }),
+
   overview: protectedProcedure.query(async ({ ctx }) => {
     if (!ctx.tenant || !ctx.userId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
     if (!VIEW_ROLES.has(ctx.orgRole ?? "")) {

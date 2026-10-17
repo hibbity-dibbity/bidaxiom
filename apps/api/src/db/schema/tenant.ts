@@ -125,6 +125,9 @@ export function createTenantSchema(schemaName: string) {
     qboAutoSync: text("qbo_auto_sync").notNull().default("off"),
     qboSyncIntervalMinutes: integer("qbo_sync_interval_minutes").notNull().default(60),
     qboAutoSyncLastRunAt: timestamp("qbo_auto_sync_last_run_at", { withTimezone: true }),
+    /** Read deposits and payments back from QuickBooks and mark matching invoices paid. */
+    qboReadPayments: boolean("qbo_read_payments").notNull().default(false),
+    qboReceiptsLastCheckAt: timestamp("qbo_receipts_last_check_at", { withTimezone: true }),
     validFrom: timestamp("valid_from", { withTimezone: true }).defaultNow().notNull(),
     validTo: timestamp("valid_to", { withTimezone: true }), // NULL = current active version
     createdBy: text("created_by").notNull(), // Clerk user ID
@@ -1414,6 +1417,44 @@ export function createTenantSchema(schemaName: string) {
     resolvedBy: text("resolved_by"),
   });
 
+
+  /**
+   * Money QuickBooks says was received: one row per deposit line, customer payment or sales receipt (read-only copy).
+   * QuickBooks stays the book of record; these rows are applied to BidAxiom invoices as payments.
+   */
+  const qboReceipts = schema.table(
+    "qbo_receipts",
+    {
+      id: uuid("id").primaryKey().defaultRandom(),
+      qboType: text("qbo_type").notNull(), // Deposit, Payment, SalesReceipt
+      qboId: text("qbo_id").notNull(),
+      lineNo: integer("line_no").notNull().default(0),
+      txnDate: text("txn_date").notNull(), // YYYY-MM-DD
+      amount: numeric("amount", { precision: 15, scale: 2 }).notNull(),
+      qboCustomerId: text("qbo_customer_id"), // customer or job in QuickBooks; null when the line names none
+      qboCustomerName: text("qbo_customer_name"),
+      memo: text("memo"),
+      reference: text("reference"), // check number / payment reference
+      status: text("status").notNull().default("open"), // open, applied, ignored
+      noAuto: boolean("no_auto").notNull().default(false), // true after an undo: never auto-apply again
+      createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+      updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+    },
+    (t) => ({ lineUnique: unique().on(t.qboType, t.qboId, t.lineNo) })
+  );
+
+  /** How a QuickBooks receipt was applied to invoices (one receipt can pay several invoices). */
+  const qboReceiptAllocations = schema.table("qbo_receipt_allocations", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    receiptId: uuid("receipt_id").notNull().references(() => qboReceipts.id, { onDelete: "cascade" }),
+    invoiceId: uuid("invoice_id").notNull().references(() => invoices.id, { onDelete: "cascade" }),
+    invoicePaymentId: uuid("invoice_payment_id").references(() => invoicePayments.id, { onDelete: "set null" }),
+    amount: numeric("amount", { precision: 15, scale: 2 }).notNull(),
+    source: text("source").notNull(), // auto, manual
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
   /**
    * Project notes
    * Free-form team notes per project. Hard delete (no soft delete).
@@ -1462,6 +1503,8 @@ export function createTenantSchema(schemaName: string) {
     qboSyncState,
     qboEntityMappings,
     qboSyncNotifications,
+    qboReceipts,
+    qboReceiptAllocations,
     reportDefinitions,
     reportTemplates,
     reportSchedules,

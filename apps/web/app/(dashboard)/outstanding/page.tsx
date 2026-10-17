@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { formatCurrency } from "@/lib/utils/format";
+import { QboReceiptsPanel } from "@/components/outstanding/qbo-receipts-panel";
 
 type Item = { id: string; outstanding: number };
 
@@ -91,6 +92,8 @@ export default function OutstandingPage() {
           <CardContent><p className="text-2xl font-semibold">{formatCurrency(data.expenseTotal)}</p></CardContent>
         </Card>
       </div>
+
+      <QboReceiptsPanel />
 
       <div className="flex flex-wrap items-center gap-3">
         <Tabs value={tab} onValueChange={(v) => setTab(v as "invoices" | "expenses")}>

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 
@@ -24,11 +25,13 @@ export function QboAutoSyncCard() {
   const { data } = trpc.quickbooks.getAutoSync.useQuery();
   const [mode, setMode] = useState<Mode>("off");
   const [interval, setIntervalMinutes] = useState(60);
+  const [readPayments, setReadPayments] = useState(false);
 
   useEffect(() => {
     if (data) {
       setMode(data.mode);
       setIntervalMinutes(data.intervalMinutes);
+      setReadPayments(data.readPayments);
     }
   }, [data]);
 
@@ -40,7 +43,7 @@ export function QboAutoSyncCard() {
     onError: (e) => toast.error("Could not save", { description: e.message }),
   });
 
-  const dirty = data ? mode !== data.mode || interval !== data.intervalMinutes : false;
+  const dirty = data ? mode !== data.mode || interval !== data.intervalMinutes || readPayments !== data.readPayments : false;
 
   return (
     <Card>
@@ -89,7 +92,16 @@ export function QboAutoSyncCard() {
           {mode === "scheduled" && "New and changed projects are sent on the schedule above."}
           {data?.lastRunAt && mode === "scheduled" ? ` Last scheduled run: ${new Date(data.lastRunAt).toLocaleString()}.` : ""}
         </p>
-        <Button onClick={() => save.mutate({ mode, intervalMinutes: interval })} disabled={!dirty || save.isPending}>
+        <div className="flex items-start gap-3 rounded-md border p-3">
+          <Switch checked={readPayments} onCheckedChange={setReadPayments} id="qbo-read-payments" />
+          <div>
+            <Label htmlFor="qbo-read-payments">Read deposits and payments from QuickBooks</Label>
+            <p className="text-sm text-muted-foreground">
+              Every 15 minutes BidAxiom looks for money your bookkeeper recorded. An exact match to one invoice is marked paid (you can undo it); anything else waits on the Outstanding page and in the bell for an owner, administrator or project manager. Nothing is changed in QuickBooks.
+            </p>
+          </div>
+        </div>
+        <Button onClick={() => save.mutate({ mode, intervalMinutes: interval, readPayments })} disabled={!dirty || save.isPending}>
           {save.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Save
         </Button>

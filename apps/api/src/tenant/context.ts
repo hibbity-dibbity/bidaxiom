@@ -98,6 +98,8 @@ export async function buildTenantContext(
       qboSyncState: tenantDb.qboSyncState,
       qboEntityMappings: tenantDb.qboEntityMappings,
       qboSyncNotifications: tenantDb.qboSyncNotifications,
+      qboReceipts: tenantDb.qboReceipts,
+      qboReceiptAllocations: tenantDb.qboReceiptAllocations,
       reportDefinitions: tenantDb.reportDefinitions,
       reportTemplates: tenantDb.reportTemplates,
       reportSchedules: tenantDb.reportSchedules,

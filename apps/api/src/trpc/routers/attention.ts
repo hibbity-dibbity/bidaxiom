@@ -38,7 +38,7 @@ export const attentionRouter = router({
     if (ctx.orgRole === "org:admin") return rows;
     const mine = await db.select({ projectId: schema.projectTeamMembers.projectId }).from(schema.projectTeamMembers).where(eq(schema.projectTeamMembers.userId, ctx.userId));
     const ok = new Set(mine.map((m) => m.projectId));
-    return rows.filter((r) => r.projectId && ok.has(r.projectId));
+    return rows.filter((r) => (r.projectId && ok.has(r.projectId)) || (r.kind === "qbo_deposit" && ctx.orgRole === "org:project_manager"));
   }),
 
   /** Take one of a prompt's actions (the index into its actions list). */
