@@ -98,9 +98,9 @@ function getRefreshLimiter(): RateLimiterRedis | null {
     refreshLimiter = new RateLimiterRedis({
       storeClient: redis,
       keyPrefix: "rl:refresh",
-      points: 10, // 10 attempts
+      points: 60, // a busy page and a couple of tabs refresh together; this still stops a loop
       duration: 60, // 1 minute
-      blockDuration: 60, // Block for 1 minute
+      blockDuration: 30,
     });
     return refreshLimiter;
   } catch (err) {

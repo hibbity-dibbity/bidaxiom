@@ -60,7 +60,21 @@ function TrpcAndAbilityProvider({ children }: { children: React.ReactNode }) {
             return {};
           },
           async fetch(url, options) {
-            const response = await globalThis.fetch(url, options);
+            let response = await globalThis.fetch(url, options);
+            if (response.status === 401 && typeof window !== "undefined" && window.location.pathname !== "/sign-in") {
+              // The access token may simply have run out. Renew it quietly and try once more before signing anyone out.
+              try {
+                const renewed = await fetch("/api/auth/refresh-session", { method: "POST" });
+                if (renewed.ok) {
+                  const { accessToken } = await (await fetch("/api/auth/token")).json();
+                  if (accessToken) {
+                    const headers = new Headers((options as RequestInit | undefined)?.headers);
+                    headers.set("Authorization", `Bearer ${accessToken}`);
+                    response = await globalThis.fetch(url, { ...(options as RequestInit), headers });
+                  }
+                }
+              } catch {}
+            }
             if (
               response.status === 401 &&
               typeof window !== "undefined" &&

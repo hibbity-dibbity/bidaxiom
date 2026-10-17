@@ -396,8 +396,20 @@ export const authRouter = router({
         });
       }
 
+      // A token that was rotated a moment ago is not theft: a page fires several requests at once, and so do two tabs or
+      // a bot sharing the account, so more than one of them can present the same refresh token within a second or two.
+      // Within a short window we issue another token in the same family; after it, reuse still revokes the family.
+      const REUSE_GRACE_MS = 60_000;
+      let concurrentRotation = false;
+      if (storedToken.revokedAt && storedToken.replacedByHash && Date.now() - storedToken.revokedAt.getTime() < REUSE_GRACE_MS) {
+        const live = await getAuthDb().query.refreshTokens.findFirst({
+          where: and(eq(refreshTokens.familyId, storedToken.familyId), sql`${refreshTokens.revokedAt} IS NULL`),
+        });
+        concurrentRotation = Boolean(live); // a family that was shut down has no live token left
+      }
+
       // Check if token was already revoked/used (reuse detection)
-      if (storedToken.revokedAt) {
+      if (storedToken.revokedAt && !concurrentRotation) {
         // Token reuse detected - revoke entire family
         await getAuthDb()
           .update(refreshTokens)
@@ -452,14 +464,16 @@ export const authRouter = router({
       const newRefreshTokenHash = hashToken(newRefreshToken);
       const newRefreshExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-      // Mark old token as revoked and store new token
-      await getAuthDb()
-        .update(refreshTokens)
-        .set({
-          revokedAt: new Date(),
-          replacedByHash: newRefreshTokenHash,
-        })
-        .where(eq(refreshTokens.id, storedToken.id));
+      // Mark old token as revoked and store new token (already done by the request that won the race)
+      if (!concurrentRotation) {
+        await getAuthDb()
+          .update(refreshTokens)
+          .set({
+            revokedAt: new Date(),
+            replacedByHash: newRefreshTokenHash,
+          })
+          .where(eq(refreshTokens.id, storedToken.id));
+      }
 
       await getAuthDb().insert(refreshTokens).values({
         userId: user.id,
