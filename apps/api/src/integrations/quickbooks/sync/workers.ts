@@ -1,4 +1,4 @@
-import { Worker, Job } from 'bullmq';
+import { Worker, Job, UnrecoverableError } from 'bullmq';
 import { eq, and, desc } from 'drizzle-orm';
 import { redisConnection, type QboSyncJobData } from '../queue.js';
 import { dispatchSync, type SyncParams } from './mappers/index.js';
@@ -165,6 +165,9 @@ export function startQboSyncWorker(): Worker {
           return;
         }
 
+        // Something QuickBooks refused for a reason a person has to fix: retrying five times only delays the message.
+        if (errorObj.name === 'QboUserError') throw new UnrecoverableError(errorObj.message);
+
         // Other errors - throw to trigger retry
         throw error;
       }
@@ -190,7 +193,7 @@ export function startQboSyncWorker(): Worker {
     console.error(`Job ${job.id} failed:`, err);
 
     // If all retries exhausted, update sync state and create notification
-    if (job.attemptsMade >= (job.opts.attempts || 5)) {
+    if (err.name === 'UnrecoverableError' || job.attemptsMade >= (job.opts.attempts || 5)) {
       console.error(`Job ${job.id} failed after ${job.attemptsMade} attempts. Creating notification.`);
 
       try {
@@ -232,7 +235,7 @@ export function startQboSyncWorker(): Worker {
         await db.insert(schema.qboSyncNotifications).values({
           entityType,
           entityId: platformId || qboId || 'unknown',
-          message: `Sync failed after ${job.attemptsMade} attempts: ${err.message}`,
+          message: err.name === 'UnrecoverableError' ? err.message : `Sync failed after ${job.attemptsMade} attempts: ${err.message}`,
           severity: 'error',
           dismissed: false,
         });

@@ -1,6 +1,6 @@
 import type { TenantSchema } from '../../../../db/schema/tenant.js';
 import { eq, and } from 'drizzle-orm';
-import { promisifyQbo, qboQueryRows, qboQuote } from '../../client.js';
+import { promisifyQbo, qboQueryRows, qboQuote, qboFaultText, QboUserError } from '../../client.js';
 import { isSyncTokenConflict, handleSyncTokenConflict } from '../conflict.js';
 
 /** QuickBooks display names cannot contain a colon (it separates parent from sub-customer) and have a length limit. */
@@ -23,7 +23,70 @@ const isNotFound = (err: unknown) => {
   return f?.code === '610' || /not found/i.test(String(f?.Message ?? ''));
 };
 
+type Addr = { street1?: string | null; street2?: string | null; city?: string | null; state?: string | null; zip?: string | null };
+
+/** A QuickBooks address from a street address, or undefined when there is nothing to send. */
+function qboAddr(a: Addr, firstLine?: string | null) {
+  const lines = [firstLine, a.street1, a.street2].filter((x): x is string => Boolean(x && x.trim()));
+  if (!lines.length && !a.city && !a.zip) return undefined;
+  return {
+    Line1: lines[0],
+    Line2: lines[1],
+    Line3: lines[2],
+    City: a.city || undefined,
+    CountrySubDivisionCode: a.state || undefined,
+    PostalCode: a.zip || undefined,
+  };
+}
+
+const sameAddr = (cur: any, want: any) =>
+  (cur?.Line1 ?? '') === (want?.Line1 ?? '') && (cur?.Line2 ?? '') === (want?.Line2 ?? '') && (cur?.City ?? '') === (want?.City ?? '') && (cur?.PostalCode ?? '') === (want?.PostalCode ?? '');
+
+/** The QuickBooks payment term with this name ("Net 30"), or undefined; terms are a nicety, so a lookup problem never blocks a sync. */
+async function qboTermRef(accessToken: string, realmId: string, name: string | null | undefined): Promise<{ value: string } | undefined> {
+  if (!name) return undefined;
+  try {
+    const rows = await qboQueryRows<any>(accessToken, realmId, 'Term', `select * from Term where Name = ${qboQuote(name)}`);
+    return rows[0] ? { value: rows[0].Id } : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Contact details for a customer record; only what BidAxiom has, so nothing already in QuickBooks is blanked. */
+async function customerDetails(c: any, accessToken: string, realmId: string) {
+  const d: Record<string, unknown> = {};
+  if (c.email) d.PrimaryEmailAddr = { Address: c.email };
+  if (c.phone) d.PrimaryPhone = { FreeFormNumber: c.phone };
+  const bill = qboAddr(c);
+  if (bill) d.BillAddr = bill;
+  const term = await qboTermRef(accessToken, realmId, c.paymentTerms);
+  if (term) d.SalesTermRef = term;
+  return d;
+}
+
+/** What differs between the QuickBooks customer and the wanted details, as a sparse update. */
+function detailChanges(cur: any, want: Record<string, any>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  if (want.PrimaryEmailAddr && cur.PrimaryEmailAddr?.Address !== want.PrimaryEmailAddr.Address) out.PrimaryEmailAddr = want.PrimaryEmailAddr;
+  if (want.PrimaryPhone && cur.PrimaryPhone?.FreeFormNumber !== want.PrimaryPhone.FreeFormNumber) out.PrimaryPhone = want.PrimaryPhone;
+  if (want.BillAddr && !sameAddr(cur.BillAddr, want.BillAddr)) out.BillAddr = want.BillAddr;
+  if (want.SalesTermRef && cur.SalesTermRef?.value !== want.SalesTermRef.value) out.SalesTermRef = want.SalesTermRef;
+  return out;
+}
+
 type MapperDb = ReturnType<typeof import('../../../../db/client.js')['createTenantDb']>['db'];
+
+/** Bring an already-linked QuickBooks customer's email, phone, billing address and terms in line with BidAxiom. */
+async function pushCustomerDetails(p: { db: MapperDb; schema: TenantSchema; qboClient: any; accessToken: string; realmId: string; customerId: string; existing: any; mappingId: string }): Promise<void> {
+  const { db, schema, qboClient, accessToken, realmId, customerId, existing, mappingId } = p;
+  const [c] = await db.select().from(schema.customers).where(eq(schema.customers.id, customerId)).limit(1);
+  if (!c) return;
+  const changes = detailChanges(existing, await customerDetails(c, accessToken, realmId));
+  if (!Object.keys(changes).length) return;
+  const updated = await promisifyQbo<any>(qboClient.updateCustomer.bind(qboClient), { Id: existing.Id, SyncToken: existing.SyncToken, sparse: true, ...changes });
+  await db.update(schema.qboEntityMappings).set({ qboSyncToken: updated.SyncToken, lastSyncedAt: new Date() }).where(eq(schema.qboEntityMappings.id, mappingId));
+}
 
 /**
  * The QuickBooks customer that represents one BidAxiom customer. Reuses the saved link, then a customer with the
@@ -38,7 +101,8 @@ async function ensureQboParentCustomer(p: { db: MapperDb; schema: TenantSchema; 
     .limit(1);
   if (mapping) {
     try {
-      await promisifyQbo<any>(qboClient.getCustomer.bind(qboClient), mapping.qboId);
+      const existing = await promisifyQbo<any>(qboClient.getCustomer.bind(qboClient), mapping.qboId);
+      await pushCustomerDetails({ db, schema, qboClient, accessToken, realmId, customerId, existing, mappingId: mapping.id });
       return mapping.qboId;
     } catch (e) {
       if (!isNotFound(e)) throw e;
@@ -53,13 +117,19 @@ async function ensureQboParentCustomer(p: { db: MapperDb; schema: TenantSchema; 
   // Top-level customers only (ParentRef is null), matched by name.
   const found = (await qboQueryRows<any>(accessToken, realmId, 'Customer', `select * from Customer where DisplayName = ${qboQuote(name)}`)).find((x) => !x.ParentRef);
   let q = found;
-  if (!q) {
+  const details = await customerDetails(c, accessToken, realmId);
+  if (q) {
+    const changes = detailChanges(q, details);
+    if (Object.keys(changes).length) {
+      q = await promisifyQbo<any>(qboClient.updateCustomer.bind(qboClient), { Id: q.Id, SyncToken: q.SyncToken, sparse: true, ...changes });
+    }
+  } else {
     q = await promisifyQbo<any>(qboClient.createCustomer.bind(qboClient), {
       DisplayName: name,
       CompanyName: c.companyName || undefined,
       GivenName: c.companyName ? undefined : c.contactName.split(' ')[0],
       FamilyName: c.companyName ? undefined : c.contactName.split(' ').slice(1).join(' ') || undefined,
-      PrimaryEmailAddr: c.email ? { Address: c.email } : undefined,
+      ...details,
       Notes: `BidAxiom customer ${customerId}`,
     });
   }
@@ -141,6 +211,7 @@ export async function syncProjectToQbo(params: {
         ParentRef: { value: parentId },
         BillWithParent: true,
         Active: active,
+        ShipAddr: qboAddr(project),
         Notes: `BidAxiom project ${projectId}`,
       });
       await db.insert(schema.qboEntityMappings).values({
@@ -165,6 +236,8 @@ export async function syncProjectToQbo(params: {
       changes.ParentRef = { value: parentId };
     }
     if ((current.Active ?? true) !== active) changes.Active = active;
+    const ship = qboAddr(project);
+    if (ship && !sameAddr(current.ShipAddr, ship)) changes.ShipAddr = ship;
 
     let syncToken = current.SyncToken;
     if (Object.keys(changes).length > 0) {
@@ -172,6 +245,11 @@ export async function syncProjectToQbo(params: {
         const updated = await promisifyQbo<any>(qboClient.updateCustomer.bind(qboClient), { Id: current.Id, SyncToken: current.SyncToken, sparse: true, ...changes });
         syncToken = updated.SyncToken;
       } catch (error) {
+        const fault = qboFaultText(error);
+        if (changes.Active === false && !isSyncTokenConflict(error) && (error as any)?.statusCode !== 429 && (error as any)?.statusCode !== 401) {
+          // QuickBooks refuses to deactivate a job that still has an open balance. Retrying will not change that.
+          throw new QboUserError(`QuickBooks would not make "${displayName}" inactive (${fault ?? (error as Error).message}). Collect or write off its open balance in QuickBooks, then press Sync projects again.`);
+        }
         if (isSyncTokenConflict(error)) {
           await handleSyncTokenConflict({ tenantId: params.tenantId, entityType: 'project', platformId: projectId, qboId: current.Id, db, schema, accessToken, realmId });
           return; // someone changed it in QuickBooks a moment ago; the next sync reads the fresh copy

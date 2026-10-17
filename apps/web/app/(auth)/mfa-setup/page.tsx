@@ -116,10 +116,31 @@ function MfaSetupPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router, status.data?.totp, !!status.data]);
 
+  // The session cookie must learn about the new second factor before the app will let us through, or the
+  // middleware sends us straight back here. A full page load picks the new cookie up.
+  const goOn = async () => {
+    try {
+      await fetch("/api/auth/refresh-session", { method: "POST" });
+    } catch {
+      /* the next page load will sort it out */
+    }
+    window.location.assign(getSafeRedirectUrl(redirectUrl));
+  };
+
+  const signOut = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } finally {
+      window.location.assign("/sign-in");
+    }
+  };
+
   const finishIfDone = async () => {
     const r = await status.refetch();
-    if (r.data && r.data.methods >= r.data.needed) router.push(getSafeRedirectUrl(redirectUrl));
+    if (r.data && r.data.methods >= r.data.needed) await goOn();
   };
+
+  const allDone = !!status.data && status.data.methods >= status.data.needed;
 
   const totalSteps = status.data?.needed ?? 1;
   const checklist = status.data && (
@@ -201,7 +222,7 @@ function MfaSetupPage() {
       setSetupData(null);
       return;
     }
-    router.push(getSafeRedirectUrl(redirectUrl));
+    await goOn();
   };
 
   if (isLoading) {
@@ -293,6 +314,10 @@ function MfaSetupPage() {
           <CardContent>{checklist}</CardContent>
         </Card>
         <PasskeysCard afterChange={finishIfDone} />
+        <div className="flex items-center justify-between">
+          <Button variant="ghost" size="sm" onClick={signOut}>Sign out</Button>
+          {allDone && <Button onClick={goOn}>Continue</Button>}
+        </div>
       </div>
     );
   }
@@ -310,9 +335,9 @@ function MfaSetupPage() {
           <Button
             variant="outline"
             className="w-full"
-            onClick={() => router.push("/sign-in")}
+            onClick={signOut}
           >
-            Back to Sign In
+            Sign out
           </Button>
         </CardFooter>
       </Card>

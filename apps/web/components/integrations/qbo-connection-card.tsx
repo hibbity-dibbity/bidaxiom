@@ -122,7 +122,7 @@ export function QboConnectionCard({ connection }: QboConnectionCardProps) {
               <div>
                 <CardTitle>QuickBooks Online</CardTitle>
                 <CardDescription>
-                  Sync projects, invoices, and bills with QuickBooks
+                  Sync customers, projects and invoices with QuickBooks, and read payments and deposits back
                 </CardDescription>
               </div>
             </div>

@@ -94,6 +94,9 @@ export function QboSyncStatus({ syncStates }: QboSyncStatusProps) {
     }
   };
 
+  // Only what actually syncs is listed; rows for vendors, bills and payments would sit at "Pending" forever.
+  const shown = syncStates.filter((s) => ["customer", "project", "invoice"].includes(s.entityType));
+
   const formatEntityType = (entityType: string) => {
     const mapping: Record<string, string> = {
       project: "Projects",
@@ -112,7 +115,7 @@ export function QboSyncStatus({ syncStates }: QboSyncStatusProps) {
         <div>
           <h3 className="text-lg font-semibold">Sync Status</h3>
           <p className="text-sm text-muted-foreground">
-            Monitor sync health for each entity type
+            Customers, projects and invoices go from BidAxiom to QuickBooks. Vendors, bills and vendor payments are not sent yet.
           </p>
         </div>
 
@@ -140,9 +143,6 @@ export function QboSyncStatus({ syncStates }: QboSyncStatusProps) {
             <DropdownMenuItem onClick={() => handleSync("invoice")}>
               Sync Invoices
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleSync("bill")}>
-              Sync Bills
-            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => cancelMutation.mutate()} disabled={cancelMutation.isPending}>
               Stop and reset status
             </DropdownMenuItem>
@@ -162,14 +162,14 @@ export function QboSyncStatus({ syncStates }: QboSyncStatusProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {syncStates.length === 0 ? (
+            {shown.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center text-muted-foreground">
                   No sync data available
                 </TableCell>
               </TableRow>
             ) : (
-              syncStates.map((state) => (
+              shown.map((state) => (
                 <TableRow key={state.entityType}>
                   <TableCell className="font-medium">
                     {formatEntityType(state.entityType)}

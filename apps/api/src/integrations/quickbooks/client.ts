@@ -53,6 +53,24 @@ export function promisifyQbo<T>(qboMethod: Function, ...args: unknown[]): Promis
   });
 }
 
+/** A problem QuickBooks reported that retrying cannot fix (for example a rule about the record). Carries words a person can act on. */
+export class QboUserError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'QboUserError';
+  }
+}
+
+/** The readable part of a QuickBooks error: "message: detail" from its Fault, whichever shape the library handed back. */
+export function qboFaultText(err: unknown): string | null {
+  const e = err as any;
+  const fault = e?.Fault ?? e?.response?.data?.Fault ?? e?.body?.Fault ?? e?.error?.Fault;
+  const f = fault?.Error?.[0];
+  if (!f) return null;
+  const parts = [f.Message, f.Detail].filter(Boolean).map(String);
+  return parts.length ? parts.join(': ') : null;
+}
+
 const QBO_BASE: Record<string, string> = {
   production: 'https://quickbooks.api.intuit.com',
   sandbox: 'https://sandbox-quickbooks.api.intuit.com',

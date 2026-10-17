@@ -1,3 +1,4 @@
+import { formatCompanyDateTime } from "../../utils/company-time.js";
 import { eq } from "drizzle-orm";
 import { refreshQboToken } from "./oauth.js";
 import { encryptToken } from "./crypto.js";
@@ -183,7 +184,7 @@ export async function diagnoseQboConnection(tenant: { db: any; schema: any }): P
       .limit(1);
     const rows = await db.select().from(schema.qboReceipts).orderBy(desc(schema.qboReceipts.txnDate)).limit(8);
     const head = prof?.on
-      ? `Reading is on${prof.last ? `, last checked ${new Date(prof.last).toLocaleString()}` : ", but it has not run yet (press Check now on the Outstanding page)"}`
+      ? `Reading is on${prof.last ? `, last checked ${formatCompanyDateTime(prof.last)}` : ", but it has not run yet (press Check now on the Outstanding page)"}`
       : "Reading is OFF (turn on \"Read deposits and payments from QuickBooks\" in Automatic sync)";
     if (rows.length === 0) return { value: "None read yet", note: head };
     const lines: string[] = [];

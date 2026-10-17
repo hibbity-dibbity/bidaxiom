@@ -86,6 +86,12 @@ export async function syncInvoiceToQbo(params: {
     : null;
 
   const amount = Number(inv.amount);
+  // A combined invoice goes over with one line per original milestone, so QuickBooks shows what each amount was for.
+  const parts = await db.select().from(schema.invoiceItems).where(eq(schema.invoiceItems.invoiceId, invoiceId));
+  const lineItems =
+    parts.length > 1
+      ? parts.sort((a, b) => a.sortOrder - b.sortOrder).map((x) => ({ amount: Number(x.amount), description: [x.sourceLabel, x.label].filter(Boolean).join(': ') }))
+      : [{ amount, description: inv.milestoneName }];
   const body = (withTaxCode: boolean) => ({
     CustomerRef: { value: job!.qboId },
     ...(billTo && billTo.Line1 ? { BillAddr: billTo } : {}),
@@ -93,14 +99,12 @@ export async function syncInvoiceToQbo(params: {
     TxnDate: inv.sentOn,
     DueDate: inv.dueOn ?? undefined,
     PrivateNote: `BidAxiom invoice ${inv.id}`,
-    Line: [
-      {
-        Amount: amount,
-        DetailType: 'SalesItemLineDetail',
-        Description: inv.milestoneName,
-        SalesItemLineDetail: { ItemRef: { value: settings.itemId }, Qty: 1, UnitPrice: amount, ...(withTaxCode ? { TaxCodeRef: { value: 'NON' } } : {}) },
-      },
-    ],
+    Line: lineItems.map((l) => ({
+      Amount: l.amount,
+      DetailType: 'SalesItemLineDetail',
+      Description: l.description,
+      SalesItemLineDetail: { ItemRef: { value: settings.itemId }, Qty: 1, UnitPrice: l.amount, ...(withTaxCode ? { TaxCodeRef: { value: 'NON' } } : {}) },
+    })),
   });
   const attempt = async (fn: (b: any) => Promise<any>, make: (t: boolean) => any) => {
     try {

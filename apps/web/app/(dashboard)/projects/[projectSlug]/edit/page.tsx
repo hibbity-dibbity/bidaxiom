@@ -114,8 +114,8 @@ export default function EditProjectPage({ params }: EditProjectPageProps) {
   // Save mutation
   const updateMutation = trpc.project.update.useMutation({
     onSuccess: (updated) => {
-      utils.project.getBySlug.invalidate({ slug: projectSlug });
-      // If slug changed (name/jobNumber updated), use new slug from response
+      // If the slug changed (name/job number updated) the old slug no longer exists, so refetching it would
+      // flash a "Project not found" error; only refresh the slug the project now lives at.
       const newSlug = updated?.slug ?? projectSlug;
       utils.project.getBySlug.invalidate({ slug: newSlug });
       utils.project.list.invalidate();
@@ -177,6 +177,10 @@ export default function EditProjectPage({ params }: EditProjectPageProps) {
 
   const onSubmit = async (values: EditFormValues) => {
     if (!project) return;
+    if (!values.customerId) {
+      form.setError("customerId", { type: "manual", message: "Select a customer" });
+      return;
+    }
 
     // Async safety net — re-run blur validation on submit
     if (values.jobNumber) {
@@ -188,7 +192,7 @@ export default function EditProjectPage({ params }: EditProjectPageProps) {
   };
 
   // Loading state
-  if (projectLoading || !project) {
+  if (projectLoading || !project || !customersData) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">

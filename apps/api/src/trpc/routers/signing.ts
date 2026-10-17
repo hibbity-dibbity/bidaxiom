@@ -1,3 +1,4 @@
+import { formatCompanyDateTime } from "../../utils/company-time.js";
 import { z } from "zod";
 import { createHash, randomBytes } from "node:crypto";
 import { TRPCError } from "@trpc/server";
@@ -221,7 +222,7 @@ export const signingRouter = router({
           await sendDocumentMail({
             fromName: tenant.companyName, replyTo: sender?.email ?? null, to: customerTo,
             subject: `Signed: ${label}`,
-            text: `Hello,\n\nThank you. ${input.signerName} signed ${label} on ${new Date().toLocaleString("en-US", { dateStyle: "long", timeStyle: "short" })}.${attachment ? " A signed copy is attached for your records." : ""}\n\n${tenant.companyName}`,
+            text: `Hello,\n\nThank you. ${input.signerName} signed ${label} on ${formatCompanyDateTime()}.${attachment ? " A signed copy is attached for your records." : ""}\n\n${tenant.companyName}`,
             attachment,
           });
         } catch (e) { notes.push(`customer email: ${e instanceof Error ? e.message : "failed"}`); }
