@@ -3,8 +3,7 @@ import { eq, and, desc } from 'drizzle-orm';
 import { redisConnection, type QboSyncJobData } from '../queue.js';
 import { dispatchSync, type SyncParams } from './mappers/index.js';
 import { createQboClient } from '../client.js';
-import { refreshQboToken } from '../oauth.js';
-import { encryptToken } from '../crypto.js';
+import { getFreshAccess } from '../access.js';
 import { isSyncTokenConflict } from './conflict.js';
 import { db as publicDb } from '../../../db/client.js';
 import { tenants } from '../../../db/schema/public.js';
@@ -59,38 +58,13 @@ export function startQboSyncWorker(): Worker {
           return; // Skip job silently - connection may have been disconnected
         }
 
-        // 4. Check if access token is expired
-        let accessToken = connection.accessToken;
-        let realmId = connection.realmId;
-
-        if (!accessToken || new Date(connection.tokenExpiresAt) <= new Date()) {
-          console.log(`Access token expired for tenant ${tenantId}. Refreshing...`);
-
-          try {
-            const refreshedTokens = await refreshQboToken(connection.encryptedRefreshToken);
-
-            // Update stored tokens (includes rotated refresh token)
-            await db
-              .update(schema.qboConnections)
-              .set({
-                accessToken: refreshedTokens.accessToken,
-                encryptedRefreshToken: encryptToken(refreshedTokens.refreshToken),
-                tokenExpiresAt: refreshedTokens.tokenExpiresAt,
-                refreshTokenExpiresAt: refreshedTokens.refreshTokenExpiresAt,
-                updatedAt: new Date(),
-              })
-              .where(eq(schema.qboConnections.id, connection.id));
-
-            accessToken = refreshedTokens.accessToken;
-            console.log(`Successfully refreshed access token for tenant ${tenantId}`);
-          } catch (error) {
-            console.error(`Failed to refresh access token for tenant ${tenantId}:`, error);
-            throw error; // Propagate to trigger retry
-          }
-        }
+        // 4. A valid access token (renewed once, under a lock, however many jobs need it at the same time)
+        const fresh = await getFreshAccess(db, schema, connection.id);
+        const accessToken = fresh.accessToken;
+        const realmId = fresh.realmId;
 
         // 5. Create QBO client
-        const qboClient = createQboClient(accessToken!, realmId);
+        const qboClient = createQboClient(accessToken, realmId);
 
         // 6. Determine sync direction from job name
         const direction = job.name === 'sync-to-qbo' ? 'to-qbo' : 'from-qbo';
@@ -101,7 +75,7 @@ export function startQboSyncWorker(): Worker {
           db,
           schema,
           qboClient,
-          accessToken: accessToken!,
+          accessToken,
           realmId,
           platformId,
           qboId,

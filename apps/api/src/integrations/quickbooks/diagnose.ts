@@ -1,6 +1,6 @@
 import { formatCompanyDateTime } from "../../utils/company-time.js";
 import { eq } from "drizzle-orm";
-import { refreshQboToken } from "./oauth.js";
+import { getFreshAccess } from "./access.js";
 import { encryptToken } from "./crypto.js";
 import { explainReceipt } from "./receipts.js";
 import { isNull, desc } from "drizzle-orm";
@@ -68,25 +68,14 @@ export async function diagnoseQboConnection(tenant: { db: any; schema: any }): P
     return result;
   }
 
-  // Token: use the stored one, refresh when expired.
+  // Token: use the stored one, refresh when expired (one renewal at a time, shared with the sync).
   let token: string | null = conn.accessToken;
   if (!token || new Date(conn.tokenExpiresAt) <= new Date()) {
     try {
-      const t = await refreshQboToken(conn.encryptedRefreshToken);
-      await db
-        .update(schema.qboConnections)
-        .set({
-          accessToken: t.accessToken,
-          encryptedRefreshToken: encryptToken(t.refreshToken),
-          tokenExpiresAt: t.tokenExpiresAt,
-          refreshTokenExpiresAt: t.refreshTokenExpiresAt,
-          updatedAt: new Date(),
-        })
-        .where(eq(schema.qboConnections.id, conn.id));
-      token = t.accessToken;
+      token = (await getFreshAccess(db, schema, conn.id)).accessToken;
       result.tokenRefreshed = true;
     } catch (e) {
-      result.fatal = `The saved connection can no longer be renewed (${e instanceof Error ? e.message : "unknown error"}). Disconnect and connect QuickBooks again.`;
+      result.fatal = `The saved connection can no longer be renewed (${e instanceof Error ? e.message : "unknown error"}).`;
       return result;
     }
   }

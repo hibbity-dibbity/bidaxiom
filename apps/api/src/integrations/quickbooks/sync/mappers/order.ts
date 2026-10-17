@@ -1,6 +1,6 @@
 import type { TenantSchema } from '../../../../db/schema/tenant.js';
 import { eq, and, isNull } from 'drizzle-orm';
-import { promisifyQbo, qboQueryRows, qboQuote, QboUserError, qboFaultText } from '../../client.js';
+import { promisifyQbo, qboQueryRows, qboQuote, QboUserError, qboFaultText, qboIsNotFound } from '../../client.js';
 import { qboName, syncProjectToQbo } from './project.js';
 
 type MapperDb = ReturnType<typeof import('../../../../db/client.js')['createTenantDb']>['db'];
@@ -14,10 +14,7 @@ export function accountKeyFor(category: string | null | undefined): 'material' |
   return 'material';
 }
 
-const isNotFound = (err: unknown) => {
-  const f = (err as any)?.Fault?.Error?.[0];
-  return f?.code === '610' || /not found/i.test(String(f?.Message ?? ''));
-};
+const isNotFound = qboIsNotFound;
 
 /** The QuickBooks vendor for a BidAxiom vendor: the saved link, else one with the same name, else a new one. */
 async function ensureQboVendor(p: { db: MapperDb; schema: TenantSchema; qboClient: any; accessToken: string; realmId: string; vendorId: string }): Promise<string> {

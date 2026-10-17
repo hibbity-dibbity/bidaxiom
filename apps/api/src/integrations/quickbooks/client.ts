@@ -71,6 +71,21 @@ export function qboFaultText(err: unknown): string | null {
   return parts.length ? parts.join(': ') : null;
 }
 
+/** The first Fault of a QuickBooks error, whichever shape the library handed back. */
+export function qboFaultOf(err: unknown): { code?: string; message: string; detail?: string } | null {
+  const e = err as any;
+  const fault = e?.Fault ?? e?.response?.data?.Fault ?? e?.body?.Fault ?? e?.error?.Fault;
+  const f = fault?.Error?.[0];
+  return f ? { code: f.code ? String(f.code) : undefined, message: String(f.Message ?? ''), detail: f.Detail ? String(f.Detail) : undefined } : null;
+}
+
+/** True when QuickBooks says the record it was asked about is gone (deleted, or never existed). */
+export function qboIsNotFound(err: unknown): boolean {
+  const f = qboFaultOf(err);
+  if (f) return f.code === '610' || /not found|has been deleted|does not exist/i.test(`${f.message} ${f.detail ?? ''}`);
+  return false;
+}
+
 const QBO_BASE: Record<string, string> = {
   production: 'https://quickbooks.api.intuit.com',
   sandbox: 'https://sandbox-quickbooks.api.intuit.com',

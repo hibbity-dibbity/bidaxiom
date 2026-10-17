@@ -24,6 +24,13 @@ function requireImportRole(role: string | null) {
   }
 }
 
+/** The customer list and customer pages hold contact details, so field roles and plain members do not get them. */
+function requireCustomerView(role: string | null) {
+  if (!["org:admin", "org:project_manager", "org:accountant", "org:estimator"].includes(role ?? "")) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Your role cannot view the customer list." });
+  }
+}
+
 /** Source-row layout the browser sends, so the server can re-check every row with the same rules. */
 const IMPORT_COLUMNS: CustomerImportMapping = {
   companyName: 0, contactName: 1, email: 2, phone: 3, street1: 4, street2: 5, city: 6, state: 7, zip: 8, paymentTerms: 9,
@@ -171,6 +178,7 @@ export const customerRouter = router({
           message: "Tenant context missing",
         });
       }
+      requireCustomerView(ctx.orgRole);
 
       const { db, schema } = ctx.tenant;
 
@@ -278,6 +286,7 @@ export const customerRouter = router({
           message: "Tenant context missing",
         });
       }
+      requireCustomerView(ctx.orgRole);
 
       if (!isValidSlug(input.slug)) {
         throw new TRPCError({

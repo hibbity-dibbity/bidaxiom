@@ -1,6 +1,6 @@
 import type { TenantSchema } from '../../../../db/schema/tenant.js';
 import { eq, and } from 'drizzle-orm';
-import { promisifyQbo, qboQueryRows, qboQuote, qboFaultText, QboUserError } from '../../client.js';
+import { promisifyQbo, qboQueryRows, qboQuote, qboFaultText, QboUserError, qboIsNotFound } from '../../client.js';
 import { isSyncTokenConflict, handleSyncTokenConflict } from '../conflict.js';
 
 /** QuickBooks display names cannot contain a colon (it separates parent from sub-customer) and have a length limit. */
@@ -18,10 +18,7 @@ export function qboActiveFor(phase: string | null | undefined): boolean {
   return !['closed', 'archived', 'lost'].includes(phase ?? '');
 }
 
-const isNotFound = (err: unknown) => {
-  const f = (err as any)?.Fault?.Error?.[0];
-  return f?.code === '610' || /not found/i.test(String(f?.Message ?? ''));
-};
+const isNotFound = qboIsNotFound;
 
 type Addr = { street1?: string | null; street2?: string | null; city?: string | null; state?: string | null; zip?: string | null };
 
@@ -43,7 +40,7 @@ const sameAddr = (cur: any, want: any) =>
   (cur?.Line1 ?? '') === (want?.Line1 ?? '') && (cur?.Line2 ?? '') === (want?.Line2 ?? '') && (cur?.City ?? '') === (want?.City ?? '') && (cur?.PostalCode ?? '') === (want?.PostalCode ?? '');
 
 /** The QuickBooks payment term with this name ("Net 30"), or undefined; terms are a nicety, so a lookup problem never blocks a sync. */
-async function qboTermRef(accessToken: string, realmId: string, name: string | null | undefined): Promise<{ value: string } | undefined> {
+export async function qboTermRef(accessToken: string, realmId: string, name: string | null | undefined): Promise<{ value: string } | undefined> {
   if (!name) return undefined;
   try {
     const rows = await qboQueryRows<any>(accessToken, realmId, 'Term', `select * from Term where Name = ${qboQuote(name)}`);
@@ -92,7 +89,24 @@ async function pushCustomerDetails(p: { db: MapperDb; schema: TenantSchema; qboC
  * The QuickBooks customer that represents one BidAxiom customer. Reuses the saved link, then a customer with the
  * same name already in QuickBooks (so nothing is duplicated), and only then creates one.
  */
-async function ensureQboParentCustomer(p: { db: MapperDb; schema: TenantSchema; qboClient: any; accessToken: string; realmId: string; customerId: string }): Promise<string> {
+const customerLocks = new Map<string, Promise<unknown>>();
+/** One caller at a time per customer, so a customer sync and a project sync running together cannot each create the same QuickBooks customer. */
+async function withCustomerLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  const prev = customerLocks.get(key) ?? Promise.resolve();
+  const run = prev.catch(() => undefined).then(fn);
+  customerLocks.set(key, run);
+  try {
+    return await run;
+  } finally {
+    if (customerLocks.get(key) === run) customerLocks.delete(key);
+  }
+}
+
+async function ensureQboParentCustomer(p: Parameters<typeof ensureQboParentCustomerUnlocked>[0]): Promise<string> {
+  return withCustomerLock(`${p.realmId}:${p.customerId}`, () => ensureQboParentCustomerUnlocked(p));
+}
+
+async function ensureQboParentCustomerUnlocked(p: { db: MapperDb; schema: TenantSchema; qboClient: any; accessToken: string; realmId: string; customerId: string }): Promise<string> {
   const { db, schema, qboClient, accessToken, realmId, customerId } = p;
   const [mapping] = await db
     .select()
@@ -179,7 +193,7 @@ export async function syncProjectToQbo(params: {
 
     const parentId = await ensureQboParentCustomer({ db, schema, qboClient, accessToken, realmId, customerId: project.customerId });
     const displayName = qboProjectName(project);
-    const active = qboActiveFor(project.lifecyclePhase);
+    const active = qboActiveFor(project.lifecyclePhase) && !project.deletedAt; // a deleted project's job is inactive too
 
     const [mapping] = await db
       .select()
@@ -239,6 +253,9 @@ export async function syncProjectToQbo(params: {
     const ship = qboAddr(project);
     if (ship && !sameAddr(current.ShipAddr, ship)) changes.ShipAddr = ship;
 
+    // QuickBooks will not edit an inactive job, and one that should stay inactive has nothing to gain from a rename or address.
+    if (!active && (current.Active ?? true) === false) for (const k of Object.keys(changes)) delete changes[k];
+
     let syncToken = current.SyncToken;
     if (Object.keys(changes).length > 0) {
       try {
@@ -246,9 +263,13 @@ export async function syncProjectToQbo(params: {
         syncToken = updated.SyncToken;
       } catch (error) {
         const fault = qboFaultText(error);
-        if (changes.Active === false && !isSyncTokenConflict(error) && (error as any)?.statusCode !== 429 && (error as any)?.statusCode !== 401) {
+        const transient = (error as any)?.statusCode === 429 || (error as any)?.statusCode === 401;
+        if (changes.Active === false && !isSyncTokenConflict(error) && !transient) {
           // QuickBooks refuses to deactivate a job that still has an open balance. Retrying will not change that.
           throw new QboUserError(`QuickBooks would not make "${displayName}" inactive (${fault ?? (error as Error).message}). Collect or write off its open balance in QuickBooks, then press Sync projects again.`);
+        }
+        if (fault && !isSyncTokenConflict(error) && !transient) {
+          throw new QboUserError(`QuickBooks would not update "${displayName}" (${fault}).`);
         }
         if (isSyncTokenConflict(error)) {
           await handleSyncTokenConflict({ tenantId: params.tenantId, entityType: 'project', platformId: projectId, qboId: current.Id, db, schema, accessToken, realmId });

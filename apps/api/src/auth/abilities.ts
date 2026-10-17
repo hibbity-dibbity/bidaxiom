@@ -1,4 +1,4 @@
-import { AbilityBuilder, PureAbility } from "@casl/ability";
+import { AbilityBuilder, PureAbility, mongoQueryMatcher } from "@casl/ability";
 import type { AppActions, AppSubjects } from "@construction/shared";
 import { eq, and, or, gt, isNull, sql } from "drizzle-orm";
 import type { TenantSchema } from "../db/schema/tenant.js";
@@ -140,6 +140,7 @@ export function defineAbilitiesFor(
       break;
 
     case "org:project_manager":
+      can("manage", "Estimate"); // proposals, change orders, invoices and orders
       can("read", "Project"); // Can list all projects
       can("manage", "Project", { id: { $in: userProjectIds } }); // Can manage assigned projects
       can("manage", "Budget");
@@ -161,6 +162,8 @@ export function defineAbilitiesFor(
       break;
 
     case "org:accountant":
+      can("read", "Estimate");
+      can("update", "Estimate"); // records payments on invoices and orders
       can("read", "Project", { id: { $in: userProjectIds } });
       can("manage", "Budget");
       can("manage", "Commitment");
@@ -184,6 +187,7 @@ export function defineAbilitiesFor(
       break;
 
     case "org:estimator":
+      can("manage", "Estimate");
       can("read", "Project", { id: { $in: userProjectIds } });
       can("manage", "Bid");
       can("manage", "SubcontractorDirectory");
@@ -286,5 +290,5 @@ export function defineAbilitiesFor(
     }
   }
 
-  return build();
+  return build({ conditionsMatcher: mongoQueryMatcher as any });
 }

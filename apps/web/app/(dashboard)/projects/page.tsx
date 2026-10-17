@@ -5,12 +5,15 @@ import Link from "next/link";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 import { useQueryStates, parseAsString, parseAsInteger, parseAsStringEnum } from "nuqs";
 import { ProjectsTable } from "./components/projects-table";
 import { ProjectsFilters, type FilterState } from "./components/projects-filters";
 import { PageHeader } from "@/components/shared/page-header";
 
 export default function ProjectsPage() {
+  const { orgRole } = useAuth();
+  const canCreate = !orgRole || orgRole === "org:admin" || orgRole === "org:project_manager";
   // Set up filter state using nuqs
   const [filters, setFilters] = useQueryStates({
     search: parseAsString,
@@ -61,12 +64,14 @@ export default function ProjectsPage() {
         title="Projects"
         description="Your jobs from opportunity through closeout"
         actions={
-          <Button asChild>
-            <Link href="/projects/new">
-              <Plus className="mr-2 h-4 w-4" />
-              New Project
-            </Link>
-          </Button>
+          canCreate ? (
+            <Button asChild>
+              <Link href="/projects/new">
+                <Plus className="mr-2 h-4 w-4" />
+                New Project
+              </Link>
+            </Button>
+          ) : undefined
         }
       />
 

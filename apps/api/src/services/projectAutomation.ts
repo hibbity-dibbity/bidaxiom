@@ -166,6 +166,26 @@ export async function onOrderIssued(tenant: Tenant, projectId: string) {
   await suggestActive(tenant, projectId, "an order was issued to a vendor");
 }
 
+/** The customer declined a proposal: ask whether the whole project is lost. Change orders only record the decline. */
+export async function onProposalDeclined(tenant: Tenant, estimateId: string, signerName: string, reason: string | null) {
+  const { db, schema } = tenant;
+  const [e] = await db.select({ projectId: schema.estimates.projectId, kind: schema.estimates.kind, revision: schema.estimates.revision }).from(schema.estimates).where(eq(schema.estimates.id, estimateId)).limit(1);
+  if (!e || e.kind === "change_order") return;
+  const project = await projectInfo(tenant, e.projectId);
+  if (!project || idx(project.phase) >= ACTIVE_IDX || project.phase === "lost") return;
+  await raisePrompt(tenant, {
+    projectId: e.projectId,
+    kind: "proposal_declined",
+    dedupeKey: `declined:${estimateId}`,
+    title: `${label(project)}: proposal declined`,
+    body: `${signerName} declined the proposal${reason ? ` ("${reason}")` : ""}. Revise and resend it, or mark the project Lost.`,
+    actions: [
+      { kind: "phase", label: "Mark Lost", phase: "lost" },
+      { kind: "dismiss", label: "I will revise it" },
+    ],
+  });
+}
+
 /** Ask once whether to mark an Awarded project Active. */
 async function suggestActive(tenant: Tenant, projectId: string, why: string) {
   const project = await projectInfo(tenant, projectId);

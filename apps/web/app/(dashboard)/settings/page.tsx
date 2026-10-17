@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useAuth } from "@/lib/auth-context";
 import { User, Users, Building2, Plug, KeyRound, Activity, Trash2, FileText, LayoutTemplate, ScrollText } from "lucide-react";
 
 /**
@@ -8,6 +9,9 @@ import { User, Users, Building2, Plug, KeyRound, Activity, Trash2, FileText, Lay
  * Routes to sub-pages for company configuration and account settings.
  */
 export default function SettingsPage() {
+  const { orgRole } = useAuth();
+  const isAdmin = !orgRole || orgRole === "org:admin";
+  const canTemplates = isAdmin || orgRole === "org:project_manager" || orgRole === "org:estimator";
   return (
     <div className="space-y-8">
       <div>
@@ -31,6 +35,7 @@ export default function SettingsPage() {
           </p>
         </Link>
 
+        {isAdmin && (
         <Link
           href="/settings/members"
           className="bg-card p-6 hover:bg-muted/50 transition-colors"
@@ -43,7 +48,9 @@ export default function SettingsPage() {
             Invite and manage team members, assign roles
           </p>
         </Link>
+        )}
 
+        {isAdmin && (
         <Link
           href="/settings/sign-in"
           className="bg-card p-6 hover:bg-muted/50 transition-colors"
@@ -56,7 +63,9 @@ export default function SettingsPage() {
             Let your team sign in with Microsoft
           </p>
         </Link>
+        )}
 
+        {isAdmin && (
         <Link
           href="/settings/company"
           className="bg-card p-6 hover:bg-muted/50 transition-colors"
@@ -69,7 +78,9 @@ export default function SettingsPage() {
             Configure company type and trade specialties
           </p>
         </Link>
+        )}
 
+        {isAdmin && (
         <Link
           href="/settings/integrations"
           className="bg-card p-6 hover:bg-muted/50 transition-colors"
@@ -82,7 +93,9 @@ export default function SettingsPage() {
             Connect external services like QuickBooks Online
           </p>
         </Link>
+        )}
 
+        {isAdmin && (
         <Link
           href="/settings/activity"
           className="bg-card p-6 hover:bg-muted/50 transition-colors"
@@ -95,7 +108,9 @@ export default function SettingsPage() {
             View recent activity across your organization
           </p>
         </Link>
+        )}
 
+        {isAdmin && (
         <Link
           href="/settings/deleted-projects"
           className="bg-card p-6 hover:bg-muted/50 transition-colors"
@@ -108,7 +123,9 @@ export default function SettingsPage() {
             Recover projects removed within the last 30 days
           </p>
         </Link>
+        )}
 
+        {isAdmin && (
         <Link
           href="/settings/document-naming"
           className="bg-card p-6 hover:bg-muted/50 transition-colors"
@@ -121,7 +138,9 @@ export default function SettingsPage() {
             Configure how generated PDFs are named with custom templates
           </p>
         </Link>
+        )}
 
+        {isAdmin && (
         <Link
           href="/settings/proposal-terms"
           className="bg-card p-6 hover:bg-muted/50 transition-colors"
@@ -134,7 +153,9 @@ export default function SettingsPage() {
             Master terms and conditions added to every proposal you send
           </p>
         </Link>
+        )}
 
+        {isAdmin && (
         <Link
           href="/settings/change-order-terms"
           className="bg-card p-6 hover:bg-muted/50 transition-colors"
@@ -147,7 +168,9 @@ export default function SettingsPage() {
             The extra work authorization wording printed on every change order you send
           </p>
         </Link>
+        )}
 
+        {canTemplates && (
         <Link
           href="/settings/proposal-templates"
           className="bg-card p-6 hover:bg-muted/50 transition-colors"
@@ -160,6 +183,7 @@ export default function SettingsPage() {
             Reusable groups of lines (slab, metal building and its add-ons, insulation) for proposals and change orders, personal or shared
           </p>
         </Link>
+        )}
       </div>
     </div>
   );

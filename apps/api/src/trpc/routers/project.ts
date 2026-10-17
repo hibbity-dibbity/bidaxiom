@@ -1252,6 +1252,8 @@ export const projectRouter = router({
         },
       });
 
+      await queueProjectSyncOnChange(ctx.tenant, input.projectId); // inactivates the QuickBooks job
+
       return { success: true };
     }),
 
@@ -1287,6 +1289,8 @@ export const projectRouter = router({
           after: { restored: true, name: project.name },
         },
       });
+
+      await queueProjectSyncOnChange(ctx.tenant, input.projectId);
 
       return { success: true };
     }),

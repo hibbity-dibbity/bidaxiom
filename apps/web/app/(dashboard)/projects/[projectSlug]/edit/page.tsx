@@ -30,7 +30,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { ChevronRight, Loader2, ExternalLink } from "lucide-react";
-import { getCustomerDisplayName } from "@construction/shared";
+import { getCustomerDisplayName, US_STATES } from "@construction/shared";
 
 // Edit form schema: omit 'id' so form values don't include it
 // We pass id separately in the mutation
@@ -39,6 +39,14 @@ type EditFormValues = z.infer<typeof editFormSchema>;
 
 interface EditProjectPageProps {
   params: { projectSlug: string };
+}
+
+/** Stored states may be a full name or lowercase; the dropdown only knows two-letter codes. */
+function normalizeState(raw: string | null | undefined): string {
+  const v = (raw ?? "").trim();
+  if (!v) return "";
+  const hit = US_STATES.find((st) => st.abbr.toLowerCase() === v.toLowerCase() || (st as any).name?.toLowerCase() === v.toLowerCase());
+  return hit ? hit.abbr : v.toUpperCase();
 }
 
 export default function EditProjectPage({ params }: EditProjectPageProps) {
@@ -104,7 +112,7 @@ export default function EditProjectPage({ params }: EditProjectPageProps) {
           street1: project.street1 ?? "",
           street2: project.street2 ?? "",
           city: project.city ?? "",
-          state: project.state ?? "",
+          state: normalizeState(project.state),
           zipCode: project.zip ?? "",
         },
       });
@@ -188,7 +196,10 @@ export default function EditProjectPage({ params }: EditProjectPageProps) {
       if (form.formState.errors.jobNumber || duplicateProject) return;
     }
 
-    updateMutation.mutate({ id: project.id, ...values });
+    // Status is deliberately not sent: closing, reopening and holding go through the project's own status controls,
+    // so an edit can never reopen a closed project.
+    const { status: _status, ...rest } = values;
+    updateMutation.mutate({ id: project.id, ...rest });
   };
 
   // Loading state
@@ -271,6 +282,9 @@ export default function EditProjectPage({ params }: EditProjectPageProps) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
+                          {project.customerId && !customers.some((c) => c.id === project.customerId) && (
+                            <SelectItem value={project.customerId}>{project.customer ? getCustomerDisplayName(project.customer as any) : "Current customer"}</SelectItem>
+                          )}
                           {customers.map((customer) => (
                             <SelectItem key={customer.id} value={customer.id}>
                               {getCustomerDisplayName(customer)}
@@ -323,33 +337,6 @@ export default function EditProjectPage({ params }: EditProjectPageProps) {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="status"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Status</FormLabel>
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select status" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="active">Active</SelectItem>
-                            <SelectItem value="on_hold">On Hold</SelectItem>
-                            <SelectItem value="completed">Completed</SelectItem>
-                            <SelectItem value="archived">Archived</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
                   <FormField
                     control={form.control}
                     name="projectType"

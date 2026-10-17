@@ -43,7 +43,9 @@ export function QboOrderSyncCard() {
         const next = { ...cur };
         for (const s of SLOTS) {
           if (!next[s.key]?.id) {
-            const hit = rows.find((r) => s.guess.test(r.name) && (s.key !== "labor" || /cost of goods/i.test(r.type) || /cogs/i.test(r.name)) ) ?? rows.find((r) => s.guess.test(r.name));
+            // Prefer a Cost of Goods Sold account whose name fits the slot, then any account that fits.
+            const cogs = rows.filter((r) => /cost of goods/i.test(r.type));
+            const hit = cogs.find((r) => s.guess.test(r.name)) ?? rows.find((r) => s.guess.test(r.name));
             if (hit) next[s.key] = { id: hit.id, name: hit.name };
           }
         }

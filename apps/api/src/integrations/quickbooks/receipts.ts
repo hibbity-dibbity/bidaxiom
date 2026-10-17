@@ -2,8 +2,7 @@ import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { AuditAction, invoiceStatusAfterReceipts } from '@construction/shared';
 import { TRPCError } from '@trpc/server';
 import { qboQueryRows } from './client.js';
-import { refreshQboToken } from './oauth.js';
-import { encryptToken } from './crypto.js';
+import { getFreshAccess } from './access.js';
 import { createAuditLog } from '../../audit/logger.js';
 import { onInvoicesChanged, resolvePrompts } from '../../services/projectAutomation.js';
 import { db as publicDb, createTenantDb } from '../../db/client.js';
@@ -35,22 +34,7 @@ export async function getQboAccess(t: Tenant): Promise<{ accessToken: string; re
   const { db, schema } = t;
   const [conn] = await db.select().from(schema.qboConnections).where(eq(schema.qboConnections.status, 'active')).limit(1);
   if (!conn) return null;
-  let token: string | null = conn.accessToken;
-  if (!token || new Date(conn.tokenExpiresAt) <= new Date(Date.now() + 60_000)) {
-    const fresh = await refreshQboToken(conn.encryptedRefreshToken);
-    await db
-      .update(schema.qboConnections)
-      .set({
-        accessToken: fresh.accessToken,
-        encryptedRefreshToken: encryptToken(fresh.refreshToken),
-        tokenExpiresAt: fresh.tokenExpiresAt,
-        refreshTokenExpiresAt: fresh.refreshTokenExpiresAt,
-        updatedAt: new Date(),
-      })
-      .where(eq(schema.qboConnections.id, conn.id));
-    token = fresh.accessToken;
-  }
-  return { accessToken: token!, realmId: conn.realmId as string };
+  return getFreshAccess(db, schema, conn.id);
 }
 
 // ---------------------------------------------------------------------------------------------------------------

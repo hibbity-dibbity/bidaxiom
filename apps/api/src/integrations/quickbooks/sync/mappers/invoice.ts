@@ -1,14 +1,11 @@
 import type { TenantSchema } from '../../../../db/schema/tenant.js';
 import { and, eq, isNull } from 'drizzle-orm';
-import { promisifyQbo, qboQueryRows, qboQuote } from '../../client.js';
-import { syncProjectToQbo } from './project.js';
+import { promisifyQbo, qboQueryRows, qboQuote, qboIsNotFound, qboFaultText, QboUserError } from '../../client.js';
+import { syncProjectToQbo, qboTermRef } from './project.js';
 
 type MapperDb = ReturnType<typeof import('../../../../db/client.js')['createTenantDb']>['db'];
 
-const isNotFound = (err: unknown) => {
-  const f = (err as any)?.Fault?.Error?.[0];
-  return f?.code === '610' || /not found/i.test(String(f?.Message ?? ''));
-};
+const isNotFound = qboIsNotFound;
 const cents = (n: number) => Math.round(n * 100);
 
 /**
@@ -39,7 +36,9 @@ export async function syncInvoiceToQbo(params: {
 
   const [inv] = await db.select().from(schema.invoices).where(eq(schema.invoices.id, invoiceId)).limit(1);
   if (!inv) return;
-  if (inv.status === 'draft' || !(Number(inv.amount) > 0) || !inv.sentOn) return; // drafts and credits stay in BidAxiom
+  if (inv.status === 'draft' || Number(inv.amount) === 0 || !inv.sentOn) return; // drafts stay in BidAxiom
+  const credit = Number(inv.amount) < 0; // a credit goes over as a QuickBooks credit memo
+  const api = credit ? { get: 'getCreditMemo', create: 'createCreditMemo', update: 'updateCreditMemo', entity: 'CreditMemo' } : { get: 'getInvoice', create: 'createInvoice', update: 'updateInvoice', entity: 'Invoice' };
   if (settings.from && inv.sentOn < settings.from) return; // sent before the start date: handled the old way
   if (!settings.itemId) throw new Error('Choose the QuickBooks income item for invoices in Settings > Integrations first.');
 
@@ -58,15 +57,21 @@ export async function syncInvoiceToQbo(params: {
   let current: any = null;
   if (mapping) {
     try {
-      current = await promisifyQbo<any>(qboClient.getInvoice.bind(qboClient), mapping.qboId);
+      current = await promisifyQbo<any>(qboClient[api.get].bind(qboClient), mapping.qboId);
+      if (current?.status === 'Deleted') throw { Fault: { Error: [{ code: '610', Message: 'Object Not Found' }] } };
     } catch (e) {
       if (!isNotFound(e)) throw e;
+      // The bookkeeper deleted it in QuickBooks. BidAxiom is where invoices are made, so it is sent again, and the bell says so.
       await db.delete(schema.qboEntityMappings).where(eq(schema.qboEntityMappings.id, mapping.id));
+      await db
+        .insert(schema.qboSyncNotifications)
+        .values({ entityType: 'invoice', entityId: invoiceId, message: `${inv.number} was deleted in QuickBooks, so it was created there again. If it was removed on purpose, void it in BidAxiom instead.`, severity: 'warning', dismissed: false })
+        .catch(() => undefined);
     }
   }
   if (!current) {
     // An invoice with this number may already be there (a retry after a crash): link it instead of duplicating.
-    const same = await qboQueryRows<any>(accessToken, realmId, 'Invoice', `select * from Invoice where DocNumber = ${qboQuote(inv.number)}`);
+    const same = await qboQueryRows<any>(accessToken, realmId, api.entity, `select * from ${api.entity} where DocNumber = ${qboQuote(inv.number)}`);
     current = same.find((x) => x.CustomerRef?.value === job!.qboId) ?? null;
   }
 
@@ -85,19 +90,20 @@ export async function syncInvoiceToQbo(params: {
       }
     : null;
 
-  const amount = Number(inv.amount);
+  const amount = Math.abs(Number(inv.amount));
   // A combined invoice goes over with one line per original milestone, so QuickBooks shows what each amount was for.
   const parts = await db.select().from(schema.invoiceItems).where(eq(schema.invoiceItems.invoiceId, invoiceId));
   const lineItems =
     parts.length > 1
-      ? parts.sort((a, b) => a.sortOrder - b.sortOrder).map((x) => ({ amount: Number(x.amount), description: [x.sourceLabel, x.label].filter(Boolean).join(': ') }))
+      ? parts.sort((a, b) => a.sortOrder - b.sortOrder).map((x) => ({ amount: Math.abs(Number(x.amount)), description: [x.sourceLabel, x.label].filter(Boolean).join(': ') }))
       : [{ amount, description: inv.milestoneName }];
+  const term = credit ? undefined : await qboTermRef(accessToken, realmId, inv.paymentTerms);
   const body = (withTaxCode: boolean) => ({
     CustomerRef: { value: job!.qboId },
     ...(billTo && billTo.Line1 ? { BillAddr: billTo } : {}),
     DocNumber: inv.number,
     TxnDate: inv.sentOn,
-    DueDate: inv.dueOn ?? undefined,
+    ...(credit ? {} : { DueDate: inv.dueOn ?? undefined, ...(term ? { SalesTermRef: term } : {}) }),
     PrivateNote: `BidAxiom invoice ${inv.id}`,
     Line: lineItems.map((l) => ({
       Amount: l.amount,
@@ -111,12 +117,14 @@ export async function syncInvoiceToQbo(params: {
       return await fn(make(true));
     } catch (e) {
       if (/tax/i.test(JSON.stringify((e as any)?.Fault ?? e))) return fn(make(false)); // a company with sales tax switched off rejects the tax code
+      const fault = qboFaultText(e);
+      if (fault && (e as any)?.statusCode !== 429 && (e as any)?.statusCode !== 401) throw new QboUserError(`QuickBooks would not accept ${inv.number} (${fault}).`);
       throw e;
     }
   };
 
   if (!current) {
-    const created = await attempt((b) => promisifyQbo<any>(qboClient.createInvoice.bind(qboClient), b), body);
+    const created = await attempt((b) => promisifyQbo<any>(qboClient[api.create].bind(qboClient), b), body);
     await db.insert(schema.qboEntityMappings).values({
       entityType: 'invoice',
       platformId: invoiceId,
@@ -133,11 +141,11 @@ export async function syncInvoiceToQbo(params: {
 
   // Already in QuickBooks. Change it only while nothing has been paid on it and something actually differs.
   const untouched = cents(Number(current.Balance ?? current.TotalAmt)) === cents(Number(current.TotalAmt));
-  const differs = (billTo?.Line1 ? String(current.BillAddr?.Line1 ?? '') !== billTo.Line1 : false) || cents(Number(current.TotalAmt)) !== cents(amount) || (inv.dueOn ?? null) !== (current.DueDate ?? null) || inv.sentOn !== current.TxnDate;
+  const differs = (billTo?.Line1 ? String(current.BillAddr?.Line1 ?? '') !== billTo.Line1 : false) || cents(Number(current.TotalAmt)) !== cents(amount) || (!credit && (inv.dueOn ?? null) !== (current.DueDate ?? null)) || inv.sentOn !== current.TxnDate;
   let syncToken = current.SyncToken;
   if (untouched && differs) {
     const updated = await attempt(
-      (b) => promisifyQbo<any>(qboClient.updateInvoice.bind(qboClient), { Id: current.Id, SyncToken: current.SyncToken, sparse: true, ...b, CustomerRef: current.CustomerRef }),
+      (b) => promisifyQbo<any>(qboClient[api.update].bind(qboClient), { Id: current.Id, SyncToken: current.SyncToken, sparse: true, ...b, CustomerRef: current.CustomerRef }),
       body
     );
     syncToken = updated.SyncToken;

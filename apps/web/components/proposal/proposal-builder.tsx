@@ -540,10 +540,10 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
 
   return (
     <div className="space-y-6">
-      {locked && status === "submitted" && (
+      {locked && (status === "submitted" || status === "declined") && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border bg-muted px-4 py-3 text-sm">
           <div>
-            <strong>Sent to the customer and locked.</strong>{" "}
+            <strong>{status === "declined" ? "Declined by the customer." : "Sent to the customer and locked."}</strong>{" "}
             {latestRevision
               ? `A newer revision exists (Rev ${latestRevision.revision}).`
               : "To change it, create a new revision. This one stays as the record of what was sent."}
@@ -565,7 +565,7 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
           )}
         </div>
       )}
-      {locked && status !== "submitted" && (
+      {locked && status !== "submitted" && status !== "declined" && (
         <div className="rounded-md border bg-muted px-4 py-3 text-sm">
           <strong>Accepted and locked.</strong>{" "}
           {data?.estimate.acceptedAt ? `Accepted ${new Date(data.estimate.acceptedAt).toLocaleDateString()}. ` : ""}

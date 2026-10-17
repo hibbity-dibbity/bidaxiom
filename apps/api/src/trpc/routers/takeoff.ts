@@ -205,7 +205,7 @@ export const takeoffRouter = router({
       const [est] = await db.select().from(schema.estimates).where(eq(schema.estimates.id, input.estimateId)).limit(1);
       if (!est) throw new TRPCError({ code: "NOT_FOUND", message: "Proposal not found" });
       if (est.projectId !== row.projectId) throw new TRPCError({ code: "BAD_REQUEST", message: "The proposal belongs to a different project." });
-      if (["submitted", "accepted", "under_contract"].includes(est.status)) {
+      if (["submitted", "declined", "accepted", "under_contract"].includes(est.status)) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "That proposal is sent or accepted and locked. Add the materials to a draft or revision." });
       }
       const lines = compute(row.kind as "concrete" | "metal_building", row.inputs, row.qtyOverrides, row.costOverrides).lines.filter((l) => !l.info && l.quantity > 0);

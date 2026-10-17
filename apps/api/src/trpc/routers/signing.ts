@@ -12,6 +12,7 @@ import { db as publicDb } from "../../db/client.js";
 import { organizations, organizationMemberships, signingLinks, users } from "../../db/schema/public.js";
 import { buildTenantContext } from "../../tenant/context.js";
 import { createAuditLog } from "../../audit/logger.js";
+import { onProposalDeclined } from "../../services/projectAutomation.js";
 import { getStorageClient, getBucketName, buildStorageKey } from "../../storage/client.js";
 import { generateDownloadUrl } from "../../storage/presigned.js";
 import { renderDocumentPdf } from "../../pdf/documents.js";
@@ -241,7 +242,7 @@ export const signingRouter = router({
       return { signed: true as const, contractValue: accepted.contractValue };
     }),
 
-  /** The customer declines. The proposal stays as sent so it can be revised. */
+  /** The customer declines. The document is marked Declined and can still be revised and resent. */
   decline: publicProcedure
     .input(z.object({ token: z.string().min(20).max(100), signerName: z.string().trim().min(2).max(200), reason: z.string().trim().max(2000).optional() }))
     .mutation(async ({ ctx, input }) => {
@@ -258,11 +259,25 @@ export const signingRouter = router({
         estimateId: link.estimateId, outcome: "declined", signerName: input.signerName,
         signerEmail: link.recipientEmail?.split(",")[0]?.trim() || null, declineReason: input.reason || null, ip: ctx.ip ?? null,
       });
+      // Show the decline in BidAxiom: the document becomes Declined (still revisable), and the project team is prompted.
+      await db.update(schema.estimates).set({ status: "declined", updatedAt: new Date() }).where(and(eq(schema.estimates.id, link.estimateId), eq(schema.estimates.status, "submitted")));
+      await createAuditLog(db, schema, {
+        entityType: "Estimate", entityId: link.estimateId, action: AuditAction.UPDATE, actorId: `signer:${link.recipientEmail?.split(",")[0]?.trim() || input.signerName}`,
+        changes: { before: { status: "submitted" }, after: { status: "declined", signer: input.signerName, reason: input.reason ?? null } },
+      });
+      await onProposalDeclined(tenant, link.estimateId, input.signerName, input.reason || null).catch((e) => console.error("[SIGNING] decline prompt failed:", e));
+      let what = "proposal";
+      let where = "";
+      try {
+        const doc = await buildCustomerViewData(tenant, link.createdBy, link.estimateId);
+        what = `${doc.kind === "change_order" ? "change order" : "proposal"}${doc.number ? ` ${doc.number}` : ""}`;
+        where = [doc.projectNumber, doc.projectName].filter(Boolean).join(" ");
+      } catch { /* wording only */ }
       const [sender] = await publicDb.select({ email: users.email }).from(users).where(eq(users.id, link.createdBy));
       if (sender?.email) {
         sendDocumentMail({
-          fromName: "BidAxiom", to: [sender.email], subject: `Declined by ${input.signerName}`,
-          text: `${input.signerName} declined the proposal you sent${input.reason ? `.\n\nReason: ${input.reason}` : "."}\n\nYou can create a revision and send it again.`,
+          fromName: "BidAxiom", to: [sender.email], subject: `Declined by ${input.signerName}: ${what}${where ? ` - ${where}` : ""}`,
+          text: `${input.signerName} declined the ${what}${where ? ` for ${where}` : ""}${input.reason ? `.\n\nReason: ${input.reason}` : "."}\n\nIt now shows as Declined in BidAxiom. Open it to create a revision and send it again${what.startsWith("proposal") ? ", or mark the project Lost" : ""}.`,
         }).catch((e) => console.error("[SIGNING] decline notice failed:", e));
       }
       return { declined: true as const };

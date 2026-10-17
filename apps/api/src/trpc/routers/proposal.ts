@@ -72,10 +72,10 @@ const saveContentSchema = z.object({
 });
 
 /** Sent, accepted and under-contract proposals cannot be edited. Changes after sending go through a revision. */
-const LOCKED_STATUSES = ["submitted", "accepted", "under_contract"];
+const LOCKED_STATUSES = ["submitted", "declined", "accepted", "under_contract"];
 
 function lockedMessage(status: string): string {
-  return status === "submitted"
+  return status === "submitted" || status === "declined"
     ? "This proposal has been sent to the customer and is locked. Create a revision to make changes."
     : "This proposal is accepted and locked. Use a change order for scope changes.";
 }
@@ -305,7 +305,7 @@ async function cloneProposal(
 
 /** Why a proposal cannot be sent yet, or null when it can. */
 function sendBlocker(c: Awaited<ReturnType<typeof loadComputed>>): string | null {
-  if (c.estimate.status === "submitted") return "This proposal has already been sent. Create a revision to change and resend it.";
+  if (c.estimate.status === "submitted" || c.estimate.status === "declined") return "This proposal has already been sent. Create a revision to change and resend it.";
   if (LOCKED_STATUSES.includes(c.estimate.status)) return "This proposal is already accepted.";
   const baseParents = c.lines.filter((l) => !l.parentId && !l.isOptional);
   const isCo = c.estimate.kind === "change_order";
@@ -495,7 +495,7 @@ export async function acceptProposal(tenant: Tenant, userId: string, estimateId:
   if (c.estimate.status === "draft") {
     throw new TRPCError({ code: "BAD_REQUEST", message: "Send the proposal to the customer before marking it accepted." });
   }
-  if (c.estimate.status !== "submitted") {
+  if (c.estimate.status !== "submitted" && c.estimate.status !== "declined") {
     throw new TRPCError({ code: "BAD_REQUEST", message: "This proposal is already accepted." });
   }
   const isCO = c.estimate.kind === "change_order";
