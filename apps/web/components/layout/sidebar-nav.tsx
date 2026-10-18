@@ -22,11 +22,11 @@ import {
 const mainNav = [
   { href: "/", label: "Dashboard", icon: Home },
   { href: "/projects", label: "Projects", icon: FolderKanban },
+  { href: "/customers", label: "Customers", icon: Users, roles: ["org:admin", "org:project_manager", "org:accountant", "org:estimator"] },
+  { href: "/subcontractors", label: "Subs & Vendors", icon: HardHat },
   { href: "/invoices", label: "Invoices", icon: FileText, roles: ["org:admin", "org:project_manager", "org:accountant", "org:estimator"] },
   { href: "/orders", label: "PO & WO", icon: ShoppingCart, roles: ["org:admin", "org:project_manager", "org:accountant", "org:estimator"] },
-  { href: "/customers", label: "Customers", icon: Users, roles: ["org:admin", "org:project_manager", "org:accountant", "org:estimator"] },
   { href: "/outstanding", label: "Outstanding", icon: Receipt, roles: ["org:admin", "org:project_manager", "org:accountant"] },
-  { href: "/subcontractors", label: "Subs & Vendors", icon: HardHat },
   { href: "/settings", label: "Settings", icon: Settings },
 ] as Array<{ href: string; label: string; icon: any; roles?: string[] }>;
 
