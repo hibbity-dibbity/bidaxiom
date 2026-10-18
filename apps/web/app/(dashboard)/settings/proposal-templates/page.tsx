@@ -166,7 +166,7 @@ export default function ProposalTemplatesPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Proposal templates</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Proposal templates</h1>
           <p className="max-w-2xl text-muted-foreground">
             A template is a ready-made group of lines: a parent, hidden labor and material lines to build your costs in, and name-only lines that print as inclusions and exclusions. Use Add from template in a proposal or change order to stack as many as the job needs. An add-on is a smaller template, such as a roll-up door, that goes inside a group as extra child lines. Save any group from the builder; keep it to yourself or share it with everyone.
           </p>

@@ -54,7 +54,7 @@ export default function IntegrationsPage() {
     return (
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Integrations</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Integrations</h1>
           <p className="text-muted-foreground">
             Connect QuickBooks to your account
           </p>
@@ -73,7 +73,7 @@ export default function IntegrationsPage() {
     return (
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Integrations</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Integrations</h1>
           <p className="text-muted-foreground">
             Connect QuickBooks to your account
           </p>
@@ -92,7 +92,7 @@ export default function IntegrationsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Integrations</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Integrations</h1>
         <p className="text-muted-foreground">
           Connect QuickBooks to your account
         </p>

@@ -24,7 +24,7 @@ export default function ActivityLogPage() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Activity Log</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Activity Log</h1>
         <p className="text-muted-foreground">
           Recent activity across your organization
         </p>

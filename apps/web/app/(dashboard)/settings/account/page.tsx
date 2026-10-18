@@ -155,7 +155,7 @@ export default function AccountSettingsPage() {
     <div className="space-y-8">
       {/* Page header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Account Settings</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Account Settings</h1>
         <p className="text-muted-foreground">
           Manage your profile, password, two-factor authentication, and appearance
         </p>

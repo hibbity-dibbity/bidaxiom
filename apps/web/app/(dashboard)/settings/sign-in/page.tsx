@@ -39,7 +39,7 @@ export default function SignInSettingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Single sign-on</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Single sign-on</h1>
         <p className="text-muted-foreground">Let your team sign in with your company's own identity provider (Microsoft, Google, Okta and others) instead of a separate BidAxiom password.</p>
       </div>
 

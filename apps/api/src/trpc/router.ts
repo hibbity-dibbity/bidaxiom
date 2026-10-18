@@ -18,6 +18,7 @@ import { reportExportRouter } from "./routers/report-export.js";
 import { reportScheduleRouter } from "./routers/report-schedule.js";
 import { calendarRouter } from "./routers/calendar.js";
 import { organizationRouter } from "./routers/organization.js";
+import { settingsSummaryRouter } from "./routers/settingsSummary.js";
 import { searchRouter } from "./routers/search.js";
 import { estimatesRouter } from "./routers/estimates.js";
 import { proposalRouter } from "./routers/proposal.js";
@@ -52,6 +53,7 @@ export const appRouter = router({
   dashboard: dashboardRouter,
   user: userRouter,
   organization: organizationRouter,
+  settings: settingsSummaryRouter,
   project: projectRouter,
   document: documentRouter,
   pdf: pdfRouter,

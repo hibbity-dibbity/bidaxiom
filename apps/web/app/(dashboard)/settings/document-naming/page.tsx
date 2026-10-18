@@ -184,7 +184,7 @@ export default function DocumentNamingPage() {
     return (
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Document Naming</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Document Naming</h1>
           <p className="text-muted-foreground">
             Configure how downloaded and emailed PDFs are named. Leave a box blank to use the default.
           </p>
@@ -201,7 +201,7 @@ export default function DocumentNamingPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Document Naming</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Document Naming</h1>
         <p className="text-muted-foreground">
           Configure how downloaded and emailed PDFs are named. Leave a box blank to use the default.
         </p>
