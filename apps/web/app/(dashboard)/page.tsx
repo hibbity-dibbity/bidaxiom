@@ -4,16 +4,14 @@ import { useAuth } from "@/lib/auth-context";
 import { useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { MyActiveProjects, MyOpenBids, MyTodo } from "@/components/dashboard/user-widgets";
-import { TotalActiveProjects, CompanyOpenBids, BidOpportunities, RevenueInProgress, Backlog, EstimatingPipeline } from "@/components/dashboard/company-widgets";
+import { DashboardView } from "@/components/dashboard/dashboard-view";
 
 /**
  * Company dashboard landing page.
  * Uses custom auth context instead of Clerk hooks.
  */
 export default function DashboardPage() {
-  const { orgId, orgName } = useAuth();
-  const companyName = orgName || "Your Company";
+  const { orgId } = useAuth();
   const [isActivating, setIsActivating] = useState(false);
 
   // Fetch organizations for safety net
@@ -49,43 +47,5 @@ export default function DashboardPage() {
     }
   }, [orgId, organizations, isActivating]);
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">Welcome to {companyName}</p>
-      </div>
-
-      {/* User-Level Widgets - "My" section */}
-      <div>
-        <h2 className="text-lg font-semibold mb-3">My Overview</h2>
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          <MyActiveProjects />
-          <MyOpenBids />
-          <MyTodo />
-        </div>
-      </div>
-
-      {/* Company-Level Widgets - KPI section */}
-      <div>
-        <h2 className="text-lg font-semibold mb-3">Company Overview</h2>
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-          <TotalActiveProjects />
-          <CompanyOpenBids />
-          <BidOpportunities />
-        </div>
-      </div>
-
-      {/* Financial Widgets */}
-      <div>
-        <h2 className="text-lg font-semibold mb-3">Financial Summary</h2>
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          <RevenueInProgress />
-          <Backlog />
-          <EstimatingPipeline />
-        </div>
-      </div>
-    </div>
-  );
+  return <DashboardView />;
 }
