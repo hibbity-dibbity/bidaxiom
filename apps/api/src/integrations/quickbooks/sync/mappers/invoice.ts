@@ -1,5 +1,5 @@
 import type { TenantSchema } from '../../../../db/schema/tenant.js';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, isNull, like } from 'drizzle-orm';
 import { promisifyQbo, qboQueryRows, qboQuote, qboIsNotFound, qboFaultText, QboUserError } from '../../client.js';
 import { syncProjectToQbo, qboTermRef } from './project.js';
 import { splitInvoiceAmount, qboTaxCodeRate } from '../invoiceTax.js';
@@ -155,6 +155,13 @@ export async function syncInvoiceToQbo(params: {
         const msg = `${inv.number}: the proposal charges ${proposalRate}% sales tax but the QuickBooks tax code you chose is ${qboRate}%. The tax amount was sent as BidAxiom worked it out, so QuickBooks shows a rate that does not match the tax. Choose a code with ${proposalRate}% in Settings > Integrations (or add one in QuickBooks).`;
         const dup = await db.select({ id: schema.qboSyncNotifications.id }).from(schema.qboSyncNotifications).where(and(eq(schema.qboSyncNotifications.entityId, invoiceId), eq(schema.qboSyncNotifications.message, msg), eq(schema.qboSyncNotifications.dismissed, false))).limit(1);
         if (dup.length === 0) await db.insert(schema.qboSyncNotifications).values({ entityType: 'invoice', entityId: invoiceId, message: msg, severity: 'warning', dismissed: false }).catch(() => undefined);
+      } else if (qboRate != null) {
+        // The code now matches the proposal: the earlier rate warning on this invoice is settled.
+        await db
+          .update(schema.qboSyncNotifications)
+          .set({ dismissed: true })
+          .where(and(eq(schema.qboSyncNotifications.entityId, invoiceId), eq(schema.qboSyncNotifications.dismissed, false), like(schema.qboSyncNotifications.message, '%the QuickBooks tax code you chose is%')))
+          .catch(() => undefined);
       }
     }
     if (totalTax <= 0 || qbo?.TotalAmt == null || cents(Number(qbo.TotalAmt)) === cents(amount)) return;
@@ -183,7 +190,7 @@ export async function syncInvoiceToQbo(params: {
 
   // Already in QuickBooks. Change it only while nothing has been paid on it and something actually differs.
   const untouched = cents(Number(current.Balance ?? current.TotalAmt)) === cents(Number(current.TotalAmt));
-  const differs = (billTo?.Line1 ? String(current.BillAddr?.Line1 ?? '') !== billTo.Line1 : false) || cents(Number(current.TotalAmt)) !== cents(amount) || (!credit && (inv.dueOn ?? null) !== (current.DueDate ?? null)) || inv.sentOn !== current.TxnDate;
+  const differs = (billTo?.Line1 ? String(current.BillAddr?.Line1 ?? '') !== billTo.Line1 : false) || cents(Number(current.TotalAmt)) !== cents(amount) || (!credit && (inv.dueOn ?? null) !== (current.DueDate ?? null)) || inv.sentOn !== current.TxnDate || (totalTax > 0 && !!settings.taxCodeId && String(current.TxnTaxDetail?.TxnTaxCodeRef?.value ?? '') !== String(settings.taxCodeId));
   let syncToken = current.SyncToken;
   if (untouched && differs) {
     const updated = await attempt(

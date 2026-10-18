@@ -640,7 +640,7 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <SaveIndicator state={saveState} dirty={dirty} />
+          {conflict ? <span className="text-sm text-financial-negative">Not saved</span> : <SaveIndicator state={saveState} dirty={dirty} />}
           <DocumentActions
             kind="proposal"
             id={estimateId}

@@ -147,6 +147,9 @@ export function QboSyncStatus({ syncStates }: QboSyncStatusProps) {
             <DropdownMenuItem onClick={() => handleSync("order")}>
               Sync Purchase &amp; Work Orders
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleSync("bill")}>
+              Read bills &amp; expenses
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => cancelMutation.mutate()} disabled={cancelMutation.isPending}>
               Stop and reset status
             </DropdownMenuItem>

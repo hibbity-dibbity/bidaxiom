@@ -213,14 +213,17 @@ export function startQboSyncWorker(): Worker {
             .where(eq(schema.qboSyncState.id, syncState.id));
         }
 
-        // Create sync failure notification
-        await db.insert(schema.qboSyncNotifications).values({
-          entityType,
-          entityId: platformId || qboId || 'unknown',
-          message: err.name === 'UnrecoverableError' ? err.message : /status code 429|rate limit|throttl/i.test(err.message) ? 'QuickBooks was busy and asked us to slow down, so this was not sent. Press Sync again in a minute.' : `Sync failed after ${job.attemptsMade} attempts: ${err.message}`,
-          severity: 'error',
-          dismissed: false,
-        });
+        // Create sync failure notification (one per record and message: a repeat sync that fails the same way adds nothing)
+        const failMessage = err.name === 'UnrecoverableError' ? err.message : /status code 429|rate limit|throttl/i.test(err.message) ? 'QuickBooks was busy and asked us to slow down, so this was not sent. Press Sync again in a minute.' : `Sync failed after ${job.attemptsMade} attempts: ${err.message}`;
+        const failEntity = platformId || qboId || 'unknown';
+        const already = await db
+          .select({ id: schema.qboSyncNotifications.id })
+          .from(schema.qboSyncNotifications)
+          .where(and(eq(schema.qboSyncNotifications.entityId, failEntity), eq(schema.qboSyncNotifications.message, failMessage), eq(schema.qboSyncNotifications.dismissed, false)))
+          .limit(1);
+        if (already.length === 0) {
+          await db.insert(schema.qboSyncNotifications).values({ entityType, entityId: failEntity, message: failMessage, severity: 'error', dismissed: false });
+        }
 
         console.log(`Created failure notification for ${entityType} sync failure`);
       } catch (notificationError) {
