@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { TrialForm } from "@/components/TrialForm";
+import { PRICE_PER_MONTH } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: "Start your free trial",
@@ -23,6 +24,7 @@ export default function FreeTrialPage() {
               <li style={{ display: "flex", gap: 10 }}><span style={{ color: "#0e7490", fontWeight: 700 }}>&#10003;</span>Connect QuickBooks Online&apos;s sandbox to test safely</li>
               <li style={{ display: "flex", gap: 10 }}><span style={{ color: "#0e7490", fontWeight: 700 }}>&#10003;</span>Step-by-step guides in the knowledge base</li>
               <li style={{ display: "flex", gap: 10 }}><span style={{ color: "#0e7490", fontWeight: 700 }}>&#10003;</span>Switches off by itself after 30 days; nothing to cancel</li>
+              <li style={{ display: "flex", gap: 10 }}><span style={{ color: "#0e7490", fontWeight: 700 }}>&#10003;</span>If you keep it: ${PRICE_PER_MONTH} a month per company, unlimited users</li>
             </ul>
           </div>
           <div style={{ flex: "1 1 380px", maxWidth: 520, background: "#fff", border: "1px solid #e3e8ee", borderRadius: 14, padding: 28 }}>

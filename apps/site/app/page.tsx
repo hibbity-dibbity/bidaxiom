@@ -2,6 +2,7 @@ import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { ARTICLES } from "@/lib/articles";
+import { PRICE_PER_MONTH } from "@/lib/config";
 
 const STAGES = [
   ["Opportunity", "Track the lead and the customer from first contact."],
@@ -143,6 +144,39 @@ export default function Home() {
             ].map(([t, b]) => (
               <div className="feat" key={t}><h3 style={{ marginTop: 0 }}>{t}</h3><p>{b}</p></div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="pricing" style={{ padding: "80px 0" }}>
+        <div className="wrap" style={{ display: "flex", flexWrap: "wrap", gap: 48, alignItems: "center" }}>
+          <div style={{ flex: "1 1 360px", minWidth: 0 }}>
+            <div className="kick">Pricing</div>
+            <h2 className="d h2">One price per company. Everyone on your team included.</h2>
+            <p style={{ margin: "16px 0 0", fontSize: 17, lineHeight: 1.6, color: "#4a5b6a" }}>
+              No per-user fees, no feature tiers and no setup charge. Start with 30 days free, then one flat monthly price whether you have two people or twenty.
+            </p>
+          </div>
+          <div style={{ flex: "1 1 380px", maxWidth: 480, border: "2px solid #0e7490", borderRadius: 16, padding: 32, background: "#fff" }}>
+            <div className="d" style={{ fontSize: 18, fontWeight: 600, color: "#0e7490" }}>BidAxiom</div>
+            <div style={{ marginTop: 10, display: "flex", alignItems: "baseline", gap: 8 }}>
+              <span className="d" style={{ fontSize: 56, fontWeight: 700, letterSpacing: "-.03em" }}>${PRICE_PER_MONTH}</span>
+              <span style={{ fontSize: 17, color: "#5b6b7b" }}>per month, per company</span>
+            </div>
+            <ul style={{ margin: "22px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 10, fontSize: 16 }}>
+              {[
+                "Unlimited team members",
+                "Proposals, change orders, invoicing and job costs",
+                "QuickBooks Online sync",
+                "Single sign-on, authenticator apps and passkeys",
+                "Owner and project manager dashboards",
+                "Email support and the full knowledge base",
+              ].map((t) => (
+                <li key={t} style={{ display: "flex", gap: 10 }}><span style={{ color: "#0e7490", fontWeight: 700 }}>&#10003;</span>{t}</li>
+              ))}
+            </ul>
+            <Link className="btn p" href="/free-trial" style={{ marginTop: 26, display: "block", textAlign: "center", fontSize: 16 }}>Start your 30-day free trial</Link>
+            <p style={{ margin: "12px 0 0", fontSize: 13, color: "#5b6b7b", textAlign: "center" }}>No credit card to start. We email you before the trial ends.</p>
           </div>
         </div>
       </section>

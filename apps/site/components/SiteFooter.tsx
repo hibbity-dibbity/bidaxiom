@@ -12,7 +12,7 @@ export function SiteFooter() {
             <p style={{ margin: "10px 0 0", fontSize: 14, lineHeight: 1.55 }}>Bids, proposals, change orders, invoicing and job costs for contractors.</p>
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 56 }}>
-            <div><p className="fh">Product</p><Link className="fl" href="/#features">Features</Link><Link className="fl" href="/#quickbooks">QuickBooks</Link><Link className="fl" href="/#security">Security</Link></div>
+            <div><p className="fh">Product</p><Link className="fl" href="/#features">Features</Link><Link className="fl" href="/#quickbooks">QuickBooks</Link><Link className="fl" href="/#security">Security</Link><Link className="fl" href="/#pricing">Pricing</Link></div>
             <div><p className="fh">Learn</p><Link className="fl" href="/knowledge-base">Knowledge base</Link><Link className="fl" href="/knowledge-base/connect-quickbooks-online">Connect QuickBooks</Link><Link className="fl" href="/knowledge-base/set-up-single-sign-on">Set up SSO</Link></div>
             <div><p className="fh">Account</p><Link className="fl" href="/free-trial">Start free trial</Link><a className="fl" href={`${APP_URL}/sign-in`}>Sign in</a></div>
           </div>
