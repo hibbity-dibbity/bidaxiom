@@ -4,7 +4,11 @@
 **/.turbo
 **/*.log
 **/*.tsbuildinfo
-.git
+.git/objects
+.git/logs
+.git/hooks
+.git/lfs
+.git/index
 .planning
 .claude
 **/.env

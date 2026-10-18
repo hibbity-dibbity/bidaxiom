@@ -13,6 +13,14 @@ import {
 } from "@/components/ui/sidebar";
 import { SidebarNav } from "./sidebar-nav";
 
+const builtAt = (() => {
+  try {
+    return new Date(process.env.NEXT_PUBLIC_BUILD_TIME ?? "").toLocaleString("en-US", { timeZone: "America/Chicago", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  } catch {
+    return "";
+  }
+})();
+
 const STORAGE_KEY = "sidebar-collapsed";
 
 /**
@@ -88,7 +96,7 @@ export function AppSidebar() {
 
       <SidebarFooter className="px-4 py-2">
         <p className="select-text text-[10px] leading-none text-muted-foreground/60" title="Build running now">
-          Build {process.env.NEXT_PUBLIC_BUILD_ID || "dev"}
+          Build {process.env.NEXT_PUBLIC_BUILD_COMMIT || "dev"} · built {builtAt}
         </p>
       </SidebarFooter>
     </ShadcnSidebar>

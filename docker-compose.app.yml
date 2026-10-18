@@ -74,7 +74,6 @@ services:
       # Built into the browser bundle, so it must be the address your browser uses.
       args:
         NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:3001}
-        BUILD_ID: ${BUILD_ID:-dev}
     restart: unless-stopped
     ports:
       - "3000:3000"
