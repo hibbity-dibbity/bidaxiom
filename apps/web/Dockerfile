@@ -9,6 +9,9 @@ ENV NEXT_TELEMETRY_DISABLED=1 \
 
 WORKDIR /app
 COPY . .
+# Shown at the bottom of the sidebar so it is easy to tell which build is running.
+ARG BUILD_ID=dev
+ENV NEXT_PUBLIC_BUILD_ID=$BUILD_ID
 # npm ci must include devDependencies (Tailwind, PostCSS, TypeScript) for the build.
 RUN npm ci \
  && npm run build --workspace=apps/web

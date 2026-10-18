@@ -54,6 +54,10 @@ try {
   git reset --hard "origin/$branch" 2>&1 | Out-Null
   if ($LASTEXITCODE -ne 0) { throw "git reset failed" }
 
+  # Build label shown in the app's sidebar: short commit and when that commit was made.
+  $short = (git rev-parse --short=7 HEAD).Trim()
+  $when = (git log -1 --format=%cd --date=format:'%b %d %H:%M').Trim()
+  $env:BUILD_ID = "$short - $when"
   docker compose -p $project -f $Compose build api web 2>&1 | ForEach-Object { Log "build: $_" }
   if ($LASTEXITCODE -ne 0) {
     Set-Content $failedFile $remote

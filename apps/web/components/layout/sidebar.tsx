@@ -6,6 +6,7 @@ import {
   Sidebar as ShadcnSidebar,
   SidebarContent,
   SidebarHeader,
+  SidebarFooter,
   SidebarGroup,
   SidebarTrigger,
   useSidebar,
@@ -85,6 +86,11 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
+      <SidebarFooter className="px-4 py-2">
+        <p className="select-text text-[10px] leading-none text-muted-foreground/60" title="Build running now">
+          Build {process.env.NEXT_PUBLIC_BUILD_ID || "dev"}
+        </p>
+      </SidebarFooter>
     </ShadcnSidebar>
   );
 }
