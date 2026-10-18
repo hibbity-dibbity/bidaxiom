@@ -3,7 +3,7 @@ import { createServerTRPCClient } from "@/lib/trpc-server";
 import { getPlatformToken, clearPlatformCookie } from "@/lib/platform-session";
 
 const QUERIES = new Set(["me", "companies", "activity"]);
-const MUTATIONS = new Set(["createCompany", "resetSignIn", "resendSetupEmail", "setCompanyDisabled", "moveCompanyToBin", "restoreCompany", "deleteCompanyForever"]);
+const MUTATIONS = new Set(["createCompany", "resetSignIn", "resendSetupEmail", "setCompanyDisabled", "setCompanyPasscodeExempt", "setUserPasscodeExempt", "moveCompanyToBin", "restoreCompany", "deleteCompanyForever"]);
 
 /** Forwards a whitelisted operator call to the API with the operator's token. */
 export async function POST(request: Request) {

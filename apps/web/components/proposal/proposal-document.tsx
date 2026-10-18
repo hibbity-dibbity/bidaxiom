@@ -177,7 +177,7 @@ export function ProposalDocument({
           ))}
         </div>
       </section>
-    ) : (
+    ) : data.terms.sections.length === 0 ? null : (
       <section>
         <SectionHead left="Terms and conditions" right={`Master terms, version ${data.terms.version}`} />
         <div className="flex flex-col gap-2 pt-3 text-[10.5px] leading-snug text-muted-foreground">

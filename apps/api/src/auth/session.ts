@@ -14,6 +14,22 @@ export async function issueSsoSession(userId: string, organizationId: string) {
   return issueSession(userId, organizationId, { idp: true });
 }
 
+/**
+ * Has the BidAxiom operator switched the second-factor requirement off for this person, or for their company?
+ * Exempt people sign in with their password alone and are never sent to the security setup page.
+ */
+export async function isSecondFactorExempt(userId: string, organizationId?: string): Promise<boolean> {
+  const db = getDb();
+  const user = await db.query.users.findFirst({ where: eq(users.id, userId), columns: { secondFactorExempt: true } });
+  if (user?.secondFactorExempt) return true;
+  const membership = await db.query.organizationMemberships.findFirst({
+    where: organizationId ? and(eq(organizationMemberships.userId, userId), eq(organizationMemberships.organizationId, organizationId)) : eq(organizationMemberships.userId, userId),
+  });
+  if (!membership) return false;
+  const org = await db.query.organizations.findFirst({ where: eq(organizations.id, membership.organizationId), columns: { secondFactorExempt: true } });
+  return Boolean(org?.secondFactorExempt);
+}
+
 /** How many different kinds of second factor the person has (authenticator app, passkey). */
 export async function mfaMethodCount(userId: string, mfaEnabled: boolean): Promise<number> {
   const hasPasskey = await hasSecondFactor(userId, false);
@@ -25,9 +41,10 @@ export async function mfaMethodCount(userId: string, mfaEnabled: boolean): Promi
  * Admins need two different methods (so one can back up the other); a person an admin reset needs one.
  * A session that came from the company's identity provider is exempt: the provider did the second step.
  */
-export async function computeMfaGate(userId: string, orgRole: string | null | undefined, idp: boolean): Promise<boolean> {
+export async function computeMfaGate(userId: string, orgRole: string | null | undefined, idp: boolean, organizationId?: string): Promise<boolean> {
   const user = await getDb().query.users.findFirst({ where: eq(users.id, userId) });
   if (!user) return false;
+  if (await isSecondFactorExempt(userId, organizationId)) return false;
   const methods = await mfaMethodCount(userId, user.mfaEnabled);
   if (user.requireMfaSetup && methods >= 1) {
     await getDb().update(users).set({ requireMfaSetup: false }).where(eq(users.id, userId));
@@ -81,7 +98,7 @@ export async function issueSession(userId: string, organizationId?: string, opts
   const tokenFamily = nanoid();
   const idp = opts.idp === true;
   const orgRole = membership?.role ?? "org:member";
-  const mfaGate = await computeMfaGate(user.id, orgRole, idp);
+  const mfaGate = await computeMfaGate(user.id, orgRole, idp, org?.id);
   const accessToken = await signAccessToken({ userId: user.id, orgId: org?.id ?? "", orgRole, hasMfa: true, mfaGate, idp });
   const refreshToken = await signRefreshToken({ userId: user.id, tokenFamily, hasMfa: true, idp });
   await db.insert(refreshTokens).values({

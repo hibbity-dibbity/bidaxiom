@@ -83,6 +83,8 @@ export const users = pgTable("users", {
   mfaEnabled: boolean("mfa_enabled").notNull().default(false),
   /** An admin reset this person's sign-in: they must set up a second factor before using the app. */
   requireMfaSetup: boolean("require_mfa_setup").notNull().default(false),
+  /** Set by the platform operator: this person signs in with a password alone (no authenticator or passkey step). */
+  secondFactorExempt: boolean("second_factor_exempt").notNull().default(false),
   mfaSecret: text("mfa_secret"), // Encrypted TOTP secret
   mfaBackupCodes: jsonb("mfa_backup_codes").$type<string[]>(), // Hashed backup codes
   clerkUserId: text("clerk_user_id"), // For migration tracking, nullable
@@ -109,6 +111,8 @@ export const organizations = pgTable("organizations", {
   disabledAt: timestamp("disabled_at", { withTimezone: true }),
   /** In the operator's recycle bin: locked out like a disabled company, recoverable until the retention period ends. */
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  /** Set by the platform operator: nobody in this company needs an authenticator or passkey to sign in. */
+  secondFactorExempt: boolean("second_factor_exempt").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({

@@ -16,8 +16,9 @@ type Member = {
   authenticator: boolean;
   passkeys: number;
   lastLoginAt: string | null;
+  noPasscode: boolean;
 };
-type Company = { id: string; name: string; createdAt: string; disabled: boolean; deletedAt: string | null; daysLeft: number | null; members: Member[] };
+type Company = { id: string; name: string; createdAt: string; disabled: boolean; noPasscode: boolean; deletedAt: string | null; daysLeft: number | null; members: Member[] };
 type MailResult = { email: string; emailSent: boolean; emailProblem?: string };
 
 async function rpc<T>(proc: string, input?: unknown): Promise<T> {
@@ -94,6 +95,22 @@ export default function PlatformPage() {
     try {
       const r = await rpc<MailResult>(proc, { userId });
       setNotice(mailNotice(r, proc === "resetSignIn" ? "Sign-in reset (password, authenticator and passkeys removed)." : "Done."));
+      await load();
+    } catch (err) {
+      setNotice({ ok: false, text: err instanceof Error ? err.message : "Request failed" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function setPasscodeOff(target: { kind: "company"; c: Company; exempt: boolean } | { kind: "user"; m: Member; exempt: boolean }) {
+    setBusy(true);
+    setNotice(null);
+    try {
+      if (target.kind === "company") await rpc("setCompanyPasscodeExempt", { organizationId: target.c.id, exempt: target.exempt });
+      else await rpc("setUserPasscodeExempt", { userId: target.m.userId, exempt: target.exempt });
+      const who = target.kind === "company" ? target.c.name : target.m.email;
+      setNotice({ ok: true, text: target.exempt ? `${who} no longer needs an authenticator or passkey to sign in (password only).` : `${who} needs an authenticator or passkey to sign in again.` });
       await load();
     } catch (err) {
       setNotice({ ok: false, text: err instanceof Error ? err.message : "Request failed" });
@@ -234,8 +251,12 @@ export default function PlatformPage() {
                 <div className="font-medium">
                   {c.name} <span className="ml-2 text-xs font-normal text-muted-foreground">created {new Date(c.createdAt).toLocaleDateString()}</span>
                   {c.disabled && <span className="ml-2 rounded bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">Disabled</span>}
+                  {c.noPasscode && <span className="ml-2 rounded bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">Passcodes off</span>}
                 </div>
                 <div className="flex gap-2">
+                  <Button size="sm" variant="outline" disabled={busy} onClick={() => setPasscodeOff({ kind: "company", c, exempt: !c.noPasscode })}>
+                    {c.noPasscode ? "Require passcodes" : "Turn passcodes off"}
+                  </Button>
                   <Button size="sm" variant="outline" disabled={busy} onClick={() => setDisabled(c, !c.disabled)}>
                     {c.disabled ? "Enable" : "Disable"}
                   </Button>
@@ -256,6 +277,7 @@ export default function PlatformPage() {
                     <div>
                       <div>
                         {m.name || m.email} <span className="text-muted-foreground">· {m.role}</span>
+                        {m.noPasscode && <span className="ml-2 rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">Passcodes off</span>}
                       </div>
                       <div className="text-xs text-muted-foreground">
                         {m.email} · {m.authenticator ? "authenticator ✓" : "no authenticator"} · {m.passkeys > 0 ? `${m.passkeys} passkey(s)` : "no passkey"} ·{" "}
@@ -263,6 +285,9 @@ export default function PlatformPage() {
                       </div>
                     </div>
                     <div className="flex gap-2">
+                      <Button size="sm" variant="outline" disabled={busy} onClick={() => setPasscodeOff({ kind: "user", m, exempt: !m.noPasscode })}>
+                        {m.noPasscode ? "Require passcode" : "Turn passcode off"}
+                      </Button>
                       <Button size="sm" variant="outline" disabled={busy} onClick={() => memberAction("resendSetupEmail", m.userId)}>
                         Resend setup email
                       </Button>

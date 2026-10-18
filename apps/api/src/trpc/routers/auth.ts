@@ -17,7 +17,7 @@ import { hashPassword, verifyPassword } from "../../auth/password.js";
 import { signAccessToken, signRefreshToken, verifyAccessToken, verifyRefreshToken } from "../../auth/jwt.js";
 import { generateToken, hashToken } from "../../auth/tokens.js";
 import { passwordLoginBlocked } from "../../auth/oidc/sso.js";
-import { hasSecondFactor, computeMfaGate, assertCompanyActive, COMPANY_DISABLED_MESSAGE } from "../../auth/session.js";
+import { hasSecondFactor, computeMfaGate, isSecondFactorExempt, assertCompanyActive, COMPANY_DISABLED_MESSAGE } from "../../auth/session.js";
 import { generateMfaSecret, verifyMfaToken, verifyBackupCode } from "../../auth/mfa.js";
 import {
   checkLoginRateLimit,
@@ -234,7 +234,8 @@ export const authRouter = router({
 
       // MFA check: an authenticator app and/or passkeys. A password alone never opens a session for these people.
       const hasPasskey = await hasSecondFactor(user.id, false);
-      if (user.mfaEnabled || hasPasskey) {
+      const exempt = await isSecondFactorExempt(user.id);
+      if (!exempt && (user.mfaEnabled || hasPasskey)) {
         if (!input.mfaToken) {
           // Client shows whichever second steps this person has set up
           return {
@@ -298,19 +299,19 @@ export const authRouter = router({
       const tokenFamily = nanoid();
 
       // Sign tokens
-      const mfaGate = await computeMfaGate(user.id, orgRole, false);
+      const mfaGate = await computeMfaGate(user.id, orgRole, false, orgId || undefined);
       const accessToken = await signAccessToken({
         userId: user.id,
         orgId,
         orgRole,
-        hasMfa: user.mfaEnabled,
+        hasMfa: user.mfaEnabled || exempt,
         mfaGate,
       });
 
       const refreshToken = await signRefreshToken({
         userId: user.id,
         tokenFamily,
-        hasMfa: user.mfaEnabled,
+        hasMfa: user.mfaEnabled || exempt,
       });
 
       // Store refresh token hash in database
@@ -442,7 +443,7 @@ export const authRouter = router({
       const orgRole = membership?.role || "org:member";
 
       // Stays true once the session passed a second factor; becomes true when one is set up during the session.
-      const sessionMfa = payload.hasMfa === true || (await hasSecondFactor(user.id, user.mfaEnabled));
+      const sessionMfa = payload.hasMfa === true || (await hasSecondFactor(user.id, user.mfaEnabled)) || (await isSecondFactorExempt(user.id, orgId || undefined));
 
       // Generate new token pair
       const newAccessToken = await signAccessToken({
@@ -450,7 +451,7 @@ export const authRouter = router({
         orgId,
         orgRole,
         hasMfa: sessionMfa,
-        mfaGate: await computeMfaGate(user.id, orgRole, payload.idp === true),
+        mfaGate: await computeMfaGate(user.id, orgRole, payload.idp === true, orgId || undefined),
         idp: payload.idp === true,
       });
 
@@ -974,7 +975,7 @@ export const authRouter = router({
         orgId: membership.organizationId,
         orgRole: membership.role,
         hasMfa: ctx.hasMfa === true || user.mfaEnabled,
-        mfaGate: await computeMfaGate(user.id, membership.role, ctx.idp),
+        mfaGate: await computeMfaGate(user.id, membership.role, ctx.idp, membership.organizationId),
         idp: ctx.idp,
       });
 

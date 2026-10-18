@@ -5,13 +5,8 @@ import { router } from "../trpc.js";
 import { protectedProcedure, authorizedProcedure } from "../procedures.js";
 import { requirePermission } from "../middleware/authorize.js";
 
-/** Starter sections, written once when a company opens the terms screen for the first time. */
-export const DEFAULT_TERMS_SECTIONS: Array<{ title: string; body: string }> = [
-  { title: "Payment", body: "[Your payment terms: due dates, late fees, accepted payment methods.]" },
-  { title: "Changes in scope", body: "[Your change order terms: how scope changes are priced and approved.]" },
-  { title: "Warranty", body: "[Your warranty terms.]" },
-  { title: "Insurance and permits", body: "[Who obtains permits and what insurance coverage applies.]" },
-];
+/** A new company starts with no proposal terms; it writes its own sections in Settings. */
+export const DEFAULT_TERMS_SECTIONS: Array<{ title: string; body: string }> = [];
 
 /** Starter text for the change order authorization. {company} is replaced with the company name. */
 export const DEFAULT_CO_SECTIONS: Array<{ title: string; body: string }> = [

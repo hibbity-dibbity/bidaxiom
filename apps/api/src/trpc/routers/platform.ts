@@ -112,6 +112,7 @@ export const platformRouter = router({
       name: o.name,
       createdAt: o.createdAt.toISOString(),
       disabled: Boolean(o.disabledAt),
+      noPasscode: o.secondFactorExempt,
       deletedAt: o.deletedAt?.toISOString() ?? null,
       daysLeft: o.deletedAt ? Math.max(0, Math.ceil((o.deletedAt.getTime() + RETENTION_DAYS * 86400000 - Date.now()) / 86400000)) : null,
       members: memberships
@@ -125,6 +126,7 @@ export const platformRouter = router({
             role: m.role === "org:admin" ? "Admin" : "Member",
             authenticator: Boolean(u?.mfaEnabled),
             passkeys: passkeyCount.get(m.userId) ?? 0,
+            noPasscode: Boolean(u?.secondFactorExempt),
             lastLoginAt: u?.lastLoginAt?.toISOString() ?? null,
           };
         }),
@@ -226,6 +228,28 @@ export const platformRouter = router({
       if (!target) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
       await audit(ctx.platformAdminId, "resendSetupEmail", { email: target.email });
       return { email: target.email, ...(await sendSetupLink(target, {})) };
+    }),
+
+  /** Turn the authenticator/passkey requirement off (or back on) for a whole company. Password alone is then enough. */
+  setCompanyPasscodeExempt: platformProcedure
+    .input(z.object({ organizationId: z.string().uuid(), exempt: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      const [org] = await db.select().from(organizations).where(eq(organizations.id, input.organizationId)).limit(1);
+      if (!org) throw new TRPCError({ code: "NOT_FOUND", message: "Company not found" });
+      await db.update(organizations).set({ secondFactorExempt: input.exempt }).where(eq(organizations.id, org.id));
+      await audit(ctx.platformAdminId, input.exempt ? "passcodeOffCompany" : "passcodeOnCompany", { company: org.name });
+      return { ok: true as const };
+    }),
+
+  /** The same for one person. */
+  setUserPasscodeExempt: platformProcedure
+    .input(z.object({ userId: z.string().uuid(), exempt: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      const [target] = await db.select().from(users).where(eq(users.id, input.userId)).limit(1);
+      if (!target) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      await db.update(users).set({ secondFactorExempt: input.exempt }).where(eq(users.id, target.id));
+      await audit(ctx.platformAdminId, input.exempt ? "passcodeOffUser" : "passcodeOnUser", { email: target.email });
+      return { ok: true as const };
     }),
 
   /** Switch a company off (or back on). Members are locked out; nothing is deleted. */
