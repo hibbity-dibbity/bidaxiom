@@ -7,7 +7,8 @@ export function SiteFooter() {
       <div className="wrap">
         <div style={{ display: "flex", flexWrap: "wrap", gap: 40, justifyContent: "space-between" }}>
           <div style={{ maxWidth: 300 }}>
-            <div className="d" style={{ fontSize: 20, fontWeight: 600, color: "#fff" }}>BidAxiom</div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/bidaxiom-logo-light.png" alt="BidAxiom" width={140} height={33} style={{ height: 33, width: "auto", display: "block" }} />
             <p style={{ margin: "10px 0 0", fontSize: 14, lineHeight: 1.55 }}>Bids, proposals, change orders, invoicing and job costs for contractors.</p>
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 56 }}>
