@@ -37,6 +37,7 @@ export const ARTICLES: Article[] = [
           "Intuit lists what BidAxiom is asking to do. Select **Connect** to approve. You come back to BidAxiom and the card shows **Connected**, with the company name and when it was linked.",
           "If you see **Reconnect QuickBooks** later, the connection expired or was revoked at Intuit. Select it and repeat this step.",
         ],
+        shot: { src: "/kb/qbo-connected.png", alt: "The QuickBooks Online card showing the connected company", caption: "Connected: the card shows the company, environment and when the token renews." },
         warn: "If the card says the environment is Sandbox, you are linking a practice QuickBooks company, not your real books. That is the safe way to test.",
       },
       {
@@ -191,5 +192,148 @@ export const ARTICLES: Article[] = [
       },
     ],
     related: ["set-up-single-sign-on", "invite-your-team-and-choose-roles"],
+  },
+  {
+    slug: "invite-your-team-and-choose-roles",
+    title: "Invite your team and choose roles",
+    category: "Getting started",
+    summary: "Add people to your company and give each one the right role.",
+    intro:
+      "Everyone works in your company under their own sign-in, and a role decides what they can see and do. Only admins can invite people.",
+    minutes: 3,
+    steps: [
+      {
+        title: "Open Team members",
+        body: ["Go to **Settings**, then **Team members**. You see everyone in the company with their **Role**, when they **Joined**, and an **Actions** column."],
+        shot: { src: "/kb/members.png", alt: "The Team members page listing people, roles and pending invitations", caption: "Members and pending invitations in one place." },
+      },
+      {
+        title: "Enter an email and pick a role",
+        body: [
+          "In the invite form, type the person's email, choose a role and select **Invite**. The roles are **Admin**, **Project Manager**, **Accountant**, **Estimator**, **Superintendent**, **Foreman** and **Member**. New invitations default to **Member**.",
+          "Money screens such as invoices, margins and the full dashboard are limited to the roles that need them (admins, project managers and accountants). Project managers can switch the dashboard to **My projects** to see only their own jobs.",
+        ],
+        shot: { src: "/kb/members-invite.png", alt: "The invite form with an email box, a role menu and the Invite button", caption: "Choose the role before you invite." },
+      },
+      {
+        title: "Follow up on pending invitations",
+        body: [
+          "Until someone accepts, they appear under **Pending Invitations** with an expiry date. Use **Resend** if the email got lost, or **Revoke** to cancel it.",
+          "When they accept, they choose a password and then set up an authenticator app or passkey.",
+        ],
+      },
+      {
+        title: "Change a role or remove someone",
+        body: ["Use the **Actions** menu beside a person to change their role or remove them. Changes take effect the next time their session refreshes."],
+        tip: "Give people the smallest role that lets them do their job. You can always raise it later.",
+      },
+    ],
+    related: ["set-up-authenticator-app-and-passkeys", "set-up-single-sign-on"],
+  },
+  {
+    slug: "build-and-send-a-proposal",
+    title: "Build and send a proposal",
+    category: "Proposals and change orders",
+    summary: "Price a job with cost lines, margin, options and tax, then send it for e-signature.",
+    intro:
+      "A BidAxiom proposal is built from the costs behind the price, so you see your margin as you work. When the customer signs, the proposal becomes the contract and your invoices are created for you.",
+    minutes: 15,
+    steps: [
+      {
+        title: "Open the proposal on a project",
+        body: ["Open the project and select the **Proposals** tab. The builder opens on the active proposal. Set **Valid for** to the number of days the price holds."],
+      },
+      {
+        title: "Add parent lines and child lines",
+        body: [
+          "Use **+ Add parent line** for each scope of work, for example Foundation and slab or Roofing. Under each one, **+ Add child line** adds the cost items that make it up. Each child line has a **Type** (such as Material or Subcontractor), an optional **Vendor**, a **Qty**, a **Unit** and a **Unit cost**.",
+          "**+ Add from template** drops in a saved group of lines, so you do not retype the jobs you price often.",
+        ],
+        shot: { src: "/kb/proposal-builder.png", alt: "The proposal builder with parent lines, child lines and the totals box", caption: "Parent lines hold the child lines that make up your cost." },
+      },
+      {
+        title: "Set your margin and sales tax",
+        body: [
+          "On the right, **Margin on all lines (%)** sets your markup; select **Apply to all** to use it everywhere, or change a single line to override it. **Sales tax on material lines (%)** applies tax to material lines only.",
+          "The box at the top shows **Cost**, **Contingency**, **Profit** with your margin, **Global costs**, **Sales tax** and the **Proposal total**, updated as you type.",
+        ],
+      },
+      {
+        title: "Add global costs and optional items",
+        body: [
+          "**+ Global cost** adds project-wide costs such as permits and fees. They are shared across the parent lines in proportion to each line's cost and included in the price.",
+          "**+ Add optional item** adds work the customer can choose. Optional items are listed separately and are not in the proposal total until the customer accepts them. **+ Add-on** attaches an optional extra to a specific parent line.",
+        ],
+      },
+      {
+        title: "Plan the invoicing schedule",
+        body: [
+          "Under **Invoicing schedule**, add a **+ Milestone** for each bill, for example Mobilization, Slab poured, Dried in and Final. Choose **By total** to split the contract by percentage or **By line** to bill against specific lines. The box turns green and reads **Schedule totals 100%** when the schedule adds up.",
+          "Set **Payment terms**, for example Net 30, under Adjustments.",
+        ],
+      },
+      {
+        title: "Preview, then send for signature",
+        body: [
+          "Select **Preview** to see the customer's version, or **Download PDF**. When you are ready, select **Email**.",
+          "In **Send to customer**, check **To**, **CC**, **Subject** and **Message**, and keep **Include a link to review and sign online** ticked. Select **Send email**.",
+        ],
+        shot: { src: "/kb/proposal-send.png", alt: "The Send to customer dialog for a proposal", caption: "The customer receives a link to review, choose options and sign." },
+      },
+      {
+        title: "What happens when the customer signs",
+        body: [
+          "The customer reviews the proposal, picks any optional items and signs online. The proposal is accepted automatically, a signed PDF is filed in the project's **Documents**, and a draft invoice is created for each milestone.",
+        ],
+        tip: "Need to change the scope after signing? Use a change order instead of editing the signed proposal. See the invoicing guide for how change orders bill.",
+      },
+    ],
+    related: ["invoice-a-project-by-milestone", "map-quickbooks-accounts-and-tax-codes"],
+  },
+  {
+    slug: "invoice-a-project-by-milestone",
+    title: "Invoice a project by milestone",
+    category: "Invoicing",
+    summary: "Send milestone invoices, record payments and keep track of what is owed.",
+    intro:
+      "When a proposal is accepted, BidAxiom creates one draft invoice per milestone from your invoicing schedule. You decide when each one goes out.",
+    minutes: 8,
+    steps: [
+      {
+        title: "Open the project's Invoices tab",
+        body: ["Open the project and select **Invoices**. Each milestone from the signed proposal is listed with its amount and a status chip: **Draft**, **Overdue** or **Paid**."],
+        shot: { src: "/kb/project-invoices.png", alt: "A project's Invoices tab with milestone invoices and status chips", caption: "One draft invoice per milestone, ready when you are." },
+      },
+      {
+        title: "Send an invoice when the milestone is reached",
+        body: [
+          "Drafts are never sent automatically. When a milestone is complete, use the row's send action (email the invoice to the customer) so the invoice moves from **Draft** to open. You can also view or download the PDF from the same row.",
+        ],
+      },
+      {
+        title: "Combine invoices if you need to",
+        body: ["Tick two or more unsent invoices and select **Merge selected** to bill them together as one."],
+      },
+      {
+        title: "Record payments",
+        body: [
+          "When money comes in, use **record payment** on the row, or mark the invoice paid. If QuickBooks is connected and **Read deposits and payments from QuickBooks** is on, payments entered in QuickBooks update BidAxiom on their own.",
+        ],
+      },
+      {
+        title: "See everything that is owed",
+        body: [
+          "The **Invoices** page in the sidebar lists every invoice across all projects. Use the **All**, **Draft**, **Open**, **Overdue** and **Paid** tabs, and the search box to find one. The dashboard's receivables chart shows what is owed by age.",
+        ],
+        shot: { src: "/kb/invoices-list.png", alt: "The Invoices page with filter tabs", caption: "All invoices across projects, filtered by status." },
+      },
+      {
+        title: "Bill extra work with change orders",
+        body: [
+          "On the project's **Change Orders** tab, select **New change order** to price extra work. A change order needs an accepted proposal first. Once the customer approves it, it adds its own invoice, and a deductive change order adds a credit invoice, so the contract value and what is left to bill stay correct.",
+        ],
+      },
+    ],
+    related: ["build-and-send-a-proposal", "connect-quickbooks-online"],
   },
 ];

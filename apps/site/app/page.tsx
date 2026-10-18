@@ -27,7 +27,9 @@ const FEATURES: { title: string; body: string; icon: React.ReactNode }[] = [
 ];
 
 export default function Home() {
-  const featured = ARTICLES.slice(0, 4);
+  const featured = ["connect-quickbooks-online", "set-up-single-sign-on", "build-and-send-a-proposal", "invoice-a-project-by-milestone"]
+    .map((slug) => ARTICLES.find((a) => a.slug === slug)!)
+    .filter(Boolean);
   return (
     <>
       <SiteHeader />

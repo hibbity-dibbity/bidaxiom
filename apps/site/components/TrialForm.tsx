@@ -35,7 +35,7 @@ export function TrialForm() {
         <h2 className="d" style={{ margin: 0, fontSize: 26 }}>Check your email.</h2>
         <p style={{ margin: "10px 0 0", fontSize: 16.5, lineHeight: 1.6 }}>
           We sent a link to <strong>{email}</strong>. Open it to choose your password, then sign in at{" "}
-          <a href={`${APP_URL}/login`}>app.bidaxiom.com</a> and set up your authenticator app. The link works for 7 days. If it is not in your inbox in a few minutes, look in spam.
+          <a href={`${APP_URL}/sign-in`}>app.bidaxiom.com</a> and set up your authenticator app. The link works for 7 days. If it is not in your inbox in a few minutes, look in spam.
         </p>
       </div>
     );

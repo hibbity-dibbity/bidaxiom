@@ -14,7 +14,7 @@ export function SiteHeader({ active }: { active?: "kb" }) {
           <Link className="nl" href="/#quickbooks">QuickBooks</Link>
           <Link className="nl" href="/#security">Security</Link>
           <Link className={`nl${active === "kb" ? " on" : ""}`} href="/knowledge-base" aria-current={active === "kb" ? "page" : undefined}>Knowledge base</Link>
-          <a className="nl" href={`${APP_URL}/login`}>Sign in</a>
+          <a className="nl" href={`${APP_URL}/sign-in`}>Sign in</a>
           <Link className="btn t sm" href="/free-trial">Start free trial</Link>
         </nav>
       </div>

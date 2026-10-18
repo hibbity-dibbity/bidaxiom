@@ -13,7 +13,7 @@ export function SiteFooter() {
           <div style={{ display: "flex", flexWrap: "wrap", gap: 56 }}>
             <div><p className="fh">Product</p><Link className="fl" href="/#features">Features</Link><Link className="fl" href="/#quickbooks">QuickBooks</Link><Link className="fl" href="/#security">Security</Link></div>
             <div><p className="fh">Learn</p><Link className="fl" href="/knowledge-base">Knowledge base</Link><Link className="fl" href="/knowledge-base/connect-quickbooks-online">Connect QuickBooks</Link><Link className="fl" href="/knowledge-base/set-up-single-sign-on">Set up SSO</Link></div>
-            <div><p className="fh">Account</p><Link className="fl" href="/free-trial">Start free trial</Link><a className="fl" href={`${APP_URL}/login`}>Sign in</a></div>
+            <div><p className="fh">Account</p><Link className="fl" href="/free-trial">Start free trial</Link><a className="fl" href={`${APP_URL}/sign-in`}>Sign in</a></div>
           </div>
         </div>
         <p style={{ margin: "40px 0 0", paddingTop: 20, borderTop: "1px solid #2c3d4d", fontSize: 13, color: "#8fa3b5" }}>
