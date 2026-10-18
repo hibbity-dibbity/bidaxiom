@@ -23,6 +23,7 @@ import { startQboAutoSyncScheduler } from "./integrations/quickbooks/autoSync.js
 import { startQboReceiptsScheduler } from "./integrations/quickbooks/receipts.js";
 import { startScheduledReportsWorker, scheduleNextReports } from "./jobs/scheduled-reports.js";
 import { startRecycleBinPurge } from "./services/recycle-bin.js";
+import { startTrialSweeper } from "./services/trial.js";
 // TODO: Uncomment when Plan 03 creates workers.ts
 // import { startCalendarSyncWorker, queueDailyCalendarSync } from "./integrations/calendar/shared/workers.js";
 import fs from "fs";
@@ -144,6 +145,7 @@ try {
 
 // Companies in the operator's recycle bin are removed for good after the retention period
 startRecycleBinPurge();
+startTrialSweeper();
 
 // Start scheduled reports worker
 try {

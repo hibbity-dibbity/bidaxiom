@@ -134,14 +134,14 @@ export async function sendPasswordResetEmail(email: string, token: string): Prom
 export async function sendAccountSetupEmail(
   email: string,
   token: string,
-  opts: { firstName?: string | null; companyName?: string; reset?: boolean }
+  opts: { firstName?: string | null; companyName?: string; reset?: boolean; trialDays?: number }
 ): Promise<boolean> {
   const url = `${getAppUrl()}/reset-password?token=${token}`;
   const hello = opts.firstName ? `Hi ${opts.firstName},` : "Hello,";
   const subject = opts.reset ? "Set a new password for BidAxiom" : "Your BidAxiom account is ready";
   const intro = opts.reset
     ? "Your BidAxiom sign-in was reset. Choose a new password with the link below, then sign in and set up your authenticator app and passkey again."
-    : `Your BidAxiom account${opts.companyName ? ` for ${opts.companyName}` : ""} is ready. Choose your password with the link below, then sign in and set up your authenticator app and a passkey.`;
+    : `${opts.trialDays ? `Your ${opts.trialDays}-day free trial of BidAxiom${opts.companyName ? ` for ${opts.companyName}` : ""} is ready.` : `Your BidAxiom account${opts.companyName ? ` for ${opts.companyName}` : ""} is ready.`} Choose your password with the link below, then sign in and set up your authenticator app and a passkey.`;
   const html = `
     <p>${hello}</p>
     <p>${intro}</p>
@@ -315,5 +315,32 @@ export async function sendDomainCodeEmail(email: string, domain: string, code: s
   } catch (err) {
     console.error(`[EMAIL] Failed to send domain code to ${email}:`, err);
     throw new Error("Failed to send the code");
+  }
+}
+
+/** Free trial: tell the owner the trial is about to end, or has ended. */
+export async function sendTrialNoticeEmail(
+  email: string,
+  opts: { firstName?: string | null; companyName: string; endsAt: Date; ended: boolean }
+): Promise<boolean> {
+  const hello = opts.firstName ? `Hi ${opts.firstName},` : "Hello,";
+  const when = opts.endsAt.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "America/Chicago" });
+  const subject = opts.ended ? "Your BidAxiom free trial has ended" : "Your BidAxiom free trial ends soon";
+  const body = opts.ended
+    ? `Your free trial for ${opts.companyName} ended on ${when}. Your work is saved and the account is switched off. To keep going, reply to this email and we will turn it on.`
+    : `Your free trial for ${opts.companyName} ends on ${when}. To keep your projects, proposals and invoices, reply to this email and we will set up your subscription before then.`;
+  const html = `<p>${hello}</p><p>${body}</p><p>Thanks for trying BidAxiom.</p>`;
+
+  const client = getResendClient();
+  if (!client) {
+    console.log(`[EMAIL DEV] Trial notice to ${email}: ${subject}`);
+    return false;
+  }
+  try {
+    await sendOrThrow(client, { from: getFromEmail(), to: email, subject, html });
+    return true;
+  } catch (err) {
+    console.error(`[EMAIL] Failed to send trial notice to ${email}:`, err);
+    return false;
   }
 }

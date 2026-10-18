@@ -18,7 +18,7 @@ type Member = {
   lastLoginAt: string | null;
   noPasscode: boolean;
 };
-type Company = { id: string; name: string; createdAt: string; disabled: boolean; noPasscode: boolean; deletedAt: string | null; daysLeft: number | null; members: Member[] };
+type Company = { id: string; name: string; createdAt: string; disabled: boolean; noPasscode: boolean; trialEndsAt: string | null; deletedAt: string | null; daysLeft: number | null; members: Member[] };
 type MailResult = { email: string; emailSent: boolean; emailProblem?: string };
 
 async function rpc<T>(proc: string, input?: unknown): Promise<T> {
@@ -111,6 +111,21 @@ export default function PlatformPage() {
       else await rpc("setUserPasscodeExempt", { userId: target.m.userId, exempt: target.exempt });
       const who = target.kind === "company" ? target.c.name : target.m.email;
       setNotice({ ok: true, text: target.exempt ? `${who} no longer needs an authenticator or passkey to sign in (password only).` : `${who} needs an authenticator or passkey to sign in again.` });
+      await load();
+    } catch (err) {
+      setNotice({ ok: false, text: err instanceof Error ? err.message : "Request failed" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function trialAction(c: Company, kind: "extend" | "convert") {
+    setBusy(true);
+    setNotice(null);
+    try {
+      if (kind === "extend") await rpc("extendTrial", { organizationId: c.id, days: 14 });
+      else await rpc("convertTrial", { organizationId: c.id });
+      setNotice({ ok: true, text: kind === "extend" ? `${c.name}'s trial was extended by 14 days.` : `${c.name} is now a regular customer; the trial timer is gone.` });
       await load();
     } catch (err) {
       setNotice({ ok: false, text: err instanceof Error ? err.message : "Request failed" });
@@ -252,8 +267,19 @@ export default function PlatformPage() {
                   {c.name} <span className="ml-2 text-xs font-normal text-muted-foreground">created {new Date(c.createdAt).toLocaleDateString()}</span>
                   {c.disabled && <span className="ml-2 rounded bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">Disabled</span>}
                   {c.noPasscode && <span className="ml-2 rounded bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">Passcodes off</span>}
+                  {c.trialEndsAt && (
+                    <span className="ml-2 rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                      {new Date(c.trialEndsAt).getTime() > Date.now() ? `Free trial, ends ${new Date(c.trialEndsAt).toLocaleDateString()}` : `Trial ended ${new Date(c.trialEndsAt).toLocaleDateString()}`}
+                    </span>
+                  )}
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
+                  {c.trialEndsAt && (
+                    <>
+                      <Button size="sm" variant="outline" disabled={busy} onClick={() => trialAction(c, "extend")}>Extend 14 days</Button>
+                      <Button size="sm" variant="outline" disabled={busy} onClick={() => trialAction(c, "convert")}>Make a customer</Button>
+                    </>
+                  )}
                   <Button size="sm" variant="outline" disabled={busy} onClick={() => setPasscodeOff({ kind: "company", c, exempt: !c.noPasscode })}>
                     {c.noPasscode ? "Require passcodes" : "Turn passcodes off"}
                   </Button>

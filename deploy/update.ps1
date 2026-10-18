@@ -54,7 +54,7 @@ try {
   git reset --hard "origin/$branch" 2>&1 | Out-Null
   if ($LASTEXITCODE -ne 0) { throw "git reset failed" }
 
-  docker compose -p $project -f $Compose build api web 2>&1 | ForEach-Object { Log "build: $_" }
+  docker compose -p $project -f $Compose build api web site 2>&1 | ForEach-Object { Log "build: $_" }
   if ($LASTEXITCODE -ne 0) {
     Set-Content $failedFile $remote
     Log "BUILD FAILED for $($remote.Substring(0,7)). The running app was left as it was."

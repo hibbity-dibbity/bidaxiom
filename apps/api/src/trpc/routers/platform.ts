@@ -23,7 +23,7 @@ import { generateToken } from "../../auth/tokens.js";
 import { sendAccountSetupEmail } from "../../services/email.js";
 import { randomBytes } from "node:crypto";
 import { permanentlyDeleteCompany, RETENTION_DAYS } from "../../services/recycle-bin.js";
-import { provisionTenantSchema } from "../../tenant/provision.js";
+import { createCompanyWithAdmin, sendSetupLink } from "../../services/company-create.js";
 
 /**
  * Platform operator area: the few things the people running BidAxiom need to do without ever opening a
@@ -53,27 +53,10 @@ async function audit(adminId: string, action: string, detail: Record<string, unk
   await db.insert(platformAuditLog).values({ adminId, action, detail });
 }
 
-/** Email the person a one-time link to choose their password. Never shown to the operator. */
-async function sendSetupLink(user: { id: string; email: string; firstName: string | null }, opts: { companyName?: string; reset?: boolean }) {
-  const { token, hash } = generateToken();
-  await db.insert(passwordResetTokens).values({ userId: user.id, tokenHash: hash, expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) });
-  try {
-    const sent = await sendAccountSetupEmail(user.email, token, { firstName: user.firstName, companyName: opts.companyName, reset: opts.reset });
-    return sent ? ({ emailSent: true } as const) : ({ emailSent: false, emailProblem: "Email sending isn't configured on the server (RESEND_API_KEY)." } as const);
-  } catch (err) {
-    return { emailSent: false, emailProblem: err instanceof Error ? err.message : "Could not send the email." } as const;
-  }
-}
-
 function getClientIp(headers: Record<string, string | string[] | undefined>): string {
   const forwarded = headers["x-forwarded-for"];
   if (!forwarded) return "unknown";
   return (Array.isArray(forwarded) ? forwarded[0] : forwarded).split(",")[0].trim();
-}
-
-function slugFor(name: string): string {
-  const base = name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "").slice(0, 40) || "company";
-  return `${base}-${nanoid(6).toLowerCase()}`;
 }
 
 export const platformRouter = router({
@@ -113,6 +96,7 @@ export const platformRouter = router({
       createdAt: o.createdAt.toISOString(),
       disabled: Boolean(o.disabledAt),
       noPasscode: o.secondFactorExempt,
+      trialEndsAt: o.trialEndsAt?.toISOString() ?? null,
       deletedAt: o.deletedAt?.toISOString() ?? null,
       daysLeft: o.deletedAt ? Math.max(0, Math.ceil((o.deletedAt.getTime() + RETENTION_DAYS * 86400000 - Date.now()) / 86400000)) : null,
       members: memberships
@@ -144,48 +128,20 @@ export const platformRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const email = input.adminEmail.toLowerCase();
-      const [existing] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
-      if (existing) {
-        throw new TRPCError({ code: "CONFLICT", message: "That email already has an account. Use a different email for the new company's admin." });
-      }
-
-      const [admin] = await db
-        .insert(users)
-        .values({
-          email,
-          emailVerified: true,
-          // Nobody knows this password; the admin chooses theirs through the emailed link.
-          passwordHash: await hashPassword(randomBytes(32).toString("base64url")),
-          hashType: "argon2id",
-          firstName: input.adminFirstName,
-          lastName: input.adminLastName || null,
-        })
-        .returning();
-
       try {
-        const clerkOrgId = `org_${nanoid(24)}`;
-        const tenant = await provisionTenantSchema(clerkOrgId, input.companyName, getPool());
-        const [org] = await db
-          .insert(organizations)
-          .values({ name: input.companyName, slug: slugFor(input.companyName), tenantId: tenant.id, createdBy: admin.id, clerkOrgId })
-          .returning();
-        await db.insert(organizationMemberships).values({ userId: admin.id, organizationId: org.id, role: "org:admin" });
-        // Legacy mapping kept for parity with company creation; nothing new depends on it.
-        await db.insert(userCompanyMappings).values({ clerkUserId: admin.id, tenantId: tenant.id, role: "org:admin" }).catch(() => {});
-        const tenantDb = createTenantDb(tenant.schemaName);
-        await tenantDb.db.execute(sql`
-          INSERT INTO "${sql.raw(tenant.schemaName)}".user_profiles (clerk_user_id, email, first_name, last_name, role)
-          VALUES (${admin.id}, ${email}, ${input.adminFirstName}, ${input.adminLastName}, ${"org:admin"})
-        `);
+        const { org, admin, email } = await createCompanyWithAdmin({
+          companyName: input.companyName,
+          adminEmail: input.adminEmail,
+          adminFirstName: input.adminFirstName,
+          adminLastName: input.adminLastName,
+        });
         await audit(ctx.platformAdminId, "createCompany", { company: input.companyName, adminEmail: email });
         const mail = await sendSetupLink(admin, { companyName: org.name });
         return { companyId: org.id, companyName: org.name, adminEmail: email, userId: admin.id, ...mail };
       } catch (err) {
-        console.error("[platform] createCompany failed:", err);
-        // Undo what was created so the operator can simply try again.
-        await db.delete(organizations).where(eq(organizations.createdBy, admin.id)).catch(() => {});
-        await db.delete(users).where(eq(users.id, admin.id)).catch(() => {});
+        if (err instanceof TRPCError && err.code === "CONFLICT") {
+          throw new TRPCError({ code: "CONFLICT", message: "That email already has an account. Use a different email for the new company's admin." });
+        }
         throw err;
       }
     }),
@@ -249,6 +205,30 @@ export const platformRouter = router({
       if (!target) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
       await db.update(users).set({ secondFactorExempt: input.exempt }).where(eq(users.id, target.id));
       await audit(ctx.platformAdminId, input.exempt ? "passcodeOffUser" : "passcodeOnUser", { email: target.email });
+      return { ok: true as const };
+    }),
+
+  /** Free trial: give the company more days (from now, or from the current end if that is later) and turn it back on. */
+  extendTrial: platformProcedure
+    .input(z.object({ organizationId: z.string().uuid(), days: z.number().int().min(1).max(365) }))
+    .mutation(async ({ ctx, input }) => {
+      const [org] = await db.select().from(organizations).where(eq(organizations.id, input.organizationId)).limit(1);
+      if (!org) throw new TRPCError({ code: "NOT_FOUND", message: "Company not found" });
+      const base = org.trialEndsAt && org.trialEndsAt.getTime() > Date.now() ? org.trialEndsAt.getTime() : Date.now();
+      const endsAt = new Date(base + input.days * 86400000);
+      await db.update(organizations).set({ trialEndsAt: endsAt, trialWarnedAt: null, disabledAt: null }).where(eq(organizations.id, org.id));
+      await audit(ctx.platformAdminId, "extendTrial", { company: org.name, days: input.days });
+      return { ok: true as const, trialEndsAt: endsAt.toISOString() };
+    }),
+
+  /** Free trial becomes a regular customer: the timer is removed and the company is turned on. */
+  convertTrial: platformProcedure
+    .input(z.object({ organizationId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const [org] = await db.select().from(organizations).where(eq(organizations.id, input.organizationId)).limit(1);
+      if (!org) throw new TRPCError({ code: "NOT_FOUND", message: "Company not found" });
+      await db.update(organizations).set({ trialEndsAt: null, trialWarnedAt: null, disabledAt: null }).where(eq(organizations.id, org.id));
+      await audit(ctx.platformAdminId, "convertTrial", { company: org.name });
       return { ok: true as const };
     }),
 

@@ -87,3 +87,21 @@ services:
       API_INTERNAL_URL: http://api:3001
       # The local setup runs over plain http, so the session cookie cannot be "secure".
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
+
+  # Public marketing site and knowledge base (www.bidaxiom.com). Point the tunnel/proxy for www at port 3002.
+  site:
+    build:
+      context: .
+      dockerfile: apps/site/Dockerfile
+      args:
+        NEXT_PUBLIC_APP_URL: ${PUBLIC_APP_URL:-https://app.bidaxiom.com}
+        NEXT_PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:-https://www.bidaxiom.com}
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    depends_on:
+      - api
+    environment:
+      PORT: "3002"
+      # The free-trial form is passed to the API from the server, by its service name.
+      API_INTERNAL_URL: http://api:3001

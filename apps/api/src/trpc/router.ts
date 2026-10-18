@@ -35,6 +35,7 @@ import { outstandingRouter } from "./routers/outstanding.js";
 import { signingRouter } from "./routers/signing.js";
 import { passkeyRouter } from "./routers/passkey.js";
 import { platformRouter } from "./routers/platform.js";
+import { trialRouter } from "./routers/trial.js";
 
 /**
  * Root application router.
@@ -46,6 +47,7 @@ import { platformRouter } from "./routers/platform.js";
 export const appRouter = router({
   auth: authRouter,
   platform: platformRouter,
+  trial: trialRouter,
   health: healthRouter,
   audit: auditRouter,
   company: companyRouter,

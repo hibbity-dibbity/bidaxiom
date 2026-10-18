@@ -113,6 +113,10 @@ export const organizations = pgTable("organizations", {
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
   /** Set by the platform operator: nobody in this company needs an authenticator or passkey to sign in. */
   secondFactorExempt: boolean("second_factor_exempt").notNull().default(false),
+  /** Free trial: the company is switched off automatically at this time unless the operator converts or extends it. Null = not a trial. */
+  trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
+  /** When the "your trial ends soon" email went out. */
+  trialWarnedAt: timestamp("trial_warned_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({

@@ -84,6 +84,31 @@ function getRegistrationLimiter(): RateLimiterRedis | null {
   }
 }
 
+/** Free-trial signups from the public website: 4 per hour per IP. */
+let trialLimiter: RateLimiterRedis | null = null;
+function getTrialLimiter(): RateLimiterRedis | null {
+  if (trialLimiter) return trialLimiter;
+  try {
+    trialLimiter = new RateLimiterRedis({ storeClient: getRedisClient(), keyPrefix: "rl:trial", points: 4, duration: 60 * 60, blockDuration: 60 * 60 });
+    return trialLimiter;
+  } catch {
+    return null;
+  }
+}
+
+export async function checkTrialRateLimit(ip: string): Promise<void> {
+  const limiter = getTrialLimiter();
+  if (!limiter) return;
+  try {
+    await limiter.consume(ip);
+  } catch (err) {
+    if (err instanceof RateLimiterRes) {
+      throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "Too many trial requests from this network. Please try again later." });
+    }
+    console.error("Rate limit check failed:", err);
+  }
+}
+
 /**
  * Token refresh rate limiter: 10 attempts per minute per userId.
  * Blocks for 1 minute on limit exceeded.
