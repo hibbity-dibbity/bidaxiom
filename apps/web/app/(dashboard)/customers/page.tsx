@@ -19,6 +19,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/shared/page-header";
+import { ListToolbar, SearchField } from "@/components/shared/list-toolbar";
 import {
   Table,
   TableBody,
@@ -59,7 +60,7 @@ export default function CustomersPage() {
   if (orgRole && !["org:admin", "org:project_manager", "org:accountant", "org:estimator"].includes(orgRole)) {
     return (
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold">Customers</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Customers</h1>
         <p className="text-sm text-muted-foreground">Your role cannot view customers.</p>
       </div>
     );
@@ -243,28 +244,21 @@ function CustomersList() {
         description="Manage your customers and clients"
         actions={
           <>
-            <Button onClick={handleAdd}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Customer
-            </Button>
             <Button variant="outline" onClick={() => router.push("/customers/import")}>
               <Upload className="mr-2 h-4 w-4" />
               Import
+            </Button>
+            <Button onClick={handleAdd}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Customer
             </Button>
           </>
         }
       />
 
-      {/* Search — inline above table, not wrapped in Card */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search customers by name, company, or email..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
-        />
-      </div>
+      <ListToolbar summary={data ? `${data.items?.length ?? 0} shown` : undefined}>
+        <SearchField value={search} onChange={setSearch} placeholder="Search name, company or email" />
+      </ListToolbar>
 
       {/* Customers Table */}
       {isLoading ? (

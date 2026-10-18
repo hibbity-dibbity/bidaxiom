@@ -3,16 +3,9 @@
 import type { LifecyclePhase } from "@construction/shared";
 import React from "react";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Search } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { FilterChips, type FilterChip } from "@/components/shared/filter-chips";
+import { ListToolbar, SearchField, FilterSelect } from "@/components/shared/list-toolbar";
 
 interface Customer {
   id: string;
@@ -43,9 +36,10 @@ interface ProjectsFiltersProps {
   users: User[];
   filters: FilterState;
   setFilters: (filters: Partial<FilterState>) => void;
+  summary?: React.ReactNode;
 }
 
-export function ProjectsFilters({ customers, users, filters, setFilters }: ProjectsFiltersProps) {
+export function ProjectsFilters({ customers, users, filters, setFilters, summary }: ProjectsFiltersProps) {
 
   // Local state for search input (debounced)
   const [searchInput, setSearchInput] = React.useState(filters.search || "");
@@ -139,114 +133,46 @@ export function ProjectsFilters({ customers, users, filters, setFilters }: Proje
       : []),
   ];
 
+  const userName = (u: User) => (u.firstName && u.lastName ? `${u.firstName} ${u.lastName}` : u.email);
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-3">
-        {/* Search Input */}
-        <div className="relative flex-1 min-w-[300px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by job # or project name..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-
-        {/* Phase Filter */}
-        <Select
+      <ListToolbar summary={summary}>
+        <SearchField value={searchInput} onChange={setSearchInput} placeholder="Search job number or project name" />
+        <FilterSelect
+          label="Phase"
           value={filters.lifecyclePhase || "all"}
-          onValueChange={(value) =>
-            handleFilterChange("lifecyclePhase", value === "all" ? null : value)
-          }
-        >
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Phase" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Phases</SelectItem>
-            <SelectItem value="opportunity">Opportunity</SelectItem>
-            <SelectItem value="estimating">Estimating</SelectItem>
-            <SelectItem value="submitted">Submitted</SelectItem>
-            <SelectItem value="awarded">Awarded</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="substantial_completion">Substantial Completion</SelectItem>
-            <SelectItem value="closed">Closed</SelectItem>
-            <SelectItem value="warranty">Warranty</SelectItem>
-            <SelectItem value="archived">Archived</SelectItem>
-            <SelectItem value="on_hold">On Hold</SelectItem>
-            <SelectItem value="lost">Lost</SelectItem>
-          </SelectContent>
-        </Select>
-
-        {/* Customer Filter */}
-        <Select
+          onChange={(v) => handleFilterChange("lifecyclePhase", v === "all" ? null : v)}
+          options={[{ value: "all", label: "All phases" }, ...Object.entries(lifecyclePhaseLabels).map(([value, label]) => ({ value, label }))]}
+        />
+        <FilterSelect
+          label="Customer"
           value={filters.customer || "all"}
-          onValueChange={(value) =>
-            handleFilterChange("customer", value === "all" ? null : value)
-          }
-        >
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Customer" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Customers</SelectItem>
-            {customers.map((customer) => (
-              <SelectItem key={customer.id} value={customer.id}>
-                {customer.companyName || customer.contactName}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {/* Assigned User Filter */}
-        <Select
+          onChange={(v) => handleFilterChange("customer", v === "all" ? null : v)}
+          options={[{ value: "all", label: "All customers" }, ...customers.map((c) => ({ value: c.id, label: c.companyName || c.contactName }))]}
+        />
+        <FilterSelect
+          label="Assigned user"
           value={filters.assignedUser || "all"}
-          onValueChange={(value) =>
-            handleFilterChange("assignedUser", value === "all" ? null : value)
-          }
-        >
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Assigned User" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Users</SelectItem>
-            {users.map((user) => {
-              const displayName =
-                user.firstName && user.lastName
-                  ? `${user.firstName} ${user.lastName}`
-                  : user.email;
-              return (
-                <SelectItem key={user.id} value={user.id}>
-                  {displayName}
-                </SelectItem>
-              );
-            })}
-          </SelectContent>
-        </Select>
-
-        {/* Date Range From */}
+          onChange={(v) => handleFilterChange("assignedUser", v === "all" ? null : v)}
+          options={[{ value: "all", label: "All users" }, ...users.map((u) => ({ value: u.id, label: userName(u) }))]}
+        />
         <Input
           type="date"
-          placeholder="Start Date From"
+          aria-label="Start date from"
+          title="Start date from"
           value={filters.startDateFrom || ""}
-          onChange={(e) =>
-            handleFilterChange("startDateFrom", e.target.value || null)
-          }
-          className="w-[160px]"
+          onChange={(e) => handleFilterChange("startDateFrom", e.target.value || null)}
+          className="w-full sm:w-[135px]"
         />
-
-        {/* Date Range To */}
         <Input
           type="date"
-          placeholder="Start Date To"
+          aria-label="Start date to"
+          title="Start date to"
           value={filters.startDateTo || ""}
-          onChange={(e) =>
-            handleFilterChange("startDateTo", e.target.value || null)
-          }
-          className="w-[160px]"
+          onChange={(e) => handleFilterChange("startDateTo", e.target.value || null)}
+          className="w-full sm:w-[135px]"
         />
-      </div>
+      </ListToolbar>
 
       {/* Filter chips row — renders nothing when no secondary filters are active */}
       <FilterChips chips={activeChips} onClearAll={clearFilters} />

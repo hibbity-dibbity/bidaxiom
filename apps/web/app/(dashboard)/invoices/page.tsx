@@ -5,11 +5,11 @@ import Link from "next/link";
 import { FileText, Search } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/lib/auth-context";
-import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PageHeader } from "@/components/shared/page-header";
+import { ListToolbar, SearchField, FilterSelect } from "@/components/shared/list-toolbar";
 import { EmptyState } from "@/components/shared/empty-state";
 import { InvoiceStatusBadge, dollars, shortDate } from "@/components/invoices/invoice-ui";
 
@@ -40,9 +40,8 @@ export default function InvoicesPage() {
 
   if (!allowed) {
     return (
-      <div className="space-y-2">
-        <h1 className="text-2xl font-bold">Invoices</h1>
-        <p className="text-sm text-muted-foreground">Your role cannot view this page.</p>
+      <div className="space-y-6">
+        <PageHeader title="Invoices" description="Your role cannot view this page." />
       </div>
     );
   }
@@ -50,22 +49,21 @@ export default function InvoicesPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Invoices" description="All invoices across your projects." />
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative w-full max-w-sm">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input autoFocus className="pl-8" placeholder="Search number, project, job or customer" value={search} onChange={(e) => setSearch(e.target.value)} />
-        </div>
-        <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)}>
-          <TabsList>
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="draft">Draft</TabsTrigger>
-            <TabsTrigger value="open">Open</TabsTrigger>
-            <TabsTrigger value="overdue">Overdue</TabsTrigger>
-            <TabsTrigger value="paid">Paid</TabsTrigger>
-          </TabsList>
-        </Tabs>
-        {data && <span className="text-sm text-muted-foreground">{rows.length} shown · {dollars(open)} outstanding</span>}
-      </div>
+      <ListToolbar summary={data ? `${rows.length} shown · ${dollars(open)} outstanding` : undefined}>
+        <SearchField value={search} onChange={setSearch} placeholder="Search number, project or customer" />
+        <FilterSelect
+          label="Status"
+          value={filter}
+          onChange={(v) => setFilter(v as Filter)}
+          options={[
+            { value: "all", label: "All statuses" },
+            { value: "draft", label: "Draft" },
+            { value: "open", label: "Open" },
+            { value: "overdue", label: "Overdue" },
+            { value: "paid", label: "Paid" },
+          ]}
+        />
+      </ListToolbar>
       {isLoading ? (
         <Skeleton className="h-64 w-full" />
       ) : error ? (
@@ -73,6 +71,7 @@ export default function InvoicesPage() {
       ) : rows.length === 0 ? (
         <EmptyState icon={FileText} heading="No invoices found" description={search || filter !== "all" ? "Try a different search or filter." : "Invoices appear here once a proposal is accepted."} />
       ) : (
+        <Card>
         <Table>
           <TableHeader>
             <TableRow>
@@ -112,6 +111,7 @@ export default function InvoicesPage() {
             ))}
           </TableBody>
         </Table>
+        </Card>
       )}
     </div>
   );

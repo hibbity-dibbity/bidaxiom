@@ -36,6 +36,7 @@ import { SIMPLE_TRADES } from "@construction/shared";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
+import { ListToolbar, SearchField, FilterSelect } from "@/components/shared/list-toolbar";
 import { FilterChips, type FilterChip } from "@/components/shared/filter-chips";
 import type { SubcontractorStatus, VendorKind } from "@construction/shared";
 
@@ -205,78 +206,44 @@ export default function SubcontractorsPage() {
         title="Subs & Vendors"
         description="Subcontractors and suppliers you work with, their terms and compliance"
         actions={
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={exportCsv}
-              disabled={table.getRowModel().rows.length === 0}
-            >
-              <Download className="mr-2 h-4 w-4" />
-              Export CSV
-            </Button>
-            <Button onClick={() => router.push("/subcontractors/new")}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Sub or Vendor
-            </Button>
-          </>
+          <Button onClick={() => router.push("/subcontractors/new")}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Sub or Vendor
+          </Button>
         }
       />
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="pt-6 space-y-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <Input
-              placeholder="Search by company name, contact, or email..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="md:max-w-md"
-            />
-
-            <Select
-              value={tradeFilter ?? "all"}
-              onValueChange={(value) => setTradeFilter(value === "all" ? null : value)}
-            >
-              <SelectTrigger className="md:w-[200px]">
-                <SelectValue placeholder="Filter by trade or category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Trades and Categories</SelectItem>
-                {SIMPLE_TRADES.map((trade) => (
-                  <SelectItem key={trade} value={trade}>
-                    {trade}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <Tabs
-            value={kindFilter}
-            onValueChange={(value) => setKindFilter(value as VendorKind | "all")}
-          >
-            <TabsList>
-              <TabsTrigger value="all">All types</TabsTrigger>
-              <TabsTrigger value="subcontractor">Subcontractors</TabsTrigger>
-              <TabsTrigger value="supplier">Suppliers</TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          <Tabs
-            value={statusFilter}
-            onValueChange={(value) => setStatusFilter(value as SubcontractorStatus | "all")}
-          >
-            <TabsList>
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="active">Active</TabsTrigger>
-              <TabsTrigger value="inactive">Inactive</TabsTrigger>
-              <TabsTrigger value="blacklisted">Blacklisted</TabsTrigger>
-            </TabsList>
-          </Tabs>
-          <FilterChips chips={activeChips} onClearAll={clearAllFilters} />
-        </CardContent>
-      </Card>
+      <ListToolbar summary={data ? `${subcontractors.length} shown` : undefined}>
+        <SearchField value={search} onChange={setSearch} placeholder="Search company, contact or email" />
+        <FilterSelect
+          label="Trade or category"
+          value={tradeFilter ?? "all"}
+          onChange={(v) => setTradeFilter(v === "all" ? null : v)}
+          options={[{ value: "all", label: "All trades" }, ...SIMPLE_TRADES.map((t) => ({ value: t, label: t }))]}
+        />
+        <FilterSelect
+          label="Type"
+          value={kindFilter}
+          onChange={(v) => setKindFilter(v as VendorKind | "all")}
+          options={[
+            { value: "all", label: "All types" },
+            { value: "subcontractor", label: "Subcontractors" },
+            { value: "supplier", label: "Suppliers" },
+          ]}
+        />
+        <FilterSelect
+          label="Status"
+          value={statusFilter}
+          onChange={(v) => setStatusFilter(v as SubcontractorStatus | "all")}
+          options={[
+            { value: "all", label: "All statuses" },
+            { value: "active", label: "Active" },
+            { value: "inactive", label: "Inactive" },
+            { value: "blacklisted", label: "Blacklisted" },
+          ]}
+        />
+      </ListToolbar>
+      <FilterChips chips={activeChips} onClearAll={clearAllFilters} />
 
       {/* Subcontractors Table */}
       {isLoading ? (
@@ -290,6 +257,13 @@ export default function SubcontractorsPage() {
           </CardContent>
         </Card>
       ) : subcontractors.length > 0 ? (
+        <div className="space-y-4">
+        <div className="flex items-center justify-end gap-2">
+          <Button variant="outline" size="sm" onClick={exportCsv} disabled={table.getRowModel().rows.length === 0}>
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+        </div>
         <Card>
           <div className="relative w-full overflow-auto max-h-[70vh]">
             <Table>
@@ -390,6 +364,7 @@ export default function SubcontractorsPage() {
             </Table>
           </div>
         </Card>
+        </div>
       ) : (
         <EmptyState
           icon={search || tradeFilter !== null || statusFilter !== "all" || kindFilter !== "all" ? SearchX : HardHat}

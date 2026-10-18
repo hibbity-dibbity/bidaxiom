@@ -2,14 +2,14 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, ShoppingCart } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/lib/auth-context";
-import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PageHeader } from "@/components/shared/page-header";
+import { ListToolbar, SearchField, FilterSelect } from "@/components/shared/list-toolbar";
 import { EmptyState } from "@/components/shared/empty-state";
 import { OrderStatusBadge, dollars } from "@/components/orders/order-ui";
 
@@ -39,9 +39,8 @@ export default function OrdersPage() {
 
   if (!allowed) {
     return (
-      <div className="space-y-2">
-        <h1 className="text-2xl font-bold">Purchase & Work Orders</h1>
-        <p className="text-sm text-muted-foreground">Your role cannot view this page.</p>
+      <div className="space-y-6">
+        <PageHeader title="Purchase & Work Orders" description="Your role cannot view this page." />
       </div>
     );
   }
@@ -49,22 +48,21 @@ export default function OrdersPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Purchase & Work Orders" description="All purchase orders and work orders across your projects." />
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative w-full max-w-sm">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input autoFocus className="pl-8" placeholder="Search number, vendor, project or job" value={search} onChange={(e) => setSearch(e.target.value)} />
-        </div>
-        <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)}>
-          <TabsList>
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="purchase">Purchase</TabsTrigger>
-            <TabsTrigger value="work">Work</TabsTrigger>
-            <TabsTrigger value="draft">Draft</TabsTrigger>
-            <TabsTrigger value="owed">Unpaid</TabsTrigger>
-          </TabsList>
-        </Tabs>
-        {data && <span className="text-sm text-muted-foreground">{rows.length} shown · {dollars(owed)} outstanding</span>}
-      </div>
+      <ListToolbar summary={data ? `${rows.length} shown · ${dollars(owed)} outstanding` : undefined}>
+        <SearchField value={search} onChange={setSearch} placeholder="Search number, vendor or project" />
+        <FilterSelect
+          label="Show"
+          value={filter}
+          onChange={(v) => setFilter(v as Filter)}
+          options={[
+            { value: "all", label: "All orders" },
+            { value: "purchase", label: "Purchase orders" },
+            { value: "work", label: "Work orders" },
+            { value: "draft", label: "Draft" },
+            { value: "owed", label: "Unpaid" },
+          ]}
+        />
+      </ListToolbar>
       {isLoading ? (
         <Skeleton className="h-64 w-full" />
       ) : error ? (
@@ -72,6 +70,7 @@ export default function OrdersPage() {
       ) : rows.length === 0 ? (
         <EmptyState icon={ShoppingCart} heading="No orders found" description={search || filter !== "all" ? "Try a different search or filter." : "Orders appear here once a proposal is accepted."} />
       ) : (
+        <Card>
         <Table>
           <TableHeader>
             <TableRow>
@@ -103,6 +102,7 @@ export default function OrdersPage() {
             ))}
           </TableBody>
         </Table>
+        </Card>
       )}
     </div>
   );

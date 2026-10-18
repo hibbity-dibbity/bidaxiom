@@ -2,13 +2,13 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Loader2, Receipt, Search } from "lucide-react";
+import { Loader2, Receipt } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PageHeader } from "@/components/shared/page-header";
+import { ListToolbar, SearchField, FilterSelect } from "@/components/shared/list-toolbar";
 import { EmptyState } from "@/components/shared/empty-state";
 import { formatCurrency } from "@/lib/utils/format";
 import { QboReceiptsPanel } from "@/components/outstanding/qbo-receipts-panel";
@@ -97,27 +97,26 @@ export default function OutstandingPage() {
       <QboReceiptsPanel />
       <QboBillsPanel />
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Tabs value={tab} onValueChange={(v) => setTab(v as "invoices" | "expenses")}>
-          <TabsList>
-            <TabsTrigger value="invoices">Invoices by customer</TabsTrigger>
-            <TabsTrigger value="expenses">Expenses by vendor</TabsTrigger>
-          </TabsList>
-        </Tabs>
-        <div className="relative min-w-[220px] flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input className="pl-9" placeholder="Search customer, vendor, project or number" value={search} onChange={(e) => setSearch(e.target.value)} />
-        </div>
-        <div className="w-full sm:w-64">
-          <Input
-            inputMode="decimal"
-            placeholder="Deposit or check amount to match"
-            value={amountText}
-            onChange={(e) => setAmountText(e.target.value)}
-            aria-label="Amount to match"
-          />
-        </div>
-      </div>
+      <ListToolbar>
+        <SearchField value={search} onChange={setSearch} placeholder="Search customer, vendor or project" />
+        <FilterSelect
+          label="Show"
+          value={tab}
+          onChange={(v) => setTab(v as "invoices" | "expenses")}
+          options={[
+            { value: "invoices", label: "Invoices by customer" },
+            { value: "expenses", label: "Expenses by vendor" },
+          ]}
+        />
+        <Input
+          className="w-full sm:w-64"
+          inputMode="decimal"
+          placeholder="Deposit or check amount to match"
+          value={amountText}
+          onChange={(e) => setAmountText(e.target.value)}
+          aria-label="Amount to match"
+        />
+      </ListToolbar>
       {hasAmount && (
         <p className="text-sm text-muted-foreground">
           {matchedIds.ids.size > 0
