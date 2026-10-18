@@ -35,6 +35,7 @@ export default function InvoicesPage() {
     });
   }, [data, filter, search]);
 
+  const showQbo = (data ?? []).some((r) => r.qbo !== null);
   const open = rows.reduce((a, r) => a + (r.outstanding ?? 0), 0);
 
   if (!allowed) {
@@ -83,6 +84,7 @@ export default function InvoicesPage() {
               <TableHead>Due</TableHead>
               <TableHead className="text-right">Amount</TableHead>
               <TableHead className="text-right">Outstanding</TableHead>
+              {showQbo && <TableHead>QuickBooks</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -101,6 +103,11 @@ export default function InvoicesPage() {
                 <TableCell>{r.status === "draft" ? "—" : shortDate(r.dueOn)}</TableCell>
                 <TableCell className="text-right">{dollars(r.amount)}</TableCell>
                 <TableCell className="text-right">{r.outstanding == null ? "—" : dollars(r.outstanding)}</TableCell>
+                {showQbo && (
+                  <TableCell>
+                    {r.qbo === "synced" ? "In QuickBooks" : r.qbo === "not_sent" ? <span className="text-muted-foreground">Not sent</span> : r.qbo === "problem" ? <Link href={`/projects/${r.projectSlug}/invoices/${r.id}`} className="text-destructive hover:underline">Problem</Link> : "—"}
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>

@@ -119,6 +119,10 @@ export const invoiceRouter = router({
     const received = new Map<string, number>();
     for (const p of pays) received.set(p.invoiceId, (received.get(p.invoiceId) ?? 0) + Number(p.amount));
     const today = todayText();
+    const [prof] = await db.select({ on: schema.companyProfiles.qboInvoicePush }).from(schema.companyProfiles).where(isNull(schema.companyProfiles.validTo)).limit(1);
+    const pushOn = Boolean(prof?.on);
+    const mapped = pushOn ? new Set((await db.select({ id: schema.qboEntityMappings.platformId }).from(schema.qboEntityMappings).where(eq(schema.qboEntityMappings.entityType, "invoice"))).map((m) => m.id)) : new Set<string>();
+    const problems = pushOn ? new Set((await db.select({ id: schema.qboSyncNotifications.entityId }).from(schema.qboSyncNotifications).where(and(eq(schema.qboSyncNotifications.dismissed, false), eq(schema.qboSyncNotifications.entityType, "invoice")))).map((n) => n.id)) : new Set<string>();
     return invoices.map(({ i, slug, jobNumber, projectName, customerId }) => {
       const amount = Number(i.amount);
       const rec = r2(received.get(i.id) ?? 0);
@@ -127,6 +131,8 @@ export const invoiceRouter = router({
         milestoneName: i.milestoneName, amount, status: i.status, sentOn: i.sentOn, dueOn: i.dueOn, received: rec,
         outstanding: isSent(i.status) ? r2(Math.max(amount - rec, 0)) : null,
         overdue: isOverdue(i.status, i.dueOn, today),
+        // null when QuickBooks invoice sending is off or the invoice is still a draft
+        qbo: !pushOn || i.status === "draft" ? null : problems.has(i.id) ? ("problem" as const) : mapped.has(i.id) ? ("synced" as const) : ("not_sent" as const),
       };
     });
   }),
