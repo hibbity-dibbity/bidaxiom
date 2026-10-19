@@ -397,3 +397,17 @@ export {
   type RowStatus,
   type ExistingCustomerKey,
 } from "./utils/customer-import";
+export {
+  VENDOR_IMPORT_FIELDS,
+  VENDOR_TEMPLATE_HEADERS,
+  suggestVendorMapping,
+  buildVendorRows,
+  type VendorImportFieldKey,
+  type VendorImportMapping,
+  type VendorImportOptions,
+  type VendorKindValue,
+  type ImportedVendor,
+  type VendorImportRowResult,
+  type VendorRowStatus,
+  type ExistingVendorKey,
+} from "./utils/vendor-import";

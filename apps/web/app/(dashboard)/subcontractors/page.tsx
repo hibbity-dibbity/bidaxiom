@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChevronRight, Plus, ChevronsUpDown, ChevronUp, ChevronDown, Download, HardHat, SearchX } from "lucide-react";
+import { ChevronRight, Plus, Upload, ChevronsUpDown, ChevronUp, ChevronDown, Download, HardHat, SearchX } from "lucide-react";
 import { SIMPLE_TRADES } from "@construction/shared";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -206,10 +206,16 @@ export default function SubcontractorsPage() {
         title="Subs & Vendors"
         description="Subcontractors and suppliers you work with, their terms and compliance"
         actions={
-          <Button onClick={() => router.push("/subcontractors/new")}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Sub or Vendor
-          </Button>
+          <>
+            <Button variant="outline" onClick={() => router.push("/subcontractors/import")}>
+              <Upload className="mr-2 h-4 w-4" />
+              Import
+            </Button>
+            <Button onClick={() => router.push("/subcontractors/new")}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Sub or Vendor
+            </Button>
+          </>
         }
       />
 

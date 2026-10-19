@@ -669,6 +669,8 @@ export function createTenantSchema(schemaName: string) {
     insuranceExpiresAt: timestamp("insurance_expires_at", { withTimezone: true }),
     is1099: boolean("is_1099").notNull().default(false),
     slug: text("slug").unique(), // URL-safe slug for routing
+    importBatchId: uuid("import_batch_id"), // set when added by a spreadsheet import, so the import can be undone
+    importSource: text("import_source"),
     createdBy: text("created_by").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),

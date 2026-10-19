@@ -8,6 +8,8 @@ import {
   subcontractorStatusEnum,
   vendorKindEnum,
   AuditAction,
+  buildVendorRows,
+  type VendorImportMapping,
 } from "@construction/shared";
 import { createAuditLog } from "../../audit/logger.js";
 import { defineAbilitiesFor } from "../../auth/abilities.js";
@@ -15,11 +17,159 @@ import { eq, desc, and, sql, or, ilike, inArray } from "drizzle-orm";
 import { ForbiddenError } from "@casl/ability";
 import { generateSlug, generateNameSlug, isValidSlug } from "../../utils/slug.js";
 
+/** Importing vendors in bulk (and undoing it) is limited to the roles that can manage the directory. */
+function requireImportRole(role: string | null) {
+  if (role !== "org:admin" && role !== "org:project_manager") {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Only an admin or project manager can import subs and vendors." });
+  }
+}
+
+/** Source-row layout the browser sends, so the server can re-check every row with the same rules. */
+const IMPORT_COLUMNS: VendorImportMapping = {
+  companyName: 0, contactName: 1, email: 2, phone: 3, street1: 4, street2: 5, city: 6, state: 7, zip: 8,
+  kind: 9, vendorType: 10, paymentTerms: 11, creditLimit: 12, taxId: 13, is1099: 14, status: 15, notes: 16,
+};
+const IMPORT_WIDTH = 17;
+
 /**
  * Subcontractor directory router.
  * Handles company-wide subcontractor directory CRUD with trade filtering.
  */
 export const subcontractorRouter = router({
+  /** Existing entries' identifying details, so the import preview can flag duplicates. */
+  importIndex: protectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.tenant) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+    requireImportRole(ctx.orgRole);
+    const { db, schema } = ctx.tenant;
+    return db
+      .select({ email: schema.subcontractorDirectory.contactEmail, companyName: schema.subcontractorDirectory.companyName })
+      .from(schema.subcontractorDirectory);
+  }),
+
+  /** Add one batch (up to 500 rows) of an import. Every row is re-checked here; nothing from the browser is trusted. */
+  importCommit: protectedProcedure
+    .input(
+      z.object({
+        batchId: z.string().uuid(),
+        fileName: z.string().max(255),
+        importDuplicates: z.boolean(),
+        rows: z.array(z.array(z.string().max(2100)).length(IMPORT_WIDTH)).min(1).max(500),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+      requireImportRole(ctx.orgRole);
+      const { db, schema } = ctx.tenant;
+
+      const existing = await db
+        .select({ email: schema.subcontractorDirectory.contactEmail, companyName: schema.subcontractorDirectory.companyName, slug: schema.subcontractorDirectory.slug })
+        .from(schema.subcontractorDirectory);
+      const results = buildVendorRows(input.rows, IMPORT_COLUMNS, { defaultKind: "subcontractor" }, existing);
+      const taken = new Set(existing.map((e) => e.slug).filter((s): s is string => Boolean(s)));
+
+      const toInsert = results.filter((r) => r.vendor && (r.status === "ready" || r.status === "warning" || (input.importDuplicates && r.status === "duplicate")));
+      const values = toInsert.map((r) => {
+        const v = r.vendor!;
+        const base = generateNameSlug(v.companyName) || "vendor";
+        let slug = base;
+        for (let n = 2; taken.has(slug); n++) slug = `${base}-${n}`;
+        taken.add(slug);
+        return {
+          companyName: v.companyName,
+          contactName: v.contactName,
+          contactEmail: v.email,
+          contactPhone: v.phone,
+          street1: v.street1,
+          street2: v.street2,
+          city: v.city,
+          state: v.state,
+          zip: v.zip,
+          trades: [] as number[],
+          trade: v.trade ? [v.trade] : [],
+          tradeOther: v.tradeOther,
+          notes: v.notes,
+          kind: v.kind,
+          category: v.category,
+          paymentTerms: v.paymentTerms,
+          creditLimit: v.creditLimit != null ? String(v.creditLimit) : null,
+          taxIdLast4: v.taxIdLast4,
+          is1099: v.is1099,
+          status: v.status,
+          slug,
+          createdBy: ctx.userId!,
+          importBatchId: input.batchId,
+          importSource: input.fileName,
+        };
+      });
+      if (values.length) await db.insert(schema.subcontractorDirectory).values(values);
+
+      if (values.length) {
+        await createAuditLog(db, schema, {
+          entityType: "SubcontractorDirectory",
+          entityId: input.batchId,
+          action: AuditAction.CREATE,
+          actorId: ctx.userId,
+          changes: { after: { imported: values.length, source: input.fileName } },
+        });
+      }
+      return {
+        imported: values.length,
+        skippedDuplicates: input.importDuplicates ? 0 : results.filter((r) => r.status === "duplicate").length,
+        skippedErrors: results.filter((r) => r.status === "error").length,
+      };
+    }),
+
+  /** Earlier imports, newest first, with how many of their entries still exist. */
+  importBatches: protectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.tenant) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+    requireImportRole(ctx.orgRole);
+    const { db, schema } = ctx.tenant;
+    const t = schema.subcontractorDirectory;
+    const rows = await db
+      .select({
+        batchId: t.importBatchId,
+        source: sql<string>`max(${t.importSource})`,
+        count: sql<number>`count(*)::int`,
+        at: sql<string>`min(${t.createdAt})`,
+      })
+      .from(t)
+      .where(sql`${t.importBatchId} IS NOT NULL`)
+      .groupBy(t.importBatchId)
+      .orderBy(sql`min(${t.createdAt}) desc`)
+      .limit(20);
+    return rows.map((r) => ({ batchId: r.batchId!, source: r.source, count: r.count, at: new Date(r.at).toISOString() }));
+  }),
+
+  /** Remove the entries one import added. Any already used on a bid, proposal line or order are kept. */
+  importUndo: protectedProcedure
+    .input(z.object({ batchId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+      requireImportRole(ctx.orgRole);
+      const { db, schema } = ctx.tenant;
+      const t = schema.subcontractorDirectory;
+      const removed = await db
+        .delete(t)
+        .where(
+          and(
+            eq(t.importBatchId, input.batchId),
+            sql`NOT EXISTS (SELECT 1 FROM ${schema.bids} WHERE ${schema.bids.subcontractorId} = ${t.id})`,
+            sql`NOT EXISTS (SELECT 1 FROM ${schema.proposalCostLines} WHERE ${schema.proposalCostLines.vendorId} = ${t.id})`,
+            sql`NOT EXISTS (SELECT 1 FROM ${schema.orders} WHERE ${schema.orders.vendorId} = ${t.id})`
+          )
+        )
+        .returning({ id: t.id });
+      const [left] = await db.select({ n: sql<number>`count(*)::int` }).from(t).where(eq(t.importBatchId, input.batchId));
+      await createAuditLog(db, schema, {
+        entityType: "SubcontractorDirectory",
+        entityId: input.batchId,
+        action: AuditAction.DELETE,
+        actorId: ctx.userId,
+        changes: { before: { removedImport: removed.length, keptBecauseInUse: left.n } },
+      });
+      return { removed: removed.length, kept: left.n };
+    }),
+
   /**
    * Create a new subcontractor in the directory.
    */
