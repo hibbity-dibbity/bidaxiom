@@ -5,7 +5,7 @@ import React from "react";
 import { Input } from "@/components/ui/input";
 import { useDebounce } from "@/hooks/use-debounce";
 import { FilterChips, type FilterChip } from "@/components/shared/filter-chips";
-import { ListToolbar, SearchField, FilterSelect } from "@/components/shared/list-toolbar";
+import { ListToolbar, SearchField, FilterSelect, MultiFilterSelect } from "@/components/shared/list-toolbar";
 
 interface Customer {
   id: string;
@@ -24,7 +24,8 @@ interface User {
 export type FilterState = {
   search: string | null;
   customer: string | null;
-  lifecyclePhase: LifecyclePhase | null;
+  phases: LifecyclePhase[] | null;
+  phaseMode: "show" | "hide" | null;
   assignedUser: string | null;
   startDateFrom: string | null;
   startDateTo: string | null;
@@ -59,7 +60,8 @@ export function ProjectsFilters({ customers, users, filters, setFilters, summary
     setFilters({
       search: null,
       customer: null,
-      lifecyclePhase: null,
+      phases: null,
+      phaseMode: null,
       assignedUser: null,
       startDateFrom: null,
       startDateTo: null,
@@ -92,10 +94,10 @@ export function ProjectsFilters({ customers, users, filters, setFilters, summary
   };
 
   const activeChips: FilterChip[] = [
-    ...(filters.lifecyclePhase
+    ...(filters.phases?.length
       ? [{
-          label: `Phase: ${lifecyclePhaseLabels[filters.lifecyclePhase] ?? filters.lifecyclePhase}`,
-          onRemove: () => handleFilterChange("lifecyclePhase", null),
+          label: `${filters.phaseMode === "hide" ? "Hiding" : "Phase"}: ${filters.phases.map((p) => lifecyclePhaseLabels[p] ?? p).join(", ")}`,
+          onRemove: () => setFilters({ phases: null, phaseMode: null, page: 1 }),
         }]
       : []),
     ...(filters.customer
@@ -138,12 +140,14 @@ export function ProjectsFilters({ customers, users, filters, setFilters, summary
     <div className="space-y-2">
       <ListToolbar summary={summary}>
         <SearchField value={searchInput} onChange={setSearchInput} placeholder="Search job number or project name" />
-        <FilterSelect
+        <MultiFilterSelect
           label="Phase"
-          className="sm:w-[150px]"
-          value={filters.lifecyclePhase || "all"}
-          onChange={(v) => handleFilterChange("lifecyclePhase", v === "all" ? null : v)}
-          options={[{ value: "all", label: "All phases" }, ...Object.entries(lifecyclePhaseLabels).map(([value, label]) => ({ value, label }))]}
+          allLabel="All phases"
+          options={Object.entries(lifecyclePhaseLabels).map(([value, label]) => ({ value, label }))}
+          selected={filters.phases ?? []}
+          onChange={(v) => setFilters({ phases: v.length ? (v as LifecyclePhase[]) : null, phaseMode: v.length ? filters.phaseMode : null, page: 1 })}
+          mode={filters.phaseMode ?? "show"}
+          onModeChange={(m) => setFilters({ phaseMode: m, page: 1 })}
         />
         <FilterSelect
           label="Customer"

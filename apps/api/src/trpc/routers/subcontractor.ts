@@ -281,6 +281,10 @@ export const subcontractorRouter = router({
         status: subcontractorStatusEnum.optional(),
         kind: vendorKindEnum.optional(),
         trade: z.string().optional(),
+        /** Any of these (multi-select filters). */
+        statuses: z.array(subcontractorStatusEnum).max(10).optional(),
+        kinds: z.array(vendorKindEnum).max(10).optional(),
+        trades: z.array(z.string().max(200)).max(50).optional(),
         search: z.string().optional(),
       })
     )
@@ -310,6 +314,17 @@ export const subcontractorRouter = router({
 
       if (input.kind) {
         conditions.push(eq(schema.subcontractorDirectory.kind, input.kind));
+      }
+
+      if (input.statuses?.length) conditions.push(inArray(schema.subcontractorDirectory.status, input.statuses));
+      if (input.kinds?.length) conditions.push(inArray(schema.subcontractorDirectory.kind, input.kinds));
+      if (input.trades?.length) {
+        conditions.push(
+          or(
+            ...input.trades.map((t) => sql`${schema.subcontractorDirectory.trade}::jsonb @> ${JSON.stringify([t])}::jsonb`),
+            inArray(schema.subcontractorDirectory.category, input.trades)
+          )
+        );
       }
 
       // Trade / category filter: subcontractors match on the trade array, suppliers on category

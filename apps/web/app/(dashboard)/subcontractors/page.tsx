@@ -37,7 +37,7 @@ import { SIMPLE_TRADES } from "@construction/shared";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader, InPageHeader } from "@/components/shared/page-header";
-import { ListToolbar, SearchField, FilterSelect } from "@/components/shared/list-toolbar";
+import { ListToolbar, SearchField, MultiFilterSelect } from "@/components/shared/list-toolbar";
 import { FilterChips, type FilterChip } from "@/components/shared/filter-chips";
 import type { SubcontractorStatus, VendorKind } from "@construction/shared";
 
@@ -50,16 +50,16 @@ const stableSortedRowModel = getSortedRowModel();
 export default function SubcontractorsPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
-  const [tradeFilter, setTradeFilter] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<SubcontractorStatus | "all">("all");
-  const [kindFilter, setKindFilter] = useState<VendorKind | "all">("all");
+  const [tradeFilter, setTradeFilter] = useState<string[]>([]);
+  const [statusFilter, setStatusFilter] = useState<SubcontractorStatus[]>([]);
+  const [kindFilter, setKindFilter] = useState<VendorKind[]>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
   const { data, isLoading } = trpc.subcontractor.list.useQuery({
     search: search || undefined,
-    trade: tradeFilter ?? undefined,
-    status: statusFilter === "all" ? undefined : statusFilter,
-    kind: kindFilter === "all" ? undefined : kindFilter,
+    trades: tradeFilter.length ? tradeFilter : undefined,
+    statuses: statusFilter.length ? statusFilter : undefined,
+    kinds: kindFilter.length ? kindFilter : undefined,
   });
 
   const subcontractors = React.useMemo(() => data ?? [], [data]);
@@ -174,23 +174,14 @@ export default function SubcontractorsPage() {
 
   // Derive filter chips from active secondary filter values
   const activeChips: FilterChip[] = [
-    ...(kindFilter !== "all"
-      ? [{
-          label: `Type: ${kindLabel(kindFilter)}`,
-          onRemove: () => setKindFilter("all"),
-        }]
+    ...(kindFilter.length
+      ? [{ label: `Type: ${kindFilter.map(kindLabel).join(", ")}`, onRemove: () => setKindFilter([]) }]
       : []),
-    ...(statusFilter !== "all"
-      ? [{
-          label: `Status: ${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}`,
-          onRemove: () => setStatusFilter("all"),
-        }]
+    ...(statusFilter.length
+      ? [{ label: `Status: ${statusFilter.map((x) => x.charAt(0).toUpperCase() + x.slice(1)).join(", ")}`, onRemove: () => setStatusFilter([]) }]
       : []),
-    ...(tradeFilter !== null
-      ? [{
-          label: `Trade: ${tradeFilter}`,
-          onRemove: () => setTradeFilter(null),
-        }]
+    ...(tradeFilter.length
+      ? [{ label: `Trade: ${tradeFilter.join(", ")}`, onRemove: () => setTradeFilter([]) }]
       : []),
   ];
 
@@ -209,9 +200,9 @@ export default function SubcontractorsPage() {
 
   const clearAllFilters = () => {
     setSearch("");
-    setStatusFilter("all");
-    setKindFilter("all");
-    setTradeFilter(null);
+    setStatusFilter([]);
+    setKindFilter([]);
+    setTradeFilter([]);
   };
 
   return (
@@ -246,32 +237,26 @@ export default function SubcontractorsPage() {
 
       <ListToolbar summary={data ? `${subcontractors.length} shown` : undefined}>
         <SearchField value={search} onChange={setSearch} placeholder="Search company, contact or email" />
-        <FilterSelect
-          label="Trade or category"
-          value={tradeFilter ?? "all"}
-          onChange={(v) => setTradeFilter(v === "all" ? null : v)}
-          options={[{ value: "all", label: "All trades" }, ...SIMPLE_TRADES.map((t) => ({ value: t, label: t }))]}
+        <MultiFilterSelect
+          label="Trade"
+          allLabel="All trades"
+          options={SIMPLE_TRADES.map((t) => ({ value: t, label: t }))}
+          selected={tradeFilter}
+          onChange={setTradeFilter}
         />
-        <FilterSelect
+        <MultiFilterSelect
           label="Type"
-          value={kindFilter}
-          onChange={(v) => setKindFilter(v as VendorKind | "all")}
-          options={[
-            { value: "all", label: "All types" },
-            { value: "subcontractor", label: "Subcontractors" },
-            { value: "supplier", label: "Suppliers" },
-          ]}
+          allLabel="All types"
+          options={[{ value: "subcontractor", label: "Subcontractors" }, { value: "supplier", label: "Suppliers" }]}
+          selected={kindFilter}
+          onChange={(v) => setKindFilter(v as VendorKind[])}
         />
-        <FilterSelect
+        <MultiFilterSelect
           label="Status"
-          value={statusFilter}
-          onChange={(v) => setStatusFilter(v as SubcontractorStatus | "all")}
-          options={[
-            { value: "all", label: "All statuses" },
-            { value: "active", label: "Active" },
-            { value: "inactive", label: "Inactive" },
-            { value: "blacklisted", label: "Blacklisted" },
-          ]}
+          allLabel="All statuses"
+          options={[{ value: "active", label: "Active" }, { value: "inactive", label: "Inactive" }, { value: "blacklisted", label: "Blacklisted" }]}
+          selected={statusFilter}
+          onChange={(v) => setStatusFilter(v as SubcontractorStatus[])}
         />
       </ListToolbar>
       <FilterChips chips={activeChips} onClearAll={clearAllFilters} />
@@ -398,19 +383,19 @@ export default function SubcontractorsPage() {
         </div>
       ) : (
         <EmptyState
-          icon={search || tradeFilter !== null || statusFilter !== "all" || kindFilter !== "all" ? SearchX : HardHat}
+          icon={search || tradeFilter.length > 0 || statusFilter.length > 0 || kindFilter.length > 0 ? SearchX : HardHat}
           heading={
-            search || tradeFilter !== null || statusFilter !== "all" || kindFilter !== "all"
+            search || tradeFilter.length > 0 || statusFilter.length > 0 || kindFilter.length > 0
               ? "No subs or vendors match your filters"
               : "No subs or vendors yet"
           }
           description={
-            search || tradeFilter !== null || statusFilter !== "all" || kindFilter !== "all"
+            search || tradeFilter.length > 0 || statusFilter.length > 0 || kindFilter.length > 0
               ? "Try adjusting your search or filter criteria."
               : "Add your first subcontractor or supplier to start building your directory."
           }
           action={
-            !(search || tradeFilter !== null || statusFilter !== "all" || kindFilter !== "all")
+            !(search || tradeFilter.length > 0 || statusFilter.length > 0 || kindFilter.length > 0)
               ? { label: "Add Sub or Vendor", href: "/subcontractors/new" }
               : undefined
           }

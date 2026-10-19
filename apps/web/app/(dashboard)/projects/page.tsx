@@ -6,10 +6,12 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { useQueryState, useQueryStates, parseAsString, parseAsInteger, parseAsStringEnum } from "nuqs";
+import { useQueryState, useQueryStates, parseAsString, parseAsInteger, parseAsStringEnum, parseAsArrayOf } from "nuqs";
 import { ProjectsTable } from "./components/projects-table";
 import { ProjectsFilters, type FilterState } from "./components/projects-filters";
 import { PageHeader } from "@/components/shared/page-header";
+
+const PHASES: LifecyclePhase[] = ['opportunity', 'estimating', 'submitted', 'awarded', 'active', 'substantial_completion', 'closed', 'warranty', 'archived', 'on_hold', 'lost'];
 
 export default function ProjectsPage() {
   const { orgRole } = useAuth();
@@ -19,7 +21,8 @@ export default function ProjectsPage() {
   const [filters, setFilters] = useQueryStates({
     search: parseAsString,
     customer: parseAsString,
-    lifecyclePhase: parseAsStringEnum<LifecyclePhase>(['opportunity', 'estimating', 'submitted', 'awarded', 'active', 'substantial_completion', 'closed', 'warranty', 'archived', 'on_hold', 'lost']),
+    phases: parseAsArrayOf(parseAsStringEnum<LifecyclePhase>(PHASES)),
+    phaseMode: parseAsStringEnum<'show' | 'hide'>(['show', 'hide']),
     assignedUser: parseAsString,
     startDateFrom: parseAsString,
     startDateTo: parseAsString,
@@ -36,7 +39,8 @@ export default function ProjectsPage() {
   const { data, isLoading } = trpc.project.list.useQuery({
     search: filters.search ?? undefined,
     customerId: filters.customer ?? undefined,
-    lifecyclePhase: filters.lifecyclePhase ?? undefined,
+    lifecyclePhases: filters.phases?.length && filters.phaseMode !== 'hide' ? filters.phases : undefined,
+    excludeLifecyclePhases: filters.phases?.length && filters.phaseMode === 'hide' ? filters.phases : undefined,
     assignedUserId: filters.assignedUser ?? undefined,
     startDateFrom: filters.startDateFrom ? new Date(filters.startDateFrom).toISOString() : undefined,
     startDateTo: filters.startDateTo ? new Date(filters.startDateTo).toISOString() : undefined,
@@ -54,7 +58,7 @@ export default function ProjectsPage() {
   const isFiltered = !!(
     filters.search ||
     filters.customer ||
-    filters.lifecyclePhase ||
+    filters.phases?.length ||
     filters.assignedUser ||
     filters.startDateFrom ||
     filters.startDateTo

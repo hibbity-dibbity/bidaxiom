@@ -370,6 +370,14 @@ export const projectRouter = router({
         conditions.push(eq(schema.projects.lifecyclePhase, input.lifecyclePhase));
       }
 
+      if (input.lifecyclePhases?.length) {
+        conditions.push(inArray(schema.projects.lifecyclePhase, input.lifecyclePhases));
+      }
+      if (input.excludeLifecyclePhases?.length) {
+        // Projects with no phase set are kept: they are not in the excluded list.
+        conditions.push(sql`(${schema.projects.lifecyclePhase} IS NULL OR ${schema.projects.lifecyclePhase} NOT IN (${sql.join(input.excludeLifecyclePhases.map((p) => sql`${p}`), sql`, `)}))`);
+      }
+
       if (input.search) {
         const searchCond = or(
           like(schema.projects.name, `%${input.search}%`),

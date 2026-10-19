@@ -156,6 +156,10 @@ export const updateProjectSchema = z.object({
 export const listProjectsSchema = z.object({
   status: projectStatusEnum.optional(),
   lifecyclePhase: lifecyclePhaseEnum.optional(),
+  /** Any of these phases. */
+  lifecyclePhases: z.array(lifecyclePhaseEnum).max(20).optional(),
+  /** None of these phases. */
+  excludeLifecyclePhases: z.array(lifecyclePhaseEnum).max(20).optional(),
   search: z.string().optional(),
   customerId: z.string().uuid().optional(),
   assignedUserId: z.string().optional(),

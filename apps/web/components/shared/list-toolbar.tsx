@@ -1,10 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { Search } from "lucide-react";
+import { Search, ChevronDown } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 /**
@@ -65,5 +68,79 @@ export function FilterSelect({
         ))}
       </SelectContent>
     </Select>
+  );
+}
+
+/**
+ * Pick any number of values. With `mode` and `onModeChange` the list can also be turned around to
+ * "Hide selected", so "everything except Closed, Archived and On Hold" is three clicks.
+ */
+export function MultiFilterSelect({
+  label,
+  allLabel,
+  options,
+  selected,
+  onChange,
+  mode = "show",
+  onModeChange,
+  className,
+}: {
+  /** Read aloud for screen readers and used on the button, e.g. "Phase". */
+  label: string;
+  /** What the button says when nothing is selected, e.g. "All phases". */
+  allLabel: string;
+  options: { value: string; label: string }[];
+  selected: string[];
+  onChange: (values: string[]) => void;
+  mode?: "show" | "hide";
+  onModeChange?: (mode: "show" | "hide") => void;
+  className?: string;
+}) {
+  const toggle = (v: string) => onChange(selected.includes(v) ? selected.filter((x) => x !== v) : [...selected, v]);
+  const text =
+    selected.length === 0
+      ? allLabel
+      : mode === "hide"
+        ? `${label}: hiding ${selected.length}`
+        : selected.length === 1
+          ? options.find((o) => o.value === selected[0])?.label ?? selected[0]
+          : `${label}: ${selected.length}`;
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="outline" aria-label={label} className={cn("w-full justify-between font-normal sm:w-[170px]", selected.length > 0 && "border-primary/60", className)}>
+          <span className="truncate">{text}</span>
+          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-64 p-2">
+        {onModeChange && (
+          <div className="mb-2 grid grid-cols-2 gap-1 rounded-md bg-muted p-1 text-sm">
+            {(["show", "hide"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => onModeChange(m)}
+                className={cn("rounded px-2 py-1", mode === m ? "bg-background font-medium shadow-sm" : "text-muted-foreground")}
+              >
+                {m === "show" ? "Show selected" : "Hide selected"}
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="max-h-72 overflow-auto">
+          {options.map((o) => (
+            <label key={o.value} className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-muted">
+              <Checkbox checked={selected.includes(o.value)} onCheckedChange={() => toggle(o.value)} />
+              {o.label}
+            </label>
+          ))}
+        </div>
+        <div className="mt-2 flex justify-between border-t pt-2 text-sm">
+          <button type="button" className="text-muted-foreground hover:text-foreground" onClick={() => onChange(options.map((o) => o.value))}>Select all</button>
+          <button type="button" className="text-muted-foreground hover:text-foreground" onClick={() => onChange([])}>Clear</button>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
