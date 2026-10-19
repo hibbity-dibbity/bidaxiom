@@ -16,6 +16,7 @@ interface Project {
   customerName: string | null;
   lifecyclePhase: LifecyclePhase | null;
   startDate: string | null;
+  metadata?: { importReview?: { items?: unknown[]; reviewedAt?: string | null } } | null;
 }
 
 // Phase variant mapping (read-only badge, no interactivity needed)
@@ -59,6 +60,7 @@ export function createColumns(): ColumnDef<Project>[] {
       cell: ({ row }) => {
         const project = row.original;
         return (
+          <>
           <Link
             href={`/projects/${project.slug}`}
             className="font-semibold text-sm hover:underline"
@@ -66,6 +68,10 @@ export function createColumns(): ColumnDef<Project>[] {
           >
             {project.name}
           </Link>
+          {project.metadata?.importReview?.items?.length && !project.metadata.importReview.reviewedAt ? (
+            <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 align-middle text-[11px] font-medium text-amber-900">Review</span>
+          ) : null}
+          </>
         );
       },
     },

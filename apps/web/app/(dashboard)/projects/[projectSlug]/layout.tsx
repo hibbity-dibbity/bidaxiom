@@ -8,6 +8,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/lib/auth-context";
 import { ProjectHeader } from "./components/project-header";
 import { ProjectTabs } from "./components/project-tabs";
+import { ImportReviewBanner, type ImportReview } from "./components/import-review-banner";
 
 interface ProjectLayoutProps {
   children: ReactNode;
@@ -144,7 +145,14 @@ export default function ProjectLayout({ children, params }: ProjectLayoutProps) 
         />
       </div>
       {/* Scrollable content area with restored top padding */}
-      <div className="pt-8">{children}</div>
+      <div className="pt-8">
+        <ImportReviewBanner
+          projectId={project.id}
+          review={(project.metadata as { importReview?: ImportReview } | null)?.importReview}
+          canClear={["org:admin", "org:project_manager", "org:accountant"].includes(orgRole ?? "")}
+        />
+        {children}
+      </div>
     </div>
   );
 }

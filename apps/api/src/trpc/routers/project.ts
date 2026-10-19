@@ -1285,6 +1285,28 @@ export const projectRouter = router({
     }),
 
   /**
+   * Mark an imported project's "needs review" flags as reviewed. The flags stay on record, with who cleared them and when.
+   */
+  dismissImportReview: protectedProcedure
+    .input(z.object({ projectId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.userId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+      if (!["org:admin", "org:project_manager", "org:accountant"].includes(ctx.orgRole ?? "")) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only an admin, project manager or accountant can mark an import as reviewed." });
+      }
+      const { db, schema } = ctx.tenant;
+      const [project] = await db.select({ metadata: schema.projects.metadata }).from(schema.projects).where(eq(schema.projects.id, input.projectId)).limit(1);
+      if (!project) throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+      const meta = (project.metadata ?? {}) as Record<string, unknown>;
+      const review = meta.importReview as { items?: unknown[]; reviewedAt?: string | null } | undefined;
+      if (!review) return { ok: true };
+      await db.update(schema.projects)
+        .set({ metadata: { ...meta, importReview: { ...review, reviewedAt: new Date().toISOString(), reviewedBy: ctx.userId } } })
+        .where(eq(schema.projects.id, input.projectId));
+      return { ok: true };
+    }),
+
+  /**
    * Restore a soft-deleted project. Clears deleted_at, sets restored_at, writes audit log.
    * Admin-only (org:admin).
    */
