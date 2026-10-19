@@ -12,6 +12,7 @@ const { db } = await import("../db/client.js");
 const { createTenantDb, closePool } = await import("../db/client.js");
 const { organizations, tenants, users } = await import("../db/schema/public.js");
 const { getStorageClient, getBucketName, buildStorageKey } = await import("../storage/client.js");
+const { nextOrderNumber } = await import("@construction/shared");
 const { generateNameSlug, generateSlug, generateUniqueProjectSlug } = await import("../utils/slug.js");
 
 /**
@@ -41,10 +42,12 @@ interface PlanJob {
   customerFolder: string; jobNumber: string; name: string; phase: string; spStatus: string | null; sourceDir: string | null;
   address: { street1: string; city: string; state: string; zip: string } | null; flags: Flag[];
   contract: number | null; invoices: PlanInvoice[]; assumedChangeOrder: number | null;
+  cost?: { proposal: number; co: number | null; breakdown: Record<string, number>; source: string | null; notes: string };
 }
 interface Attachment { customerFolder: string; sourceDir: string; attachToJob: string; subfolder: string }
 const plan = JSON.parse(readFileSync(PLAN, "utf8")) as { jobs: PlanJob[]; attachments: Attachment[] };
 
+const r2 = (n: number) => Math.round(n * 100) / 100;
 const norm = (s: string | null | undefined) => (s ?? "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 const JUNK = /^(~\$|\.ds_store$|thumbs\.db$|desktop\.ini$|\.tmp$)/i;
 const MIME: Record<string, string> = {
@@ -87,7 +90,9 @@ for (const c of customerRows) {
   if (c.companyName) customerKey.set(norm(c.companyName), c.id);
   customerKey.set(norm(c.contactName), customerKey.get(norm(c.contactName)) ?? c.id);
 }
-const existingProjects = await tdb.select({ id: t.projects.id, jobNumber: t.projects.jobNumber }).from(t.projects);
+const existingProjects = await tdb.select({ id: t.projects.id, jobNumber: t.projects.jobNumber, metadata: t.projects.metadata }).from(t.projects);
+/** Projects an earlier run of this script created: only these are topped up with a contract or costs. */
+const importedIds = new Set(existingProjects.filter((p) => (p.metadata as { import?: { source?: string } } | null)?.import?.source === "sharepoint").map((p) => p.id));
 const projectByJob = new Map(existingProjects.filter((p) => p.jobNumber).map((p) => [p.jobNumber as string, p.id]));
 const takenCustomerSlugs = new Set(customerRows.map((c) => c.slug).filter(Boolean) as string[]);
 
@@ -146,10 +151,108 @@ async function uploadFiles(projectId: string, files: FileEntry[], prefix: string
   }
 }
 
+
+const CONTRACT_PHASES = ["active", "on_hold", "closed"];
+
+/** The contract (and any assumed change orders) with its invoicing schedule, invoices and payments. */
+async function createContract(tx: any, p: { id: string }, job: PlanJob) {
+  const contract = job.contract!;
+  // Split the invoices between the contract and any assumed change orders: the contract takes the first dollars billed.
+  type Spec = { number: string; name: string; amount: number; paid: number; unbilled: boolean; date: string | null };
+  const baseInv: Spec[] = [], coInv: Spec[] = [];
+  let cap = contract;
+  for (const inv of job.invoices) {
+    const paid = r2(inv.paid ?? 0);
+    const unbilled = !!inv.unbilled;
+    const baseAmt = r2(Math.min(inv.amount, Math.max(0, cap)));
+    const coAmt = r2(inv.amount - baseAmt);
+    cap = r2(cap - baseAmt);
+    const basePaid = Math.min(paid, baseAmt);
+    if (baseAmt > 0) baseInv.push({ number: inv.number, name: inv.name, amount: baseAmt, paid: r2(basePaid), unbilled, date: inv.date });
+    if (coAmt > 0) coInv.push({ number: baseAmt > 0 ? `${inv.number}-CO` : inv.number, name: "Assumed change orders (imported)", amount: coAmt, paid: r2(paid - basePaid), unbilled, date: inv.date });
+  }
+  const coTotal = r2(coInv.reduce((n, i) => n + i.amount, 0));
+
+  const makeEstimate = async (opts: { name: string; kind: "proposal" | "change_order"; total: number; invs: Spec[]; slugKey: string; number?: string; baseId?: string }) => {
+    const [est] = await tx.insert(t.estimates).values({
+      projectId: p.id, name: opts.name, status: "accepted", projectType: "commercial",
+      directCosts: String(opts.total), totalCost: String(opts.total), isActive: opts.kind === "proposal", kind: opts.kind,
+      number: opts.number ?? null, baseEstimateId: opts.baseId ?? null,
+      acceptedAt: new Date(), submittedAt: new Date(), createdBy: userId,
+      slug: generateSlug(opts.slugKey, opts.kind === "proposal" ? "contract imported" : "assumed change orders"),
+    }).returning();
+    await tx.insert(t.proposalCostLines).values({ estimateId: est.id, type: "other", name: opts.kind === "proposal" ? "Contract amount (imported)" : "Assumed change orders (imported)", quantity: "1", unit: "ea", unitCost: String(opts.total), marginPercent: "0", sortOrder: 0 });
+    // The invoicing schedule: one milestone per invoice, percentages totalling exactly 100.
+    let used = 0;
+    let order = 0;
+    for (const [i, inv] of opts.invs.entries()) {
+      const pct = i === opts.invs.length - 1 ? r2(100 - used) : r2((inv.amount / opts.total) * 100);
+      used = r2(used + pct);
+      const [m] = await tx.insert(t.invoiceMilestones).values({ estimateId: est.id, name: inv.name, percent: String(pct), sortOrder: order }).returning();
+      const status = inv.unbilled ? "draft" : inv.paid >= inv.amount - 0.005 ? "paid" : inv.paid > 0 ? "partially_paid" : "sent";
+      const [row] = await tx.insert(t.invoices).values({
+        projectId: p.id, estimateId: est.id, milestoneId: m.id, number: inv.number, milestoneName: inv.name,
+        percent: String(pct), amount: String(inv.amount), status,
+        sentOn: inv.unbilled ? null : inv.date ? new Date(inv.date).toISOString().slice(0, 10) : null,
+        sortOrder: order++, createdBy: userId, notes: "Imported from SharePoint",
+      }).returning();
+      if (inv.paid > 0) await tx.insert(t.invoicePayments).values({ invoiceId: row.id, amount: String(inv.paid), receivedAt: today, reference: "Imported from SharePoint", createdBy: userId });
+    }
+    return est;
+  };
+
+  const base = await makeEstimate({ name: "Contract (imported from SharePoint)", kind: "proposal", total: contract, invs: baseInv.length ? baseInv : [{ number: `INV${job.jobNumber}-1`, name: "Contract (imported)", amount: contract, paid: 0, unbilled: true, date: null }], slugKey: `est-${job.jobNumber}` });
+  if (coTotal > 0) await makeEstimate({ name: "Assumed change orders (imported, verify)", kind: "change_order", total: coTotal, invs: coInv, slugKey: `co-${job.jobNumber}`, number: `CO${job.jobNumber}-01`, baseId: base.id });
+}
+
+/** True when the project already has a contract or proposal of any kind. */
+async function hasEstimates(projectId: string): Promise<boolean> {
+  return (await tdb.select({ id: t.estimates.id }).from(t.estimates).where(eq(t.estimates.projectId, projectId)).limit(1)).length > 0;
+}
+
+const COST_PHASES = ["active", "closed"];
+const COST_MARKER = "Imported from SharePoint cost sheet";
+
+/**
+ * Projected cost as draft orders (no vendor yet), which is where BidAxiom's Cost Budget and Projected figures come from.
+ * Materials, equipment and extras go on a purchase order; subcontractors and labor on a work order; accepted change
+ * order cost on a work order of its own with no budget (it was not on the proposal). Drafts are never sent anywhere.
+ */
+async function createCostOrders(tx: any, projectId: string, job: PlanJob) {
+  const cost = job.cost!;
+  const [est] = await tx.select({ id: t.estimates.id }).from(t.estimates).where(and(eq(t.estimates.projectId, projectId), eq(t.estimates.isActive, true))).limit(1);
+  const b = cost.breakdown ?? {};
+  const itemized = Object.keys(b).length > 0;
+  const mat = "COGS: Materials & Supplies", eq_ = "COGS: Equipment Rental", sub = "COGS: Subcontract Labor";
+  type L = { description: string; category: string; budget: number; projected: number };
+  const po: L[] = [], wo: L[] = [], co: L[] = [];
+  const add = (arr: L[], description: string, category: string, amount: number | undefined) => { if (amount && amount > 0) arr.push({ description, category, budget: amount, projected: amount }); };
+  if (itemized) {
+    add(po, "Materials (cost sheet)", mat, b.materials);
+    add(po, "Equipment / rental (cost sheet)", eq_, b.equipment);
+    add(po, "Extras (cost sheet)", mat, b.extras);
+    add(wo, "Subcontractors (cost sheet)", sub, b.subs);
+    add(wo, "Labor (cost sheet)", sub, b.labor);
+  } else add(po, "Projected cost (cost sheet total)", mat, cost.proposal);
+  if (cost.co && cost.co > 0) co.push({ description: "Accepted change order cost (cost sheet)", category: sub, budget: 0, projected: cost.co });
+  const used = (await tx.select({ number: t.orders.number }).from(t.orders).where(eq(t.orders.projectId, projectId))).map((u: { number: string }) => u.number);
+  for (const [kind, lines, label] of [["purchase", po, "materials"], ["work", wo, "subs and labor"], ["work", co, "accepted change orders"]] as const) {
+    if (!lines.length) continue;
+    const number = nextOrderNumber(used, kind === "purchase" ? "PO" : "WO", job.jobNumber);
+    used.push(number);
+    const [o] = await tx.insert(t.orders).values({ projectId, estimateId: est?.id ?? null, kind, number, vendorId: null, status: "draft", notes: `${COST_MARKER} (${label}). Assign vendors and adjust before issuing.`, createdBy: userId }).returning();
+    await tx.insert(t.orderLines).values(lines.map((l, i) => ({ orderId: o.id, sourceLineId: null, description: l.description, category: l.category, budgetCost: String(r2(l.budget)), projectedCost: String(r2(l.projected)), sortOrder: i })));
+  }
+}
+
+async function hasCostOrders(projectId: string): Promise<boolean> {
+  const rows = await tdb.select({ notes: t.orders.notes }).from(t.orders).where(eq(t.orders.projectId, projectId));
+  return rows.some((r) => (r.notes ?? "").startsWith(COST_MARKER));
+}
+
 // ---------- jobs ----------
 const report: Array<Record<string, unknown>> = [];
 const today = new Date().toISOString().slice(0, 10);
-const r2 = (n: number) => Math.round(n * 100) / 100;
 
 for (const job of plan.jobs) {
   const srcAbs = job.sourceDir ? join(LIBRARY, job.sourceDir) : null;
@@ -167,7 +270,14 @@ for (const job of plan.jobs) {
   const cust = await customerFor(job.customerFolder);
   entry.customer_action = cust.id ? (cust.created ? "created" : "matched") : "will create";
   const existingId = projectByJob.get(job.jobNumber);
-  entry.project_action = existingId ? "exists (files only)" : "create";
+  const canTopUp = !!existingId && importedIds.has(existingId);
+  const wantContract = !!job.contract && job.contract > 0 && CONTRACT_PHASES.includes(job.phase);
+  const wantCost = !!job.cost && COST_PHASES.includes(job.phase);
+  const needContract = wantContract && (!existingId || (canTopUp && !(await hasEstimates(existingId))));
+  const needCost = wantCost && (!existingId || (canTopUp && !(await hasCostOrders(existingId))));
+  entry.project_action = existingId ? (canTopUp ? "exists (top up)" : "exists (files only)") : "create";
+  entry.adds_contract = needContract ? { contract: job.contract, invoiced: r2(job.invoices.reduce((n, i) => n + i.amount, 0)), paid: r2(job.invoices.reduce((n, i) => n + (i.paid ?? 0), 0)) } : null;
+  entry.adds_cost_orders = needCost ? { budget: job.cost!.proposal, accepted_co_cost: job.cost!.co, itemized: Object.keys(job.cost!.breakdown ?? {}).length > 0 } : null;
 
   if (APPLY) {
     let projectId = existingId;
@@ -189,58 +299,15 @@ for (const job of plan.jobs) {
           reason: "Imported from SharePoint", eventSource: "sharepoint_import",
         });
 
-        if (job.contract && job.contract > 0 && (job.phase === "active" || job.phase === "on_hold")) {
-          const contract = job.contract;
-          // Split the invoices between the contract and any assumed change orders: the contract takes the first dollars billed.
-          type Spec = { number: string; name: string; amount: number; paid: number; unbilled: boolean; date: string | null };
-          const baseInv: Spec[] = [], coInv: Spec[] = [];
-          let cap = contract;
-          for (const inv of job.invoices) {
-            const paid = r2(inv.paid ?? 0);
-            const unbilled = !!inv.unbilled;
-            const baseAmt = r2(Math.min(inv.amount, Math.max(0, cap)));
-            const coAmt = r2(inv.amount - baseAmt);
-            cap = r2(cap - baseAmt);
-            const basePaid = Math.min(paid, baseAmt);
-            if (baseAmt > 0) baseInv.push({ number: inv.number, name: inv.name, amount: baseAmt, paid: r2(basePaid), unbilled, date: inv.date });
-            if (coAmt > 0) coInv.push({ number: baseAmt > 0 ? `${inv.number}-CO` : inv.number, name: "Assumed change orders (imported)", amount: coAmt, paid: r2(paid - basePaid), unbilled, date: inv.date });
-          }
-          const coTotal = r2(coInv.reduce((n, i) => n + i.amount, 0));
-
-          const makeEstimate = async (opts: { name: string; kind: "proposal" | "change_order"; total: number; invs: Spec[]; slugKey: string; number?: string; baseId?: string }) => {
-            const [est] = await tx.insert(t.estimates).values({
-              projectId: p.id, name: opts.name, status: "accepted", projectType: "commercial",
-              directCosts: String(opts.total), totalCost: String(opts.total), isActive: opts.kind === "proposal", kind: opts.kind,
-              number: opts.number ?? null, baseEstimateId: opts.baseId ?? null,
-              acceptedAt: new Date(), submittedAt: new Date(), createdBy: userId,
-              slug: generateSlug(opts.slugKey, opts.kind === "proposal" ? "contract imported" : "assumed change orders"),
-            }).returning();
-            await tx.insert(t.proposalCostLines).values({ estimateId: est.id, type: "other", name: opts.kind === "proposal" ? "Contract amount (imported)" : "Assumed change orders (imported)", quantity: "1", unit: "ea", unitCost: String(opts.total), marginPercent: "0", sortOrder: 0 });
-            // The invoicing schedule: one milestone per invoice, percentages totalling exactly 100.
-            let used = 0;
-            let order = 0;
-            for (const [i, inv] of opts.invs.entries()) {
-              const pct = i === opts.invs.length - 1 ? r2(100 - used) : r2((inv.amount / opts.total) * 100);
-              used = r2(used + pct);
-              const [m] = await tx.insert(t.invoiceMilestones).values({ estimateId: est.id, name: inv.name, percent: String(pct), sortOrder: order }).returning();
-              const status = inv.unbilled ? "draft" : inv.paid >= inv.amount - 0.005 ? "paid" : inv.paid > 0 ? "partially_paid" : "sent";
-              const [row] = await tx.insert(t.invoices).values({
-                projectId: p.id, estimateId: est.id, milestoneId: m.id, number: inv.number, milestoneName: inv.name,
-                percent: String(pct), amount: String(inv.amount), status,
-                sentOn: inv.unbilled ? null : inv.date ? new Date(inv.date).toISOString().slice(0, 10) : null,
-                sortOrder: order++, createdBy: userId, notes: "Imported from SharePoint",
-              }).returning();
-              if (inv.paid > 0) await tx.insert(t.invoicePayments).values({ invoiceId: row.id, amount: String(inv.paid), receivedAt: today, reference: "Imported from SharePoint", createdBy: userId });
-            }
-            return est;
-          };
-
-          const base = await makeEstimate({ name: "Contract (imported from SharePoint)", kind: "proposal", total: contract, invs: baseInv.length ? baseInv : [{ number: `INV${job.jobNumber}-1`, name: "Contract (imported)", amount: contract, paid: 0, unbilled: true, date: null }], slugKey: `est-${job.jobNumber}` });
-          if (coTotal > 0) await makeEstimate({ name: "Assumed change orders (imported, verify)", kind: "change_order", total: coTotal, invs: coInv, slugKey: `co-${job.jobNumber}`, number: `CO${job.jobNumber}-01`, baseId: base.id });
-        }
+        if (job.contract && job.contract > 0 && CONTRACT_PHASES.includes(job.phase)) await createContract(tx, p, job);
+        if (job.cost && COST_PHASES.includes(job.phase)) await createCostOrders(tx, p.id, job);
         return p.id;
       });
       projectByJob.set(job.jobNumber, projectId);
+    } else if (canTopUp) {
+      // The project exists from an earlier run: add the contract or cost orders it does not have yet.
+      if (needContract) await tdb.transaction(async (tx) => { await createContract(tx, { id: projectId! }, job); });
+      if (needCost) await tdb.transaction(async (tx) => { await createCostOrders(tx, projectId!, job); });
     }
     const log = { uploaded: 0, skipped: 0, failed: [] as string[] };
     if (srcOk) await uploadFiles(projectId, files, "", log);
