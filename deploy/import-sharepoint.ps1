@@ -28,7 +28,11 @@ $cfg = Get-Content (Join-Path $Root "config.json") -Raw | ConvertFrom-Json
 if (-not $PlanDir) { $PlanDir = $cfg.importPlanDir }
 if (-not $Library) { $Library = $cfg.importLibrary }
 if (-not $PlanDir) { $PlanDir = "C:\Users\erict\OneDrive - Thomson Enterprises\Documents\Claude Projects\Construction-Mgmt-Software\migration" }
-if (-not $Library) { $Library = "C:\Users\erict\Thomson Enterprises\TE Projects - Project Files" }
+if (-not $Library) {
+  foreach ($c in @("C:\Users\erict\Thomson Enterprises\TE Projects - Documents\Project Files", "C:\Users\erict\Thomson Enterprises\TE Projects - Project Files")) {
+    if (Test-Path $c) { $Library = $c; break }
+  }
+}
 if (-not $PlanDir -or -not (Test-Path (Join-Path $PlanDir "plan.json"))) { Write-Host "Could not find plan.json. Run with -PlanDir <folder that contains plan.json>."; exit 1 }
 if (-not $Library -or -not (Test-Path $Library)) { Write-Host "Could not find the SharePoint library folder. Run with -Library <path to 'TE Projects - Project Files'>."; exit 1 }
 Write-Host "Plan:    $PlanDir"
