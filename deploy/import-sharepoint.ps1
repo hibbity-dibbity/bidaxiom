@@ -46,8 +46,17 @@ $Stage = "C:\BidAxiomImport\library"
 if (-not $SkipCopy) {
   Write-Host "Copying the library to $Stage (this can take a while the first time)..."
   New-Item -ItemType Directory -Force -Path $Stage | Out-Null
-  robocopy $Library $Stage /E /XJ /R:1 /W:1 /NFL /NDL /NJH /NP /XF "~$*" "Thumbs.db" "desktop.ini" | Out-Null
-  if ($LASTEXITCODE -ge 8) { Write-Host "The copy had errors (robocopy exit $LASTEXITCODE). Check that the folders are set to 'Always keep on this device'."; exit 1 }
+  $CopyLog = "C:\BidAxiomImport\copy.log"
+  robocopy $Library $Stage /E /XJ /R:2 /W:2 /NP /NDL /NJH /XF "~$*" "Thumbs.db" "desktop.ini" /LOG:$CopyLog | Out-Null
+  if ($LASTEXITCODE -ge 8) {
+    $bad = @(Select-String -Path $CopyLog -Pattern "ERROR \d+ \(" -SimpleMatch:$false | ForEach-Object { $_.Line.Trim() })
+    Write-Host ""
+    Write-Host "WARNING: $($bad.Count) file(s) could not be copied (robocopy exit $LASTEXITCODE). The import will go ahead without them."
+    Write-Host "They are usually OneDrive files that are not downloaded yet, files open in another program, or paths that are too long."
+    $bad | Select-Object -First 15 | ForEach-Object { Write-Host "  $_" }
+    Write-Host "Full list: $CopyLog. Fix those files, then run this again; files already imported are skipped and the missing ones are added."
+    Write-Host ""
+  }
 }
 
 $project = $cfg.project
