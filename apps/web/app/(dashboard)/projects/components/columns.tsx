@@ -43,7 +43,6 @@ export function createColumns(): ColumnDef<Project>[] {
       accessorKey: "jobNumber",
       header: "Job #",
       size: 100,
-      enableHiding: false,
       cell: ({ row }) => {
         const jobNumber = row.getValue("jobNumber") as string | null;
         return (
@@ -125,7 +124,6 @@ export function createColumns(): ColumnDef<Project>[] {
     id: "open",
     header: "",
     size: 40,
-    enableHiding: false,
     enableSorting: false,
     cell: () => <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" />,
   });

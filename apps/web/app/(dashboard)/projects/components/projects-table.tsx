@@ -25,8 +25,6 @@ import { Card } from "@/components/ui/card";
 import { ChevronDown, ChevronUp, ChevronsUpDown, Download, FolderOpen, SearchX } from "lucide-react";
 import { createColumns } from "./columns";
 import { cn } from "@/lib/utils";
-import { useColumnVisibility } from "@/hooks/use-column-visibility";
-import { ColumnPicker } from "@/components/shared/column-picker";
 import { EmptyState } from "@/components/shared/empty-state";
 
 interface Project {
@@ -63,7 +61,6 @@ export function ProjectsTable({
 }: ProjectsTableProps) {
   const router = useRouter();
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const { columnVisibility, onColumnVisibilityChange } = useColumnVisibility("projects-list");
 
   // Wrap data in useMemo to prevent infinite re-renders
   const memoizedData = React.useMemo(() => data, [data]);
@@ -75,10 +72,8 @@ export function ProjectsTable({
     columns: columns as ColumnDef<Project>[],
     state: {
       sorting,
-      columnVisibility,
     },
     onSortingChange: setSorting,
-    onColumnVisibilityChange,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     enableSortingRemoval: false,
@@ -171,7 +166,6 @@ export function ProjectsTable({
           <Download className="mr-2 h-4 w-4" />
           Export CSV
         </Button>
-        <ColumnPicker table={table} />
       </InPageHeader>
       <Card>
         <div className="relative w-full overflow-auto max-h-[70vh]">
