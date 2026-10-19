@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import {
   useReactTable,
   getCoreRowModel,
-  getSortedRowModel,
   flexRender,
   SortingState,
   type ColumnDef,
@@ -47,6 +46,10 @@ interface ProjectsTableProps {
   /** True when any filter or search is active — selects EmptyState variant */
   isFiltered: boolean;
   canCreate?: boolean;
+  /** Server-side sort: the column id and direction currently applied to the whole list. */
+  sortBy: string;
+  sortOrder: "asc" | "desc";
+  onSortChange: (sortBy: "jobNumber" | "name" | "customerName" | "lifecyclePhase" | "startDate" | "createdAt", order: "asc" | "desc") => void;
 }
 
 export function ProjectsTable({
@@ -58,9 +61,17 @@ export function ProjectsTable({
   pageSize,
   isFiltered,
   canCreate = true,
+  sortBy,
+  sortOrder,
+  onSortChange,
 }: ProjectsTableProps) {
   const router = useRouter();
-  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const SORTABLE = ["jobNumber", "name", "customerName", "lifecyclePhase", "startDate"] as const;
+  const sorting = React.useMemo<SortingState>(() => (SORTABLE.includes(sortBy as (typeof SORTABLE)[number]) ? [{ id: sortBy, desc: sortOrder === "desc" }] : []), [sortBy, sortOrder]);
+  const setSorting = (updater: SortingState | ((old: SortingState) => SortingState)) => {
+    const next = typeof updater === "function" ? updater(sorting) : updater;
+    if (next[0]) onSortChange(next[0].id as (typeof SORTABLE)[number], next[0].desc ? "desc" : "asc");
+  };
 
   // Wrap data in useMemo to prevent infinite re-renders
   const memoizedData = React.useMemo(() => data, [data]);
@@ -75,7 +86,7 @@ export function ProjectsTable({
     },
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
+    manualSorting: true,
     enableSortingRemoval: false,
   });
 

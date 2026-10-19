@@ -6,7 +6,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { useQueryStates, parseAsString, parseAsInteger, parseAsStringEnum } from "nuqs";
+import { useQueryState, useQueryStates, parseAsString, parseAsInteger, parseAsStringEnum } from "nuqs";
 import { ProjectsTable } from "./components/projects-table";
 import { ProjectsFilters, type FilterState } from "./components/projects-filters";
 import { PageHeader } from "@/components/shared/page-header";
@@ -28,6 +28,10 @@ export default function ProjectsPage() {
 
   const pageSize = 50;
 
+  // Sorting happens on the server so it covers every project, not just the page on screen.
+  const [sortBy, setSortBy] = useQueryState("sort", parseAsStringEnum(["jobNumber", "name", "customerName", "lifecyclePhase", "startDate", "createdAt"]).withDefault("createdAt"));
+  const [sortOrder, setSortOrder] = useQueryState("dir", parseAsStringEnum(["asc", "desc"]).withDefault("desc"));
+
   // Call project.list with filter values mapped from nuqs state
   const { data, isLoading } = trpc.project.list.useQuery({
     search: filters.search ?? undefined,
@@ -36,12 +40,14 @@ export default function ProjectsPage() {
     assignedUserId: filters.assignedUser ?? undefined,
     startDateFrom: filters.startDateFrom ? new Date(filters.startDateFrom).toISOString() : undefined,
     startDateTo: filters.startDateTo ? new Date(filters.startDateTo).toISOString() : undefined,
+    sortBy,
+    sortOrder,
     limit: pageSize,
     offset: ((filters.page ?? 1) - 1) * pageSize,
   });
 
   // Fetch customer list and user list for filter dropdowns
-  const { data: customersData } = trpc.customer.list.useQuery({ limit: 100, offset: 0 }, { enabled: canFilterLists, retry: false });
+  const { data: customersData } = trpc.customer.list.useQuery({ sortBy: "customer", sortOrder: "asc", limit: 2000, offset: 0 }, { enabled: canFilterLists, retry: false });
   const { data: usersData } = trpc.user.list.useQuery({ limit: 100, offset: 0 }, { enabled: canFilterLists, retry: false });
 
   // Compute isFiltered — any secondary filter or search active
@@ -93,6 +99,13 @@ export default function ProjectsPage() {
         page={filters.page ?? 1}
         pageSize={pageSize}
         onPageChange={handlePageChange}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={(by, dir) => {
+          setSortBy(by);
+          setSortOrder(dir);
+          setFilters({ page: 1 });
+        }}
         isFiltered={isFiltered}
         canCreate={canCreate}
       />

@@ -435,9 +435,15 @@ export const projectRouter = router({
         status: schema.projects.status,
         createdAt: schema.projects.createdAt,
         startDate: schema.projects.startDate,
+        customerName: sql`lower(COALESCE(${schema.customers.companyName}, ${schema.customers.contactName}))`,
+        lifecyclePhase: schema.projects.lifecyclePhase,
       }[input.sortBy];
 
-      const orderByClause = input.sortOrder === 'asc' ? asc(sortColumn) : desc(sortColumn);
+      // Empty values go last either way, and ties fall back to id so pages never repeat or skip a row.
+      const orderByClause = [
+        input.sortOrder === 'asc' ? sql`${sortColumn} ASC NULLS LAST` : sql`${sortColumn} DESC NULLS LAST`,
+        asc(schema.projects.id),
+      ];
 
       // Query with customer join
       const [items, totalResult] = await Promise.all([
@@ -472,7 +478,7 @@ export const projectRouter = router({
           .from(schema.projects)
           .leftJoin(schema.customers, eq(schema.projects.customerId, schema.customers.id))
           .where(whereClause)
-          .orderBy(orderByClause)
+          .orderBy(...orderByClause)
           .limit(input.limit)
           .offset(input.offset),
         db

@@ -8,7 +8,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   useReactTable,
   getCoreRowModel,
-  getSortedRowModel,
   flexRender,
   type SortingState,
 } from "@tanstack/react-table";
@@ -74,7 +73,14 @@ function CustomersList() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const PAGE_SIZE = 50;
+  const [page, setPage] = useState(1);
+  // Sorting happens on the server so it covers every customer, not just the page on screen.
+  const [sorting, setSortingState] = React.useState<SortingState>([{ id: "customer", desc: false }]);
+  const setSorting = (updater: SortingState | ((old: SortingState) => SortingState)) => {
+    setSortingState((old) => (typeof updater === "function" ? updater(old) : updater));
+    setPage(1);
+  };
 
   const form = useForm<CustomerFormData>({
     resolver: zodResolver(customerFormSchema),
@@ -97,8 +103,10 @@ function CustomersList() {
   const utils = trpc.useUtils();
   const { data, isLoading } = trpc.customer.list.useQuery({
     search,
-    limit: 100,
-    offset: 0,
+    sortBy: ((): "customer" | "contactName" | "email" => (sorting[0]?.id === "contactName" || sorting[0]?.id === "email" ? sorting[0].id : "customer"))(),
+    sortOrder: sorting[0]?.desc ? "desc" : "asc",
+    limit: PAGE_SIZE,
+    offset: (page - 1) * PAGE_SIZE,
   });
 
   const createMutation = trpc.customer.create.useMutation({
@@ -233,7 +241,7 @@ function CustomersList() {
     state: { sorting },
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
+    manualSorting: true,
     enableSortingRemoval: false,
   });
 
@@ -256,8 +264,8 @@ function CustomersList() {
         }
       />
 
-      <ListToolbar summary={data ? `${data.items?.length ?? 0} shown` : undefined}>
-        <SearchField value={search} onChange={setSearch} placeholder="Search name, company or email" />
+      <ListToolbar summary={data ? `${Number(data.total ?? 0)} shown` : undefined}>
+        <SearchField value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder="Search name, company or email" />
       </ListToolbar>
 
       {/* Customers Table */}
@@ -365,6 +373,15 @@ function CustomersList() {
                 ))}
               </TableBody>
             </Table>
+          </div>
+          <div className="flex items-center justify-between border-t px-4 py-3">
+            <div className="text-sm text-muted-foreground">
+              Showing {(page - 1) * PAGE_SIZE + 1}-{Math.min(page * PAGE_SIZE, Number(data?.total ?? 0))} of {Number(data?.total ?? 0)} customers
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setPage(page - 1)} disabled={page === 1}>Previous</Button>
+              <Button variant="outline" size="sm" onClick={() => setPage(page + 1)} disabled={page * PAGE_SIZE >= Number(data?.total ?? 0)}>Next</Button>
+            </div>
           </div>
         </Card>
       ) : (

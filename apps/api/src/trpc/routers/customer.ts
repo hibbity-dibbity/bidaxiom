@@ -10,7 +10,7 @@ import {
   type CustomerImportMapping,
 } from "@construction/shared";
 import { createAuditLog } from "../../audit/logger.js";
-import { eq, desc, or, like, sql, and } from "drizzle-orm";
+import { eq, desc, asc, or, like, sql, and } from "drizzle-orm";
 import { generateSlug, generateNameSlug, isValidSlug } from "../../utils/slug.js";
 
 /**
@@ -167,7 +167,9 @@ export const customerRouter = router({
     .input(
       z.object({
         search: z.string().optional(),
-        limit: z.number().int().positive().max(100).default(50),
+        sortBy: z.enum(["customer", "contactName", "email", "createdAt"]).default("createdAt"),
+        sortOrder: z.enum(["asc", "desc"]).default("desc"),
+        limit: z.number().int().positive().max(2000).default(50),
         offset: z.number().int().min(0).default(0),
       })
     )
@@ -196,6 +198,13 @@ export const customerRouter = router({
 
       const whereClause = conditions.length > 0 ? conditions[0] : undefined;
 
+      const sortColumn = {
+        customer: sql`lower(COALESCE(${schema.customers.companyName}, ${schema.customers.contactName}))`,
+        contactName: sql`lower(${schema.customers.contactName})`,
+        email: sql`lower(${schema.customers.email})`,
+        createdAt: schema.customers.createdAt,
+      }[input.sortBy];
+
       const [items, totalResult] = await Promise.all([
         db
           .select({
@@ -218,7 +227,12 @@ export const customerRouter = router({
           })
           .from(schema.customers)
           .where(whereClause)
-          .orderBy(desc(schema.customers.createdAt))
+          .orderBy(
+            input.sortOrder === "asc"
+              ? sql`${sortColumn} ASC NULLS LAST`
+              : sql`${sortColumn} DESC NULLS LAST`,
+            asc(schema.customers.id)
+          )
           .limit(input.limit)
           .offset(input.offset),
         db

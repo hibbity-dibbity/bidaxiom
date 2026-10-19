@@ -54,7 +54,7 @@ type LoadedProject = any; // the project row from project.getBySlug
 /** Loads the project and customers, then mounts the form with its values already in place (no reset after mount). */
 export default function EditProjectPage({ params }: EditProjectPageProps) {
   const { data: project } = trpc.project.getBySlug.useQuery({ slug: params.projectSlug });
-  const { data: customersData } = trpc.customer.list.useQuery({ limit: 100, offset: 0 });
+  const { data: customersData } = trpc.customer.list.useQuery({ sortBy: "customer", sortOrder: "asc", limit: 2000, offset: 0 });
   if (!project || !customersData) {
     return (
       <div className="space-y-6">

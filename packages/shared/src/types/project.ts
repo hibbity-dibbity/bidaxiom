@@ -161,7 +161,7 @@ export const listProjectsSchema = z.object({
   assignedUserId: z.string().optional(),
   startDateFrom: z.string().datetime().optional(),
   startDateTo: z.string().datetime().optional(),
-  sortBy: z.enum(['name', 'jobNumber', 'status', 'createdAt', 'startDate']).default('createdAt'),
+  sortBy: z.enum(['name', 'jobNumber', 'status', 'createdAt', 'startDate', 'customerName', 'lifecyclePhase']).default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
   limit: z.number().int().positive().max(100).default(50),
   offset: z.number().int().min(0).default(0),

@@ -60,7 +60,7 @@ export function ProjectForm() {
   const jobNumberSettings = companyProfile?.jobNumberSettings;
 
   // Fetch customers for dropdown
-  const { data: customersData } = trpc.customer.list.useQuery({ limit: 100, offset: 0 });
+  const { data: customersData } = trpc.customer.list.useQuery({ sortBy: "customer", sortOrder: "asc", limit: 2000, offset: 0 });
   const customers = customersData?.items || [];
 
   // Separate form instance for customer dialog
