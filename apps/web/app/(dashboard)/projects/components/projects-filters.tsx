@@ -140,18 +140,21 @@ export function ProjectsFilters({ customers, users, filters, setFilters, summary
         <SearchField value={searchInput} onChange={setSearchInput} placeholder="Search job number or project name" />
         <FilterSelect
           label="Phase"
+          className="sm:w-[150px]"
           value={filters.lifecyclePhase || "all"}
           onChange={(v) => handleFilterChange("lifecyclePhase", v === "all" ? null : v)}
           options={[{ value: "all", label: "All phases" }, ...Object.entries(lifecyclePhaseLabels).map(([value, label]) => ({ value, label }))]}
         />
         <FilterSelect
           label="Customer"
+          className="sm:w-[150px]"
           value={filters.customer || "all"}
           onChange={(v) => handleFilterChange("customer", v === "all" ? null : v)}
           options={[{ value: "all", label: "All customers" }, ...customers.map((c) => ({ value: c.id, label: c.companyName || c.contactName }))]}
         />
         <FilterSelect
           label="Assigned user"
+          className="sm:w-[150px]"
           value={filters.assignedUser || "all"}
           onChange={(v) => handleFilterChange("assignedUser", v === "all" ? null : v)}
           options={[{ value: "all", label: "All users" }, ...users.map((u) => ({ value: u.id, label: userName(u) }))]}
@@ -162,7 +165,7 @@ export function ProjectsFilters({ customers, users, filters, setFilters, summary
           title="Start date from"
           value={filters.startDateFrom || ""}
           onChange={(e) => handleFilterChange("startDateFrom", e.target.value || null)}
-          className="w-full sm:w-[135px]"
+          className="w-full sm:w-[140px]"
         />
         <Input
           type="date"
@@ -170,7 +173,7 @@ export function ProjectsFilters({ customers, users, filters, setFilters, summary
           title="Start date to"
           value={filters.startDateTo || ""}
           onChange={(e) => handleFilterChange("startDateTo", e.target.value || null)}
-          className="w-full sm:w-[135px]"
+          className="w-full sm:w-[140px]"
         />
       </ListToolbar>
 

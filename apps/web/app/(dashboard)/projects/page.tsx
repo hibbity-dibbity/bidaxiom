@@ -82,6 +82,7 @@ export default function ProjectsPage() {
         setFilters={setFilters}
         customers={customersData?.items || []}
         users={usersData?.items || []}
+        summary={isLoading ? undefined : `${data?.total ?? 0} shown`}
       />
 
       {/* Table */}

@@ -1,5 +1,6 @@
 "use client";
 
+import { InPageHeader } from "@/components/shared/page-header";
 import React from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -165,18 +166,13 @@ export function ProjectsTable({
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={exportCsv}
-          disabled={table.getRowModel().rows.length === 0}
-        >
+      <InPageHeader>
+        <Button variant="outline" onClick={exportCsv} disabled={table.getRowModel().rows.length === 0}>
           <Download className="mr-2 h-4 w-4" />
           Export CSV
         </Button>
         <ColumnPicker table={table} />
-      </div>
+      </InPageHeader>
       <Card>
         <div className="relative w-full overflow-auto max-h-[70vh]">
         <Table>

@@ -35,7 +35,7 @@ import { ChevronRight, Plus, ChevronsUpDown, ChevronUp, ChevronDown, Download, H
 import { SIMPLE_TRADES } from "@construction/shared";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
-import { PageHeader } from "@/components/shared/page-header";
+import { PageHeader, InPageHeader } from "@/components/shared/page-header";
 import { ListToolbar, SearchField, FilterSelect } from "@/components/shared/list-toolbar";
 import { FilterChips, type FilterChip } from "@/components/shared/filter-chips";
 import type { SubcontractorStatus, VendorKind } from "@construction/shared";
@@ -258,12 +258,12 @@ export default function SubcontractorsPage() {
         </Card>
       ) : subcontractors.length > 0 ? (
         <div className="space-y-4">
-        <div className="flex items-center justify-end gap-2">
-          <Button variant="outline" size="sm" onClick={exportCsv} disabled={table.getRowModel().rows.length === 0}>
+        <InPageHeader>
+          <Button variant="outline" onClick={exportCsv} disabled={table.getRowModel().rows.length === 0}>
             <Download className="mr-2 h-4 w-4" />
             Export CSV
           </Button>
-        </div>
+        </InPageHeader>
         <Card>
           <div className="relative w-full overflow-auto max-h-[70vh]">
             <Table>
