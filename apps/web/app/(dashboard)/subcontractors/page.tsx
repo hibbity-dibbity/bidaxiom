@@ -31,6 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChevronRight, Plus, Upload, RefreshCw, ChevronsUpDown, ChevronUp, ChevronDown, Download, HardHat, SearchX } from "lucide-react";
 import { SIMPLE_TRADES } from "@construction/shared";
@@ -187,15 +188,19 @@ export default function SubcontractorsPage() {
 
   const utilsQ = trpc.useUtils();
   const qbo = trpc.subcontractor.qboStatus.useQuery(undefined, { retry: false });
-  const syncQbo = trpc.subcontractor.syncFromQuickbooks.useMutation({
+  const [confirmPush, setConfirmPush] = useState(false);
+  const pushQbo = trpc.subcontractor.pushToQuickbooks.useMutation({
     onSuccess: (r) => {
-      toast.success(`Read ${r.read} vendors from QuickBooks`, {
-        description: `${r.added} added, ${r.updated} updated, ${r.linked} matched to existing entries${r.ambiguous ? `, ${r.ambiguous} skipped because the name matched more than one entry` : ""}.`,
-      });
-      utilsQ.subcontractor.list.invalidate();
+      setConfirmPush(false);
+      const parts = [`${r.created} created`, `${r.linked} matched to vendors already in QuickBooks`, `${r.updated} updated`];
+      if (r.failed.length) toast.error(`${r.failed.length} vendors could not be sent`, { description: r.failed.slice(0, 3).map((f) => `${f.name}: ${f.error}`).join(" · ") });
+      else toast.success("Sent to QuickBooks", { description: parts.join(", ") + "." });
       qbo.refetch();
     },
-    onError: (e) => toast.error("QuickBooks sync failed", { description: e.message }),
+    onError: (e) => {
+      setConfirmPush(false);
+      toast.error("Could not send to QuickBooks", { description: e.message });
+    },
   });
 
   const clearAllFilters = () => {
@@ -213,14 +218,9 @@ export default function SubcontractorsPage() {
         actions={
           <>
             {qbo.data?.connected && (
-              <Button
-                variant="outline"
-                disabled={syncQbo.isPending}
-                title={qbo.data.lastSyncAt ? `Last read ${new Date(qbo.data.lastSyncAt).toLocaleString()}` : "Not read yet"}
-                onClick={() => syncQbo.mutate()}
-              >
-                <RefreshCw className={`mr-2 h-4 w-4 ${syncQbo.isPending ? "animate-spin" : ""}`} />
-                Sync from QuickBooks
+              <Button variant="outline" onClick={() => setConfirmPush(true)}>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Send to QuickBooks
               </Button>
             )}
             <Button variant="outline" onClick={() => router.push("/subcontractors/import")}>
@@ -401,6 +401,32 @@ export default function SubcontractorsPage() {
           }
         />
       )}
+
+      <AlertDialog open={confirmPush} onOpenChange={setConfirmPush}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Send your vendor list to QuickBooks?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {qbo.data?.preview
+                ? `${qbo.data.preview.toCreate} active vendors are not in QuickBooks yet (each is created, or linked if a vendor with the same name already exists there). ${qbo.data.preview.toUpdate} already linked vendors changed here since they were last sent and will be updated there. `
+                : ""}
+              This only goes one way: nothing is read back from QuickBooks, and inactive or blacklisted vendors are not created.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={pushQbo.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={pushQbo.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                pushQbo.mutate();
+              }}
+            >
+              {pushQbo.isPending ? "Sending…" : "Send to QuickBooks"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

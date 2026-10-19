@@ -1,226 +1,167 @@
 import { and, eq, isNull } from 'drizzle-orm';
-import { AuditAction, buildVendorRows, VENDOR_ROW_MAPPING } from '@construction/shared';
-import { qboQueryRows } from './client.js';
+import { AuditAction } from '@construction/shared';
+import { createQboClient, promisifyQbo, qboQueryRows, qboQuote, qboFaultText } from './client.js';
 import { getQboAccess } from './receipts.js';
-import { vendorKey } from './vendorBills.js';
+import { qboName } from './sync/mappers/project.js';
 import { createAuditLog } from '../../audit/logger.js';
-import { generateNameSlug } from '../../utils/slug.js';
-import { db as publicDb, createTenantDb } from '../../db/client.js';
-import { tenants } from '../../db/schema/public.js';
 
 /**
- * Reads the QuickBooks Vendor list into Subs & Vendors. QuickBooks stays the book of record: nothing here writes to QuickBooks.
+ * Sends the Subs & Vendors list to QuickBooks. One way only: BidAxiom's list is the master, and nothing here reads
+ * vendors back, so gas stations and one-off vendors that only exist in QuickBooks never come into BidAxiom.
+ * (What QuickBooks says was paid on a vendor's bills is read back separately, with the vendor bills.)
  *
- * - A vendor is matched by its QuickBooks id. The first time, an entry with the same name (ignoring Inc, LLC, punctuation)
- *   is linked instead of duplicated; if two entries could match, neither is touched.
- * - QuickBooks wins on name, contact, email, phone, address, terms, 1099 and active/inactive. A blank in QuickBooks never
- *   erases something BidAxiom has. Subcontractor/supplier, trade, category, credit limit, insurance, W-9 and notes are BidAxiom's.
- * - A vendor that is blacklisted in BidAxiom stays blacklisted.
+ * - A vendor with no QuickBooks link is matched by name to one already in QuickBooks (linked, left as is) or created.
+ * - A linked vendor is updated in QuickBooks only when it changed in BidAxiom since the last send.
+ * - Inactive and blacklisted vendors are not created in QuickBooks. An inactive one that is already linked is made inactive there.
  */
 
 type Tenant = { tenantId: string; db: any; schema: any };
-export const VENDOR_ACTOR = 'quickbooks-sync';
-const OVERLAP_MINUTES = 30;
 
-export interface VendorSyncResult {
-  read: number;
-  added: number;
-  updated: number;
+export interface VendorPushPreview {
+  /** Not in QuickBooks yet (will be created, or linked if the name already exists there). */
+  toCreate: number;
+  /** Linked, and changed in BidAxiom since the last send. */
+  toUpdate: number;
+  upToDate: number;
+}
+
+export interface VendorPushResult {
+  created: number;
   linked: number;
-  ambiguous: number;
+  updated: number;
+  failed: Array<{ name: string; error: string }>;
 }
 
-/** A QuickBooks Vendor as a normalized BidAxiom row. */
-export function qboVendorToRow(v: any): string[] {
-  const addr = v.BillAddr ?? {};
-  const street = [addr.Line1, addr.Line2, addr.Line3].filter(Boolean);
-  const name = String(v.DisplayName ?? v.CompanyName ?? '').trim();
-  const contact = [v.GivenName, v.FamilyName].filter(Boolean).join(' ');
-  return [
-    name,
-    contact,
-    v.PrimaryEmailAddr?.Address ?? '',
-    v.PrimaryPhone?.FreeFormNumber ?? v.Mobile?.FreeFormNumber ?? v.AlternatePhone?.FreeFormNumber ?? '',
-    street[0] ?? '',
-    street.slice(1).join(', '),
-    addr.City ?? '',
-    addr.CountrySubDivisionCode ?? '',
-    addr.PostalCode ?? '',
-    v.Vendor1099 ? 'subcontractor' : 'supplier', // only used for vendors BidAxiom has not seen before
-    '',
-    v.TermRef?.name ?? '',
-    '',
-    v.TaxIdentifier ?? '',
-    v.Vendor1099 ? 'Yes' : 'No',
-    v.Active === false ? 'inactive' : 'active',
-    '',
-  ];
+/** The QuickBooks operations used here, so tests can stand in for QuickBooks. */
+export interface VendorQbo {
+  findByName(name: string): Promise<any | null>;
+  get(id: string): Promise<any | null>;
+  create(body: Record<string, unknown>): Promise<any>;
+  update(body: Record<string, unknown>): Promise<any>;
 }
 
-async function queryAllVendors(accessToken: string, realmId: string, since: Date | null): Promise<any[]> {
-  const where = since ? `Active in (true, false) AND MetaData.LastUpdatedTime >= '${since.toISOString()}'` : `Active in (true, false)`;
-  const rows: any[] = [];
-  for (let start = 1; start < 20_001; start += 500) {
-    const page = await qboQueryRows<any>(accessToken, realmId, 'Vendor', `select * from Vendor where ${where} STARTPOSITION ${start} MAXRESULTS 500`);
-    rows.push(...page);
-    if (page.length < 500) break;
-  }
-  return rows;
+function liveQbo(accessToken: string, realmId: string): VendorQbo {
+  const client = createQboClient(accessToken, realmId);
+  return {
+    findByName: async (name) => (await qboQueryRows<any>(accessToken, realmId, 'Vendor', `select * from Vendor where DisplayName = ${qboQuote(name)}`))[0] ?? null,
+    get: async (id) => {
+      try {
+        return await promisifyQbo<any>(client.getVendor.bind(client), id);
+      } catch {
+        return null;
+      }
+    },
+    create: (body) => promisifyQbo<any>(client.createVendor.bind(client), body),
+    update: (body) => promisifyQbo<any>(client.updateVendor.bind(client), body),
+  };
 }
 
-/** Bring new and changed QuickBooks vendors into Subs & Vendors. `full` ignores the last-check time. */
-export async function pullVendors(t: Tenant, opts: { full?: boolean; actorId?: string; records?: any[] } = {}, now = new Date()): Promise<VendorSyncResult | null> {
+function bodyFor(v: any): Record<string, unknown> {
+  const [given, ...rest] = String(v.contactName ?? '').trim().split(/\s+/).filter(Boolean);
+  const lines = [v.street1, v.street2].filter(Boolean) as string[];
+  return {
+    CompanyName: String(v.companyName).slice(0, 100),
+    GivenName: given || undefined,
+    FamilyName: rest.length ? rest.join(' ').slice(0, 25) : undefined,
+    PrimaryEmailAddr: v.contactEmail ? { Address: v.contactEmail } : undefined,
+    PrimaryPhone: v.contactPhone ? { FreeFormNumber: v.contactPhone } : undefined,
+    BillAddr: lines.length || v.city ? { Line1: lines[0], Line2: lines[1], City: v.city || undefined, CountrySubDivisionCode: v.state || undefined, PostalCode: v.zip || undefined } : undefined,
+    Vendor1099: Boolean(v.is1099),
+  };
+}
+
+async function loadState(t: Tenant) {
   const { db, schema } = t;
-  const access = opts.records ? { accessToken: '', realmId: '' } : await getQboAccess(t);
-  if (!access) return null;
-  const dir = schema.subcontractorDirectory;
-  const [p] = await db.select({ last: schema.companyProfiles.qboVendorsLastCheckAt }).from(schema.companyProfiles).where(isNull(schema.companyProfiles.validTo)).limit(1);
-  const since = !opts.full && p?.last ? new Date(new Date(p.last).getTime() - OVERLAP_MINUTES * 60_000) : null;
-  const recs = opts.records ?? await queryAllVendors(access.accessToken, access.realmId, since);
+  const vendors: any[] = await db.select().from(schema.subcontractorDirectory);
+  const maps: any[] = await db.select().from(schema.qboEntityMappings).where(eq(schema.qboEntityMappings.entityType, 'vendor'));
+  const byVendor = new Map<string, any>(maps.map((m) => [m.platformId, m]));
+  return { vendors, byVendor };
+}
 
-  const existing: any[] = await db.select().from(dir);
-  const byQbo = new Map<string, any>();
-  const unlinked = new Map<string, any[]>();
-  const taken = new Set<string>();
-  for (const e of existing) {
-    if (e.slug) taken.add(e.slug);
-    if (e.qboVendorId) byQbo.set(e.qboVendorId, e);
-    else {
-      const k = vendorKey(e.companyName);
-      if (k) unlinked.set(k, [...(unlinked.get(k) ?? []), e]);
-    }
+/** The QuickBooks id and last-sent time for a vendor: its saved mapping, else the id an older version stored on the entry. */
+function linkOf(v: any, byVendor: Map<string, any>): { qboId: string; syncedAt: Date | null; mapping: any | null } | null {
+  const m = byVendor.get(v.id);
+  if (m) return { qboId: m.qboId, syncedAt: m.lastSyncedAt ? new Date(m.lastSyncedAt) : null, mapping: m };
+  if (v.qboVendorId) return { qboId: v.qboVendorId, syncedAt: v.qboSyncedAt ? new Date(v.qboSyncedAt) : null, mapping: null };
+  return null;
+}
+
+const changedSince = (v: any, at: Date | null) => !at || new Date(v.updatedAt).getTime() > at.getTime() + 1000;
+
+/** What a send would do, without contacting QuickBooks. */
+export async function previewVendorPush(t: Tenant): Promise<VendorPushPreview> {
+  const { vendors, byVendor } = await loadState(t);
+  const out: VendorPushPreview = { toCreate: 0, toUpdate: 0, upToDate: 0 };
+  for (const v of vendors) {
+    const link = linkOf(v, byVendor);
+    if (!link) {
+      if (v.status === 'active') out.toCreate++;
+    } else if (changedSince(v, link.syncedAt)) out.toUpdate++;
+    else out.upToDate++;
   }
+  return out;
+}
 
-  const res: VendorSyncResult = { read: recs.length, added: 0, updated: 0, linked: 0, ambiguous: 0 };
-  for (const rec of recs) {
-    const qboId = String(rec.Id);
-    const built = buildVendorRows([qboVendorToRow(rec)], VENDOR_ROW_MAPPING, { defaultKind: 'supplier' }, [])[0];
-    const v = built?.vendor;
-    if (!v) continue;
+/** Send new and changed vendors to QuickBooks. */
+export async function pushVendors(t: Tenant, opts: { actorId?: string; qbo?: VendorQbo } = {}, now = new Date()): Promise<VendorPushResult | null> {
+  const { db, schema } = t;
+  let qbo = opts.qbo;
+  if (!qbo) {
+    const access = await getQboAccess(t);
+    if (!access) return null;
+    qbo = liveQbo(access.accessToken, access.realmId);
+  }
+  const { vendors, byVendor } = await loadState(t);
+  const res: VendorPushResult = { created: 0, linked: 0, updated: 0, failed: [] };
 
-    let match = byQbo.get(qboId);
-    let linking = false;
-    if (!match) {
-      const cands = unlinked.get(vendorKey(v.companyName)) ?? [];
-      if (cands.length > 1) {
-        res.ambiguous++;
+  const saveLink = async (v: any, existing: any | null, q: any, matchedExisting: boolean) => {
+    const vals = { qboId: String(q.Id), qboSyncToken: q.SyncToken ?? null, direction: 'platform_to_qbo', syncStatus: 'synced', lastSyncedAt: now, updatedAt: now };
+    if (existing) await db.update(schema.qboEntityMappings).set(vals).where(eq(schema.qboEntityMappings.id, existing.id));
+    else await db.insert(schema.qboEntityMappings).values({ entityType: 'vendor', platformId: v.id, ...vals, metadata: { matchedExisting } });
+    await db.update(schema.subcontractorDirectory).set({ qboVendorId: String(q.Id), qboSyncedAt: now }).where(eq(schema.subcontractorDirectory.id, v.id));
+  };
+
+  for (const v of vendors) {
+    try {
+      const link = linkOf(v, byVendor);
+      if (!link) {
+        if (v.status !== 'active') continue;
+        const name = qboName(v.companyName);
+        const found = await qbo.findByName(name);
+        if (found) {
+          await saveLink(v, null, found, true);
+          res.linked++;
+        } else {
+          const q = await qbo.create({ DisplayName: name, ...bodyFor(v), Notes: `BidAxiom vendor ${v.id}` });
+          await saveLink(v, null, q, false);
+          res.created++;
+        }
         continue;
       }
-      if (cands.length === 1) {
-        match = cands[0];
-        linking = true;
+      if (!changedSince(v, link.syncedAt)) continue;
+      const current = await qbo.get(link.qboId);
+      if (!current) {
+        // Deleted in QuickBooks: forget the link; the next send recreates or re-matches it.
+        if (link.mapping) await db.delete(schema.qboEntityMappings).where(eq(schema.qboEntityMappings.id, link.mapping.id));
+        await db.update(schema.subcontractorDirectory).set({ qboVendorId: null, qboSyncedAt: null }).where(eq(schema.subcontractorDirectory.id, v.id));
+        continue;
       }
-    }
-
-    if (!match) {
-      const base = generateNameSlug(v.companyName) || 'vendor';
-      let slug = base;
-      for (let n = 2; taken.has(slug); n++) slug = `${base}-${n}`;
-      taken.add(slug);
-      await db.insert(dir).values({
-        companyName: v.companyName,
-        contactName: v.contactName,
-        contactEmail: v.email,
-        contactPhone: v.phone,
-        street1: v.street1,
-        street2: v.street2,
-        city: v.city,
-        state: v.state,
-        zip: v.zip,
-        trades: [],
-        trade: v.kind === 'subcontractor' ? ['Other'] : [],
-        kind: v.kind,
-        paymentTerms: v.paymentTerms,
-        taxIdLast4: v.taxIdLast4,
-        is1099: v.is1099,
-        status: v.status,
-        slug,
-        qboVendorId: qboId,
-        qboSyncedAt: now,
-        createdBy: opts.actorId ?? VENDOR_ACTOR,
-      });
-      res.added++;
-      continue;
-    }
-
-    // QuickBooks wins on these, but a blank never erases a value.
-    const patch: Record<string, unknown> = {};
-    const set = (col: string, next: unknown) => {
-      if (next !== null && next !== undefined && next !== '' && match[col] !== next) patch[col] = next;
-    };
-    set('companyName', v.companyName);
-    set('contactName', v.contactName);
-    set('contactEmail', v.email);
-    set('contactPhone', v.phone);
-    set('street1', v.street1);
-    set('street2', v.street2);
-    set('city', v.city);
-    set('state', v.state);
-    set('zip', v.zip);
-    set('paymentTerms', v.paymentTerms);
-    set('taxIdLast4', v.taxIdLast4);
-    if (match.is1099 !== v.is1099) patch.is1099 = v.is1099;
-    if (match.status !== 'blacklisted' && match.status !== v.status) patch.status = v.status;
-    if (linking) patch.qboVendorId = qboId;
-    if (Object.keys(patch).length > 0 || linking) {
-      await db.update(dir).set({ ...patch, qboSyncedAt: now, updatedAt: now }).where(eq(dir.id, match.id));
-      if (linking) {
-        res.linked++;
-        const k = vendorKey(match.companyName);
-        unlinked.set(k, (unlinked.get(k) ?? []).filter((x) => x.id !== match.id));
-      }
-      if (Object.keys(patch).filter((k) => k !== 'qboVendorId').length > 0) res.updated++;
+      const q = await qbo.update({ Id: current.Id, SyncToken: current.SyncToken, sparse: true, ...bodyFor(v), Active: v.status === 'active' });
+      await saveLink(v, link.mapping, q, false);
+      res.updated++;
+    } catch (e) {
+      res.failed.push({ name: v.companyName, error: qboFaultText(e) ?? (e instanceof Error ? e.message : 'Unknown error') });
     }
   }
 
-  await db.update(schema.companyProfiles).set({ qboVendorsLastCheckAt: now }).where(isNull(schema.companyProfiles.validTo));
-  if (res.added || res.updated || res.linked) {
+  if (res.created || res.linked || res.updated) {
     await createAuditLog(db, schema, {
       entityType: 'SubcontractorDirectory',
       entityId: t.tenantId,
       action: AuditAction.UPDATE,
-      actorId: opts.actorId ?? VENDOR_ACTOR,
-      changes: { after: { quickbooksVendorSync: res } },
+      actorId: opts.actorId ?? 'quickbooks-sync',
+      changes: { after: { sentVendorsToQuickbooks: { created: res.created, linked: res.linked, updated: res.updated, failed: res.failed.length } } },
     });
   }
   return res;
-}
-
-const EVERY_HOURS = 4;
-let timer: NodeJS.Timeout | null = null;
-let busy = false;
-
-/** Hourly check; companies with vendor sync turned on that have not been read for a few hours get a pass. */
-export function startQboVendorScheduler(): void {
-  if (timer) return;
-  const tick = async () => {
-    if (busy) return;
-    busy = true;
-    try {
-      const all = await publicDb.select().from(tenants).where(eq(tenants.status, 'active'));
-      for (const row of all) {
-        try {
-          const ctx = createTenantDb(row.schemaName);
-          const t: Tenant = { tenantId: row.id, db: ctx.db, schema: ctx };
-          const [s] = await t.db
-            .select({ on: ctx.companyProfiles.qboReadVendors, last: ctx.companyProfiles.qboVendorsLastCheckAt })
-            .from(ctx.companyProfiles)
-            .where(and(isNull(ctx.companyProfiles.validTo)))
-            .limit(1);
-          if (!s?.on) continue;
-          if (s.last && Date.now() - new Date(s.last).getTime() < EVERY_HOURS * 3_600_000) continue;
-          await pullVendors(t);
-        } catch (e) {
-          console.error('[qbo-vendors] pass failed', row.id, e instanceof Error ? e.message : e);
-        }
-      }
-    } catch (e) {
-      console.error('[qbo-vendors] scheduler failed', e instanceof Error ? e.message : e);
-    } finally {
-      busy = false;
-    }
-  };
-  timer = setInterval(tick, 3_600_000);
-  timer.unref?.();
-  setTimeout(tick, 90_000).unref?.();
 }
