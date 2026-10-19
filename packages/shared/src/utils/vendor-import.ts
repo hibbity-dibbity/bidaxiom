@@ -403,6 +403,12 @@ export function buildVendorRows(
   });
 }
 
+/** Layout of a normalized row (same order as the template): used by the server to re-check imports and to normalize QuickBooks vendors. */
+export const VENDOR_ROW_MAPPING: VendorImportMapping = {
+  companyName: 0, contactName: 1, email: 2, phone: 3, street1: 4, street2: 5, city: 6, state: 7, zip: 8,
+  kind: 9, vendorType: 10, paymentTerms: 11, creditLimit: 12, taxId: 13, is1099: 14, status: 15, notes: 16,
+};
+
 /** Column order of the template and of the rows the browser sends to the server (server re-checks with this layout). */
 export const VENDOR_TEMPLATE_HEADERS = [
   "Company Name", "Contact Name", "Email", "Phone", "Street", "Street 2", "City", "State", "ZIP",

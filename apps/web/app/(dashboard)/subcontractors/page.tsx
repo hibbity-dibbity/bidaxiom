@@ -11,6 +11,7 @@ import {
 } from "@tanstack/react-table";
 
 import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -31,7 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChevronRight, Plus, Upload, ChevronsUpDown, ChevronUp, ChevronDown, Download, HardHat, SearchX } from "lucide-react";
+import { ChevronRight, Plus, Upload, RefreshCw, ChevronsUpDown, ChevronUp, ChevronDown, Download, HardHat, SearchX } from "lucide-react";
 import { SIMPLE_TRADES } from "@construction/shared";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -193,6 +194,19 @@ export default function SubcontractorsPage() {
       : []),
   ];
 
+  const utilsQ = trpc.useUtils();
+  const qbo = trpc.subcontractor.qboStatus.useQuery(undefined, { retry: false });
+  const syncQbo = trpc.subcontractor.syncFromQuickbooks.useMutation({
+    onSuccess: (r) => {
+      toast.success(`Read ${r.read} vendors from QuickBooks`, {
+        description: `${r.added} added, ${r.updated} updated, ${r.linked} matched to existing entries${r.ambiguous ? `, ${r.ambiguous} skipped because the name matched more than one entry` : ""}.`,
+      });
+      utilsQ.subcontractor.list.invalidate();
+      qbo.refetch();
+    },
+    onError: (e) => toast.error("QuickBooks sync failed", { description: e.message }),
+  });
+
   const clearAllFilters = () => {
     setSearch("");
     setStatusFilter("all");
@@ -207,6 +221,17 @@ export default function SubcontractorsPage() {
         description="Subcontractors and suppliers you work with, their terms and compliance"
         actions={
           <>
+            {qbo.data?.connected && (
+              <Button
+                variant="outline"
+                disabled={syncQbo.isPending}
+                title={qbo.data.lastSyncAt ? `Last read ${new Date(qbo.data.lastSyncAt).toLocaleString()}` : "Not read yet"}
+                onClick={() => syncQbo.mutate()}
+              >
+                <RefreshCw className={`mr-2 h-4 w-4 ${syncQbo.isPending ? "animate-spin" : ""}`} />
+                Sync from QuickBooks
+              </Button>
+            )}
             <Button variant="outline" onClick={() => router.push("/subcontractors/import")}>
               <Upload className="mr-2 h-4 w-4" />
               Import

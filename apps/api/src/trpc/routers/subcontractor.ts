@@ -11,6 +11,8 @@ import {
   buildVendorRows,
   type VendorImportMapping,
 } from "@construction/shared";
+import { pullVendors } from "../../integrations/quickbooks/vendors.js";
+import { getQboAccess } from "../../integrations/quickbooks/receipts.js";
 import { createAuditLog } from "../../audit/logger.js";
 import { defineAbilitiesFor } from "../../auth/abilities.js";
 import { eq, desc, and, sql, or, ilike, inArray } from "drizzle-orm";
@@ -36,6 +38,29 @@ const IMPORT_WIDTH = 17;
  * Handles company-wide subcontractor directory CRUD with trade filtering.
  */
 export const subcontractorRouter = router({
+  /** Whether QuickBooks is connected, and when its vendor list was last read. Drives the Sync from QuickBooks button. */
+  qboStatus: protectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.tenant) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+    const { db, schema } = ctx.tenant;
+    const [conn] = await db.select({ id: schema.qboConnections.id }).from(schema.qboConnections).where(eq(schema.qboConnections.status, "active")).limit(1);
+    const [p] = await db.select({ last: schema.companyProfiles.qboVendorsLastCheckAt, auto: schema.companyProfiles.qboReadVendors }).from(schema.companyProfiles).where(sql`${schema.companyProfiles.validTo} IS NULL`).limit(1);
+    return { connected: Boolean(conn), lastSyncAt: p?.last ?? null, auto: p?.auto ?? false };
+  }),
+
+  /** Read the QuickBooks vendor list now. Adds new vendors and updates linked ones; nothing is written to QuickBooks. */
+  syncFromQuickbooks: protectedProcedure.mutation(async ({ ctx }) => {
+    if (!ctx.tenant || !ctx.userId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+    requireImportRole(ctx.orgRole);
+    const t = { tenantId: ctx.tenant.tenantId, db: ctx.tenant.db, schema: ctx.tenant.schema };
+    if (!(await getQboAccess(t))) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "QuickBooks isn't connected. Connect it under Settings → Integrations first." });
+    try {
+      const result = await pullVendors(t, { full: true, actorId: ctx.userId });
+      return result!;
+    } catch (e) {
+      throw new TRPCError({ code: "BAD_GATEWAY", message: e instanceof Error ? e.message : "QuickBooks could not be read" });
+    }
+  }),
+
   /** Existing entries' identifying details, so the import preview can flag duplicates. */
   importIndex: protectedProcedure.query(async ({ ctx }) => {
     if (!ctx.tenant) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });

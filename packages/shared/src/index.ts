@@ -400,6 +400,7 @@ export {
 export {
   VENDOR_IMPORT_FIELDS,
   VENDOR_TEMPLATE_HEADERS,
+  VENDOR_ROW_MAPPING,
   suggestVendorMapping,
   buildVendorRows,
   type VendorImportFieldKey,

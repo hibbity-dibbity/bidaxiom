@@ -21,6 +21,7 @@ import { provisionAuthTables } from "./tenant/provision.js";
 import { startQboSyncWorker } from "./integrations/quickbooks/sync/workers.js";
 import { startQboAutoSyncScheduler } from "./integrations/quickbooks/autoSync.js";
 import { startQboReceiptsScheduler } from "./integrations/quickbooks/receipts.js";
+import { startQboVendorScheduler } from "./integrations/quickbooks/vendors.js";
 import { startScheduledReportsWorker, scheduleNextReports } from "./jobs/scheduled-reports.js";
 import { startRecycleBinPurge } from "./services/recycle-bin.js";
 import { startTrialSweeper } from "./services/trial.js";
@@ -129,6 +130,7 @@ try {
   startQboSyncWorker();
   startQboAutoSyncScheduler();
   startQboReceiptsScheduler();
+  startQboVendorScheduler();
   console.log("QBO sync worker started");
 } catch (err) {
   console.warn("QBO sync worker failed to start (Redis may not be running):", err);

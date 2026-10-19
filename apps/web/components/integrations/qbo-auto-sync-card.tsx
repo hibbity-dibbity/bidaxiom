@@ -26,12 +26,14 @@ export function QboAutoSyncCard() {
   const [mode, setMode] = useState<Mode>("off");
   const [interval, setIntervalMinutes] = useState(60);
   const [readPayments, setReadPayments] = useState(false);
+  const [readVendors, setReadVendors] = useState(false);
 
   useEffect(() => {
     if (data) {
       setMode(data.mode);
       setIntervalMinutes(data.intervalMinutes);
       setReadPayments(data.readPayments);
+      setReadVendors(data.readVendors);
     }
   }, [data]);
 
@@ -43,7 +45,7 @@ export function QboAutoSyncCard() {
     onError: (e) => toast.error("Could not save", { description: e.message }),
   });
 
-  const dirty = data ? mode !== data.mode || interval !== data.intervalMinutes || readPayments !== data.readPayments : false;
+  const dirty = data ? mode !== data.mode || interval !== data.intervalMinutes || readPayments !== data.readPayments || readVendors !== data.readVendors : false;
 
   return (
     <Card>
@@ -101,7 +103,16 @@ export function QboAutoSyncCard() {
             </p>
           </div>
         </div>
-        <Button onClick={() => save.mutate({ mode, intervalMinutes: interval, readPayments })} disabled={!dirty || save.isPending}>
+        <div className="flex items-start gap-3 rounded-md border p-3">
+          <Switch checked={readVendors} onCheckedChange={setReadVendors} id="qbo-read-vendors" />
+          <div>
+            <Label htmlFor="qbo-read-vendors">Keep Subs &amp; Vendors in step with QuickBooks</Label>
+            <p className="text-sm text-muted-foreground">
+              Every few hours BidAxiom adds new QuickBooks vendors and updates contact details, terms, 1099 and active status on the ones it already has. Your trade, insurance and W-9 information is never changed. Nothing is changed in QuickBooks. You can also press Sync from QuickBooks on the Subs &amp; Vendors page any time.
+            </p>
+          </div>
+        </div>
+        <Button onClick={() => save.mutate({ mode, intervalMinutes: interval, readPayments, readVendors })} disabled={!dirty || save.isPending}>
           {save.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Save
         </Button>

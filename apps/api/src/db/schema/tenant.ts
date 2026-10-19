@@ -129,6 +129,8 @@ export function createTenantSchema(schemaName: string) {
     qboReadPayments: boolean("qbo_read_payments").notNull().default(false),
     qboReceiptsLastCheckAt: timestamp("qbo_receipts_last_check_at", { withTimezone: true }),
     qboBillsLastCheckAt: timestamp("qbo_bills_last_check_at", { withTimezone: true }),
+    qboReadVendors: boolean("qbo_read_vendors").notNull().default(false),
+    qboVendorsLastCheckAt: timestamp("qbo_vendors_last_check_at", { withTimezone: true }),
     /** Create each sent invoice in QuickBooks (off by default). Only invoices sent on or after qboInvoicePushFrom go over. */
     qboInvoicePush: boolean("qbo_invoice_push").notNull().default(false),
     qboInvoicePushFrom: text("qbo_invoice_push_from"), // YYYY-MM-DD
@@ -671,6 +673,8 @@ export function createTenantSchema(schemaName: string) {
     slug: text("slug").unique(), // URL-safe slug for routing
     importBatchId: uuid("import_batch_id"), // set when added by a spreadsheet import, so the import can be undone
     importSource: text("import_source"),
+    qboVendorId: text("qbo_vendor_id"), // QuickBooks vendor this entry is linked to
+    qboSyncedAt: timestamp("qbo_synced_at", { withTimezone: true }),
     createdBy: text("created_by").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
