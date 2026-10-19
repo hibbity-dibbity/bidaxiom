@@ -412,3 +412,5 @@ export {
   type VendorRowStatus,
   type ExistingVendorKey,
 } from "./utils/vendor-import";
+export { buildCostPerSf, categorizeLine, DEFAULT_SF_CATEGORIES, OTHER_CATEGORY } from "./utils/cost-per-sf";
+export type { SfCategory, SfProject, SfLine, SfCategoryStat, SfProjectRow, CostPerSfResult } from "./utils/cost-per-sf";

@@ -125,6 +125,7 @@ export const createProjectSchema = z.object({
   buildingWidth: z.number().nonnegative().optional(),
   buildingLength: z.number().nonnegative().optional(),
   buildingHeight: z.number().nonnegative().optional(),
+  buildingSqft: z.number().nonnegative().optional(), // typed directly, or width x length when both are given
 });
 
 // Update project input
@@ -150,6 +151,7 @@ export const updateProjectSchema = z.object({
   buildingWidth: z.number().nonnegative().nullable().optional(),
   buildingLength: z.number().nonnegative().nullable().optional(),
   buildingHeight: z.number().nonnegative().nullable().optional(),
+  buildingSqft: z.number().nonnegative().nullable().optional(),
 });
 
 // List projects input schema with advanced filters

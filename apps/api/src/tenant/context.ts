@@ -141,6 +141,7 @@ export async function buildTenantContext(
       documentNamingCounters: tenantDb.documentNamingCounters,
       documentTemplates: tenantDb.documentTemplates,
       projectNotes: tenantDb.projectNotes,
+      costSfCategories: tenantDb.costSfCategories,
       actionPrompts: tenantDb.actionPrompts,
     },
   };

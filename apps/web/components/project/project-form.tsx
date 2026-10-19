@@ -42,6 +42,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Plus, X, Loader2, ExternalLink } from "lucide-react";
 import { getCustomerDisplayName } from "@construction/shared";
+import { BuildingFields } from "@/components/project/building-fields";
 
 type ProjectFormValues = z.infer<typeof createProjectSchema>;
 
@@ -52,8 +53,6 @@ export function ProjectForm() {
   const [addCustomerOpen, setAddCustomerOpen] = useState(false);
   const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
   const [duplicateProject, setDuplicateProject] = useState<{ name: string; slug: string } | null>(null);
-  const [buildingWidth, setBuildingWidth] = useState<number | "">("");
-  const [buildingLength, setBuildingLength] = useState<number | "">("");
 
   // Fetch company profile for job number settings
   const { data: companyProfile } = trpc.company.getCurrent.useQuery();
@@ -339,104 +338,8 @@ export function ProjectForm() {
         {/* LOCATION — AddressInput, no heading above it */}
         <AddressInput form={form} prefix="location" />
 
-        {/* BUILDING DIMENSIONS */}
-        <div className="space-y-3">
-          <p className="text-sm font-medium">Building Dimensions</p>
-          <div className="grid grid-cols-3 gap-4">
-            <FormField
-              control={form.control}
-              name="buildingWidth"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Width</FormLabel>
-                  <div className="flex items-center gap-1.5">
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="any"
-                        placeholder="0"
-                        {...field}
-                        value={field.value ?? ""}
-                        onChange={(e) => {
-                          const val = e.target.value === "" ? undefined : Number(e.target.value);
-                          field.onChange(val);
-                          setBuildingWidth(val ?? "");
-                        }}
-                      />
-                    </FormControl>
-                    <span className="text-sm text-muted-foreground whitespace-nowrap">ft</span>
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="buildingLength"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Length</FormLabel>
-                  <div className="flex items-center gap-1.5">
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="any"
-                        placeholder="0"
-                        {...field}
-                        value={field.value ?? ""}
-                        onChange={(e) => {
-                          const val = e.target.value === "" ? undefined : Number(e.target.value);
-                          field.onChange(val);
-                          setBuildingLength(val ?? "");
-                        }}
-                      />
-                    </FormControl>
-                    <span className="text-sm text-muted-foreground whitespace-nowrap">ft</span>
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="buildingHeight"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Height</FormLabel>
-                  <div className="flex items-center gap-1.5">
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="any"
-                        placeholder="0"
-                        {...field}
-                        value={field.value ?? ""}
-                        onChange={(e) => {
-                          const val = e.target.value === "" ? undefined : Number(e.target.value);
-                          field.onChange(val);
-                        }}
-                      />
-                    </FormControl>
-                    <span className="text-sm text-muted-foreground whitespace-nowrap">ft</span>
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          {/* Live sq ft preview */}
-          {buildingWidth !== "" && buildingLength !== "" && (
-            <p className="text-sm text-muted-foreground">
-              Sq ft:{" "}
-              <span className="font-medium text-foreground">
-                {(Number(buildingWidth) * Number(buildingLength)).toLocaleString()}
-              </span>
-            </p>
-          )}
-        </div>
+        {/* BUILDING SIZE */}
+        <BuildingFields form={form} />
 
         {/* CUSTOMER BUDGET */}
         <FormField

@@ -1581,6 +1581,18 @@ export function createTenantSchema(schemaName: string) {
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   });
 
+  /**
+   * Categories for the Cost per SF report, e.g. "PEMB Erection". A cost line lands in the first category (by sortOrder)
+   * whose keywords appear in its description. Lines that match none are reported as "Other".
+   */
+  const costSfCategories = schema.table("cost_sf_categories", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    keywords: jsonb("keywords").notNull().default([]).$type<string[]>(),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
   return {
     schema,
     auditLogs,
@@ -1660,6 +1672,7 @@ export function createTenantSchema(schemaName: string) {
     documentNamingCounters,
     documentTemplates,
     projectNotes,
+    costSfCategories,
     actionPrompts,
   };
 }

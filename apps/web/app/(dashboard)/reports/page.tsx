@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Search, FileText } from 'lucide-react';
+import { Plus, Search, FileText, Ruler } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -33,6 +33,10 @@ export default function ReportsPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => router.push('/reports/cost-per-sf')}>
+            <Ruler className="mr-2 h-4 w-4" />
+            Cost per SF
+          </Button>
           <Button
             variant="outline"
             onClick={() => router.push('/reports/templates')}

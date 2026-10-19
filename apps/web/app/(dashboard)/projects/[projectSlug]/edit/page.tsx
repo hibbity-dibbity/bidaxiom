@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { AddressInput } from "@/components/ui/address-input";
+import { BuildingFields } from "@/components/project/building-fields";
 import {
   Select,
   SelectContent,
@@ -98,6 +99,10 @@ function EditProjectForm({ params, project, customers }: EditProjectPageProps & 
       customerId: project.customerId,
       description: project.description ?? "",
       poNumber: project.poNumber ?? "",
+      buildingWidth: project.buildingWidth != null ? Number(project.buildingWidth) : undefined,
+      buildingLength: project.buildingLength != null ? Number(project.buildingLength) : undefined,
+      buildingHeight: project.buildingHeight != null ? Number(project.buildingHeight) : undefined,
+      buildingSqft: project.buildingSqft != null ? Number(project.buildingSqft) : undefined,
       status: project.status as "active" | "on_hold" | "completed" | "archived",
       projectType: project.projectType as "commercial" | "residential" | "infrastructure" | "industrial",
       startDate: project.startDate ? new Date(project.startDate).toISOString() : undefined,
@@ -192,7 +197,16 @@ function EditProjectForm({ params, project, customers }: EditProjectPageProps & 
     // Status is deliberately not sent: closing, reopening and holding go through the project's own status controls,
     // so an edit can never reopen a closed project.
     const { status: _status, ...rest } = values;
-    updateMutation.mutate({ id: project.id, expectedUpdatedAt: openedAt.current, ...rest });
+    // A cleared building box arrives as undefined; send null so it is actually cleared.
+    updateMutation.mutate({
+      id: project.id,
+      expectedUpdatedAt: openedAt.current,
+      ...rest,
+      buildingWidth: rest.buildingWidth ?? null,
+      buildingLength: rest.buildingLength ?? null,
+      buildingHeight: rest.buildingHeight ?? null,
+      buildingSqft: rest.buildingSqft ?? null,
+    });
   };
 
   const isSubmitDisabled =
@@ -386,6 +400,8 @@ function EditProjectForm({ params, project, customers }: EditProjectPageProps & 
                     )}
                   />
                 </div>
+
+                <BuildingFields form={form} />
               </CardContent>
             </Card>
 

@@ -262,9 +262,11 @@ export const projectRouter = router({
             buildingWidth: input.buildingWidth != null ? String(input.buildingWidth) : null,
             buildingLength: input.buildingLength != null ? String(input.buildingLength) : null,
             buildingHeight: input.buildingHeight != null ? String(input.buildingHeight) : null,
-            buildingSqft: (input.buildingWidth != null && input.buildingLength != null)
-              ? String(input.buildingWidth * input.buildingLength)
-              : null,
+            buildingSqft: input.buildingSqft != null
+              ? String(input.buildingSqft)
+              : (input.buildingWidth != null && input.buildingLength != null)
+                ? String(input.buildingWidth * input.buildingLength)
+                : null,
           })
           .returning();
 
@@ -721,6 +723,19 @@ export const projectRouter = router({
       if (input.customerBudget !== undefined)
         updateValues.customerBudget =
           input.customerBudget !== null ? String(input.customerBudget) : null;
+
+      // Building size. Square footage is what was typed, or width x length when those changed and no square footage was given.
+      const num = (v: unknown) => (v == null ? null : Number(v));
+      if (input.buildingWidth !== undefined) updateValues.buildingWidth = input.buildingWidth !== null ? String(input.buildingWidth) : null;
+      if (input.buildingLength !== undefined) updateValues.buildingLength = input.buildingLength !== null ? String(input.buildingLength) : null;
+      if (input.buildingHeight !== undefined) updateValues.buildingHeight = input.buildingHeight !== null ? String(input.buildingHeight) : null;
+      if (input.buildingSqft !== undefined) {
+        updateValues.buildingSqft = input.buildingSqft !== null ? String(input.buildingSqft) : null;
+      } else if (input.buildingWidth !== undefined || input.buildingLength !== undefined) {
+        const w = input.buildingWidth !== undefined ? input.buildingWidth : num(existingProject.buildingWidth);
+        const l = input.buildingLength !== undefined ? input.buildingLength : num(existingProject.buildingLength);
+        if (w != null && l != null) updateValues.buildingSqft = String(w * l);
+      }
 
       // Regenerate slug if name or jobNumber changed
       if (input.name !== undefined || input.jobNumber !== undefined) {
