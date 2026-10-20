@@ -48,7 +48,7 @@ export default function OrdersPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Purchase & Work Orders" description="All purchase orders and work orders across your projects." />
-      <ListToolbar summary={data ? `${rows.length} shown · ${dollars(owed)} outstanding` : undefined}>
+      <ListToolbar activeCount={(search.trim() ? 1 : 0) + (filter !== "all" ? 1 : 0)} summary={data ? `${rows.length} shown · ${dollars(owed)} outstanding` : undefined}>
         <SearchField value={search} onChange={setSearch} placeholder="Search number, vendor or project" />
         <FilterSelect
           label="Show"

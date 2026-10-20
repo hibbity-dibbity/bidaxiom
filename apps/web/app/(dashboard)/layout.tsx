@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { SessionWatcher } from "@/components/session-watcher";
+import { MobileTables } from "@/components/layout/mobile-tables";
 
 /**
  * Dashboard route group layout.
@@ -18,6 +19,7 @@ export default function DashboardLayout({
   return (
     <>
       <SessionWatcher />
+      <MobileTables />
       <AppShell>{children}</AppShell>
     </>
   );

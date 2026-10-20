@@ -1,5 +1,6 @@
 "use client";
 
+import { DateInput } from "@/components/ui/date-input";
 import * as React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -172,12 +173,11 @@ export default function InvoicePage({ params }: { params: { projectSlug: string;
           <div className="flex flex-wrap items-end gap-3">
             <label className="space-y-1">
               <span className="block text-xs uppercase tracking-wider text-muted-foreground">Date sent (for Mark as sent)</span>
-              <input type="date" className={field} value={sentOn} onChange={(e) => setSentOn(e.target.value)} />
+              <DateInput className={field} value={sentOn} onChange={(e) => setSentOn(e.target.value)} />
             </label>
             <label className="space-y-1">
               <span className="block text-xs uppercase tracking-wider text-muted-foreground">Due date{inv.paymentTerms ? ` (${inv.paymentTerms})` : ""}</span>
-              <input
-                type="date"
+              <DateInput
                 className={field}
                 value={effectiveDue}
                 onChange={(e) => {
@@ -336,7 +336,7 @@ export default function InvoicePage({ params }: { params: { projectSlug: string;
               }}
             >
               <input aria-label="Payment amount" type="number" step="0.01" min={0} placeholder="Amount" className={field + " w-36 text-right"} value={pay.amount} onChange={(e) => setPay((p) => ({ ...p, amount: e.target.value }))} />
-              <input aria-label="Date received" type="date" className={field + " w-40"} value={pay.date} onChange={(e) => setPay((p) => ({ ...p, date: e.target.value }))} />
+              <input aria-label="Date received" className={field + " w-40"} value={pay.date} onChange={(e) => setPay((p) => ({ ...p, date: e.target.value }))} />
               <input aria-label="Payment reference" placeholder="Check or ACH reference" className={field + " max-w-xs"} value={pay.reference} onChange={(e) => setPay((p) => ({ ...p, reference: e.target.value }))} />
               <Button type="submit" size="sm" disabled={record.isPending}>Record payment</Button>
               <Button

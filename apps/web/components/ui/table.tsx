@@ -2,14 +2,21 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
+/**
+ * On a phone (under 640px) each row turns into a small card: the first cell is the title and every other cell is a
+ * "Column name: value" line, so nothing is squeezed or scrolled sideways. The column names are copied from the header row
+ * by <MobileTables /> (components/layout/mobile-tables.tsx), which also does this for plain <table>s.
+ * Pass stack={false} for a table that should keep its columns and scroll instead (wide data previews).
+ */
 const Table = React.forwardRef<
   HTMLTableElement,
-  React.HTMLAttributes<HTMLTableElement>
->(({ className, ...props }, ref) => (
+  React.HTMLAttributes<HTMLTableElement> & { stack?: boolean }
+>(({ className, stack = true, ...props }, ref) => (
   <div className="relative w-full overflow-auto">
     <table
       ref={ref}
-      className={cn("w-full caption-bottom text-sm", className)}
+      data-stack={stack ? undefined : "off"}
+      className={cn("w-full caption-bottom text-sm", stack && "stack-mobile", className)}
       {...props}
     />
   </div>

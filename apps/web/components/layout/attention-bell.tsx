@@ -1,5 +1,6 @@
 "use client";
 
+import { DateInput } from "@/components/ui/date-input";
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -84,7 +85,7 @@ export function AttentionBell() {
                     )}
                     {dateFor === it.id ? (
                       <div className="flex flex-wrap items-center gap-2">
-                        <input type="date" className="h-8 rounded-md border bg-background px-2 text-sm" value={date} onChange={(e) => setDate(e.target.value)} />
+                        <DateInput className="h-8 rounded-md border bg-background px-2 text-sm" value={date} onChange={(e) => setDate(e.target.value)} />
                         <Button size="sm" disabled={act.isPending || !date} onClick={() => act.mutate({ id: it.id, index: actions.findIndex((a) => a.kind === "set_start_date"), startDate: date })}>Save date</Button>
                         <Button size="sm" variant="ghost" onClick={() => setDateFor(null)}>Cancel</Button>
                       </div>

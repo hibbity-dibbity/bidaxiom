@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Search, ChevronDown } from "lucide-react";
+import { Search, ChevronDown, SlidersHorizontal } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -15,11 +15,37 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
  * Every list page (Projects, Customers, Subs & Vendors, Invoices, PO & WO, Outstanding) uses these pieces,
  * so they look and sit the same everywhere.
  */
-export function ListToolbar({ children, summary, className }: { children: React.ReactNode; summary?: React.ReactNode; className?: string }) {
+export function ListToolbar({
+  children,
+  summary,
+  activeCount = 0,
+  className,
+}: {
+  children: React.ReactNode;
+  summary?: React.ReactNode;
+  /** How many filters (including a search) are in use. Shown on the phone's Filters button so a hidden filter is never a surprise. */
+  activeCount?: number;
+  className?: string;
+}) {
+  // On a phone the search and filters stay folded away behind one button, so the list gets the screen.
+  const [open, setOpen] = React.useState(false);
+  const hasSummary = summary != null && summary !== false;
   return (
-    <div className={cn("flex flex-wrap items-center gap-3", className)}>
-      {children}
-      {summary != null && summary !== false && <span className="text-sm text-muted-foreground sm:ml-auto">{summary}</span>}
+    <div className={cn("space-y-3 sm:space-y-0", className)}>
+      <div className="flex items-center justify-between gap-3 sm:hidden">
+        <Button variant="outline" size="sm" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+          <SlidersHorizontal className="mr-2 h-4 w-4" />
+          Filters
+          {activeCount > 0 && (
+            <span className="ml-2 rounded-full bg-primary px-1.5 text-xs font-medium leading-5 text-primary-foreground">{activeCount}</span>
+          )}
+        </Button>
+        {hasSummary && <span className="min-w-0 text-right text-sm text-muted-foreground">{summary}</span>}
+      </div>
+      <div className={cn("flex-col gap-3 sm:flex sm:flex-row sm:flex-wrap sm:items-center", open ? "flex" : "hidden")}>
+        {children}
+        {hasSummary && <span className="hidden text-sm text-muted-foreground sm:ml-auto sm:inline">{summary}</span>}
+      </div>
     </div>
   );
 }

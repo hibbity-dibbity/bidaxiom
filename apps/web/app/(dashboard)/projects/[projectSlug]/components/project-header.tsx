@@ -100,10 +100,12 @@ function DatePickerField({
         ) : (
           <button
             title={label}
-            className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             aria-label={label}
           >
             <Calendar className="h-3.5 w-3.5" />
+            {/* A bare icon looked like an empty field, so say what it is. */}
+            <span>{field === "startDate" ? "Start date" : "End date"}</span>
           </button>
         )}
       </PopoverTrigger>
@@ -123,6 +125,8 @@ function DatePickerField({
 }
 
 export function ProjectHeader({ project, stats, canTransition, canDelete }: ProjectHeaderProps) {
+  // On a phone only the first three numbers show until "More" is tapped, so the header does not fill the screen.
+  const [moreStats, setMoreStats] = useState(false);
   const utils = trpc.useUtils();
 
   const setModeMutation = trpc.project.setMode.useMutation({
@@ -176,7 +180,7 @@ export function ProjectHeader({ project, stats, canTransition, canDelete }: Proj
       {/* Row 1 (~40px): Job # + Name + Lifecycle phase badge + Mode badge + Actions */}
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-3 min-w-0">
-          <h1 className="text-lg font-semibold truncate">
+          <h1 className="text-lg font-semibold line-clamp-2 sm:truncate">
             {project.jobNumber ? `${project.jobNumber} — ${project.name}` : project.name}
           </h1>
           <LifecyclePhaseBadge
@@ -268,7 +272,7 @@ export function ProjectHeader({ project, stats, canTransition, canDelete }: Proj
       )}
 
       {/* Row 3: Financial stat bar (contract, cash in, cost, cash out) */}
-      <div className="flex items-center gap-6 pb-3 overflow-x-auto">
+      <div className="grid grid-cols-3 gap-x-3 gap-y-2 pb-3 sm:flex sm:items-center sm:gap-6 sm:overflow-x-auto">
         {[
           ["Contract Value", stats?.contractValue ?? 0, false],
           ["Billed", stats?.billed ?? 0, false],
@@ -283,20 +287,28 @@ export function ProjectHeader({ project, stats, canTransition, canDelete }: Proj
           row[0] === "Projected Profit"
             ? [row, ["Margin", stats?.marginPercent ?? null, "percent"]]
             : [row]
-        ).map(([label, amount, signed]) => signed === "percent" ? (
-          <div key={label as string} className="flex flex-col min-w-0 shrink-0">
-            <span className="text-xs text-muted-foreground leading-tight whitespace-nowrap">{label as string}</span>
+        ).map(([label, amount, signed], idx) => signed === "percent" ? (
+          <div key={label as string} className={`${idx >= 3 && !moreStats ? "hidden sm:flex" : "flex"} flex-col min-w-0 sm:shrink-0`}>
+            <span className="text-xs text-muted-foreground leading-tight sm:whitespace-nowrap">{label as string}</span>
             <span className="text-sm font-semibold tabular-nums">{amount === null ? "—" : `${(amount as number).toFixed(1)}%`}</span>
           </div>
         ) : (
-          <div key={label as string} className="flex flex-col min-w-0 shrink-0">
-            <span className="text-xs text-muted-foreground leading-tight whitespace-nowrap">{label as string}</span>
+          <div key={label as string} className={`${idx >= 3 && !moreStats ? "hidden sm:flex" : "flex"} flex-col min-w-0 sm:shrink-0`}>
+            <span className="text-xs text-muted-foreground leading-tight sm:whitespace-nowrap">{label as string}</span>
             <CurrencyDisplay
               amount={amount as number}
               className={`text-sm font-semibold ${signed && (amount as number) < 0 ? "text-destructive" : ""}`}
             />
           </div>
         ))}
+        <button
+          type="button"
+          className="col-span-3 text-left text-xs text-muted-foreground underline underline-offset-2 sm:hidden"
+          aria-expanded={moreStats}
+          onClick={() => setMoreStats((m) => !m)}
+        >
+          {moreStats ? "Show fewer numbers" : "Show all numbers"}
+        </button>
       </div>
     </div>
   );

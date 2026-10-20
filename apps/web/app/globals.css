@@ -126,3 +126,90 @@
     color: hsl(var(--foreground));
   }
 }
+
+/* Tables on a phone: each row becomes a card (see components/ui/table.tsx). */
+@layer components {
+  @media (max-width: 639px) {
+    table.stack-mobile,
+    table.stack-mobile > tbody,
+    table.stack-mobile > tfoot,
+    table.stack-mobile > tbody > tr,
+    table.stack-mobile > tfoot > tr {
+      display: block;
+      width: 100%;
+    }
+    /* The header row is replaced by the labels on each line; keep it for screen readers. */
+    table.stack-mobile > thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+    }
+    table.stack-mobile > tbody > tr,
+    table.stack-mobile > tfoot > tr {
+      height: auto;
+      margin-bottom: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid hsl(var(--border));
+      border-radius: 0.5rem;
+    }
+    table.stack-mobile > tbody > tr > td,
+    table.stack-mobile > tfoot > tr > td {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.75rem;
+      width: auto !important;
+      max-width: none;
+      padding: 0.2rem 0;
+      text-align: right;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+    table.stack-mobile > tbody > tr > td:empty {
+      display: none;
+    }
+    table.stack-mobile > tbody > tr > td[data-label]:not([data-label=""])::before {
+      content: attr(data-label);
+      flex-shrink: 0;
+      max-width: 45%;
+      text-align: left;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: hsl(var(--muted-foreground));
+    }
+    /* First cell is the card's title. */
+    table.stack-mobile > tbody > tr > td:first-child {
+      display: block;
+      padding-bottom: 0.35rem;
+      font-weight: 600;
+      text-align: left;
+    }
+    table.stack-mobile > tbody > tr > td.hidden {
+      display: none;
+    }
+    /* Desktop-only tricks (sticky first column, divider line) have no place on a card. */
+    table.stack-mobile > tbody > tr > td,
+    table.stack-mobile > tfoot > tr > td {
+      position: static !important;
+      border: 0 !important;
+    }
+    table.stack-mobile > tbody > tr,
+    table.stack-mobile > tfoot > tr {
+      position: relative;
+    }
+    /* A cell with no column name (row arrow, actions menu) sits in the card's top-right corner. */
+    table.stack-mobile > tbody > tr > td[data-label=""]:not(:first-child) {
+      position: absolute !important;
+      top: 0.5rem;
+      right: 0.5rem;
+      padding: 0;
+    }
+    table.stack-mobile > tbody > tr > td:first-child {
+      padding-right: 2rem;
+    }
+  }
+}

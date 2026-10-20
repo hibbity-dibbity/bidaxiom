@@ -82,7 +82,7 @@ export default function InvoicesPage({ params }: { params: { projectSlug: string
         </div>
       ) : (
         <>
-          <div className="grid gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {[
               ["Contract value", dollars(data!.total)],
               ["Billed", dollars(data!.billed)],

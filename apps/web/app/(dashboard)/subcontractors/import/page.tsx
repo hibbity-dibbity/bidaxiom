@@ -245,7 +245,7 @@ export default function ImportVendorsPage() {
             </div>
 
             <div className="overflow-x-auto rounded-md border">
-              <Table>
+              <Table stack={false}>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-56">BidAxiom field</TableHead>
@@ -320,7 +320,7 @@ export default function ImportVendorsPage() {
               <Button size="sm" variant={filter === "attention" ? "default" : "outline"} onClick={() => setFilter("attention")}>Needs attention</Button>
             </div>
             <div className="max-h-[28rem] overflow-auto rounded-md border">
-              <Table>
+              <Table stack={false}>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">Row</TableHead>

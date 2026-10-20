@@ -138,7 +138,7 @@ export function ProjectsFilters({ customers, users, filters, setFilters, summary
   const userName = (u: User) => (u.firstName && u.lastName ? `${u.firstName} ${u.lastName}` : u.email);
   return (
     <div className="space-y-2">
-      <ListToolbar summary={summary}>
+      <ListToolbar activeCount={activeChips.length + (searchInput.trim() ? 1 : 0)} summary={summary}>
         <SearchField value={searchInput} onChange={setSearchInput} placeholder="Search job number or project name" />
         <MultiFilterSelect
           label="Phase"

@@ -1,5 +1,6 @@
 "use client";
 
+import { DateInput } from "@/components/ui/date-input";
 import * as React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -159,7 +160,7 @@ export function OrderDetail({ projectSlug, orderId }: { projectSlug: string; ord
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
         <div className="space-y-6">
           <section className="rounded-md border bg-background">
-            <div className="grid grid-cols-[1fr_110px_130px_110px_1.2fr] items-center gap-2 border-b bg-muted px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <div className="hidden grid-cols-[1fr_110px_130px_110px_1.2fr] items-center gap-2 border-b bg-muted px-3 py-2 md:grid text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               <span>{isWork ? "Scope line" : "Item"}</span>
               <span className="text-right">Budget</span>
               <span className="text-right">Projected</span>
@@ -167,18 +168,23 @@ export function OrderDetail({ projectSlug, orderId }: { projectSlug: string; ord
               <span>{isWork ? "Exclusions" : "Category"}</span>
             </div>
             {data.lines.map((l) => (
-              <div key={l.id} className="grid grid-cols-[1fr_110px_130px_110px_1.2fr] items-center gap-2 border-b px-3 py-1.5 text-sm">
-                <div>{l.description}</div>
-                <div className="text-right tabular-nums">{dollars(l.budgetCost)}</div>
-                <BlurNumber label={`Projected cost for ${l.description}`} value={l.projectedCost} disabled={locked} onSave={(v) => updateLine.mutate({ lineId: l.id, projectedCost: v })} />
-                <div className="text-right tabular-nums text-muted-foreground">{signed(l.projectedCost - l.budgetCost)}</div>
-                {isWork ? (
-                  <BlurText label={`Exclusions for ${l.description}`} value={l.exclusions} disabled={locked} placeholder="Not included" onSave={(v) => updateLine.mutate({ lineId: l.id, exclusions: v })} />
-                ) : (
-                  <div className="text-xs text-muted-foreground">{l.category}</div>
-                )}
+              <div key={l.id} className="grid grid-cols-2 items-center gap-x-2 gap-y-1 border-b px-3 py-2 text-sm md:grid-cols-[1fr_110px_130px_110px_1.2fr] md:py-1.5">
+                <div className="col-span-2 font-medium md:col-span-1 md:font-normal">{l.description}</div>
+                <div className="col-span-2 flex items-center justify-between tabular-nums md:col-span-1 md:block md:text-right"><span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground md:hidden">Budget</span>{dollars(l.budgetCost)}</div>
+                <div className="col-span-2 flex items-center justify-between gap-2 md:col-span-1 md:block">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground md:hidden">Projected</span>
+<BlurNumber label={`Projected cost for ${l.description}`} value={l.projectedCost} disabled={locked} onSave={(v) => updateLine.mutate({ lineId: l.id, projectedCost: v })} />
+                </div>
+                <div className="col-span-2 flex items-center justify-between tabular-nums text-muted-foreground md:col-span-1 md:block md:text-right"><span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground md:hidden">Difference</span>{signed(l.projectedCost - l.budgetCost)}</div>
+                <div className="col-span-2 md:col-span-1">
+                  {isWork ? (
+                    <BlurText label={`Exclusions for ${l.description}`} value={l.exclusions} disabled={locked} placeholder="Not included" onSave={(v) => updateLine.mutate({ lineId: l.id, exclusions: v })} />
+                  ) : (
+                    <div className="text-xs text-muted-foreground">{l.category}</div>
+                  )}
+                </div>
                 {l.manual && !locked && (
-                  <button type="button" aria-label={`Remove ${l.description}`} className="col-span-5 -mt-1 justify-self-end text-xs text-muted-foreground hover:text-destructive" onClick={() => removeLine.mutate({ lineId: l.id })}>
+                  <button type="button" aria-label={`Remove ${l.description}`} className="col-span-2 md:col-span-5 -mt-1 justify-self-end text-xs text-muted-foreground hover:text-destructive" onClick={() => removeLine.mutate({ lineId: l.id })}>
                     <Trash2 className="mr-1 inline h-3 w-3" />Remove this line
                   </button>
                 )}
@@ -198,12 +204,12 @@ export function OrderDetail({ projectSlug, orderId }: { projectSlug: string; ord
                 <Button type="submit" size="sm" variant="outline" disabled={addLine.isPending}>Add line</Button>
               </form>
             )}
-            <div className="grid grid-cols-[1fr_110px_130px_110px_1.2fr] items-center gap-2 px-3 py-2 text-sm font-semibold">
-              <span>Order total</span>
-              <span className="text-right tabular-nums">{dollars(data.budgetTotal)}</span>
-              <span className="text-right tabular-nums">{dollars(data.projectedTotal)}</span>
-              <span className="text-right tabular-nums">{signed(data.projectedTotal - data.budgetTotal)}</span>
-              <span />
+            <div className="grid grid-cols-2 items-center gap-x-4 gap-y-1 px-3 py-2 text-sm font-semibold md:grid-cols-[1fr_110px_130px_110px_1.2fr] md:gap-2">
+              <span className="col-span-2 md:col-span-1">Order total</span>
+              <span className="col-span-2 flex items-center justify-between tabular-nums md:col-span-1 md:block md:text-right"><span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground md:hidden">Budget</span>{dollars(data.budgetTotal)}</span>
+              <span className="col-span-2 flex items-center justify-between tabular-nums md:col-span-1 md:block md:text-right"><span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground md:hidden">Projected</span>{dollars(data.projectedTotal)}</span>
+              <span className="col-span-2 flex items-center justify-between tabular-nums md:col-span-1 md:block md:text-right"><span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground md:hidden">Difference</span>{signed(data.projectedTotal - data.budgetTotal)}</span>
+              <span className="hidden md:block" />
             </div>
           </section>
 
@@ -242,7 +248,7 @@ export function OrderDetail({ projectSlug, orderId }: { projectSlug: string; ord
                   }}
                 >
                   <input aria-label="Payment amount" type="number" step="0.01" min={0} placeholder="Amount" className={fieldCls + " w-36 text-right"} value={pay.amount} onChange={(e) => setPay((p) => ({ ...p, amount: e.target.value }))} />
-                  <input aria-label="Payment date" type="date" className={fieldCls + " w-40"} value={pay.date} onChange={(e) => setPay((p) => ({ ...p, date: e.target.value }))} />
+                  <input aria-label="Payment date" className={fieldCls + " w-40"} value={pay.date} onChange={(e) => setPay((p) => ({ ...p, date: e.target.value }))} />
                   <input aria-label="Payment reference" placeholder="Check or ACH reference" className={fieldCls + " max-w-xs"} value={pay.reference} onChange={(e) => setPay((p) => ({ ...p, reference: e.target.value }))} />
                   <Button type="submit" size="sm" disabled={recordPayment.isPending}>Record payment</Button>
                   <Button
@@ -330,10 +336,10 @@ export function OrderDetail({ projectSlug, orderId }: { projectSlug: string; ord
           {!isWork ? (
             <>
               <Field label="Order date">
-                <input type="date" className={fieldCls} disabled={locked} value={o.orderDate ?? ""} onChange={(e) => save({ orderDate: e.target.value || null })} />
+                <DateInput className={fieldCls} disabled={locked} value={o.orderDate ?? ""} onChange={(e) => save({ orderDate: e.target.value || null })} />
               </Field>
               <Field label="Delivery date">
-                <input type="date" className={fieldCls} disabled={locked} value={o.deliveryDate ?? ""} onChange={(e) => save({ deliveryDate: e.target.value || null })} />
+                <DateInput className={fieldCls} disabled={locked} value={o.deliveryDate ?? ""} onChange={(e) => save({ deliveryDate: e.target.value || null })} />
               </Field>
               <Field label="Ship to">
                 <BlurText label="Ship to" value={o.shipTo} disabled={locked} onSave={(v) => save({ shipTo: v })} />
@@ -349,10 +355,10 @@ export function OrderDetail({ projectSlug, orderId }: { projectSlug: string; ord
           ) : (
             <>
               <Field label="Start date">
-                <input type="date" className={fieldCls} disabled={locked} value={o.startDate ?? ""} onChange={(e) => save({ startDate: e.target.value || null })} />
+                <DateInput className={fieldCls} disabled={locked} value={o.startDate ?? ""} onChange={(e) => save({ startDate: e.target.value || null })} />
               </Field>
               <Field label="Finish date">
-                <input type="date" className={fieldCls} disabled={locked} value={o.finishDate ?? ""} onChange={(e) => save({ finishDate: e.target.value || null })} />
+                <DateInput className={fieldCls} disabled={locked} value={o.finishDate ?? ""} onChange={(e) => save({ finishDate: e.target.value || null })} />
               </Field>
             </>
           )}

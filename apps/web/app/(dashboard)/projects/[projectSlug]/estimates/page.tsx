@@ -123,9 +123,9 @@ export default function EstimatesPage({
               size="sm"
               onClick={exportCsv}
               disabled={displayedEstimates.length === 0}
-            >
-              <Download className="mr-2 h-4 w-4" />
-              Export CSV
+             aria-label="Export CSV">
+              <Download className="h-4 w-4 sm:mr-2" />
+              <span className="max-sm:sr-only">Export CSV</span>
             </Button>
             {hasAccepted ? (
               <span className="text-sm text-muted-foreground">Accepted. Changes now go through <Link href={`/projects/${projectSlug}/change-orders`} className="underline underline-offset-2">change orders</Link>.</span>

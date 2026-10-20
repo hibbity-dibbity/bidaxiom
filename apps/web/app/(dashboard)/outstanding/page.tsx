@@ -97,7 +97,7 @@ export default function OutstandingPage() {
       <QboReceiptsPanel />
       <QboBillsPanel />
 
-      <ListToolbar>
+      <ListToolbar activeCount={search.trim() ? 1 : 0}>
         <SearchField value={search} onChange={setSearch} placeholder="Search customer, vendor or project" />
         <FilterSelect
           label="Show"

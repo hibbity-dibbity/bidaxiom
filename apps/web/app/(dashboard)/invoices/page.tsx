@@ -49,7 +49,7 @@ export default function InvoicesPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Invoices" description="All invoices across your projects." />
-      <ListToolbar summary={data ? `${rows.length} shown · ${dollars(open)} outstanding` : undefined}>
+      <ListToolbar activeCount={(search.trim() ? 1 : 0) + (filter !== "all" ? 1 : 0)} summary={data ? `${rows.length} shown · ${dollars(open)} outstanding` : undefined}>
         <SearchField value={search} onChange={setSearch} placeholder="Search number, project or customer" />
         <FilterSelect
           label="Status"

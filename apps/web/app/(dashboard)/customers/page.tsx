@@ -253,8 +253,8 @@ function CustomersList() {
         actions={
           <>
             <Button variant="outline" onClick={() => router.push("/customers/import")}>
-              <Upload className="mr-2 h-4 w-4" />
-              Import
+              <Upload className="h-4 w-4 sm:mr-2" />
+              <span className="max-sm:sr-only">Import</span>
             </Button>
             <Button onClick={handleAdd}>
               <Plus className="mr-2 h-4 w-4" />
@@ -264,7 +264,7 @@ function CustomersList() {
         }
       />
 
-      <ListToolbar summary={data ? `${Number(data.total ?? 0)} shown` : undefined}>
+      <ListToolbar activeCount={search.trim() ? 1 : 0} summary={data ? `${Number(data.total ?? 0)} shown` : undefined}>
         <SearchField value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder="Search name, company or email" />
       </ListToolbar>
 

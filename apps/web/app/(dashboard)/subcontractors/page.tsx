@@ -224,8 +224,8 @@ export default function SubcontractorsPage() {
               </Button>
             )}
             <Button variant="outline" onClick={() => router.push("/subcontractors/import")}>
-              <Upload className="mr-2 h-4 w-4" />
-              Import
+              <Upload className="h-4 w-4 sm:mr-2" />
+              <span className="max-sm:sr-only">Import</span>
             </Button>
             <Button onClick={() => router.push("/subcontractors/new")}>
               <Plus className="mr-2 h-4 w-4" />
@@ -235,7 +235,7 @@ export default function SubcontractorsPage() {
         }
       />
 
-      <ListToolbar summary={data ? `${subcontractors.length} shown` : undefined}>
+      <ListToolbar activeCount={(search.trim() ? 1 : 0) + (tradeFilter.length ? 1 : 0) + (kindFilter.length ? 1 : 0) + (statusFilter.length ? 1 : 0)} summary={data ? `${subcontractors.length} shown` : undefined}>
         <SearchField value={search} onChange={setSearch} placeholder="Search company, contact or email" />
         <MultiFilterSelect
           label="Trade"
@@ -275,9 +275,9 @@ export default function SubcontractorsPage() {
       ) : subcontractors.length > 0 ? (
         <div className="space-y-4">
         <InPageHeader>
-          <Button variant="outline" onClick={exportCsv} disabled={table.getRowModel().rows.length === 0}>
-            <Download className="mr-2 h-4 w-4" />
-            Export CSV
+          <Button variant="outline" onClick={exportCsv} disabled={table.getRowModel().rows.length === 0} aria-label="Export CSV">
+            <Download className="h-4 w-4 sm:mr-2" />
+            <span className="max-sm:sr-only">Export CSV</span>
           </Button>
         </InPageHeader>
         <Card>
