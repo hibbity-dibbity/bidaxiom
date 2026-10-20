@@ -27,6 +27,7 @@ import { emailRouter } from "./routers/email.js";
 import { termsRouter } from "./routers/terms.js";
 import { orderRouter } from "./routers/order.js";
 import { costPerSfRouter } from "./routers/costPerSf.js";
+import { taskRouter } from "./routers/task.js";
 import { templateRouter } from "./routers/template.js";
 import { notesRouter } from "./routers/notes.js";
 import { takeoffRouter } from "./routers/takeoff.js";
@@ -76,6 +77,7 @@ export const appRouter = router({
   terms: termsRouter,
   order: orderRouter,
   costPerSf: costPerSfRouter,
+  task: taskRouter,
   attention: attentionRouter,
   outstanding: outstandingRouter,
   template: templateRouter,

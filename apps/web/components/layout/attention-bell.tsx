@@ -10,6 +10,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { EmailDocumentDialog } from "@/components/shared/email-document-dialog";
+import { prettyDate, tomorrowMorning } from "@/lib/tasks";
 
 type Action =
   | { kind: "phase"; label: string; phase: string }
@@ -32,6 +33,9 @@ export function AttentionBell() {
   const utils = trpc.useUtils();
   const { data } = trpc.attention.list.useQuery(undefined, { refetchInterval: 120_000, refetchOnWindowFocus: true });
   const items = data ?? [];
+  const { data: reminderData } = trpc.task.bellReminders.useQuery(undefined, { refetchInterval: 120_000, refetchOnWindowFocus: true });
+  const reminders = reminderData ?? [];
+  const total = items.length + reminders.length;
   const [open, setOpen] = React.useState(false);
   const [dateFor, setDateFor] = React.useState<string | null>(null);
   const [date, setDate] = React.useState(todayStr());
@@ -42,7 +46,11 @@ export function AttentionBell() {
     utils.project.invalidate();
     utils.invoice.invalidate();
     utils.dashboard.invalidate();
+    utils.task.invalidate();
   };
+  const taskDone = trpc.task.setDone.useMutation({ onSuccess: () => { toast.success("Task done"); utils.task.invalidate(); }, onError: (e) => toast.error(e.message) });
+  const taskDismiss = trpc.task.dismissReminder.useMutation({ onSuccess: () => utils.task.invalidate(), onError: (e) => toast.error(e.message) });
+  const taskSnooze = trpc.task.snooze.useMutation({ onSuccess: () => { toast.success("Okay, tomorrow morning"); utils.task.invalidate(); }, onError: (e) => toast.error(e.message) });
   const act = trpc.attention.act.useMutation({
     onSuccess: () => {
       toast.success("Done");
@@ -58,17 +66,40 @@ export function AttentionBell() {
         <PopoverTrigger asChild>
           <Button variant="ghost" size="icon" className="relative h-8 w-8">
             <Bell className="h-4 w-4" />
-            {items.length > 0 && (
+            {total > 0 && (
               <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-destructive-foreground">
-                {items.length > 9 ? "9+" : items.length}
+                {total > 9 ? "9+" : total}
               </span>
             )}
-            <span className="sr-only">{items.length > 0 ? `${items.length} items need your attention` : "Notifications"}</span>
+            <span className="sr-only">{total > 0 ? `${total} items need your attention` : "Notifications"}</span>
           </Button>
         </PopoverTrigger>
         <PopoverContent align="end" className="w-[min(92vw,26rem)] p-0">
           <div className="border-b px-4 py-3 text-sm font-semibold">Needs your attention</div>
-          {items.length === 0 ? (
+          {reminders.length > 0 && (
+            <div className="border-b">
+              <div className="bg-muted/50 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Task reminders</div>
+              <ul className="divide-y">
+                {reminders.map((r) => (
+                  <li key={r.id} className="space-y-2 px-4 py-3 text-sm">
+                    <div className="font-semibold">{r.title}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {r.projectName ? `${r.jobNumber ? `${r.jobNumber} - ` : ""}${r.projectName}` : "General task"}
+                      {r.dueDate ? ` · due ${prettyDate(r.dueDate)}` : ""}
+                    </div>
+                    {r.notes && <p className="line-clamp-2 text-muted-foreground">{r.notes}</p>}
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      <Button size="sm" disabled={taskDone.isPending} onClick={() => taskDone.mutate({ id: r.id, done: true })}>Mark done</Button>
+                      <Button size="sm" variant="outline" disabled={taskSnooze.isPending} onClick={() => taskSnooze.mutate({ id: r.id, until: tomorrowMorning() })}>Remind me tomorrow</Button>
+                      <Button size="sm" variant="ghost" disabled={taskDismiss.isPending} onClick={() => taskDismiss.mutate({ id: r.id })}>Dismiss</Button>
+                      <Link href={r.projectSlug ? `/projects/${r.projectSlug}/tasks` : "/tasks"} onClick={() => setOpen(false)} className="self-center text-xs text-muted-foreground underline underline-offset-2">Open</Link>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {items.length === 0 && reminders.length > 0 ? null : items.length === 0 ? (
             <p className="px-4 py-6 text-center text-sm text-muted-foreground">Nothing needs an answer right now.</p>
           ) : (
             <ul className="max-h-[70vh] divide-y overflow-y-auto">

@@ -1,4 +1,5 @@
 import { config } from "dotenv";
+import { sendDueTaskEmails } from "./services/taskReminders.js";
 import { resolve } from "path";
 
 // Load .env.local from project root (two levels up from apps/api)
@@ -163,6 +164,18 @@ setInterval(async () => {
     console.error('Error checking scheduled reports:', error);
   }
 }, 5 * 60 * 1000);
+
+// Task reminder emails (every 5 minutes, plus once shortly after start)
+const runTaskEmails = async () => {
+  try {
+    const n = await sendDueTaskEmails();
+    if (n) console.log(`[tasks] sent ${n} reminder email(s)`);
+  } catch (error) {
+    console.error("Error sending task reminder emails:", error);
+  }
+};
+setTimeout(runTaskEmails, 60 * 1000);
+setInterval(runTaskEmails, 5 * 60 * 1000);
 
 // Report export download endpoint (non-tRPC for file streaming)
 const REPORTS_TEMP_DIR = process.env.REPORTS_TEMP_DIR || path.join(os.tmpdir(), 'construction-reports');

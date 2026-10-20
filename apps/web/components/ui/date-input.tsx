@@ -12,7 +12,7 @@ export const DateInput = React.forwardRef<HTMLInputElement, Omit<React.Component
     // Only controlled boxes can tell whether they are empty.
     const empty = value !== undefined && (value == null || value === "");
     return (
-      <span className="relative inline-block max-sm:block">
+      <span className={cn("relative max-sm:block", /\bw-full\b/.test(className ?? "") ? "block" : "inline-block")}>
         <input
           ref={ref}
           type="date"

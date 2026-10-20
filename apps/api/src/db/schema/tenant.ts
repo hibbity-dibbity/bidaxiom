@@ -1593,6 +1593,32 @@ export function createTenantSchema(schemaName: string) {
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   });
 
+  /**
+   * Action items. Each belongs to a project (or none, for a general to-do), has an owner, an optional due date,
+   * and an optional reminder that shows under the bell and/or is emailed to the owner.
+   * remindAt is when the reminder fires; bellAckedAt / emailSentAt record that it has been seen / sent, and
+   * changing remindAt clears them so an edited reminder fires again.
+   */
+  const projectTasks = schema.table("project_tasks", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id").references(() => projects.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    notes: text("notes"),
+    assigneeId: text("assignee_id"), // user id (user_profiles.clerk_user_id)
+    dueDate: text("due_date"), // YYYY-MM-DD
+    status: text("status").notNull().default("open"), // open, done
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    completedBy: text("completed_by"),
+    remindAt: timestamp("remind_at", { withTimezone: true }),
+    remindBell: boolean("remind_bell").notNull().default(true),
+    remindEmail: boolean("remind_email").notNull().default(false),
+    bellAckedAt: timestamp("bell_acked_at", { withTimezone: true }),
+    emailSentAt: timestamp("email_sent_at", { withTimezone: true }),
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  });
+
   return {
     schema,
     auditLogs,
@@ -1673,6 +1699,7 @@ export function createTenantSchema(schemaName: string) {
     documentTemplates,
     projectNotes,
     costSfCategories,
+    projectTasks,
     actionPrompts,
   };
 }

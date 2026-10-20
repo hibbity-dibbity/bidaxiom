@@ -28,6 +28,7 @@ const ALL_SECTIONS = [
   { name: "Purchase Orders", href: "/purchase-orders" },
   { name: "Work Orders",   href: "/work-orders" },
   { name: "Invoices",      href: "/invoices" },
+  { name: "Tasks",         href: "/tasks" },
 ] as const;
 
 export function ProjectTabs({ projectSlug, projectMode, lifecyclePhase, headerStats, orderCounts, openInvoices }: ProjectTabsProps) {
@@ -37,6 +38,7 @@ export function ProjectTabs({ projectSlug, projectMode, lifecyclePhase, headerSt
   // Get project ID from cached getBySlug query (still needed for prefetch handlers)
   const { data: project } = trpc.project.getBySlug.useQuery({ slug: projectSlug });
   const projectId = project?.id;
+  const { data: openTasks } = trpc.task.list.useQuery({ projectId, status: "open" }, { enabled: !!projectId });
 
   // Filter out GC-only tabs in Simple mode; filter out phase-gated tabs based on lifecycle phase
   const sections = ALL_SECTIONS.filter((s) => {
@@ -90,6 +92,7 @@ export function ProjectTabs({ projectSlug, projectMode, lifecyclePhase, headerSt
     if (href === "/purchase-orders") return orderCounts?.purchase ?? 0;
     if (href === "/work-orders") return orderCounts?.work ?? 0;
     if (href === "/invoices") return openInvoices ?? 0;
+    if (href === "/tasks") return openTasks?.length ?? 0;
     if (!headerStats) return 0;
     switch (href) {
       case "/change-orders": return headerStats.changeOrdersCount;

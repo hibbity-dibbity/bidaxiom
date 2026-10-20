@@ -12,6 +12,7 @@ import {
   FileText,
   ShoppingCart,
   Settings,
+  CheckSquare,
 } from "lucide-react";
 import {
   SidebarMenu,
@@ -22,6 +23,7 @@ import {
 const mainNav = [
   { href: "/", label: "Dashboard", icon: Home },
   { href: "/projects", label: "Projects", icon: FolderKanban },
+  { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/customers", label: "Customers", icon: Users, roles: ["org:admin", "org:project_manager", "org:accountant", "org:estimator"] },
   { href: "/subcontractors", label: "Subs & Vendors", icon: HardHat },
   { href: "/invoices", label: "Invoices", icon: FileText, roles: ["org:admin", "org:project_manager", "org:accountant", "org:estimator"] },
