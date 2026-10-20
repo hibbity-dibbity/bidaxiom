@@ -6,6 +6,7 @@ import {
   useReactTable,
   getCoreRowModel,
   getSortedRowModel,
+  getPaginationRowModel,
   flexRender,
   type SortingState,
 } from "@tanstack/react-table";
@@ -47,6 +48,8 @@ import type { SubcontractorStatus, VendorKind } from "@construction/shared";
 // when factory references change on every render.
 const stableCoreRowModel = getCoreRowModel();
 const stableSortedRowModel = getSortedRowModel();
+const stablePaginationRowModel = getPaginationRowModel();
+const PAGE_SIZE = 50;
 
 export default function SubcontractorsPage() {
   const router = useRouter();
@@ -55,6 +58,7 @@ export default function SubcontractorsPage() {
   const [statusFilter, setStatusFilter] = useState<SubcontractorStatus[]>([]);
   const [kindFilter, setKindFilter] = useState<VendorKind[]>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize: PAGE_SIZE });
 
   const { data, isLoading } = trpc.subcontractor.list.useQuery({
     search: search || undefined,
@@ -128,15 +132,18 @@ export default function SubcontractorsPage() {
   const table = useReactTable({
     data: subcontractors,
     columns,
-    state: { sorting },
+    state: { sorting, pagination },
     onSortingChange: setSorting,
+    onPaginationChange: setPagination,
+    getPaginationRowModel: stablePaginationRowModel,
     getCoreRowModel: stableCoreRowModel,
     getSortedRowModel: stableSortedRowModel,
     enableSortingRemoval: false,
   });
 
   const exportCsv = () => {
-    const rows = table.getRowModel().rows;
+    // Every row that matches the filters, not just the page on screen.
+    const rows = table.getPrePaginationRowModel().rows;
     const today = new Date().toISOString().split("T")[0];
     const filename = `subs-and-vendors-${today}.csv`;
 
@@ -378,6 +385,15 @@ export default function SubcontractorsPage() {
                 ))}
               </TableBody>
             </Table>
+          </div>
+          <div className="flex items-center justify-between border-t px-4 py-3">
+            <div className="text-sm text-muted-foreground">
+              Showing {pagination.pageIndex * PAGE_SIZE + 1}-{Math.min((pagination.pageIndex + 1) * PAGE_SIZE, subcontractors.length)} of {subcontractors.length} subs &amp; vendors
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>Previous</Button>
+              <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>Next</Button>
+            </div>
           </div>
         </Card>
         </div>
