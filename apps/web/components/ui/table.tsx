@@ -12,7 +12,7 @@ const Table = React.forwardRef<
   HTMLTableElement,
   React.HTMLAttributes<HTMLTableElement> & { stack?: boolean }
 >(({ className, stack = true, ...props }, ref) => (
-  <div className="relative w-full overflow-auto">
+  <div className="relative max-h-[70vh] w-full overflow-auto max-sm:max-h-none">
     <table
       ref={ref}
       data-stack={stack ? undefined : "off"}
@@ -80,7 +80,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      "h-10 whitespace-nowrap bg-muted px-[18px] text-left align-middle text-[11px] font-semibold uppercase tracking-wider text-muted-foreground [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+      "sticky top-0 z-10 h-10 whitespace-nowrap bg-muted px-[18px] text-left align-middle text-[11px] font-semibold uppercase tracking-wider text-muted-foreground [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
       className
     )}
     {...props}

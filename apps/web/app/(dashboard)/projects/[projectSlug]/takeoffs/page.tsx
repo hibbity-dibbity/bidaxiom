@@ -68,7 +68,7 @@ export default function TakeoffsPage({ params }: { params: { projectSlug: string
         ) : !rows || rows.length === 0 ? (
           <p className="p-6 text-sm text-muted-foreground">No takeoffs yet. Start a concrete or metal building takeoff.</p>
         ) : (
-          <table className="w-full text-sm">
+          <div className="table-sheet"><table className="w-full text-sm">
             <thead className="border-b text-left text-xs text-muted-foreground">
               <tr><th className="p-3">Name</th><th className="p-3">Type</th><th className="p-3 text-right">Material cost</th><th className="w-12 p-3" /></tr>
             </thead>
@@ -86,7 +86,7 @@ export default function TakeoffsPage({ params }: { params: { projectSlug: string
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
       </div>
     </div>

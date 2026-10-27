@@ -105,7 +105,7 @@ export default function InvoicesPage({ params }: { params: { projectSlug: string
               </span>
             </div>
           )}
-          <div className="overflow-x-auto rounded-md border bg-background">
+          <div className="table-sheet rounded-lg border bg-card">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">

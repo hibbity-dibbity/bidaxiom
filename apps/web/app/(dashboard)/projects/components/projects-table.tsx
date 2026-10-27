@@ -193,7 +193,7 @@ export function ProjectsTable({
                     <TableHead
                       key={header.id}
                       style={{ width: header.column.getSize() }}
-                      className={isFirstCol ? "col-frozen col-frozen-divider z-30 !bg-muted" : undefined}
+                      className={isFirstCol ? "col-frozen col-frozen-divider !z-30 !bg-muted" : undefined}
                     >
                       {header.isPlaceholder ? null : (
                         <div

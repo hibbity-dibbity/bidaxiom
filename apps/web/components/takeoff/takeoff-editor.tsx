@@ -207,7 +207,7 @@ export function TakeoffEditor({ projectSlug, takeoffId }: { projectSlug: string;
           )}
           {[...(computed.concrete?.warnings ?? []), ...(computed.metal?.warnings ?? [])].map((w) => <p key={w} className="text-sm text-amber-600">{w}</p>)}
 
-          <div className="overflow-x-auto rounded-md border bg-background">
+          <div className="table-sheet rounded-lg border bg-card">
             <table className="w-full text-sm">
               <thead className="border-b text-left text-xs text-muted-foreground">
                 <tr><th className="p-2">Item</th><th className="p-2 text-right">Qty</th><th className="p-2">Unit</th><th className="p-2 text-right">Unit cost</th><th className="p-2 text-right">Total</th><th className="p-2">Vendor</th></tr>

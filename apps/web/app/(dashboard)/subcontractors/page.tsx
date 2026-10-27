@@ -299,7 +299,7 @@ export default function SubcontractorsPage() {
                       return (
                         <TableHead
                           key={header.id}
-                          className={index === 0 ? "col-frozen col-frozen-divider z-30 !bg-muted min-w-[160px]" : undefined}
+                          className={index === 0 ? "col-frozen col-frozen-divider !z-30 !bg-muted min-w-[160px]" : undefined}
                         >
                           {header.isPlaceholder ? null : (
                             <div
