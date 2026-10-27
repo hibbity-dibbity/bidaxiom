@@ -30,7 +30,7 @@ interface ChartPreviewProps {
   data: any[];
 }
 
-const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899'];
+const COLORS = ['#B87333', '#1B2332', '#2D8A56', '#C68A1D', '#C93B3B', '#5A7A9B', '#8B6E4E'];
 
 export function ChartPreview({ chartConfig, data }: ChartPreviewProps) {
   if (!chartConfig.chartType || chartConfig.chartType === 'table') {
@@ -84,7 +84,7 @@ export function ChartPreview({ chartConfig, data }: ChartPreviewProps) {
               <YAxis tickFormatter={(value) => formatCurrency(value)} />
               <Tooltip content={<CustomTooltip />} />
               <Legend />
-              <Bar dataKey={chartConfig.yAxis} fill="#3b82f6" />
+              <Bar dataKey={chartConfig.yAxis} fill="#B87333" />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -103,7 +103,7 @@ export function ChartPreview({ chartConfig, data }: ChartPreviewProps) {
               <Line
                 type="monotone"
                 dataKey={chartConfig.yAxis}
-                stroke="#3b82f6"
+                stroke="#B87333"
                 strokeWidth={2}
               />
             </LineChart>
@@ -148,8 +148,8 @@ export function ChartPreview({ chartConfig, data }: ChartPreviewProps) {
               <Area
                 type="monotone"
                 dataKey={chartConfig.yAxis}
-                stroke="#3b82f6"
-                fill="#3b82f6"
+                stroke="#B87333"
+                fill="#B87333"
                 fillOpacity={0.3}
               />
             </AreaChart>

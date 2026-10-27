@@ -290,7 +290,7 @@ export function ProjectHeader({ project, stats, canTransition, canDelete }: Proj
         ).map(([label, amount, signed], idx) => signed === "percent" ? (
           <div key={label as string} className={`${idx >= 3 && !moreStats ? "hidden sm:flex" : "flex"} flex-col min-w-0 sm:shrink-0`}>
             <span className="text-xs text-muted-foreground leading-tight sm:whitespace-nowrap">{label as string}</span>
-            <span className="text-sm font-semibold tabular-nums">{amount === null ? "—" : `${(amount as number).toFixed(1)}%`}</span>
+            <span className="font-mono text-sm font-semibold tabular-nums">{amount === null ? "—" : `${(amount as number).toFixed(1)}%`}</span>
           </div>
         ) : (
           <div key={label as string} className={`${idx >= 3 && !moreStats ? "hidden sm:flex" : "flex"} flex-col min-w-0 sm:shrink-0`}>

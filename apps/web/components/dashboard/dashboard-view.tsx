@@ -44,7 +44,7 @@ function Kpi({ label, value, note, spark, sparkLabel }: { label: string; value: 
   return (
     <div className="min-w-0 rounded-lg border bg-card p-5">
       <div className="text-xs font-medium text-muted-foreground">{label}</div>
-      <div className="mt-2 text-[28px] font-semibold leading-tight tracking-tight tabular-nums">{value}</div>
+      <div className="mt-2 font-mono text-[28px] font-semibold leading-tight tracking-tight tabular-nums">{value}</div>
       <div className="mt-1.5 text-xs text-muted-foreground">{note}</div>
       {spark && <Sparkline values={spark} label={sparkLabel ?? label} />}
     </div>
@@ -347,9 +347,9 @@ export function DashboardView() {
         <Panel className="flex-[1_1_320px]">
           <Head title="Changes in scope" sub="Change orders and what they add to contracts" />
           <div className="mt-4 grid grid-cols-3 gap-3">
-            <div><div className="text-xs font-medium text-muted-foreground">Waiting on approval</div><div className="mt-1 text-[22px] font-semibold tabular-nums">{compact(d.changeOrders.pendingValue)}</div><div className="text-xs text-muted-foreground">{d.changeOrders.pendingCount} order{d.changeOrders.pendingCount === 1 ? "" : "s"}</div></div>
-            <div><div className="text-xs font-medium text-muted-foreground">Signed this year</div><div className="mt-1 text-[22px] font-semibold tabular-nums">{compact(d.changeOrders.approvedValue)}</div><div className="text-xs text-muted-foreground">{d.changeOrders.approvedCount} order{d.changeOrders.approvedCount === 1 ? "" : "s"}</div></div>
-            <div><div className="text-xs font-medium text-muted-foreground">Added to contracts</div><div className="mt-1 text-[22px] font-semibold tabular-nums">{d.changeOrders.addedPct === null ? "—" : `${d.changeOrders.addedPct}%`}</div><div className="text-xs text-muted-foreground">of original value</div></div>
+            <div><div className="text-xs font-medium text-muted-foreground">Waiting on approval</div><div className="mt-1 font-mono text-[22px] font-semibold tabular-nums">{compact(d.changeOrders.pendingValue)}</div><div className="text-xs text-muted-foreground">{d.changeOrders.pendingCount} order{d.changeOrders.pendingCount === 1 ? "" : "s"}</div></div>
+            <div><div className="text-xs font-medium text-muted-foreground">Signed this year</div><div className="mt-1 font-mono text-[22px] font-semibold tabular-nums">{compact(d.changeOrders.approvedValue)}</div><div className="text-xs text-muted-foreground">{d.changeOrders.approvedCount} order{d.changeOrders.approvedCount === 1 ? "" : "s"}</div></div>
+            <div><div className="text-xs font-medium text-muted-foreground">Added to contracts</div><div className="mt-1 font-mono text-[22px] font-semibold tabular-nums">{d.changeOrders.addedPct === null ? "—" : `${d.changeOrders.addedPct}%`}</div><div className="text-xs text-muted-foreground">of original value</div></div>
           </div>
           {d.changeOrders.oldest && (
             <div className="mt-4 border-t pt-3 text-xs text-muted-foreground">Oldest unsigned: <strong className="text-foreground">{d.changeOrders.oldest.label}, {d.changeOrders.oldest.days} day{d.changeOrders.oldest.days === 1 ? "" : "s"}</strong></div>

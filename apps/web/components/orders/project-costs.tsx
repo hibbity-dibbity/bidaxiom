@@ -49,7 +49,7 @@ export function ProjectCosts({ projectId, projectSlug }: { projectId: string; pr
         {cards.map((c) => (
           <div key={c.label} className={`rounded-md border p-3 ${c.warn ? "border-amber-500" : ""}`}>
             <div className="text-xs text-muted-foreground">{c.label}</div>
-            <div className="text-lg font-semibold">{dollars(c.value)}</div>
+            <div className="font-mono text-lg font-semibold tabular-nums">{dollars(c.value)}</div>
             {c.note && <div className="text-xs text-muted-foreground">{c.note}</div>}
           </div>
         ))}

@@ -67,7 +67,7 @@ export function CurrencyDisplay({
     : "";
 
   return (
-    <span className={cn("tabular-nums", colorClass, className)}>
+    <span className={cn("font-mono tabular-nums", colorClass, className)}>
       {sign}{formatted}
     </span>
   );

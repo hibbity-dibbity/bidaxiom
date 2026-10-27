@@ -195,7 +195,7 @@ export default function EstimatesPage({
                       {estimate.status === "submitted" ? "Sent" : estimate.status.charAt(0).toUpperCase() + estimate.status.slice(1)}
                     </StatusBadge>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right font-mono tabular-nums">
                     {formatCurrency(parseFloat(estimate.totalCost || "0"))}
                   </TableCell>
                   <TableCell>{format(new Date(estimate.createdAt), "MMM d, yyyy")}</TableCell>

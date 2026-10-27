@@ -270,7 +270,7 @@ export default function InvoicePage({ params }: { params: { projectSlug: string;
                         {x.percent > 0 ? `${x.percent}% of ` : ""}{x.sourceLabel}, per its invoicing schedule.
                       </div>
                     </div>
-                    <div className="text-right text-base font-semibold tabular-nums">{dollars(x.amount)}</div>
+                    <div className="text-right font-mono text-base font-semibold tabular-nums">{dollars(x.amount)}</div>
                   </div>
                 ))
               ) : (
@@ -282,18 +282,18 @@ export default function InvoicePage({ params }: { params: { projectSlug: string;
                       {data.source?.kind === "change_order" ? ", per its invoicing schedule" : ""}.
                     </div>
                   </div>
-                  <div className="text-right text-base font-semibold tabular-nums">{dollars(inv.amount)}</div>
+                  <div className="text-right font-mono text-base font-semibold tabular-nums">{dollars(inv.amount)}</div>
                 </div>
               )}
             </div>
           </div>
 
           <div className="ml-auto w-full max-w-sm space-y-1.5 text-sm">
-            <div className="flex justify-between"><span className="text-muted-foreground">Contract value{data.hasChangeOrders ? " (with change orders)" : ""}</span><span className="tabular-nums">{dollars(data.contractValue)}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">This invoice{data.items.length === 0 ? ` (${inv.milestoneName})` : ""}</span><span className="tabular-nums">{dollars(inv.amount)}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Billed through this invoice</span><span className="tabular-nums">{dollars(data.billedThroughThis)}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Remaining to bill</span><span className="tabular-nums">{dollars(data.balanceAfterThis)}</span></div>
-            <div className="flex justify-between border-t pt-2 text-base font-bold"><span>Amount due</span><span className="tabular-nums">{dollars(inv.amount)}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Contract value{data.hasChangeOrders ? " (with change orders)" : ""}</span><span className="font-mono tabular-nums">{dollars(data.contractValue)}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">This invoice{data.items.length === 0 ? ` (${inv.milestoneName})` : ""}</span><span className="font-mono tabular-nums">{dollars(inv.amount)}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Billed through this invoice</span><span className="font-mono tabular-nums">{dollars(data.billedThroughThis)}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Remaining to bill</span><span className="font-mono tabular-nums">{dollars(data.balanceAfterThis)}</span></div>
+            <div className="flex justify-between border-t pt-2 text-base font-bold"><span>Amount due</span><span className="font-mono tabular-nums">{dollars(inv.amount)}</span></div>
           </div>
 
           {inv.notes && <p className="whitespace-pre-wrap text-sm text-muted-foreground">{inv.notes}</p>}

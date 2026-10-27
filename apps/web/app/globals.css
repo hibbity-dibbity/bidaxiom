@@ -11,102 +11,101 @@
     --spacing-compact-lg: 1rem;    /* 16px */
     --spacing-compact-xl: 1.5rem;  /* 24px */
 
-    /* Border radius - sharp corners (Procore style) */
-    --radius: 0.25rem; /* Minimal rounding (4px), was 0.5rem */
+    --radius: 0.625rem;
 
-    /* Construction accent - subtle professional orange */
-    --accent-construction: 25 95% 53%; /* HSL: warm orange */
+    /* Construction accent — copper */
+    --accent-construction: 27 54% 46%;
     --accent-construction-foreground: 0 0% 100%;
 
-    /* Base theme colors (light mode) */
-    --background: 0 0% 100%;
-    --foreground: 210 25% 25%;
+    /* Base theme colors (light mode — parchment/navy/copper) */
+    --background: 30 11% 96%;
+    --foreground: 218 29% 15%;
     --card: 0 0% 100%;
-    --card-foreground: 210 25% 25%;
+    --card-foreground: 218 29% 15%;
     --popover: 0 0% 100%;
-    --popover-foreground: 210 25% 25%;
-    --primary: 188 80% 45%;
-    --primary-foreground: 0 0% 98%;
-    --brand-slate: 210 25% 25%;
+    --popover-foreground: 218 29% 15%;
+    --primary: 27 54% 46%;
+    --primary-foreground: 0 0% 100%;
+    --brand-slate: 218 29% 15%;
     --brand-slate-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 188 80% 45%;
+    --secondary: 37 14% 93%;
+    --secondary-foreground: 218 29% 15%;
+    --muted: 37 14% 93%;
+    --muted-foreground: 228 5% 50%;
+    --accent: 37 14% 93%;
+    --accent-foreground: 218 29% 15%;
+    --destructive: 0 56% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 40 9% 87%;
+    --input: 53 8% 80%;
+    --ring: 27 54% 46%;
 
     /* Financial semantic tokens */
-    --financial-positive: 160 84% 39%;   /* emerald-600: #059669 */
-    --financial-negative: 347 77% 50%;   /* rose-600: #e11d48 */
-    --financial-pending: 38 92% 50%;     /* amber-600: #d97706 */
+    --financial-positive: 150 50% 36%;
+    --financial-negative: 0 56% 51%;
+    --financial-pending: 38 74% 44%;
 
-    /* Sidebar tokens */
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 210 25% 25%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Sidebar tokens — dark navy in both themes */
+    --sidebar-background: 218 29% 15%;
+    --sidebar-foreground: 38 18% 92%;
+    --sidebar-primary: 27 54% 46%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217 27% 22%;
+    --sidebar-accent-foreground: 38 18% 92%;
+    --sidebar-border: 218 20% 20%;
+    --sidebar-ring: 27 54% 46%;
 
     /* Typography scale */
-    --font-size-xs: 0.75rem;   /* 12px */
-    --font-size-sm: 0.875rem;  /* 14px */
-    --font-size-base: 1rem;    /* 16px */
-    --font-size-lg: 1.125rem;  /* 18px */
-    --font-size-xl: 1.25rem;   /* 20px */
-    --font-size-2xl: 1.5rem;   /* 24px */
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.25rem;
+    --font-size-2xl: 1.5rem;
   }
 
   .dark {
-    /* Construction accent - brighter in dark mode */
-    --accent-construction: 25 95% 58%;
-    --accent-construction-foreground: 0 0% 100%;
+    /* Construction accent — warmer copper for dark mode */
+    --accent-construction: 27 59% 58%;
+    --accent-construction-foreground: 222 25% 8%;
 
-    /* Base theme colors (dark mode) */
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 188 80% 50%;
-    --primary-foreground: 0 0% 100%;
+    /* Base theme colors (dark mode — warm charcoal) */
+    --background: 222 25% 8%;
+    --foreground: 38 13% 89%;
+    --card: 220 18% 12%;
+    --card-foreground: 38 13% 89%;
+    --popover: 220 18% 12%;
+    --popover-foreground: 38 13% 89%;
+    --primary: 27 59% 58%;
+    --primary-foreground: 222 25% 8%;
     --brand-slate: 210 50% 60%;
     --brand-slate-foreground: 0 0% 98%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 188 80% 50%;
+    --secondary: 220 18% 14%;
+    --secondary-foreground: 38 13% 89%;
+    --muted: 220 18% 14%;
+    --muted-foreground: 224 10% 42%;
+    --accent: 220 18% 14%;
+    --accent-foreground: 38 13% 89%;
+    --destructive: 0 63% 63%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 18% 19%;
+    --input: 223 19% 25%;
+    --ring: 27 59% 58%;
 
     /* Financial semantic tokens (dark mode) */
-    --financial-positive: 160 60% 60%;   /* emerald-400: #34d399 */
-    --financial-negative: 347 77% 68%;   /* rose-400: #fb7185 */
-    --financial-pending: 32 95% 60%;     /* amber-400: #fbbf24 */
+    --financial-positive: 150 38% 49%;
+    --financial-negative: 0 63% 63%;
+    --financial-pending: 35 72% 57%;
 
-    /* Sidebar tokens (dark mode) */
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 188 80% 50%;
+    /* Sidebar tokens (dark mode — even darker navy) */
+    --sidebar-background: 222 30% 6%;
+    --sidebar-foreground: 38 13% 89%;
+    --sidebar-primary: 27 59% 58%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 220 25% 14%;
+    --sidebar-accent-foreground: 38 13% 89%;
+    --sidebar-border: 220 18% 14%;
+    --sidebar-ring: 27 59% 58%;
   }
 }
 
@@ -214,72 +213,119 @@
   }
 }
 
-/* Buttons: light and shadow. Colors still come from the theme (bg-brand-slate etc.);
-   this layer only adds a top highlight, a bottom shade, a soft sheen, a colored glow
-   and a pressed state. Tune the look by editing the --btn-* values below. */
-@layer components {
-  .btn-lit {
-    --btn-glow: 210 25% 25%;
-    --btn-highlight: 0.38;
-    --btn-sheen: 0.22;
-    --btn-shade: 0.14;
-    --btn-edge: 0.30;
-    --btn-glow-alpha: 0.55;
-    background-image: linear-gradient(
-      180deg,
-      rgb(255 255 255 / var(--btn-sheen)) 0%,
-      rgb(255 255 255 / 0) 55%,
-      rgb(0 0 0 / var(--btn-shade)) 100%
-    );
+@layer utilities {
+  .btn-shadow-primary {
+    background-image: linear-gradient(to bottom, #C98040, #A86628);
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / var(--btn-highlight)),
-      inset 0 -1px 0 rgb(0 0 0 / var(--btn-edge)),
-      0 1px 1px rgb(0 0 0 / 0.12),
-      0 5px 12px -2px hsl(var(--btn-glow) / var(--btn-glow-alpha));
-    transition: box-shadow 150ms ease, transform 100ms ease, filter 150ms ease,
-      background-color 150ms ease;
+      inset 0 1px 0 rgba(255,255,255,0.25),
+      inset 0 -2px 0 #8B5520,
+      0 1px 2px rgba(27,35,50,0.25),
+      0 8px 24px -6px rgba(184,115,51,0.45);
   }
-  .btn-lit:hover:not(:disabled) {
-    filter: brightness(1.08);
+  .btn-shadow-primary:hover {
+    background-image: linear-gradient(to bottom, #D48E4E, #B87333);
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / calc(var(--btn-highlight) + 0.08)),
-      inset 0 -1px 0 rgb(0 0 0 / var(--btn-edge)),
-      0 1px 1px rgb(0 0 0 / 0.12),
-      0 8px 16px -3px hsl(var(--btn-glow) / calc(var(--btn-glow-alpha) + 0.1));
+      inset 0 1px 0 rgba(255,255,255,0.30),
+      inset 0 -2px 0 #8B5520,
+      0 1px 2px rgba(27,35,50,0.25),
+      0 10px 28px -6px rgba(184,115,51,0.55);
   }
-  .btn-lit:active:not(:disabled) {
-    transform: translateY(1px);
-    filter: brightness(0.96);
+  .btn-shadow-primary:active {
+    background-image: linear-gradient(to bottom, #9A5B1E, #B87333);
     box-shadow:
-      inset 0 2px 4px rgb(0 0 0 / 0.28),
-      inset 0 -1px 0 rgb(255 255 255 / 0.06),
-      0 0 0 hsl(var(--btn-glow) / 0);
+      inset 0 -1px 0 rgba(255,255,255,0.10),
+      inset 0 2px 0 #7A4A18,
+      0 1px 1px rgba(27,35,50,0.20);
   }
-  .btn-lit-secondary {
-    --btn-glow: 240 6% 40%;
-    --btn-highlight: 1;
-    --btn-sheen: 0.7;
-    --btn-shade: 0.06;
-    --btn-edge: 0.12;
-    --btn-glow-alpha: 0.30;
+
+  .btn-shadow-destructive {
+    background-image: linear-gradient(to bottom, #D84848, #B83030);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.20),
+      inset 0 -2px 0 #8C2222,
+      0 1px 2px rgba(27,35,50,0.25),
+      0 8px 24px -6px rgba(201,59,59,0.40);
   }
-  .btn-lit-outline {
-    --btn-glow: 188 80% 45%;
-    --btn-highlight: 1;
-    --btn-sheen: 0.6;
-    --btn-shade: 0.05;
-    --btn-edge: 0.08;
-    --btn-glow-alpha: 0.35;
+  .btn-shadow-destructive:hover {
+    background-image: linear-gradient(to bottom, #E05858, #C93B3B);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.25),
+      inset 0 -2px 0 #8C2222,
+      0 1px 2px rgba(27,35,50,0.25),
+      0 10px 28px -6px rgba(201,59,59,0.50);
   }
-  .btn-lit-destructive {
-    --btn-glow: 0 84% 50%;
-    --btn-glow-alpha: 0.45;
+  .btn-shadow-destructive:active {
+    background-image: linear-gradient(to bottom, #A02828, #C93B3B);
+    box-shadow:
+      inset 0 -1px 0 rgba(255,255,255,0.10),
+      inset 0 2px 0 #7A1A1A,
+      0 1px 1px rgba(27,35,50,0.20);
   }
-  .dark .btn-lit { --btn-highlight: 0.18; --btn-sheen: 0.10; --btn-shade: 0.16; --btn-edge: 0.35; }
-  .dark .btn-lit-secondary,
-  .dark .btn-lit-outline { --btn-highlight: 0.10; --btn-sheen: 0.06; --btn-shade: 0.12; --btn-edge: 0.30; --btn-glow-alpha: 0.12; }
-  @media (prefers-reduced-motion: reduce) {
-    .btn-lit { transition: none; }
-    .btn-lit:active:not(:disabled) { transform: none; }
+
+  .dark .btn-shadow-primary {
+    background-image: linear-gradient(to bottom, #D49254, #B87A3A);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.15),
+      inset 0 -2px 0 #8B5520,
+      0 1px 3px rgba(0,0,0,0.40),
+      0 8px 24px -6px rgba(212,146,84,0.35);
+  }
+  .dark .btn-shadow-primary:hover {
+    background-image: linear-gradient(to bottom, #DDA060, #C98040);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.20),
+      inset 0 -2px 0 #8B5520,
+      0 1px 3px rgba(0,0,0,0.40),
+      0 10px 28px -6px rgba(212,146,84,0.45);
+  }
+  .dark .btn-shadow-primary:active {
+    background-image: linear-gradient(to bottom, #A86628, #D49254);
+    box-shadow:
+      inset 0 -1px 0 rgba(255,255,255,0.06),
+      inset 0 2px 0 #7A4A18,
+      0 1px 2px rgba(0,0,0,0.30);
+  }
+
+  .dark .btn-shadow-destructive {
+    background-image: linear-gradient(to bottom, #E06060, #C04040);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.12),
+      inset 0 -2px 0 #8C2222,
+      0 1px 3px rgba(0,0,0,0.40),
+      0 8px 24px -6px rgba(224,96,96,0.30);
+  }
+  .dark .btn-shadow-destructive:hover {
+    background-image: linear-gradient(to bottom, #E87070, #D04848);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.16),
+      inset 0 -2px 0 #8C2222,
+      0 1px 3px rgba(0,0,0,0.40),
+      0 10px 28px -6px rgba(224,96,96,0.40);
+  }
+  .dark .btn-shadow-destructive:active {
+    background-image: linear-gradient(to bottom, #A03030, #E06060);
+    box-shadow:
+      inset 0 -1px 0 rgba(255,255,255,0.06),
+      inset 0 2px 0 #7A1A1A,
+      0 1px 2px rgba(0,0,0,0.30);
+  }
+
+  .col-frozen {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background-color: hsl(var(--card));
+  }
+  .col-frozen-2 {
+    position: sticky;
+    z-index: 1;
+    background-color: hsl(var(--card));
+  }
+  .col-frozen-divider {
+    box-shadow: 4px 0 6px -2px rgba(0,0,0,0.08);
+  }
+  tr:hover .col-frozen,
+  tr:hover .col-frozen-2 {
+    background-color: hsl(var(--muted) / 0.5);
   }
 }

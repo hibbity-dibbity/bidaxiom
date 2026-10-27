@@ -59,7 +59,7 @@ export function BidCard({ bid, onClick }: BidCardProps) {
           </div>
         </div>
         <div className="flex items-baseline gap-2">
-          <span className="text-2xl font-bold">
+          <span className="font-mono text-2xl font-bold tabular-nums">
             {new Intl.NumberFormat("en-US", {
               style: "currency",
               currency: "USD",

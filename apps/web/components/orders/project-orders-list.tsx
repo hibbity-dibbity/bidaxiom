@@ -129,7 +129,7 @@ export function ProjectOrdersList({ projectSlug, kind }: { projectSlug: string; 
             ].map(([k, v]) => (
               <div key={k} className="rounded-md border bg-background px-3 py-2">
                 <div className="text-xs uppercase tracking-wider text-muted-foreground">{k}</div>
-                <div className="text-lg font-semibold tabular-nums">{v}</div>
+                <div className="font-mono text-lg font-semibold tabular-nums">{v}</div>
               </div>
             ))}
           </div>

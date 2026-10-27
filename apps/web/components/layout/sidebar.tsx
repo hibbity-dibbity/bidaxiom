@@ -63,22 +63,13 @@ export function AppSidebar() {
     <ShadcnSidebar collapsible="icon" style={{ "--sidebar-width": "12.875rem" } as React.CSSProperties}>
       <SidebarHeader className="h-14 shrink-0 border-b">
         <div className="flex h-full items-center justify-center px-4">
-          {/* Full logo when expanded — light mode */}
-          <Image
-            src="/BIDAXIOM-Logo-Dark-TransparentBG.png"
-            alt="BIDAXIOM"
-            width={172}
-            height={40}
-            className="group-data-[collapsible=icon]:hidden block dark:hidden h-10 w-auto"
-            priority
-          />
-          {/* Full logo when expanded — dark mode */}
+          {/* Always light logo — sidebar is always dark navy */}
           <Image
             src="/BIDAXIOM-Logo-Light-TransparentBG.png"
             alt="BIDAXIOM"
             width={172}
             height={40}
-            className="group-data-[collapsible=icon]:hidden hidden dark:block h-10 w-auto"
+            className="group-data-[collapsible=icon]:hidden block h-10 w-auto"
             priority
           />
           {/* Collapse/expand trigger when collapsed */}
@@ -95,7 +86,7 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="px-4 py-2">
-        <p className="select-text text-[10px] leading-none text-muted-foreground/60" title="Build running now">
+        <p className="select-text text-[10px] leading-none text-sidebar-foreground/40" title="Build running now">
           Build {process.env.NEXT_PUBLIC_BUILD_COMMIT || "dev"} · built {builtAt}
         </p>
       </SidebarFooter>

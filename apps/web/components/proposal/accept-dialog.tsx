@@ -104,15 +104,15 @@ export function AcceptDialog({ open, onOpenChange, estimateId, lines, computed, 
         <div className="flex flex-col gap-1.5 rounded-md bg-muted p-3 text-sm">
           <div className="flex justify-between">
             <span className="text-muted-foreground">{changeOrder ? "Change order total" : "Proposal total"}</span>
-            <span className="tabular-nums">{money(computed.totals.total)}</span>
+            <span className="font-mono tabular-nums">{money(computed.totals.total)}</span>
           </div>
           <div className="flex justify-between border-t pt-1.5 text-base font-semibold">
             <span>{changeOrder ? "Added to contract" : "Contract value"}</span>
-            <span className="tabular-nums">{money(acceptance.contractValue)}</span>
+            <span className="font-mono tabular-nums">{money(acceptance.contractValue)}</span>
           </div>
           <div className="flex justify-between text-muted-foreground">
             <span>Cost budget</span>
-            <span className="tabular-nums">{money(acceptance.costBudget)}</span>
+            <span className="font-mono tabular-nums">{money(acceptance.costBudget)}</span>
           </div>
           <div className="mt-1 text-muted-foreground">
             Invoicing:{" "}

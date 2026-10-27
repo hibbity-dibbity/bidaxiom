@@ -93,7 +93,7 @@ export function ProposalDocument({
         <TotalRow label="Sales tax" value={money(view.tax)} />
         <div className="mt-1 flex w-full max-w-[300px] justify-between border-t-2 border-foreground pt-2 text-lg font-bold">
           <span>Total</span>
-          <span className="tabular-nums">{money(view.total)}</span>
+          <span className="font-mono tabular-nums">{money(view.total)}</span>
         </div>
       </div>
       {data.contract && (
@@ -102,7 +102,7 @@ export function ProposalDocument({
           <TotalRow label="This change order" value={money(data.contract.change)} />
           <div className="flex w-full max-w-[300px] justify-between border-t pt-1.5 text-sm font-semibold">
             <span>New contract value</span>
-            <span className="tabular-nums">{money(data.contract.after)}</span>
+            <span className="font-mono tabular-nums">{money(data.contract.after)}</span>
           </div>
         </div>
       )}
@@ -261,7 +261,7 @@ function TotalRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex w-full max-w-[300px] justify-between text-sm text-muted-foreground">
       <span>{label}</span>
-      <span className="tabular-nums">{value}</span>
+      <span className="font-mono tabular-nums">{value}</span>
     </div>
   );
 }

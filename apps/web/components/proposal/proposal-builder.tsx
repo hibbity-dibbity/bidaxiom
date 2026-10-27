@@ -834,7 +834,7 @@ export function ProposalBuilder({ projectSlug, estimateSlug }: Props) {
             <Row label="Sales tax" value={money(result.totals.tax)} />
             <div className="flex items-baseline justify-between border-t pt-2.5">
               <span className="text-sm font-semibold">{isCO ? "Change order total" : "Proposal total"}</span>
-              <span className="text-2xl font-bold tracking-tight tabular-nums">{money(result.totals.total)}</span>
+              <span className="font-mono text-2xl font-bold tracking-tight tabular-nums">{money(result.totals.total)}</span>
             </div>
             <div className="flex justify-between text-[13px] text-muted-foreground">
               <span>Optional items, not included</span>

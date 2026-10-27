@@ -17,6 +17,11 @@ const config: Config = {
   		}
   	},
   	extend: {
+  		fontFamily: {
+  			sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
+  			display: ['var(--font-display)', 'Georgia', 'serif'],
+  			mono: ['var(--font-mono)', 'monospace'],
+  		},
   		colors: {
   			border: 'hsl(var(--border))',
   			input: 'hsl(var(--input))',
@@ -78,11 +83,8 @@ const config: Config = {
   		},
   		borderRadius: {
   			lg: 'var(--radius)',
-  			md: 'calc(var(--radius) - 2px)',
-  			sm: 'calc(var(--radius) - 4px)',
-  			// Sharp radius utilities
-  			sharp: '0',
-  			'sharp-sm': '2px',
+  			md: 'calc(var(--radius) - 4px)',
+  			sm: 'calc(var(--radius) - 6px)',
   		},
   		// Compact spacing utilities
   		spacing: {
