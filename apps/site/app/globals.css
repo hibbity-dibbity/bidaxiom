@@ -14,6 +14,17 @@ h1,h2,h3,.d{font-family:'Schibsted Grotesk','IBM Plex Sans',sans-serif}
 .btn.g{background:#fff;color:#1f2d3a;border-color:#cfd8e0}.btn.g:hover{background:#f4f6f8;color:#1f2d3a;text-decoration:none}
 .btn.o{background:transparent;color:#fff;border-color:#4a5d6e}.btn.o:hover{background:#22313f;color:#fff;text-decoration:none}
 .btn[disabled]{opacity:.6;cursor:default}
+/* Light and shadow (matches the app's buttons). Colors above are unchanged; tune the look via --btn-* values. */
+.btn{--glow:23,32,45;--hi:.38;--sheen:.22;--shade:.14;--edge:.30;--ga:.50;
+  background-image:linear-gradient(180deg,rgba(255,255,255,var(--sheen)) 0%,rgba(255,255,255,0) 55%,rgba(0,0,0,var(--shade)) 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,var(--hi)),inset 0 -1px 0 rgba(0,0,0,var(--edge)),0 1px 1px rgba(0,0,0,.12),0 5px 12px -2px rgba(var(--glow),var(--ga));
+  transition:box-shadow .15s ease,transform .1s ease,filter .15s ease,background-color .15s ease}
+.btn.p{--glow:14,116,144}.btn.t{--glow:14,155,184}
+.btn.g{--glow:60,75,90;--hi:1;--sheen:.7;--shade:.06;--edge:.10;--ga:.25}
+.btn.o{--hi:.14;--sheen:.08;--shade:.12;--edge:.35;--glow:0,0,0;--ga:.35}
+.btn:hover:not([disabled]){filter:brightness(1.07);box-shadow:inset 0 1px 0 rgba(255,255,255,calc(var(--hi) + .08)),inset 0 -1px 0 rgba(0,0,0,var(--edge)),0 1px 1px rgba(0,0,0,.12),0 8px 16px -3px rgba(var(--glow),calc(var(--ga) + .1))}
+.btn:active:not([disabled]){transform:translateY(1px);filter:brightness(.96);box-shadow:inset 0 2px 4px rgba(0,0,0,.28),inset 0 -1px 0 rgba(255,255,255,.06),0 0 0 rgba(0,0,0,0)}
+@media (prefers-reduced-motion:reduce){.btn{transition:none}.btn:active:not([disabled]){transform:none}}
 .kick{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#0e7490}
 .h2{font-size:38px;line-height:1.15;letter-spacing:-.02em;font-weight:600;margin:10px 0 0}
 .feat{background:#fff;border:1px solid #e3e8ee;border-radius:12px;padding:24px}
