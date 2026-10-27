@@ -230,7 +230,7 @@ export default function SubcontractorsPage() {
                 Send to QuickBooks
               </Button>
             )}
-            <Button variant="outline" onClick={() => router.push("/subcontractors/import")}>
+            <Button variant="link" onClick={() => router.push("/subcontractors/import")}>
               <Upload className="h-4 w-4 sm:mr-2" />
               <span className="max-sm:sr-only">Import</span>
             </Button>
@@ -282,7 +282,7 @@ export default function SubcontractorsPage() {
       ) : subcontractors.length > 0 ? (
         <div className="space-y-4">
         <InPageHeader>
-          <Button variant="outline" onClick={exportCsv} disabled={table.getRowModel().rows.length === 0} aria-label="Export CSV">
+          <Button variant="link" onClick={exportCsv} disabled={table.getRowModel().rows.length === 0} aria-label="Export CSV">
             <Download className="h-4 w-4 sm:mr-2" />
             <span className="max-sm:sr-only">Export CSV</span>
           </Button>

@@ -72,7 +72,7 @@ export default function CostPerSfPage() {
             <Button variant="outline" onClick={() => setEditing(true)}>
               <Settings2 className="mr-2 h-4 w-4" /> Categories
             </Button>
-            <Button variant="outline" onClick={exportCsv} disabled={!data?.rows.length} aria-label="Export CSV">
+            <Button variant="link" onClick={exportCsv} disabled={!data?.rows.length} aria-label="Export CSV">
               <Download className="h-4 w-4 sm:mr-2" /> <span className="max-sm:sr-only">Export CSV</span>
             </Button>
           </div>

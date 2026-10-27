@@ -50,12 +50,12 @@ export function TopBar({ onSearchOpen }: { onSearchOpen?: () => void }) {
         <Button
           variant="outline"
           size="sm"
-          className="h-8 gap-2"
+          className="h-8 justify-start gap-2 sm:w-72 lg:w-96"
           onClick={onSearchOpen}
         >
           <Search className="h-4 w-4" />
           <span className="hidden sm:inline">Search</span>
-          <kbd className="hidden sm:inline pointer-events-none h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100">
+          <kbd className="ml-auto hidden sm:inline pointer-events-none h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100">
             <span className="text-xs">⌘</span>K
           </kbd>
         </Button>

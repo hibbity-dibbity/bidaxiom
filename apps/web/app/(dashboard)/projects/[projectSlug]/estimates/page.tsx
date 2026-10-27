@@ -119,7 +119,7 @@ export default function EstimatesPage({
         actions={
           <>
             <Button
-              variant="outline"
+              variant="link"
               size="sm"
               onClick={exportCsv}
               disabled={displayedEstimates.length === 0}

@@ -252,7 +252,7 @@ function CustomersList() {
         description="Manage your customers and clients"
         actions={
           <>
-            <Button variant="outline" onClick={() => router.push("/customers/import")}>
+            <Button variant="link" onClick={() => router.push("/customers/import")}>
               <Upload className="h-4 w-4 sm:mr-2" />
               <span className="max-sm:sr-only">Import</span>
             </Button>
