@@ -283,7 +283,7 @@ function CustomersList() {
         <Card>
           <div className="relative w-full overflow-auto max-h-[70vh]">
             <Table>
-              <TableHeader className="sticky top-0 z-20 bg-background">
+              <TableHeader className="sticky top-0 z-20 bg-muted">
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>
                     {headerGroup.headers.map((header, index) => {
@@ -292,7 +292,7 @@ function CustomersList() {
                       return (
                         <TableHead
                           key={header.id}
-                          className={index === 0 ? "sticky left-0 z-30 bg-background min-w-[160px] border-r" : undefined}
+                          className={index === 0 ? "col-frozen col-frozen-divider z-30 !bg-muted min-w-[160px]" : undefined}
                         >
                           {header.isPlaceholder ? null : (
                             <div
@@ -326,7 +326,7 @@ function CustomersList() {
                     className="cursor-pointer hover:bg-muted/50"
                     onClick={() => router.push(`/customers/${row.original.slug}`)}
                   >
-                    <TableCell className="sticky left-0 z-10 bg-background border-r">
+                    <TableCell className="col-frozen col-frozen-divider">
                       <div className="flex items-center gap-2">
                         {row.original.companyName ? (
                           <>

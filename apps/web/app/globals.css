@@ -326,6 +326,6 @@
   }
   tr:hover .col-frozen,
   tr:hover .col-frozen-2 {
-    background-color: hsl(var(--muted) / 0.5);
+    background-color: hsl(var(--muted));
   }
 }

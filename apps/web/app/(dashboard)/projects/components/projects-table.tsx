@@ -181,7 +181,7 @@ export function ProjectsTable({
       <Card>
         <div className="relative w-full overflow-auto max-h-[70vh]">
         <Table>
-          <TableHeader className="sticky top-0 z-20 bg-background">
+          <TableHeader className="sticky top-0 z-20 bg-muted">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
@@ -193,7 +193,7 @@ export function ProjectsTable({
                     <TableHead
                       key={header.id}
                       style={{ width: header.column.getSize() }}
-                      className={isFirstCol ? "sticky left-0 z-30 bg-background border-r" : undefined}
+                      className={isFirstCol ? "col-frozen col-frozen-divider z-30 !bg-muted" : undefined}
                     >
                       {header.isPlaceholder ? null : (
                         <div
@@ -235,14 +235,14 @@ export function ProjectsTable({
             {table.getRowModel().rows.map((row) => (
               <TableRow
                 key={row.id}
-                className="cursor-pointer hover:bg-muted/50"
+                className="cursor-pointer"
                 onClick={() => router.push(`/projects/${row.original.slug ?? row.original.id}`)}
               >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell
                     key={cell.id}
                     className={cn(
-                      cell.column.id === "jobNumber" && "sticky left-0 z-10 bg-background border-r"
+                      cell.column.id === "jobNumber" && "col-frozen col-frozen-divider"
                     )}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
