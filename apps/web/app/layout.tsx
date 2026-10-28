@@ -15,9 +15,8 @@ export const metadata: Metadata = {
   },
   description: "Construction management software for general contractors and subcontractors",
   icons: {
-    icon: '/BIDAXIOM-Icon-TransparentBG.png',
-    shortcut: '/BIDAXIOM-Icon-TransparentBG.png',
-    apple: '/BIDAXIOM-Icon-TransparentBG.png',
+    icon: '/bidaxiom-favicon.svg',
+    shortcut: '/bidaxiom-favicon.svg',
   },
 };
 

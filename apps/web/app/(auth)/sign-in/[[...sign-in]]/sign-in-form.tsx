@@ -270,6 +270,7 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
             {mfaMethods.totp && (<div className="space-y-2">
               <Label htmlFor="mfaToken">Authentication Code</Label>
               <Input
+                className="focus-visible:border-brand-slate focus-visible:ring-brand-slate"
                 id="mfaToken"
                 type="text"
                 autoComplete="one-time-code"
@@ -351,7 +352,7 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email-first">Email</Label>
-              <Input id="email-first" name="username" type="email" autoComplete="username webauthn" inputMode="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} placeholder="you@example.com" autoFocus value={emailInput} onChange={(e) => setEmailInput(e.target.value)} disabled={routeMutation.isPending} />
+              <Input className="focus-visible:border-brand-slate focus-visible:ring-brand-slate" id="email-first" name="username" type="email" autoComplete="username webauthn" inputMode="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} placeholder="you@example.com" autoFocus value={emailInput} onChange={(e) => setEmailInput(e.target.value)} disabled={routeMutation.isPending} />
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
@@ -385,14 +386,14 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
           )}
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false} {...registerLogin("email")} disabled={isLoading} />
+            <Input className="focus-visible:border-brand-slate focus-visible:ring-brand-slate" id="email" type="email" autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false} {...registerLogin("email")} disabled={isLoading} />
             {loginErrors.email && (
               <p className="text-sm text-destructive">{loginErrors.email.message}</p>
             )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" autoComplete="current-password" placeholder="••••••••" autoFocus {...registerLogin("password")} disabled={isLoading} />
+            <Input className="focus-visible:border-brand-slate focus-visible:ring-brand-slate" id="password" type="password" autoComplete="current-password" placeholder="••••••••" autoFocus {...registerLogin("password")} disabled={isLoading} />
             {loginErrors.password && (
               <p className="text-sm text-destructive">{loginErrors.password.message}</p>
             )}
