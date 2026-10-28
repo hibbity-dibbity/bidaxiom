@@ -260,7 +260,7 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
         <form onSubmit={handleSubmitMfa(onMfaSubmit)}>
           <CardContent className="space-y-4">
             {mfaMethods.passkey && canPasskey && (
-              <Button type="button" variant={mfaMethods.totp ? "outline" : "default"} className="w-full" disabled={isLoading} onClick={signInWithPasskey}>
+              <Button type="button" variant={mfaMethods.totp ? "outline" : "navy"} className="w-full" disabled={isLoading} onClick={signInWithPasskey}>
                 Use a passkey
               </Button>
             )}
@@ -287,7 +287,7 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
             {mfaMethods.totp && (
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button type="submit" variant="navy" className="w-full" disabled={isLoading}>
                 {isLoading ? "Verifying..." : "Verify"}
               </Button>
             )}
@@ -355,7 +355,7 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full" disabled={routeMutation.isPending || !emailInput.trim()}>
+            <Button type="submit" variant="navy" className="w-full" disabled={routeMutation.isPending || !emailInput.trim()}>
               {routeMutation.isPending ? "Checking..." : usePassword ? "Continue with password" : "Continue"}
             </Button>
             {!usePassword && (
@@ -379,7 +379,7 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
             </Button>
           )}
           {step === "choose" && (
-            <Button type="button" className="w-full" onClick={() => goSso(emailInput.trim())}>
+            <Button type="button" variant="navy" className="w-full" onClick={() => goSso(emailInput.trim())}>
               Continue with your company sign-in
             </Button>
           )}
@@ -402,7 +402,7 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
           </div>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Button type="submit" variant="navy" className="w-full" disabled={isLoading}>
             {isLoading ? "Signing in..." : "Sign In"}
           </Button>
           <Button type="button" variant="ghost" className="w-full" disabled={isLoading} onClick={() => setStep("email")}>

@@ -11,6 +11,8 @@ const buttonVariants = cva(
       variant: {
         default:
           "btn-shadow-primary text-white font-semibold border-0",
+        navy:
+          "btn-shadow-navy text-white font-semibold border-0",
         destructive:
           "btn-shadow-destructive text-white font-semibold border-0",
         outline:
