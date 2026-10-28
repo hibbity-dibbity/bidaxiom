@@ -5,19 +5,19 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const statusBadgeVariants = cva(
-  "inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-semibold transition-colors",
+  "inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors",
   {
     variants: {
       variant: {
         draft: "bg-muted text-muted-foreground",
-        pending: "bg-muted text-financial-pending",
-        active: "bg-muted text-financial-positive",
-        approved: "bg-muted text-financial-positive",
-        completed: "bg-muted text-financial-positive",
-        rejected: "bg-muted text-financial-negative",
+        pending: "bg-financial-pending/15 text-financial-pending",
+        active: "bg-primary/10 text-primary",
+        approved: "bg-financial-positive/15 text-financial-positive",
+        completed: "bg-financial-positive/15 text-financial-positive",
+        rejected: "bg-financial-negative/15 text-financial-negative",
         cancelled: "bg-muted text-muted-foreground",
-        warning: "bg-muted text-financial-pending",
-        error: "bg-muted text-financial-negative",
+        warning: "bg-financial-pending/15 text-financial-pending",
+        error: "bg-financial-negative/15 text-financial-negative",
       },
     },
     defaultVariants: {

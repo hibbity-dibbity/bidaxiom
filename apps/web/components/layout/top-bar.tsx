@@ -25,7 +25,7 @@ export function TopBar({ onSearchOpen }: { onSearchOpen?: () => void }) {
         {!open && (
           <>
             <Image
-              src="/BIDAXIOM-Logo-Dark-TransparentBG.png"
+              src="/BIDAXIOM-Logo-Dark.webp"
               alt="BIDAXIOM"
               width={172}
               height={40}
@@ -33,7 +33,7 @@ export function TopBar({ onSearchOpen }: { onSearchOpen?: () => void }) {
               priority
             />
             <Image
-              src="/BIDAXIOM-Logo-Light-TransparentBG.png"
+              src="/BIDAXIOM-Logo-Light.webp"
               alt="BIDAXIOM"
               width={172}
               height={40}

@@ -233,7 +233,7 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
         {/* BIDAXIOM logo */}
         <div className="flex justify-center pb-[25px]">
           <Image
-            src="/BIDAXIOM-Logo-Dark-TransparentBG.png"
+            src="/BIDAXIOM-Logo-Dark.webp"
             alt="BIDAXIOM"
             width={320}
             height={74}
@@ -241,7 +241,7 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
             priority
           />
           <Image
-            src="/BIDAXIOM-Logo-Light-TransparentBG.png"
+            src="/BIDAXIOM-Logo-Light.webp"
             alt="BIDAXIOM"
             width={320}
             height={74}
@@ -316,7 +316,7 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
       {/* BIDAXIOM logo */}
       <div className="flex justify-center pb-[25px]">
         <Image
-          src="/BIDAXIOM-Logo-Dark-TransparentBG.png"
+          src="/BIDAXIOM-Logo-Dark.webp"
           alt="BIDAXIOM"
           width={320}
           height={74}
@@ -324,7 +324,7 @@ export default function SignInForm({ redirectUrl }: { redirectUrl: string }) {
           priority
         />
         <Image
-          src="/BIDAXIOM-Logo-Light-TransparentBG.png"
+          src="/BIDAXIOM-Logo-Light.webp"
           alt="BIDAXIOM"
           width={320}
           height={74}

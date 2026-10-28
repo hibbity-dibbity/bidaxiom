@@ -116,6 +116,17 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Page headings use the display serif (one weight only, so no faux bold). */
+  h1 {
+    font-family: var(--font-display), Georgia, serif;
+    font-synthesis: none;
+    letter-spacing: -0.01em;
+  }
+  /* Numeric table columns (right-aligned) and codes use the mono face. */
+  td.text-right {
+    font-family: var(--font-mono), monospace;
+    font-size: 12px;
+  }
   /* Native dropdown lists take the theme, so options are readable in dark mode. */
   html { color-scheme: light; }
   html.dark { color-scheme: dark; }

@@ -65,7 +65,7 @@ export function AppSidebar() {
         <div className="flex h-full items-center justify-center px-4">
           {/* Always light logo — sidebar is always dark navy */}
           <Image
-            src="/BIDAXIOM-Logo-Light-TransparentBG.png"
+            src="/BIDAXIOM-Logo-Light.webp"
             alt="BIDAXIOM"
             width={172}
             height={40}
