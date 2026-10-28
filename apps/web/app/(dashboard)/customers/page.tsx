@@ -18,7 +18,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/shared/page-header";
-import { ListToolbar, SearchField } from "@/components/shared/list-toolbar";
+import { ListToolbar, ListActions, SearchField } from "@/components/shared/list-toolbar";
+import { downloadCsv } from "@/lib/csv";
 import {
   Table,
   TableBody,
@@ -250,21 +251,20 @@ function CustomersList() {
       <PageHeader
         title="Customers"
         description="Manage your customers and clients"
-        actions={
-          <>
-            <Button variant="link" onClick={() => router.push("/customers/import")}>
-              <Upload className="h-4 w-4 sm:mr-2" />
-              <span className="max-sm:sr-only">Import</span>
-            </Button>
-            <Button onClick={handleAdd}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Customer
-            </Button>
-          </>
-        }
       />
 
-      <ListToolbar activeCount={search.trim() ? 1 : 0} summary={data ? `${Number(data.total ?? 0)} shown` : undefined}>
+      <ListToolbar
+        activeCount={search.trim() ? 1 : 0}
+        summary={data ? `${Number(data.total ?? 0)} shown` : undefined}
+        actions={
+          <ListActions
+            onAdd={handleAdd}
+            importHref="/customers/import"
+            exportDisabled={customers.length === 0}
+            onExport={() => downloadCsv("customers", ["Customer", "Contact", "Email", "Phone", "Address"], customers.map((c: Customer) => [c.companyName || c.contactName, c.contactName, c.email, c.phone, [c.street1, c.city, [c.state, c.zip].filter(Boolean).join(" ")].filter(Boolean).join(", ")]))}
+          />
+        }
+      >
         <SearchField value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder="Search name, company or email" />
       </ListToolbar>
 

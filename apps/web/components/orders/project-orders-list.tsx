@@ -106,7 +106,7 @@ export function ProjectOrdersList({ projectSlug, kind }: { projectSlug: string; 
         actions={
           <Button type="button" disabled={!projectId || create.isPending} onClick={() => create.mutate({ projectId, kind })}>
             <Plus className="mr-2 h-4 w-4" />
-            {isWork ? "New work order" : "New PO"}
+            Add New
           </Button>
         }
       />

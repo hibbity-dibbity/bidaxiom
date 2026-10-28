@@ -9,7 +9,8 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PageHeader } from "@/components/shared/page-header";
-import { ListToolbar, SearchField, FilterSelect } from "@/components/shared/list-toolbar";
+import { ListToolbar, ListActions, SearchField, FilterSelect } from "@/components/shared/list-toolbar";
+import { downloadCsv } from "@/lib/csv";
 import { EmptyState } from "@/components/shared/empty-state";
 import { OrderStatusBadge, dollars } from "@/components/orders/order-ui";
 
@@ -48,7 +49,9 @@ export default function OrdersPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Purchase & Work Orders" description="All purchase orders and work orders across your projects." />
-      <ListToolbar activeCount={(search.trim() ? 1 : 0) + (filter !== "all" ? 1 : 0)} summary={data ? `${rows.length} shown · ${dollars(owed)} outstanding` : undefined}>
+      <ListToolbar activeCount={(search.trim() ? 1 : 0) + (filter !== "all" ? 1 : 0)} summary={data ? `${rows.length} shown · ${dollars(owed)} outstanding` : undefined}
+        actions={<ListActions exportDisabled={rows.length === 0} onExport={() => downloadCsv("orders", ["Order", "Type", "Project", "Vendor", "Status", "Cost", "Paid", "Outstanding"], rows.map((r) => [r.number, r.kind === "work" ? "Work order" : "Purchase order", [r.jobNumber, r.projectName].filter(Boolean).join(" - "), r.vendorName, r.status, r.cost, r.paid, r.outstanding]))} />}
+      >
         <SearchField value={search} onChange={setSearch} placeholder="Search number, vendor or project" />
         <FilterSelect
           label="Show"

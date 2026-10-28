@@ -13,7 +13,7 @@ import type { DocumentFilters as DocumentFiltersType } from "@/components/projec
 import { DocumentUploader } from "@/components/project/document-uploader";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/page-header";
-import { Upload } from "lucide-react";
+import { Plus } from "lucide-react";
 
 const KNOWN_EXTENSIONS = ["pdf", "docx", "doc", "xlsx", "xls", "png", "jpg", "jpeg"];
 
@@ -139,8 +139,8 @@ export default function ProjectDocumentsPage() {
             onClick={() => setShowUploader((prev) => !prev)}
             disabled={!projectId}
           >
-            <Upload className="mr-2 h-4 w-4" />
-            {showUploader ? "Cancel" : "Upload"}
+            <Plus className="mr-2 h-4 w-4" />
+            {showUploader ? "Cancel" : "Add New"}
           </Button>
         }
       />

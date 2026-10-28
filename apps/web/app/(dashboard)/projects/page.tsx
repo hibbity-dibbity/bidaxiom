@@ -4,7 +4,8 @@ import type { LifecyclePhase } from "@construction/shared";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { ListActions } from "@/components/shared/list-toolbar";
+import { downloadCsv } from "@/lib/csv";
 import { useAuth } from "@/lib/auth-context";
 import { useQueryState, useQueryStates, parseAsString, parseAsInteger, parseAsStringEnum, parseAsArrayOf } from "nuqs";
 import { ProjectsTable } from "./components/projects-table";
@@ -74,16 +75,6 @@ export default function ProjectsPage() {
       <PageHeader
         title="Projects"
         description="Your jobs from opportunity through closeout"
-        actions={
-          canCreate ? (
-            <Button asChild>
-              <Link href="/projects/new">
-                <Plus className="mr-2 h-4 w-4" />
-                New Project
-              </Link>
-            </Button>
-          ) : undefined
-        }
       />
 
       {/* Filters */}
@@ -93,6 +84,13 @@ export default function ProjectsPage() {
         customers={customersData?.items || []}
         users={usersData?.items || []}
         summary={isLoading ? undefined : `${data?.total ?? 0} shown`}
+        actions={
+          <ListActions
+            addHref={canCreate ? "/projects/new" : undefined}
+            exportDisabled={!data?.items?.length}
+            onExport={() => downloadCsv("projects", ["Job #", "Name", "Customer", "Phase", "Start Date"], (data?.items ?? []).map((p: any) => [p.jobNumber, p.name, p.customerName, p.lifecyclePhase, p.startDate ? new Date(p.startDate).toLocaleDateString() : ""]))}
+          />
+        }
       />
 
       {/* Table */}

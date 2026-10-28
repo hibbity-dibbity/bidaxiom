@@ -12,7 +12,8 @@ import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ListToolbar, SearchField, FilterSelect } from "@/components/shared/list-toolbar";
+import { ListToolbar, ListActions, SearchField, FilterSelect } from "@/components/shared/list-toolbar";
+import { downloadCsv } from "@/lib/csv";
 import { EmptyState } from "@/components/shared/empty-state";
 import { TaskDialog, type TaskRow } from "./task-dialog";
 import { dueState, prettyDate, prettyMoment } from "@/lib/tasks";
@@ -61,9 +62,19 @@ export function TaskBoard({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <ListToolbar activeCount={active} summary={data ? `${rows.length} ${rows.length === 1 ? "task" : "tasks"}` : undefined}>
+      <div>
+        <div>
+          <ListToolbar
+            activeCount={active}
+            summary={data ? `${rows.length} ${rows.length === 1 ? "task" : "tasks"}` : undefined}
+            actions={
+              <ListActions
+                onAdd={() => setCreating(true)}
+                exportDisabled={rows.length === 0}
+                onExport={() => downloadCsv("tasks", ["Task", "Notes", "Project", "Assigned to", "Due", "Status"], rows.map((t) => [t.title, t.notes, [t.jobNumber, t.projectName].filter(Boolean).join(" - "), t.assigneeName, t.dueDate, t.status]))}
+              />
+            }
+          >
             <SearchField value={search} onChange={setSearch} placeholder={project ? "Search tasks" : "Search task, notes or project"} />
             <FilterSelect label="Assigned to" value={assignee} onChange={setAssignee} options={assigneeOptions} />
             <FilterSelect
@@ -78,12 +89,6 @@ export function TaskBoard({
             />
           </ListToolbar>
         </div>
-        {!onNewOpenChange && (
-          <Button onClick={() => setCreating(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            New task
-          </Button>
-        )}
       </div>
 
       {isLoading ? (

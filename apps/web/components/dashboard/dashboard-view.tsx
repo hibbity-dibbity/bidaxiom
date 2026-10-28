@@ -303,7 +303,7 @@ export function DashboardView() {
           <Head title="Active projects" sub="Worst first" right={<Link href="/projects" className="text-sm text-primary hover:underline">Open all {d.projectCount} →</Link>} />
         </div>
         <div className="mt-2 overflow-x-auto">
-          <table className="w-full min-w-[860px] text-sm tabular-nums">
+          <table className="w-full text-sm tabular-nums sm:min-w-[860px]">
             <thead>
               <tr className="border-b text-left text-xs text-muted-foreground">
                 <th className="px-3 py-2 font-semibold">Project</th><th className="px-3 py-2 font-semibold">Manager</th><th className="px-3 py-2 font-semibold">Phase</th>
@@ -319,7 +319,7 @@ export function DashboardView() {
                   <td className="px-3 py-3"><Link href={p.slug ? `/projects/${p.slug}` : "/projects"} className="font-semibold text-primary hover:underline">{p.name}</Link><div className="text-xs text-muted-foreground">{p.jobNumber}</div></td>
                   <td className="px-3 py-3">{p.manager || "—"}</td>
                   <td className="px-3 py-3">{p.phase}</td>
-                  <td className="px-3 py-3"><div className="h-2 rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(p.billedPct, 100)}%` }} /></div></td>
+                  <td className="px-3 py-3"><div className="h-2 w-32 rounded-full bg-muted sm:w-full"><div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(p.billedPct, 100)}%` }} /></div></td>
                   <td className="px-3 py-3 text-right">{compact(p.contract)}</td>
                   <td className="px-3 py-3 text-right">{compact(p.billed)}</td>
                   <td className={cn("px-3 py-3 text-right", p.spentPct !== null && p.ahead > 10 ? "font-semibold text-financial-negative" : p.spentPct !== null && p.ahead > 3 ? "font-semibold text-financial-pending" : "")}>{p.spentPct === null ? "—" : `${p.spentPct}% spent`}</td>

@@ -60,7 +60,7 @@ export function UserMenu() {
       <DropdownMenuTrigger asChild>
         <button className="rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
           <Avatar className="h-8 w-8 cursor-pointer">
-            <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+            <AvatarFallback className="bg-sidebar text-sidebar-foreground ring-1 ring-sidebar-border text-xs">
               {getInitials()}
             </AvatarFallback>
           </Avatar>

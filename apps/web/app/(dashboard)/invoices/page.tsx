@@ -9,7 +9,8 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PageHeader } from "@/components/shared/page-header";
-import { ListToolbar, SearchField, FilterSelect } from "@/components/shared/list-toolbar";
+import { ListToolbar, ListActions, SearchField, FilterSelect } from "@/components/shared/list-toolbar";
+import { downloadCsv } from "@/lib/csv";
 import { EmptyState } from "@/components/shared/empty-state";
 import { InvoiceStatusBadge, dollars, shortDate } from "@/components/invoices/invoice-ui";
 
@@ -49,7 +50,9 @@ export default function InvoicesPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Invoices" description="All invoices across your projects." />
-      <ListToolbar activeCount={(search.trim() ? 1 : 0) + (filter !== "all" ? 1 : 0)} summary={data ? `${rows.length} shown · ${dollars(open)} outstanding` : undefined}>
+      <ListToolbar activeCount={(search.trim() ? 1 : 0) + (filter !== "all" ? 1 : 0)} summary={data ? `${rows.length} shown · ${dollars(open)} outstanding` : undefined}
+        actions={<ListActions exportDisabled={rows.length === 0} onExport={() => downloadCsv("invoices", ["Invoice", "Milestone", "Project", "Customer", "Status", "Sent", "Due", "Amount", "Outstanding"], rows.map((r) => [r.number, r.milestoneName, [r.jobNumber, r.projectName].filter(Boolean).join(" - "), r.customerName, r.overdue ? "overdue" : r.status, r.status === "draft" ? "" : shortDate(r.sentOn), r.status === "draft" ? "" : shortDate(r.dueOn), r.amount, r.outstanding]))} />}
+      >
         <SearchField value={search} onChange={setSearch} placeholder="Search number, project or customer" />
         <FilterSelect
           label="Status"

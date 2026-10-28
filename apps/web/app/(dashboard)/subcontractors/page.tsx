@@ -39,7 +39,7 @@ import { SIMPLE_TRADES } from "@construction/shared";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader, InPageHeader } from "@/components/shared/page-header";
-import { ListToolbar, SearchField, MultiFilterSelect } from "@/components/shared/list-toolbar";
+import { ListToolbar, ListActions, SearchField, MultiFilterSelect } from "@/components/shared/list-toolbar";
 import { FilterChips, type FilterChip } from "@/components/shared/filter-chips";
 import type { SubcontractorStatus, VendorKind } from "@construction/shared";
 
@@ -223,26 +223,18 @@ export default function SubcontractorsPage() {
         title="Subs & Vendors"
         description="Subcontractors and suppliers you work with, their terms and compliance"
         actions={
-          <>
-            {qbo.data?.connected && (
-              <Button variant="outline" onClick={() => setConfirmPush(true)}>
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Send to QuickBooks
-              </Button>
-            )}
-            <Button variant="link" onClick={() => router.push("/subcontractors/import")}>
-              <Upload className="h-4 w-4 sm:mr-2" />
-              <span className="max-sm:sr-only">Import</span>
+          qbo.data?.connected ? (
+            <Button variant="outline" onClick={() => setConfirmPush(true)}>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Send to QuickBooks
             </Button>
-            <Button onClick={() => router.push("/subcontractors/new")}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Sub or Vendor
-            </Button>
-          </>
+          ) : undefined
         }
       />
 
-      <ListToolbar activeCount={(search.trim() ? 1 : 0) + (tradeFilter.length ? 1 : 0) + (kindFilter.length ? 1 : 0) + (statusFilter.length ? 1 : 0)} summary={data ? `${subcontractors.length} shown` : undefined}>
+      <ListToolbar activeCount={(search.trim() ? 1 : 0) + (tradeFilter.length ? 1 : 0) + (kindFilter.length ? 1 : 0) + (statusFilter.length ? 1 : 0)} summary={data ? `${subcontractors.length} shown` : undefined}
+        actions={<ListActions addHref="/subcontractors/new" importHref="/subcontractors/import" onExport={exportCsv} exportDisabled={table.getRowModel().rows.length === 0} />}
+      >
         <SearchField value={search} onChange={setSearch} placeholder="Search company, contact or email" />
         <MultiFilterSelect
           label="Trade"
@@ -281,12 +273,6 @@ export default function SubcontractorsPage() {
         </Card>
       ) : subcontractors.length > 0 ? (
         <div className="space-y-4">
-        <InPageHeader>
-          <Button variant="link" onClick={exportCsv} disabled={table.getRowModel().rows.length === 0} aria-label="Export CSV">
-            <Download className="h-4 w-4 sm:mr-2" />
-            <span className="max-sm:sr-only">Export CSV</span>
-          </Button>
-        </InPageHeader>
         <Card>
           <div className="relative w-full overflow-auto max-h-[70vh]">
             <Table>

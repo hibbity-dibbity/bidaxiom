@@ -172,12 +172,6 @@ export function ProjectsTable({
 
   return (
     <div className="space-y-4">
-      <InPageHeader>
-        <Button variant="link" onClick={exportCsv} disabled={table.getRowModel().rows.length === 0} aria-label="Export CSV">
-          <Download className="h-4 w-4 sm:mr-2" />
-          <span className="max-sm:sr-only">Export CSV</span>
-        </Button>
-      </InPageHeader>
       <Card>
         <div className="relative w-full overflow-auto max-h-[70vh]">
         <Table>

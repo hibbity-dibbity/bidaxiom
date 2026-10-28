@@ -4,7 +4,8 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Trash2 } from "lucide-react";
+import { ChevronDown, Plus, Trash2 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/page-header";
@@ -42,10 +43,19 @@ export default function TakeoffsPage({ params }: { params: { projectSlug: string
         title="Takeoffs"
         description="Enter the dimensions and specs and get a material list with costs. Copy it into a proposal so you don't retype it."
         actions={
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => { setKind("concrete"); setName("Concrete slab"); }}>New concrete takeoff</Button>
-            <Button onClick={() => { setKind("metal_building"); setName("Metal building"); }}>New metal building takeoff</Button>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Add New
+                <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={() => { setKind("concrete"); setName("Concrete slab"); }}>Concrete slab</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => { setKind("metal_building"); setName("Metal building"); }}>Metal building</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         }
       />
       {kind && (

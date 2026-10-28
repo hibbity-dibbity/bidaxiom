@@ -163,6 +163,17 @@
       display: block;
       width: 100%;
     }
+    /* Cards sit directly on the page: no frame around the list, and the gap between cards is the page background. */
+    .bg-card:has(> .overflow-auto > div > table.stack-mobile),
+    .bg-card:has(> .overflow-auto > table.stack-mobile),
+    .bg-card:has(> table.stack-mobile) {
+      background-color: transparent;
+      border-color: transparent;
+      box-shadow: none;
+    }
+    table.stack-mobile > tbody > tr {
+      background-color: hsl(var(--card));
+    }
     /* The header row is replaced by the labels on each line; keep it for screen readers. */
     table.stack-mobile > thead {
       position: absolute;

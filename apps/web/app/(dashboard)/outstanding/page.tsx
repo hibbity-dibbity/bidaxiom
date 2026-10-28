@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PageHeader } from "@/components/shared/page-header";
-import { ListToolbar, SearchField, FilterSelect } from "@/components/shared/list-toolbar";
+import { ListToolbar, ListActions, SearchField, FilterSelect } from "@/components/shared/list-toolbar";
+import { downloadCsv } from "@/lib/csv";
 import { EmptyState } from "@/components/shared/empty-state";
 import { formatCurrency } from "@/lib/utils/format";
 import { QboReceiptsPanel } from "@/components/outstanding/qbo-receipts-panel";
@@ -97,7 +98,18 @@ export default function OutstandingPage() {
       <QboReceiptsPanel />
       <QboBillsPanel />
 
-      <ListToolbar activeCount={search.trim() ? 1 : 0}>
+      <ListToolbar
+        activeCount={search.trim() ? 1 : 0}
+        actions={
+          <ListActions
+            onExport={() =>
+              tab === "invoices"
+                ? downloadCsv("outstanding-invoices", ["Customer", "Project", "Invoice", "Milestone", "Due", "Amount", "Received", "Outstanding"], data.customers.flatMap((c) => c.invoices.filter((i) => matches(`${c.name} ${i.number} ${i.milestoneName} ${jobLabel(i)}`)).map((i) => [c.name, jobLabel(i), i.number, i.milestoneName, i.dueOn, i.amount, i.received, i.outstanding])))
+                : downloadCsv("outstanding-expenses", ["Vendor", "Project", "Order", "Type", "Issued", "Total", "Paid", "Outstanding"], data.vendors.flatMap((v) => v.orders.filter((o) => matches(`${v.name} ${o.number} ${jobLabel(o)}`)).map((o) => [v.name, jobLabel(o), o.number, o.kind === "work" ? "Work order" : "Purchase order", o.issuedAt, o.total, o.paid, o.outstanding])))
+            }
+          />
+        }
+      >
         <SearchField value={search} onChange={setSearch} placeholder="Search customer, vendor or project" />
         <FilterSelect
           label="Show"

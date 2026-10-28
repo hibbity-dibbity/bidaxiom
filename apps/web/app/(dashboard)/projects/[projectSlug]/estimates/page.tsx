@@ -19,6 +19,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
+import { ListToolbar, ListActions, SearchField } from "@/components/shared/list-toolbar";
 import { PageHeader } from "@/components/shared/page-header";
 import { DocumentActions } from "@/components/shared/document-actions";
 import { IconAction } from "@/components/shared/icon-action";
@@ -117,44 +118,25 @@ export default function EstimatesPage({
         title="Proposals"
         description="Pricing proposals for this project"
         actions={
-          <>
-            <Button
-              variant="link"
-              size="sm"
-              onClick={exportCsv}
-              disabled={displayedEstimates.length === 0}
-             aria-label="Export CSV">
-              <Download className="h-4 w-4 sm:mr-2" />
-              <span className="max-sm:sr-only">Export CSV</span>
-            </Button>
-            {hasAccepted ? (
-              <span className="text-sm text-muted-foreground">Accepted. Changes now go through <Link href={`/projects/${projectSlug}/change-orders`} className="underline underline-offset-2">change orders</Link>.</span>
-            ) : (
-            <Button onClick={startNew} disabled={!projectId || createNext.isPending}>
-              <Plus className="mr-2 h-4 w-4" />
-              {createNext.isPending
-                ? "Creating..."
-                : estimates && estimates.length > 0
-                ? "New Revision"
-                : "New Proposal"}
-            </Button>
-            )}
-          </>
+          hasAccepted ? (
+            <span className="text-sm text-muted-foreground">Accepted. Changes now go through <Link href={`/projects/${projectSlug}/change-orders`} className="underline underline-offset-2">change orders</Link>.</span>
+          ) : undefined
         }
       />
 
       {/* Search bar — only show when there are estimates to search */}
-      {estimates && estimates.length > 0 && (
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search proposals by name..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="pl-9"
+      <ListToolbar
+        activeCount={searchInput.trim() ? 1 : 0}
+        actions={
+          <ListActions
+            onAdd={hasAccepted || !projectId || createNext.isPending ? undefined : startNew}
+            exportDisabled={displayedEstimates.length === 0}
+            onExport={exportCsv}
           />
-        </div>
-      )}
+        }
+      >
+        {estimates && estimates.length > 0 && <SearchField value={searchInput} onChange={setSearchInput} placeholder="Search proposals by name..." />}
+      </ListToolbar>
 
       {displayedEstimates.length > 0 ? (
         <Card>

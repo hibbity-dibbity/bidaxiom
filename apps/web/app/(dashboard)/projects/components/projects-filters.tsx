@@ -38,9 +38,10 @@ interface ProjectsFiltersProps {
   filters: FilterState;
   setFilters: (filters: Partial<FilterState>) => void;
   summary?: React.ReactNode;
+  actions?: React.ReactNode;
 }
 
-export function ProjectsFilters({ customers, users, filters, setFilters, summary }: ProjectsFiltersProps) {
+export function ProjectsFilters({ customers, users, filters, setFilters, summary, actions }: ProjectsFiltersProps) {
 
   // Local state for search input (debounced)
   const [searchInput, setSearchInput] = React.useState(filters.search || "");
@@ -138,7 +139,7 @@ export function ProjectsFilters({ customers, users, filters, setFilters, summary
   const userName = (u: User) => (u.firstName && u.lastName ? `${u.firstName} ${u.lastName}` : u.email);
   return (
     <div className="space-y-2">
-      <ListToolbar activeCount={activeChips.length + (searchInput.trim() ? 1 : 0)} summary={summary}>
+      <ListToolbar activeCount={activeChips.length + (searchInput.trim() ? 1 : 0)} summary={summary} actions={actions}>
         <SearchField value={searchInput} onChange={setSearchInput} placeholder="Search job number or project name" />
         <MultiFilterSelect
           label="Phase"

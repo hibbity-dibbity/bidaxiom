@@ -13,12 +13,6 @@ export default function TasksPage() {
       <PageHeader
         title="Tasks"
         description="Action items across all your projects"
-        actions={
-          <Button onClick={() => setCreating(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            New task
-          </Button>
-        }
       />
       <TaskBoard newOpen={creating} onNewOpenChange={setCreating} />
     </div>

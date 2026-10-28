@@ -35,19 +35,22 @@ export function OrderCard(props: {
   const isWork = o.kind === "work";
   const toggle = (id: string) => setSelected(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id]);
   const canSplit = selected.length > 0 && selected.length < o.lines.length;
-  const cols = isWork ? "grid-cols-[28px_1fr_110px_130px_110px_1.2fr]" : "grid-cols-[28px_1fr_110px_130px_110px]";
+  // Phones: description on top, the three amounts side by side under it. md and up: one row per line.
+  const cols = isWork ? "grid-cols-[28px_1fr_1fr_1fr] md:grid-cols-[28px_1fr_110px_130px_110px_1.2fr]" : "grid-cols-[28px_1fr_1fr_1fr] md:grid-cols-[28px_1fr_110px_130px_110px]";
+  const lbl = "block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground md:hidden";
+  const under = "col-start-2 md:col-start-auto";
 
   return (
     <div className="rounded-md border bg-background">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-muted px-3 py-2">
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
           <Link href={`/projects/${props.projectSlug}/orders/${o.id}`} className="font-semibold hover:underline">
             {o.number}
           </Link>
           <OrderStatusBadge status={o.status} revision={o.revision} />
           <select
             aria-label={`Vendor for ${o.number}`}
-            className={cn(fieldCls, "w-64", !o.vendorId && "text-financial-pending")}
+            className={cn(fieldCls, "w-full sm:w-64", !o.vendorId && "text-financial-pending")}
             disabled={locked || props.busy}
             value={o.vendorId ?? ""}
             onChange={(e) => props.onVendor(e.target.value === "" ? null : e.target.value)}
@@ -64,7 +67,7 @@ export function OrderCard(props: {
         <div className="text-sm text-muted-foreground">{o.lines.length} lines</div>
       </div>
 
-      <div className={cn("grid items-center gap-2 border-b px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground", cols)}>
+      <div className={cn("hidden items-center gap-2 border-b px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground md:grid", cols)}>
         <span />
         <span>{isWork ? "Scope line" : "Cost line"}</span>
         <span className="text-right">Budget</span>
@@ -75,25 +78,25 @@ export function OrderCard(props: {
       {o.lines.map((l) => (
         <div key={l.id} className={cn("grid items-center gap-2 border-b px-3 py-1.5 text-sm", cols)}>
           <input type="checkbox" aria-label={`Select ${l.description}`} disabled={locked} checked={selected.includes(l.id)} onChange={() => toggle(l.id)} />
-          <div>
+          <div className="col-span-3 md:col-span-1">
             {l.description}
             {l.category && <span className="ml-2 text-xs text-muted-foreground">{l.category}</span>}
           </div>
-          <div className="text-right tabular-nums">{dollars(l.budgetCost)}</div>
-          <BlurNumber label={`Projected cost for ${l.description}`} value={l.projectedCost} disabled={locked} onSave={(v) => props.onProjected(l.id, v)} />
-          <div className="text-right tabular-nums text-muted-foreground">{signed(l.projectedCost - l.budgetCost)}</div>
+          <div className={cn("tabular-nums md:text-right", under)}><span className={lbl}>Budget</span>{dollars(l.budgetCost)}</div>
+          <div><span className={lbl}>Projected</span><BlurNumber label={`Projected cost for ${l.description}`} value={l.projectedCost} disabled={locked} onSave={(v) => props.onProjected(l.id, v)} /></div>
+          <div className="tabular-nums text-muted-foreground md:text-right"><span className={lbl}>Difference</span>{signed(l.projectedCost - l.budgetCost)}</div>
           {isWork && (
-            <BlurText label={`Exclusions for ${l.description}`} value={l.exclusions} disabled={locked} placeholder="Not included" onSave={(v) => props.onExclusions(l.id, v)} />
+            <div className="col-span-3 col-start-2 md:col-span-1 md:col-start-auto"><span className={lbl}>Exclusions</span><BlurText label={`Exclusions for ${l.description}`} value={l.exclusions} disabled={locked} placeholder="Not included" onSave={(v) => props.onExclusions(l.id, v)} /></div>
           )}
         </div>
       ))}
       <div className={cn("grid items-center gap-2 px-3 py-2 text-sm font-semibold", cols)}>
-        <span />
-        <span>Order total</span>
-        <span className="text-right tabular-nums">{dollars(o.budgetTotal)}</span>
-        <span className="text-right tabular-nums">{dollars(o.projectedTotal)}</span>
-        <span className="text-right tabular-nums">{signed(o.projectedTotal - o.budgetTotal)}</span>
-        {isWork && <span />}
+        <span className="hidden md:block" />
+        <span className="col-span-4 md:col-span-1">Order total</span>
+        <span className={cn("tabular-nums md:text-right", under)}><span className={lbl}>Budget</span>{dollars(o.budgetTotal)}</span>
+        <span className="tabular-nums md:text-right"><span className={lbl}>Projected</span>{dollars(o.projectedTotal)}</span>
+        <span className="tabular-nums md:text-right"><span className={lbl}>Difference</span>{signed(o.projectedTotal - o.budgetTotal)}</span>
+        {isWork && <span className="hidden md:block" />}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2 border-t px-3 py-2">
@@ -110,7 +113,7 @@ export function OrderCard(props: {
               <>
                 <select
                   aria-label="Move selected lines to"
-                  className={cn(fieldCls, "w-44")}
+                  className={cn(fieldCls, "w-full sm:w-44")}
                   disabled={selected.length === 0 || props.busy}
                   value=""
                   onChange={(e) => e.target.value && props.onMoveTo(selected, e.target.value)}
@@ -124,7 +127,7 @@ export function OrderCard(props: {
                 </select>
                 <select
                   aria-label="Merge into"
-                  className={cn(fieldCls, "w-40")}
+                  className={cn(fieldCls, "w-full sm:w-40")}
                   disabled={props.busy}
                   value=""
                   onChange={(e) => e.target.value && props.onMerge(e.target.value)}

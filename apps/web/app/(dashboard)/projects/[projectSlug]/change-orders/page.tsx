@@ -6,7 +6,7 @@ import { DocumentActions } from "@/components/shared/document-actions";
 import { IconAction } from "@/components/shared/icon-action";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -53,7 +53,7 @@ export default function ChangeOrdersPage({ params }: { params: { projectSlug: st
         description="Changes to the accepted proposal. Build one like a proposal, send it, and mark it accepted. Accepting adds its amount to the contract value, drafts its purchase orders and work orders, and drafts its invoices."
         actions={
           data?.canCreate ? (
-            adding ? null : <Button onClick={() => setAdding(true)}>New change order</Button>
+            adding ? null : <Button onClick={() => setAdding(true)}><Plus className="mr-2 h-4 w-4" />Add New</Button>
           ) : undefined
         }
       />
