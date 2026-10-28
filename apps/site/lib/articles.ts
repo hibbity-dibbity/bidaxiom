@@ -22,7 +22,7 @@ export const ARTICLES: Article[] = [
         body: [
           "On the **QuickBooks Online** card the status shows **Not Connected**. Select **Connect QuickBooks**. You are taken to Intuit's own sign-in page.",
         ],
-        shot: { src: "/kb/qbo-settings.png", alt: "The QuickBooks Online card with the connection status and the Connect QuickBooks button", caption: "The card shows the connection status and the button to connect. (Shown here after a connection has expired, so the button reads Reconnect.)" },
+        shot: { src: "/kb/qbo-settings.png", alt: "The QuickBooks Online card with the Connect QuickBooks button", caption: "The card shows the connection status and the Connect QuickBooks button." },
       },
       {
         title: "Sign in to Intuit and choose your company",
