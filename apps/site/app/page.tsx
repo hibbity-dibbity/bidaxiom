@@ -35,25 +35,25 @@ export default function Home() {
     <>
       <SiteHeader />
 
-      <section style={{ background: "linear-gradient(180deg,#17222d 0,#17222d 62%,#fff 62%)", color: "#fff" }}>
+      <section style={{ background: "linear-gradient(180deg,#1B2332 0,#1B2332 62%,#FBFAF7 62%)", color: "#fff" }}>
         <div className="wrap" style={{ paddingTop: 56 }}>
           <div style={{ maxWidth: 760 }}>
-            <div className="kick" style={{ color: "#5fd0e6" }}>Construction management software</div>
-            <h1 className="d" style={{ margin: "14px 0 0", fontSize: "clamp(38px,6vw,60px)", lineHeight: 1.05, letterSpacing: "-.03em", fontWeight: 700 }}>Win the bid. Run the job. Get paid.</h1>
-            <p style={{ margin: "20px 0 0", fontSize: 19, lineHeight: 1.55, color: "#c9d4de", maxWidth: 640 }}>
+            <div className="kick" style={{ color: "#D49254" }}>Construction management software</div>
+            <h1 className="d" style={{ margin: "14px 0 0", fontSize: "clamp(46px,7vw,76px)", lineHeight: 1.02, letterSpacing: "-.015em" }}>Win the bid. Run the job. Get paid.</h1>
+            <p style={{ margin: "20px 0 0", fontSize: 19, lineHeight: 1.55, color: "#E6E1D6", maxWidth: 640 }}>
               BidAxiom is built for contractors who are tired of retyping the same numbers. Track the lead, price the bid, win the job, bill the milestones and watch your costs against the contract, with QuickBooks Online kept in step.
             </p>
             <div style={{ marginTop: 28, display: "flex", flexWrap: "wrap", gap: 12 }}>
               <Link className="btn t" href="/free-trial">Start your 30-day free trial</Link>
               <Link className="btn o" href="/knowledge-base">Browse the knowledge base</Link>
             </div>
-            <p style={{ margin: "14px 0 0", fontSize: 14, color: "#8fa3b5" }}>No credit card. No demo call. Your company is ready in a minute.</p>
+            <p style={{ margin: "14px 0 0", fontSize: 14, color: "#9AA3B2" }}>No credit card. No demo call. Your company is ready in a minute.</p>
           </div>
 
-          <div style={{ marginTop: 48, background: "#e3e8ee", borderRadius: "14px 14px 0 0", border: "1px solid #2c3d4d", borderBottom: 0, boxShadow: "0 30px 60px rgba(8,14,20,.35)", overflow: "hidden" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "11px 16px", background: "#e3e8ee", borderBottom: "1px solid #d3dbe3" }}>
-              {[0, 1, 2].map((i) => (<span key={i} style={{ width: 10, height: 10, borderRadius: "50%", background: "#c4ced8" }} />))}
-              <span style={{ marginLeft: 14, fontSize: 12, color: "#5b6b7b" }}>app.bidaxiom.com</span>
+          <div style={{ marginTop: 48, background: "#E4E0D6", borderRadius: "14px 14px 0 0", border: "1px solid #2A3447", borderBottom: 0, boxShadow: "0 30px 60px rgba(8,14,20,.35)", overflow: "hidden" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "11px 16px", background: "#E4E0D6", borderBottom: "1px solid #D6D2C8" }}>
+              {[0, 1, 2].map((i) => (<span key={i} style={{ width: 10, height: 10, borderRadius: "50%", background: "#CFCAC0" }} />))}
+              <span style={{ marginLeft: 14, fontSize: 12, color: "#6A6F7B" }}>app.bidaxiom.com</span>
             </div>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/kb/dashboard.png" alt="The BidAxiom dashboard showing backlog, billing, margin, receivables and projects that need attention" style={{ display: "block", width: "100%", height: "auto" }} />
@@ -69,10 +69,10 @@ export default function Home() {
           </div>
           <ol style={{ listStyle: "none", margin: "36px 0 0", padding: 0, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: 14 }}>
             {STAGES.map(([t, d], i) => (
-              <li key={t} style={{ borderTop: "3px solid #0e7490", paddingTop: 14 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "#0e7490" }}>{i + 1}</div>
+              <li key={t} style={{ borderTop: "3px solid #9A5A22", paddingTop: 14 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "#9A5A22" }}>{i + 1}</div>
                 <div className="d" style={{ fontSize: 20, fontWeight: 600, marginTop: 4 }}>{t}</div>
-                <p style={{ margin: "6px 0 0", fontSize: 14, lineHeight: 1.5, color: "#4a5b6a" }}>{d}</p>
+                <p style={{ margin: "6px 0 0", fontSize: 14, lineHeight: 1.5, color: "#4A4F5C" }}>{d}</p>
               </li>
             ))}
           </ol>
@@ -97,34 +97,34 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="quickbooks" style={{ background: "#f4f6f8", padding: "80px 0" }}>
+      <section id="quickbooks" style={{ background: "#F3F1EC", padding: "80px 0" }}>
         <div className="wrap" style={{ display: "flex", flexWrap: "wrap", gap: 48, alignItems: "center" }}>
           <div style={{ flex: "1 1 420px", minWidth: 0 }}>
             <div className="kick">QuickBooks Online</div>
             <h2 className="d h2">QuickBooks stays your book of record.</h2>
-            <p style={{ margin: "16px 0 0", fontSize: 17, lineHeight: 1.6, color: "#4a5b6a" }}>
+            <p style={{ margin: "16px 0 0", fontSize: 17, lineHeight: 1.6, color: "#4A4F5C" }}>
               BidAxiom handles the job side: proposals, change orders, milestones and job costs. Your bookkeeper keeps working in QuickBooks the way they always have, on a cash basis, with the same accounts and tax codes.
             </p>
             <ul style={{ margin: "18px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 10, fontSize: 16 }}>
               {["Invoices and purchase orders post to QuickBooks", "Bills, expenses and payments come back for cost tracking", "Tax codes and accounts are mapped once, by you"].map((t) => (
-                <li key={t} style={{ display: "flex", gap: 10 }}><span style={{ color: "#0e7490", fontWeight: 700 }}>&#10003;</span>{t}</li>
+                <li key={t} style={{ display: "flex", gap: 10 }}><span style={{ color: "#9A5A22", fontWeight: 700 }}>&#10003;</span>{t}</li>
               ))}
             </ul>
             <p style={{ margin: "22px 0 0" }}><Link href="/knowledge-base/connect-quickbooks-online" style={{ fontWeight: 600, fontSize: 16 }}>Read the setup guide &rarr;</Link></p>
           </div>
-          <div style={{ flex: "1 1 420px", minWidth: 0, background: "#fff", border: "1px solid #e3e8ee", borderRadius: 14, padding: 22 }}>
+          <div style={{ flex: "1 1 420px", minWidth: 0, background: "#fff", border: "1px solid #E4E0D6", borderRadius: 14, padding: 22 }}>
             <div style={{ display: "flex", alignItems: "stretch", gap: 14, flexWrap: "wrap" }}>
-              <div style={{ flex: "1 1 150px", border: "1px solid #e3e8ee", borderRadius: 10, padding: 16 }}>
+              <div style={{ flex: "1 1 150px", border: "1px solid #E4E0D6", borderRadius: 10, padding: 16 }}>
                 <div className="d" style={{ fontWeight: 600, fontSize: 17 }}>BidAxiom</div>
-                <div style={{ marginTop: 8, fontSize: 13, color: "#5b6b7b", lineHeight: 1.6 }}>Proposals<br />Change orders<br />Milestones<br />Purchase orders</div>
+                <div style={{ marginTop: 8, fontSize: 13, color: "#6A6F7B", lineHeight: 1.6 }}>Proposals<br />Change orders<br />Milestones<br />Purchase orders</div>
               </div>
-              <div style={{ flex: "0 0 70px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", gap: 6, color: "#0e7490", fontSize: 12, fontWeight: 600 }}><span>invoices &rarr;</span><span>&larr; bills</span></div>
-              <div style={{ flex: "1 1 150px", border: "1px solid #e3e8ee", borderRadius: 10, padding: 16, background: "#f9fafb" }}>
+              <div style={{ flex: "0 0 70px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", gap: 6, color: "#9A5A22", fontSize: 12, fontWeight: 600 }}><span>invoices &rarr;</span><span>&larr; bills</span></div>
+              <div style={{ flex: "1 1 150px", border: "1px solid #E4E0D6", borderRadius: 10, padding: 16, background: "#F8F6F1" }}>
                 <div className="d" style={{ fontWeight: 600, fontSize: 17 }}>QuickBooks Online</div>
-                <div style={{ marginTop: 8, fontSize: 13, color: "#5b6b7b", lineHeight: 1.6 }}>Book of record<br />Accounts and tax<br />Payments<br />Bookkeeper</div>
+                <div style={{ marginTop: 8, fontSize: 13, color: "#6A6F7B", lineHeight: 1.6 }}>Book of record<br />Accounts and tax<br />Payments<br />Bookkeeper</div>
               </div>
             </div>
-            <p style={{ margin: "16px 0 0", fontSize: 13, color: "#5b6b7b" }}>Sync status, last run and any item that needs a decision show up inside BidAxiom.</p>
+            <p style={{ margin: "16px 0 0", fontSize: 13, color: "#6A6F7B" }}>Sync status, last run and any item that needs a decision show up inside BidAxiom.</p>
           </div>
         </div>
       </section>
@@ -153,15 +153,15 @@ export default function Home() {
           <div style={{ flex: "1 1 360px", minWidth: 0 }}>
             <div className="kick">Pricing</div>
             <h2 className="d h2">One price per company. Everyone on your team included.</h2>
-            <p style={{ margin: "16px 0 0", fontSize: 17, lineHeight: 1.6, color: "#4a5b6a" }}>
+            <p style={{ margin: "16px 0 0", fontSize: 17, lineHeight: 1.6, color: "#4A4F5C" }}>
               No per-user fees, no feature tiers and no setup charge. Start with 30 days free, then one flat monthly price whether you have two people or twenty.
             </p>
           </div>
-          <div style={{ flex: "1 1 380px", maxWidth: 480, border: "2px solid #0e7490", borderRadius: 16, padding: 32, background: "#fff" }}>
-            <div className="d" style={{ fontSize: 18, fontWeight: 600, color: "#0e7490" }}>BidAxiom</div>
+          <div style={{ flex: "1 1 380px", maxWidth: 480, border: "2px solid #9A5A22", borderRadius: 16, padding: 32, background: "#fff" }}>
+            <div className="d" style={{ fontSize: 18, fontWeight: 600, color: "#9A5A22" }}>BidAxiom</div>
             <div style={{ marginTop: 10, display: "flex", alignItems: "baseline", gap: 8 }}>
-              <span className="d" style={{ fontSize: 56, fontWeight: 700, letterSpacing: "-.03em" }}>${PRICE_PER_MONTH}</span>
-              <span style={{ fontSize: 17, color: "#5b6b7b" }}>per month, per company</span>
+              <span className="ser" style={{ fontSize: 64, letterSpacing: "-.02em" }}>${PRICE_PER_MONTH}</span>
+              <span style={{ fontSize: 17, color: "#6A6F7B" }}>per month, per company</span>
             </div>
             <ul style={{ margin: "22px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 10, fontSize: 16 }}>
               {[
@@ -172,16 +172,16 @@ export default function Home() {
                 "Owner and project manager dashboards",
                 "Email support and the full knowledge base",
               ].map((t) => (
-                <li key={t} style={{ display: "flex", gap: 10 }}><span style={{ color: "#0e7490", fontWeight: 700 }}>&#10003;</span>{t}</li>
+                <li key={t} style={{ display: "flex", gap: 10 }}><span style={{ color: "#9A5A22", fontWeight: 700 }}>&#10003;</span>{t}</li>
               ))}
             </ul>
             <Link className="btn p" href="/free-trial" style={{ marginTop: 26, display: "block", textAlign: "center", fontSize: 16 }}>Start your 30-day free trial</Link>
-            <p style={{ margin: "12px 0 0", fontSize: 13, color: "#5b6b7b", textAlign: "center" }}>No credit card to start. We email you before the trial ends.</p>
+            <p style={{ margin: "12px 0 0", fontSize: 13, color: "#6A6F7B", textAlign: "center" }}>No credit card to start. We email you before the trial ends.</p>
           </div>
         </div>
       </section>
 
-      <section style={{ background: "#f4f6f8", padding: "80px 0" }}>
+      <section style={{ background: "#F3F1EC", padding: "80px 0" }}>
         <div className="wrap">
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 12 }}>
             <div><div className="kick">Knowledge base</div><h2 className="d h2">Step-by-step guides with screenshots.</h2></div>
@@ -192,20 +192,20 @@ export default function Home() {
               <Link className="kb" key={a.slug} href={`/knowledge-base/${a.slug}`}>
                 <span className="pill">{a.category}</span>
                 <div className="d" style={{ fontSize: 19, fontWeight: 600, marginTop: 12 }}>{a.title}</div>
-                <p style={{ margin: "6px 0 0", fontSize: 14, lineHeight: 1.5, color: "#5b6b7b" }}>{a.summary}</p>
+                <p style={{ margin: "6px 0 0", fontSize: 14, lineHeight: 1.5, color: "#6A6F7B" }}>{a.summary}</p>
               </Link>
             ))}
           </div>
         </div>
       </section>
 
-      <section style={{ background: "#0e7490", color: "#fff", padding: "72px 0" }}>
+      <section style={{ background: "#A8612A", color: "#fff", padding: "72px 0" }}>
         <div className="wrap" style={{ display: "flex", flexWrap: "wrap", gap: 32, alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ maxWidth: 620 }}>
-            <h2 className="d" style={{ margin: 0, fontSize: 40, lineHeight: 1.1, letterSpacing: "-.02em", fontWeight: 700 }}>Try it on a real job. Free for 30 days.</h2>
-            <p style={{ margin: "14px 0 0", fontSize: 18, lineHeight: 1.55, color: "#d6f1f7" }}>Enter your company details and you are in. No credit card, no sales call.</p>
+            <h2 className="d" style={{ margin: 0, fontSize: 48, lineHeight: 1.05, letterSpacing: "-.01em" }}>Try it on a real job. Free for 30 days.</h2>
+            <p style={{ margin: "14px 0 0", fontSize: 18, lineHeight: 1.55, color: "#F3E7DA" }}>Enter your company details and you are in. No credit card, no sales call.</p>
           </div>
-          <Link className="btn" href="/free-trial" style={{ background: "#17222d", color: "#fff", fontSize: 17, padding: "14px 26px" }}>Start your free trial</Link>
+          <Link className="btn n" href="/free-trial" style={{ fontSize: 17, padding: "14px 26px" }}>Start your free trial</Link>
         </div>
       </section>
 

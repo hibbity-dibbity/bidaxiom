@@ -24,16 +24,16 @@ export function KbSearch({ items }: { items: Item[] }) {
         value={q}
         onChange={(e) => setQ(e.target.value)}
         placeholder="Search, for example: QuickBooks, passkey, change order"
-        style={{ width: "100%", font: "inherit", fontSize: 16, padding: "14px 16px", borderRadius: 9, border: 0, color: "#1f2d3a" }}
+        style={{ width: "100%", font: "inherit", fontSize: 16, padding: "14px 16px", borderRadius: 9, border: 0, color: "#1B2332" }}
       />
       {q.trim() && (
-        <div style={{ marginTop: 10, background: "#fff", borderRadius: 9, color: "#1f2d3a", padding: "4px 14px" }} aria-live="polite">
+        <div style={{ marginTop: 10, background: "#fff", borderRadius: 9, color: "#1B2332", padding: "4px 14px" }} aria-live="polite">
           {results.length === 0 ? (
-            <p style={{ margin: 0, padding: "14px 0", fontSize: 15, color: "#5b6b7b" }}>No articles match. Try a shorter word.</p>
+            <p style={{ margin: 0, padding: "14px 0", fontSize: 15, color: "#6A6F7B" }}>No articles match. Try a shorter word.</p>
           ) : (
             results.map((a) => (
-              <Link key={a.slug} href={`/knowledge-base/${a.slug}`} style={{ display: "block", padding: "12px 0", borderBottom: "1px solid #e3e8ee", color: "#1f2d3a" }}>
-                <span style={{ fontWeight: 600 }}>{a.title}</span> <span style={{ fontSize: 12, color: "#5b6b7b" }}>&middot; {a.category}</span>
+              <Link key={a.slug} href={`/knowledge-base/${a.slug}`} style={{ display: "block", padding: "12px 0", borderBottom: "1px solid #E4E0D6", color: "#1B2332" }}>
+                <span style={{ fontWeight: 600 }}>{a.title}</span> <span style={{ fontSize: 12, color: "#6A6F7B" }}>&middot; {a.category}</span>
               </Link>
             ))
           )}

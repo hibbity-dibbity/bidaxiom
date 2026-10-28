@@ -31,7 +31,7 @@ export function TrialForm() {
 
   if (state === "done") {
     return (
-      <div role="status" style={{ background: "#e6f6fa", border: "1px solid #b7e3ee", borderRadius: 12, padding: 28 }}>
+      <div role="status" style={{ background: "#F3E7DA", border: "1px solid #E9CDAE", borderRadius: 12, padding: 28 }}>
         <h2 className="d" style={{ margin: 0, fontSize: 26 }}>Check your email.</h2>
         <p style={{ margin: "10px 0 0", fontSize: 16.5, lineHeight: 1.6 }}>
           We sent a link to <strong>{email}</strong>. Open it to choose your password, then sign in at{" "}
@@ -70,7 +70,7 @@ export function TrialForm() {
       <button className="btn p" type="submit" disabled={state === "busy"} style={{ fontSize: 16 }}>
         {state === "busy" ? "Setting up your company..." : "Start my free trial"}
       </button>
-      <p style={{ margin: 0, fontSize: 13, color: "#5b6b7b", lineHeight: 1.5 }}>
+      <p style={{ margin: 0, fontSize: 13, color: "#6A6F7B", lineHeight: 1.5 }}>
         30 days, no credit card. We email you a link to choose your password. When the 30 days end the account switches off on its own and your work is kept for you.
       </p>
     </form>
