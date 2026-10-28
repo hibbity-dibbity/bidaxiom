@@ -302,7 +302,7 @@ export function DashboardView() {
         <div className="px-3">
           <Head title="Active projects" sub="Worst first" right={<Link href="/projects" className="text-sm text-primary hover:underline">Open all {d.projectCount} →</Link>} />
         </div>
-        <div className="mt-2 overflow-x-auto">
+        <div className="mt-2 table-sheet">
           <table className="w-full text-sm tabular-nums sm:min-w-[860px]">
             <thead>
               <tr className="border-b text-left text-xs text-muted-foreground">

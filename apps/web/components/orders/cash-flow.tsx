@@ -38,7 +38,7 @@ export function CashFlow({ projectId, projectSlug }: { projectId: string; projec
             <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Cash in{active.accepted ? "" : " (proposal not accepted yet)"}
             </div>
-            <table className="w-full rounded-md border bg-background text-sm">
+            <div className="table-sheet"><table className="w-full rounded-md border bg-background text-sm">
               <thead>
                 <tr className="border-b bg-muted text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                   <th className="px-3 py-2">Milestone</th>
@@ -80,7 +80,7 @@ export function CashFlow({ projectId, projectSlug }: { projectId: string; projec
                   <td />
                 </tr>
               </tbody>
-            </table>
+            </table></div>
             {(active.acceptedOptionNames.length > 0 || active.declinedOptionNames.length > 0) && (
               <p className="text-xs text-muted-foreground">
                 {active.acceptedOptionNames.length > 0 && <>Schedule includes the accepted option{active.acceptedOptionNames.length > 1 ? "s" : ""}: {active.acceptedOptionNames.join(", ")}. </>}
@@ -93,7 +93,7 @@ export function CashFlow({ projectId, projectSlug }: { projectId: string; projec
 
         <div className="space-y-2">
           <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Cash out</div>
-          <table className="w-full rounded-md border bg-background text-sm">
+          <div className="table-sheet"><table className="w-full rounded-md border bg-background text-sm">
             <thead>
               <tr className="border-b bg-muted text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 <th className="px-3 py-2">Order</th>
@@ -140,7 +140,7 @@ export function CashFlow({ projectId, projectSlug }: { projectId: string; projec
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
           {drafts.length > 0 && (
             <p className="text-xs text-muted-foreground">
               Drafts total {dollars(drafts.reduce((a, r) => a + r.projected, 0))} and are not counted as outstanding until issued.
