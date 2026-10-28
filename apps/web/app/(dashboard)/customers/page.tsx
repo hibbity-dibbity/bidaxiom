@@ -20,6 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/shared/page-header";
 import { ListToolbar, ListActions, SearchField } from "@/components/shared/list-toolbar";
 import { downloadCsv } from "@/lib/csv";
+import { MobileSort } from "@/components/shared/mobile-sort";
 import {
   Table,
   TableBody,
@@ -280,6 +281,8 @@ function CustomersList() {
           </CardContent>
         </Card>
       ) : customers.length > 0 ? (
+        <>
+        <MobileSort table={table} />
         <Card>
           <div className="relative w-full overflow-auto max-h-[70vh]">
             <Table>
@@ -384,6 +387,7 @@ function CustomersList() {
             </div>
           </div>
         </Card>
+        </>
       ) : (
         <EmptyState
           icon={search ? SearchX : Building2}

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Search, ChevronDown, SlidersHorizontal, MoreHorizontal, Plus, Upload, Download } from "lucide-react";
+import { Search, ChevronDown, SlidersHorizontal, EllipsisVertical, Plus, Upload, Download } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -24,7 +24,7 @@ export function ListToolbar({
   actions,
   className,
 }: {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   summary?: React.ReactNode;
   /** How many filters (including a search) are in use. Shown on the phone's Filters button so a hidden filter is never a surprise. */
   activeCount?: number;
@@ -34,22 +34,25 @@ export function ListToolbar({
   // On a phone the search and filters stay folded away behind one button, so the list gets the screen.
   const [open, setOpen] = React.useState(false);
   const hasSummary = summary != null && summary !== false;
+  const hasFilters = React.Children.toArray(children).length > 0;
   return (
     <div className={cn("space-y-3 sm:space-y-0", className)}>
       <div className="flex items-center justify-between gap-3 sm:hidden">
-        <Button variant="outline" size="sm" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-          <SlidersHorizontal className="mr-2 h-4 w-4" />
-          Filters
-          {activeCount > 0 && (
-            <span className="ml-2 rounded-full bg-primary px-1.5 text-xs font-medium leading-5 text-primary-foreground">{activeCount}</span>
-          )}
-        </Button>
-        <div className="flex min-w-0 items-center gap-2">
+        {hasFilters && (
+          <Button variant="outline" size="sm" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+            <SlidersHorizontal className="mr-2 h-4 w-4" />
+            Filters
+            {activeCount > 0 && (
+              <span className="ml-2 rounded-full bg-primary px-1.5 text-xs font-medium leading-5 text-primary-foreground">{activeCount}</span>
+            )}
+          </Button>
+        )}
+        <div className="ml-auto flex min-w-0 items-center gap-2">
           {hasSummary && <span className="min-w-0 truncate text-right text-sm text-muted-foreground max-[420px]:hidden">{summary}</span>}
           {actions}
         </div>
       </div>
-      <div className={cn("flex-col gap-3 sm:flex sm:flex-row sm:flex-wrap sm:items-center", open ? "flex" : "hidden")}>
+      <div className={cn("flex-col gap-3 sm:flex sm:flex-row sm:flex-wrap sm:items-center", open && hasFilters ? "flex" : "hidden")}>
         {children}
         {hasSummary && <span className="hidden text-sm text-muted-foreground sm:ml-auto sm:inline">{summary}</span>}
         {actions && <div className={cn("hidden items-center gap-2 sm:flex", !hasSummary && "sm:ml-auto")}>{actions}</div>}
@@ -63,6 +66,8 @@ export function ListActions({
   addLabel = "Add New",
   addHref,
   onAdd,
+  addDisabled,
+  addMenu,
   importHref,
   onExport,
   exportDisabled,
@@ -70,17 +75,35 @@ export function ListActions({
   addLabel?: string;
   addHref?: string;
   onAdd?: () => void;
+  addDisabled?: boolean;
+  /** Several kinds of thing can be added: Add New opens a menu of them instead of acting directly. */
+  addMenu?: Array<{ label: string; onSelect: () => void }>;
   importHref?: string;
   onExport?: () => void;
   exportDisabled?: boolean;
 }) {
-  const hasAdd = !!addHref || !!onAdd;
+  const hasAdd = !!addHref || !!onAdd || !!addMenu;
   const hasMenu = !!importHref || !!onExport;
   if (!hasAdd && !hasMenu) return null;
   return (
     <>
       {hasAdd &&
-        (addHref ? (
+        (addMenu ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button disabled={addDisabled}>
+                <Plus className="mr-2 h-4 w-4" />
+                {addLabel}
+                <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {addMenu.map((m) => (
+                <DropdownMenuItem key={m.label} onSelect={m.onSelect}>{m.label}</DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : addHref ? (
           <Button asChild>
             <Link href={addHref}>
               <Plus className="mr-2 h-4 w-4" />
@@ -88,7 +111,7 @@ export function ListActions({
             </Link>
           </Button>
         ) : (
-          <Button onClick={onAdd}>
+          <Button onClick={onAdd} disabled={addDisabled}>
             <Plus className="mr-2 h-4 w-4" />
             {addLabel}
           </Button>
@@ -97,7 +120,7 @@ export function ListActions({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="icon" aria-label="More actions">
-              <MoreHorizontal className="h-4 w-4" />
+              <EllipsisVertical className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">

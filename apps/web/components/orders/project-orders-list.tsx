@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ListToolbar, ListActions } from "@/components/shared/list-toolbar";
 import { PageHeader } from "@/components/shared/page-header";
 import { OrderCard } from "./order-card";
 import { dollars, signed } from "./order-ui";
@@ -103,13 +104,8 @@ export function ProjectOrdersList({ projectSlug, kind }: { projectSlug: string; 
             ? "Labor and subcontract scope, one order per subcontractor. Drafts are created from the accepted proposal. Pick the subcontractor, split lines if needed, then issue. Each lists the scope you send to confirm it matches yours."
             : "Materials and equipment, one order per vendor. Drafts are created from the accepted proposal. Pick the vendor, split lines if needed, then issue."
         }
-        actions={
-          <Button type="button" disabled={!projectId || create.isPending} onClick={() => create.mutate({ projectId, kind })}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add New
-          </Button>
-        }
       />
+      <ListToolbar actions={<ListActions addDisabled={!projectId || create.isPending} onAdd={() => create.mutate({ projectId, kind })} />} />
 
       {isLoading || !projectId ? (
         <Skeleton className="h-40 w-full" />

@@ -25,6 +25,7 @@ interface DocumentFiltersProps {
   filters: DocumentFilters;
   onChange: (f: Partial<DocumentFilters>) => void;
   authorOptions: { id: string; name: string }[];
+  actions?: React.ReactNode;
 }
 
 const CATEGORY_OPTIONS = [
@@ -47,7 +48,7 @@ const FILE_TYPE_OPTIONS = [
   { label: "Other", value: "other" },
 ];
 
-export function DocumentFilters({ filters, onChange, authorOptions }: DocumentFiltersProps) {
+export function DocumentFilters({ filters, onChange, authorOptions, actions }: DocumentFiltersProps) {
   const [showFilters, setShowFilters] = useState(false);
   const [searchInput, setSearchInput] = useState(filters.search ?? "");
   const debouncedSearch = useDebounce(searchInput, 300);
@@ -90,6 +91,7 @@ export function DocumentFilters({ filters, onChange, authorOptions }: DocumentFi
         >
           <SlidersHorizontal className="h-4 w-4" />
         </Button>
+        {actions && <div className="ml-auto flex items-center gap-2">{actions}</div>}
       </div>
 
       {/* Active filter chips */}

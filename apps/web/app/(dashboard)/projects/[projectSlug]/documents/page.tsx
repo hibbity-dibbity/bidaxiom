@@ -12,6 +12,7 @@ import { BulkActionBar } from "@/components/project/documents/bulk-action-bar";
 import type { DocumentFilters as DocumentFiltersType } from "@/components/project/documents/document-filters";
 import { DocumentUploader } from "@/components/project/document-uploader";
 import { Button } from "@/components/ui/button";
+import { ListActions } from "@/components/shared/list-toolbar";
 import { PageHeader } from "@/components/shared/page-header";
 import { Plus } from "lucide-react";
 
@@ -132,22 +133,12 @@ export default function ProjectDocumentsPage() {
       <PageHeader
         title="Documents"
         description="Drawings, specs, RFIs, submittals, and other project files"
-        actions={
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setShowUploader((prev) => !prev)}
-            disabled={!projectId}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            {showUploader ? "Cancel" : "Add New"}
-          </Button>
-        }
       />
       <DocumentFilters
         filters={currentFilters}
         onChange={handleFilterChange}
         authorOptions={authorOptions}
+        actions={<ListActions addLabel={showUploader ? "Cancel" : "Add New"} onAdd={() => setShowUploader((prev) => !prev)} addDisabled={!projectId} />}
       />
       {showUploader && projectId && (
         <DocumentUploader

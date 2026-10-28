@@ -244,7 +244,8 @@ export function ProjectHeader({ project, stats, canTransition, canDelete }: Proj
           {formatAddress(project.street1, project.city, project.state, project.zip) && (
             <span className="text-muted-foreground/40">·</span>
           )}
-          {/* Start date picker */}
+          {/* Start and end date stay together as one unit so they never wrap onto separate lines. */}
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
           <DatePickerField
             label="Set start date"
             value={project.startDate}
@@ -268,6 +269,7 @@ export function ProjectHeader({ project, stats, canTransition, canDelete }: Proj
               updateProjectMutation.mutate({ id: project.id, endDate: iso })
             }
           />
+          </span>
         </div>
       )}
 

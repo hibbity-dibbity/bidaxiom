@@ -10,6 +10,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ListToolbar, ListActions } from "@/components/shared/list-toolbar";
 import { PageHeader } from "@/components/shared/page-header";
 import { dollars, shortDate } from "@/components/invoices/invoice-ui";
 
@@ -51,12 +52,8 @@ export default function ChangeOrdersPage({ params }: { params: { projectSlug: st
       <PageHeader
         title="Change orders"
         description="Changes to the accepted proposal. Build one like a proposal, send it, and mark it accepted. Accepting adds its amount to the contract value, drafts its purchase orders and work orders, and drafts its invoices."
-        actions={
-          data?.canCreate ? (
-            adding ? null : <Button onClick={() => setAdding(true)}><Plus className="mr-2 h-4 w-4" />Add New</Button>
-          ) : undefined
-        }
       />
+      <ListToolbar actions={data?.canCreate && !adding ? <ListActions onAdd={() => setAdding(true)} /> : undefined} />
 
       {adding && (
         <form

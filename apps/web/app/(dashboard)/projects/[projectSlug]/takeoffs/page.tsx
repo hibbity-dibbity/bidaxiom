@@ -4,8 +4,8 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ChevronDown, Plus, Trash2 } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Trash2 } from "lucide-react";
+import { ListToolbar, ListActions } from "@/components/shared/list-toolbar";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/page-header";
@@ -42,20 +42,15 @@ export default function TakeoffsPage({ params }: { params: { projectSlug: string
       <PageHeader
         title="Takeoffs"
         description="Enter the dimensions and specs and get a material list with costs. Copy it into a proposal so you don't retype it."
+      />
+      <ListToolbar
         actions={
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Add New
-                <ChevronDown className="ml-2 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={() => { setKind("concrete"); setName("Concrete slab"); }}>Concrete slab</DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => { setKind("metal_building"); setName("Metal building"); }}>Metal building</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <ListActions
+            addMenu={[
+              { label: "Concrete slab", onSelect: () => { setKind("concrete"); setName("Concrete slab"); } },
+              { label: "Metal building", onSelect: () => { setKind("metal_building"); setName("Metal building"); } },
+            ]}
+          />
         }
       />
       {kind && (

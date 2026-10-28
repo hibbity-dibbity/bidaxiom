@@ -1,6 +1,6 @@
 "use client";
 
-import { InPageHeader } from "@/components/shared/page-header";
+import { MobileSort } from "@/components/shared/mobile-sort";
 import React from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -172,6 +172,7 @@ export function ProjectsTable({
 
   return (
     <div className="space-y-4">
+      <MobileSort table={table} />
       <Card>
         <div className="relative w-full overflow-auto max-h-[70vh]">
         <Table>

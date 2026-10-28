@@ -40,6 +40,7 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader, InPageHeader } from "@/components/shared/page-header";
 import { ListToolbar, ListActions, SearchField, MultiFilterSelect } from "@/components/shared/list-toolbar";
+import { MobileSort } from "@/components/shared/mobile-sort";
 import { FilterChips, type FilterChip } from "@/components/shared/filter-chips";
 import type { SubcontractorStatus, VendorKind } from "@construction/shared";
 
@@ -273,6 +274,7 @@ export default function SubcontractorsPage() {
         </Card>
       ) : subcontractors.length > 0 ? (
         <div className="space-y-4">
+        <MobileSort table={table} />
         <Card>
           <div className="relative w-full overflow-auto max-h-[70vh]">
             <Table>
