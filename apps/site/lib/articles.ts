@@ -37,7 +37,7 @@ export const ARTICLES: Article[] = [
           "Intuit lists what BidAxiom is asking to do. Select **Connect** to approve. You come back to BidAxiom and the card shows **Connected**, with the company name and when it was linked.",
           "If you see **Reconnect QuickBooks** later, the connection expired or was revoked at Intuit. Select it and repeat this step.",
         ],
-        shot: { src: "/kb/qbo-connected.png", alt: "The QuickBooks Online card showing the QuickBooks company and environment", caption: "The card shows the QuickBooks company, the environment and the connection status." },
+        shot: { src: "/kb/qbo-connected.png", alt: "The QuickBooks Online card showing the connected company", caption: "Connected: the card shows the company, environment and when the token renews." },
         warn: "If the card says the environment is Sandbox, you are linking a practice QuickBooks company, not your real books. That is the safe way to test.",
       },
       {
