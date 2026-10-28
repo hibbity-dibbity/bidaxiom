@@ -1,7 +1,8 @@
-import { eq, sql } from 'drizzle-orm';
+import { eq, isNull, sql } from 'drizzle-orm';
 import { refreshQboToken } from './oauth.js';
 import { encryptToken } from './crypto.js';
 import { QboUserError } from './client.js';
+import { sendQboReconnectAlertEmail, splitEmails } from '../../services/email.js';
 
 /**
  * The one place a QuickBooks access token is renewed.
@@ -29,6 +30,23 @@ async function markNeedsReconnect(db: Db, schema: Schema, connId: string, detail
       .insert(schema.qboSyncNotifications)
       .values({ entityType: 'connection', entityId: connId, message: detail ?? RECONNECT_MESSAGE, severity: 'error', dismissed: false })
       .catch(() => undefined);
+    // Only the first failure (the change to expired) sends the email, so a dead connection does not mail again every minute.
+    await sendReconnectAlert(db, schema, detail ?? RECONNECT_MESSAGE);
+  }
+}
+
+/** Email the addresses the company chose, if it turned alerts on. Never throws: the alert must not hide the real error. */
+async function sendReconnectAlert(db: Db, schema: Schema, detail: string): Promise<void> {
+  try {
+    const [p] = await db
+      .select({ on: schema.companyProfiles.qboAlertEnabled, emails: schema.companyProfiles.qboAlertEmails })
+      .from(schema.companyProfiles)
+      .where(isNull(schema.companyProfiles.validTo))
+      .limit(1);
+    const to = p?.on ? splitEmails(p.emails ?? '') : [];
+    if (to.length > 0) await sendQboReconnectAlertEmail(to, detail);
+  } catch (e) {
+    console.error('[qbo-token] could not send the reconnect alert:', e instanceof Error ? e.message : e);
   }
 }
 

@@ -344,3 +344,32 @@ export async function sendTrialNoticeEmail(
     return false;
   }
 }
+
+/** Split a typed list of addresses (commas, semicolons, spaces or new lines) into lower-case, de-duplicated addresses. */
+export function splitEmails(list: string): string[] {
+  return [...new Set(list.split(/[\s,;]+/).map((s) => s.trim().toLowerCase()).filter(Boolean))];
+}
+
+/** Tell the people a company chose that its QuickBooks connection stopped and has to be reconnected. */
+export async function sendQboReconnectAlertEmail(to: string[], detail: string): Promise<boolean> {
+  const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const url = `${getAppUrl()}/settings/integrations`;
+  const subject = "BidAxiom: QuickBooks needs to be reconnected";
+  const html = `<p>BidAxiom lost its connection to QuickBooks Online, so syncing has stopped until it is reconnected.</p>
+<p><a href="${url}">Open Settings &gt; Integrations</a> and press <strong>Reconnect QuickBooks</strong>.</p>
+<p style="color:#666">Details: ${esc(detail)}</p>
+<p style="color:#666">You get this email because alerts are turned on in Settings &gt; Integrations.</p>`;
+
+  const client = getResendClient();
+  if (!client) {
+    console.log(`[EMAIL DEV] QuickBooks reconnect alert to ${to.join(", ")}: ${detail}`);
+    return false;
+  }
+  try {
+    await sendOrThrow(client, { from: getFromEmail(), to, subject, html });
+    return true;
+  } catch (err) {
+    console.error(`[EMAIL] Failed to send QuickBooks reconnect alert to ${to.join(", ")}:`, err);
+    return false;
+  }
+}

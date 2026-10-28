@@ -130,6 +130,9 @@ export function createTenantSchema(schemaName: string) {
     qboReceiptsLastCheckAt: timestamp("qbo_receipts_last_check_at", { withTimezone: true }),
     qboBillsLastCheckAt: timestamp("qbo_bills_last_check_at", { withTimezone: true }),
     qboReadVendors: boolean("qbo_read_vendors").notNull().default(false),
+    /** Email these addresses (comma separated) when the QuickBooks connection has to be reconnected. */
+    qboAlertEnabled: boolean("qbo_alert_enabled").notNull().default(false),
+    qboAlertEmails: text("qbo_alert_emails").notNull().default(""),
     qboVendorsLastCheckAt: timestamp("qbo_vendors_last_check_at", { withTimezone: true }),
     /** Create each sent invoice in QuickBooks (off by default). Only invoices sent on or after qboInvoicePushFrom go over. */
     qboInvoicePush: boolean("qbo_invoice_push").notNull().default(false),

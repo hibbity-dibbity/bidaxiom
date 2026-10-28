@@ -9,6 +9,7 @@ import { getQboSyncQueue } from "../../integrations/quickbooks/queue.js";
 import { getQboAccess, runReceiptPass } from "../../integrations/quickbooks/receipts.js";
 import { qboQueryRows } from "../../integrations/quickbooks/client.js";
 import { QBO_AUTO_SYNC_MODES } from "../../integrations/quickbooks/autoSync.js";
+import { splitEmails } from "../../services/email.js";
 import { eq, sql, and, inArray, isNull } from "drizzle-orm";
 
 /**
@@ -505,6 +506,38 @@ export const quickbooksRouter = router({
         .returning({ id: schema.companyProfiles.id });
       if (done.length === 0) throw new TRPCError({ code: "BAD_REQUEST", message: "Save the company type in company settings first, then this option." });
       return { mode: input.mode, intervalMinutes: input.intervalMinutes };
+    }),
+
+  /** Who is emailed when the QuickBooks connection has to be reconnected, and whether that is turned on. */
+  getAlertSettings: protectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.tenant) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+    const { db, schema } = ctx.tenant;
+    const [p] = await db
+      .select({ enabled: schema.companyProfiles.qboAlertEnabled, emails: schema.companyProfiles.qboAlertEmails })
+      .from(schema.companyProfiles)
+      .where(isNull(schema.companyProfiles.validTo))
+      .limit(1);
+    return { enabled: p?.enabled ?? false, emails: p?.emails ?? "" };
+  }),
+
+  setAlertSettings: authorizedProcedure
+    .input(z.object({ enabled: z.boolean(), emails: z.string().max(1000) }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenant || !ctx.abilities) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Tenant context missing" });
+      if (!ctx.abilities.can("manage", "QuickBooks")) throw new TRPCError({ code: "FORBIDDEN", message: "Only administrators can change QuickBooks alert settings" });
+      const list = splitEmails(input.emails);
+      const bad = list.find((e) => !z.string().email().safeParse(e).success);
+      if (bad) throw new TRPCError({ code: "BAD_REQUEST", message: `"${bad}" is not a valid email address` });
+      if (list.length > 10) throw new TRPCError({ code: "BAD_REQUEST", message: "Use 10 addresses or fewer" });
+      if (input.enabled && list.length === 0) throw new TRPCError({ code: "BAD_REQUEST", message: "Enter at least one email address to turn alerts on" });
+      const { db, schema } = ctx.tenant;
+      const done = await db
+        .update(schema.companyProfiles)
+        .set({ qboAlertEnabled: input.enabled, qboAlertEmails: list.join(", ") })
+        .where(isNull(schema.companyProfiles.validTo))
+        .returning({ id: schema.companyProfiles.id });
+      if (done.length === 0) throw new TRPCError({ code: "BAD_REQUEST", message: "Save the company type in company settings first, then this option." });
+      return { enabled: input.enabled, emails: list.join(", ") };
     }),
 
   /** Whether sent invoices are created in QuickBooks, from which date, and onto which income item. */

@@ -4,6 +4,7 @@ import { Loader2, AlertCircle } from "lucide-react";
 import { QboConnectionCard } from "@/components/integrations/qbo-connection-card";
 import { QboSetupInfo } from "@/components/integrations/qbo-setup-info";
 import { QboAutoSyncCard } from "@/components/integrations/qbo-auto-sync-card";
+import { QboAlertCard } from "@/components/integrations/qbo-alert-card";
 import { QboInvoiceSyncCard } from "@/components/integrations/qbo-invoice-sync-card";
 import { QboOrderSyncCard } from "@/components/integrations/qbo-order-sync-card";
 import { QboConnectionCheck } from "@/components/integrations/qbo-connection-check";
@@ -135,6 +136,9 @@ export default function IntegrationsPage() {
                 />
 
                 {!isQboConnected(qboStatus) && <QboSetupInfo />}
+
+                {/* Shown whether or not QuickBooks is connected: it matters most when the connection has dropped. */}
+                <QboAlertCard />
 
                 {/* Sync Notifications (only shown if connected) */}
                 {isQboConnected(qboStatus) && (

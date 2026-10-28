@@ -132,6 +132,8 @@ export const companyRouter = router({
             qboSalesTaxCodeName: previous?.qboSalesTaxCodeName ?? null,
             qboBillsLastCheckAt: previous?.qboBillsLastCheckAt ?? null,
             qboReadVendors: previous?.qboReadVendors ?? false,
+            qboAlertEnabled: previous?.qboAlertEnabled ?? false,
+            qboAlertEmails: previous?.qboAlertEmails ?? "",
             qboVendorsLastCheckAt: previous?.qboVendorsLastCheckAt ?? null,
             qboOrderPush: previous?.qboOrderPush ?? false,
             qboOrderPushFrom: previous?.qboOrderPushFrom ?? null,
